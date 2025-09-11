@@ -1,0 +1,65 @@
+# Roblox Studio will ignore these files and directories
+# This prevents Studio from overwriting or erasing unknown files
+
+# Development files
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Build and dependency files
+node_modules/
+*.lock
+package.json
+package-lock.json
+yarn.lock
+
+# Configuration files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+config.json
+settings.json
+
+# Backup files
+*.bak
+*.backup
+*_backup.*
+
+# Temporary files
+temp/
+tmp/
+cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Custom ignore patterns (add your own here)
+# *.myfile
+# my-custom-folder/

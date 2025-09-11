@@ -1,0 +1,91 @@
+{
+  "name": "rubluks",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    },
+
+    "Workspace": {
+      "$properties": {
+        "FilteringEnabled": true
+      }
+    },
+
+    "Lighting": {
+      "$properties": {
+        "Ambient": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "Brightness": 1,
+        "GlobalShadows": true,
+        "Outlines": true,
+        "Technology": "Compatibility"
+      }
+    },
+
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    },
+
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "MaxPlayers": 20
+      }
+    },
+
+    "Teams": {
+      "$className": "Teams"
+    },
+
+    "MaterialService": {
+      "$className": "MaterialService"
+    },
+
+    "NetworkClient": {
+      "$className": "NetworkClient"
+    },
+
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst"
+    },
+
+    "ServerStorage": {
+      "$className": "ServerStorage"
+    },
+
+    "StarterGui": {
+      "$className": "StarterGui"
+    },
+
+    "StarterPack": {
+      "$className": "StarterPack"
+    },
+
+    "TextChatService": {
+      "$className": "TextChatService"
+    }
+  }
+}
