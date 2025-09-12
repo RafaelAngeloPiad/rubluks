@@ -8,6 +8,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CharacterData = require(ReplicatedStorage.Shared.character_data)
 
+-- Font settings
+local FONT_SIZE = 15
+local FONT = Enum.Font.SourceSans
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -26,8 +30,8 @@ screenGui.Parent = playerGui
 -- Main container (initially hidden)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 400, 0, 300)
-mainFrame.Position = UDim2.new(1, -420, 1, -320)
+mainFrame.Size = UDim2.new(0, 350, 0, 250)
+mainFrame.Position = UDim2.new(1, -370, 1, -270)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Visible = false
@@ -47,8 +51,9 @@ toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 toggleButton.BorderSizePixel = 0
 toggleButton.Text = "DEV"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.TextScaled = true
-toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextScaled = false
+toggleButton.TextSize = FONT_SIZE
+toggleButton.Font = FONT
 toggleButton.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
@@ -63,15 +68,16 @@ titleLabel.Position = UDim2.new(0, 0, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Character Manager"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.SourceSans
+titleLabel.TextScaled = false
+titleLabel.TextSize = FONT_SIZE
+titleLabel.Font = FONT
 titleLabel.Parent = mainFrame
 
 -- Character slots frame
 local slotsFrame = Instance.new("Frame")
 slotsFrame.Name = "SlotsFrame"
-slotsFrame.Size = UDim2.new(1, -20, 0, 120)
-slotsFrame.Position = UDim2.new(0, 10, 0, 40)
+slotsFrame.Size = UDim2.new(1, -20, 0, 80)
+slotsFrame.Position = UDim2.new(0, 10, 0, 30)
 slotsFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 slotsFrame.BorderSizePixel = 0
 slotsFrame.Parent = mainFrame
@@ -88,8 +94,9 @@ slotsLabel.Position = UDim2.new(0, 0, 0, 0)
 slotsLabel.BackgroundTransparency = 1
 slotsLabel.Text = "Character Slots:"
 slotsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-slotsLabel.TextScaled = true
-slotsLabel.Font = Enum.Font.SourceSans
+slotsLabel.TextScaled = false
+slotsLabel.TextSize = FONT_SIZE
+slotsLabel.Font = FONT
 slotsLabel.TextXAlignment = Enum.TextXAlignment.Left
 slotsLabel.Parent = slotsFrame
 
@@ -104,8 +111,8 @@ slotButtonsFrame.Parent = slotsFrame
 -- Class selection frame
 local classFrame = Instance.new("Frame")
 classFrame.Name = "ClassFrame"
-classFrame.Size = UDim2.new(1, -20, 0, 100)
-classFrame.Position = UDim2.new(0, 10, 0, 170)
+classFrame.Size = UDim2.new(1, -20, 0, 80)
+classFrame.Position = UDim2.new(0, 10, 0, 120)
 classFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 classFrame.BorderSizePixel = 0
 classFrame.Parent = mainFrame
@@ -122,8 +129,9 @@ classLabel.Position = UDim2.new(0, 0, 0, 0)
 classLabel.BackgroundTransparency = 1
 classLabel.Text = "Select Class:"
 classLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-classLabel.TextScaled = true
-classLabel.Font = Enum.Font.SourceSans
+classLabel.TextScaled = false
+classLabel.TextSize = FONT_SIZE
+classLabel.Font = FONT
 classLabel.TextXAlignment = Enum.TextXAlignment.Left
 classLabel.Parent = classFrame
 
@@ -138,8 +146,8 @@ classButtonsFrame.Parent = classFrame
 -- Action buttons frame
 local actionButtonsFrame = Instance.new("Frame")
 actionButtonsFrame.Name = "ActionButtonsFrame"
-actionButtonsFrame.Size = UDim2.new(1, -20, 0, 50)
-actionButtonsFrame.Position = UDim2.new(0, 10, 1, -60)
+actionButtonsFrame.Size = UDim2.new(1, -20, 0, 40)
+actionButtonsFrame.Position = UDim2.new(0, 10, 1, -50)
 actionButtonsFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 actionButtonsFrame.BorderSizePixel = 0
 actionButtonsFrame.Parent = mainFrame
@@ -157,8 +165,9 @@ createButton.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
 createButton.BorderSizePixel = 0
 createButton.Text = "Create Character"
 createButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-createButton.TextScaled = true
-createButton.Font = Enum.Font.SourceSansBold
+createButton.TextScaled = false
+createButton.TextSize = FONT_SIZE
+createButton.Font = FONT
 createButton.Parent = actionButtonsFrame
 
 local createCorner = Instance.new("UICorner")
@@ -174,8 +183,9 @@ deleteButton.BackgroundColor3 = Color3.fromRGB(180, 70, 70)
 deleteButton.BorderSizePixel = 0
 deleteButton.Text = "Delete Character"
 deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-deleteButton.TextScaled = true
-deleteButton.Font = Enum.Font.SourceSansBold
+deleteButton.TextScaled = false
+deleteButton.TextSize = FONT_SIZE
+deleteButton.Font = FONT
 deleteButton.Parent = actionButtonsFrame
 
 local deleteCorner = Instance.new("UICorner")
@@ -190,8 +200,8 @@ local characterSlots = {}
 
 -- Animation functions
 local function animateUI(open)
-	local targetSize = open and UDim2.new(0, 400, 0, 300) or UDim2.new(0, 0, 0, 0)
-	local targetPosition = open and UDim2.new(1, -420, 1, -320) or UDim2.new(1, -20, 1, -70)
+	local targetSize = open and UDim2.new(0, 350, 0, 250) or UDim2.new(0, 0, 0, 0)
+	local targetPosition = open and UDim2.new(1, -370, 1, -270) or UDim2.new(1, -20, 1, -70)
 	
 	local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 	local tween = TweenService:Create(mainFrame, tweenInfo, {
@@ -223,8 +233,9 @@ local function createSlotButtons()
 		button.BorderSizePixel = 0
 		button.Text = isEmpty and "Empty Slot " .. i or (slot.className .. " (Slot " .. i .. ")")
 		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		button.TextScaled = true
-		button.Font = Enum.Font.SourceSans
+		button.TextScaled = false
+		button.TextSize = FONT_SIZE
+		button.Font = FONT
 		button.Parent = slotButtonsFrame
 		
 		local buttonCorner = Instance.new("UICorner")
@@ -259,8 +270,9 @@ local function createClassButtons()
 		button.BorderSizePixel = 0
 		button.Text = className
 		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		button.TextScaled = true
-		button.Font = Enum.Font.SourceSans
+		button.TextScaled = false
+		button.TextSize = FONT_SIZE
+		button.Font = FONT
 		button.Parent = classButtonsFrame
 		
 		local buttonCorner = Instance.new("UICorner")

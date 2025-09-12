@@ -7,6 +7,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CharacterData = require(ReplicatedStorage.Shared.character_data)
 
+-- Font settings
+local FONT_SIZE = 15
+local FONT = Enum.Font.SourceSans
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -23,8 +27,8 @@ screenGui.Parent = playerGui
 -- Main container (initially hidden)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 400, 0, 500)
-mainFrame.Position = UDim2.new(1, -420, 0, 20)
+mainFrame.Size = UDim2.new(0, 350, 0, 400)
+mainFrame.Position = UDim2.new(1, -370, 0, 20)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Visible = false
@@ -44,8 +48,9 @@ toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 toggleButton.BorderSizePixel = 0
 toggleButton.Text = "DATA"
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.TextScaled = true
-toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextScaled = false
+toggleButton.TextSize = FONT_SIZE
+toggleButton.Font = FONT
 toggleButton.Parent = screenGui
 
 local toggleCorner = Instance.new("UICorner")
@@ -60,8 +65,9 @@ titleLabel.Position = UDim2.new(0, 0, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Character Data Viewer"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.SourceSans
+titleLabel.TextScaled = false
+titleLabel.TextSize = FONT_SIZE
+titleLabel.Font = FONT
 titleLabel.Parent = mainFrame
 
 -- Character slots frame
@@ -85,8 +91,9 @@ slotsLabel.Position = UDim2.new(0, 0, 0, 0)
 slotsLabel.BackgroundTransparency = 1
 slotsLabel.Text = "Select Character:"
 slotsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-slotsLabel.TextScaled = true
-slotsLabel.Font = Enum.Font.SourceSans
+slotsLabel.TextScaled = false
+slotsLabel.TextSize = FONT_SIZE
+slotsLabel.Font = FONT
 slotsLabel.TextXAlignment = Enum.TextXAlignment.Left
 slotsLabel.Parent = slotsFrame
 
@@ -119,8 +126,9 @@ dataLabel.Position = UDim2.new(0, 0, 0, 0)
 dataLabel.BackgroundTransparency = 1
 dataLabel.Text = "Character Data:"
 dataLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-dataLabel.TextScaled = true
-dataLabel.Font = Enum.Font.SourceSans
+dataLabel.TextScaled = false
+dataLabel.TextSize = FONT_SIZE
+dataLabel.Font = FONT
 dataLabel.TextXAlignment = Enum.TextXAlignment.Left
 dataLabel.Parent = dataFrame
 
@@ -133,7 +141,7 @@ dataText.BackgroundTransparency = 1
 dataText.Text = "No character selected"
 dataText.TextColor3 = Color3.fromRGB(200, 200, 200)
 dataText.TextScaled = true
-dataText.Font = Enum.Font.SourceSans
+dataText.Font = FONT
 dataText.TextXAlignment = Enum.TextXAlignment.Left
 dataText.TextYAlignment = Enum.TextYAlignment.Top
 dataText.TextWrapped = true
@@ -143,57 +151,6 @@ dataText.Parent = dataFrame
 local isUIOpen = false
 local currentSlot = 1
 local characterSlots = {}
-
--- Animation functions
-local function animateUI(open)
-	local targetSize = open and UDim2.new(0, 400, 0, 500) or UDim2.new(0, 0, 0, 0)
-	local targetPosition = open and UDim2.new(1, -420, 0, 20) or UDim2.new(1, -20, 0, 20)
-	
-	local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	local tween = TweenService:Create(mainFrame, tweenInfo, {
-		Size = targetSize,
-		Position = targetPosition
-	})
-	
-	tween:Play()
-end
-
--- Create slot buttons
-local function createSlotButtons()
-	-- Clear existing buttons
-	for _, child in pairs(slotButtonsFrame:GetChildren()) do
-		if child:IsA("GuiObject") then
-			child:Destroy()
-		end
-	end
-	
-	for i = 1, 3 do
-		local slot = characterSlots[i]
-		local isEmpty = CharacterData.isSlotEmpty(slot)
-		
-		local button = Instance.new("TextButton")
-		button.Name = "Slot" .. i .. "Button"
-		button.Size = UDim2.new(1/3, -2, 1, -5)
-		button.Position = UDim2.new((i-1) * (1/3), 0, 0, 0)
-		button.BackgroundColor3 = currentSlot == i and Color3.fromRGB(70, 130, 180) or Color3.fromRGB(60, 60, 60)
-		button.BorderSizePixel = 0
-		button.Text = isEmpty and "Empty" or slot.className
-		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		button.TextScaled = true
-		button.Font = Enum.Font.SourceSans
-		button.Parent = slotButtonsFrame
-		
-		local buttonCorner = Instance.new("UICorner")
-		buttonCorner.CornerRadius = UDim.new(0, 4)
-		buttonCorner.Parent = button
-		
-		button.MouseButton1Click:Connect(function()
-			currentSlot = i
-			createSlotButtons()
-			updateCharacterDisplay()
-		end)
-	end
-end
 
 -- Update character display
 local function updateCharacterDisplay()
@@ -235,6 +192,58 @@ Status Ailments:
 		end
 		
 		dataText.Text = displayText
+	end
+end
+
+-- Animation functions
+local function animateUI(open)
+	local targetSize = open and UDim2.new(0, 350, 0, 400) or UDim2.new(0, 0, 0, 0)
+	local targetPosition = open and UDim2.new(1, -370, 0, 20) or UDim2.new(1, -20, 0, 20)
+	
+	local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(mainFrame, tweenInfo, {
+		Size = targetSize,
+		Position = targetPosition
+	})
+	
+	tween:Play()
+end
+
+-- Create slot buttons
+local function createSlotButtons()
+	-- Clear existing buttons
+	for _, child in pairs(slotButtonsFrame:GetChildren()) do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	
+	for i = 1, 3 do
+		local slot = characterSlots[i]
+		local isEmpty = CharacterData.isSlotEmpty(slot)
+		
+		local button = Instance.new("TextButton")
+		button.Name = "Slot" .. i .. "Button"
+		button.Size = UDim2.new(1/3, -2, 1, -5)
+		button.Position = UDim2.new((i-1) * (1/3), 0, 0, 0)
+		button.BackgroundColor3 = currentSlot == i and Color3.fromRGB(70, 130, 180) or Color3.fromRGB(60, 60, 60)
+		button.BorderSizePixel = 0
+		button.Text = isEmpty and "Empty" or slot.className
+		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.TextScaled = false
+		button.TextSize = FONT_SIZE
+		button.Font = FONT
+		button.Parent = slotButtonsFrame
+		
+		local buttonCorner = Instance.new("UICorner")
+		buttonCorner.CornerRadius = UDim.new(0, 4)
+		buttonCorner.Parent = button
+		
+		button.MouseButton1Click:Connect(function()
+			currentSlot = i
+			createSlotButtons()
+			updateCharacterDisplay()
+		end)
 	end
 end
 
