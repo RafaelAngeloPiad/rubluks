@@ -52,7 +52,7 @@
     "Players": {
       "$className": "Players",
       "$properties": {
-        "MaxPlayers": 20
+        "MaxPlayers": 60
       }
     },
 
