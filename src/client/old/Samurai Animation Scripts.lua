@@ -1,302 +1,302 @@
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local player = Players.LocalPlayer
-local tool = script.Parent
+-- local Players = game:GetService("Players")
+-- local UserInputService = game:GetService("UserInputService")
+-- local player = Players.LocalPlayer
+-- local tool = script.Parent
 
--- Replace these asset IDs with your actual animation asset IDs
-local idleAnimId = "rbxassetid://132322083369838"
-local runAnimId = "rbxassetid://80487023516839"
-local jumpAnimId = "rbxassetid://121459102540074"
--- Use jumpAnimId for falling as well
-local fallAnimId = jumpAnimId
-local climbAnimId = "rbxassetid://91967450916175" -- Added climbing animation asset ID
+-- -- Replace these asset IDs with your actual animation asset IDs
+-- local idleAnimId = "rbxassetid://132322083369838"
+-- local runAnimId = "rbxassetid://80487023516839"
+-- local jumpAnimId = "rbxassetid://121459102540074"
+-- -- Use jumpAnimId for falling as well
+-- local fallAnimId = jumpAnimId
+-- local climbAnimId = "rbxassetid://91967450916175" -- Added climbing animation asset ID
 
-local character
-local humanoid
-local animator
+-- local character
+-- local humanoid
+-- local animator
 
-local idleTrack, runTrack, jumpTrack, climbTrack -- Added climbTrack
-local currentAnimState = nil
-local stateConn
-local inputBeganConn
-local inputEndedConn
-local equippedConn
-local unequippedConn
+-- local idleTrack, runTrack, jumpTrack, climbTrack -- Added climbTrack
+-- local currentAnimState = nil
+-- local stateConn
+-- local inputBeganConn
+-- local inputEndedConn
+-- local equippedConn
+-- local unequippedConn
 
-local toolEquipped = false
+-- local toolEquipped = false
 
--- Track WASD key states
-local movementKeys = {
-	[Enum.KeyCode.W] = false,
-	[Enum.KeyCode.A] = false,
-	[Enum.KeyCode.S] = false,
-	[Enum.KeyCode.D] = false,
-}
+-- -- Track WASD key states
+-- local movementKeys = {
+-- 	[Enum.KeyCode.W] = false,
+-- 	[Enum.KeyCode.A] = false,
+-- 	[Enum.KeyCode.S] = false,
+-- 	[Enum.KeyCode.D] = false,
+-- }
 
--- Utility: Set CanCollide for all Parts in Tool
-local function setToolCollision(enabled)
-	for _, obj in tool:GetDescendants() do
-		if obj:IsA("BasePart") then
-			obj.CanCollide = enabled
-		end
-	end
-end
+-- -- Utility: Set CanCollide for all Parts in Tool
+-- local function setToolCollision(enabled)
+-- 	for _, obj in tool:GetDescendants() do
+-- 		if obj:IsA("BasePart") then
+-- 			obj.CanCollide = enabled
+-- 		end
+-- 	end
+-- end
 
-local function isMoving()
-	for key, pressed in movementKeys do
-		if pressed then
-			return true
-		end
-	end
-	return false
-end
+-- local function isMoving()
+-- 	for key, pressed in movementKeys do
+-- 		if pressed then
+-- 			return true
+-- 		end
+-- 	end
+-- 	return false
+-- end
 
-local function stopAllTracks()
-	if idleTrack then idleTrack:Stop() end
-	if runTrack then runTrack:Stop() end
-	if jumpTrack then jumpTrack:Stop() end
-	if climbTrack then climbTrack:Stop() end -- Stop climbing animation
-end
+-- local function stopAllTracks()
+-- 	if idleTrack then idleTrack:Stop() end
+-- 	if runTrack then runTrack:Stop() end
+-- 	if jumpTrack then jumpTrack:Stop() end
+-- 	if climbTrack then climbTrack:Stop() end -- Stop climbing animation
+-- end
 
-local function playTrack(track, stateName)
-	if currentAnimState ~= stateName then
-		stopAllTracks()
-		currentAnimState = stateName
-		if track then
-			track:Play()
-		end
-	end
-end
+-- local function playTrack(track, stateName)
+-- 	if currentAnimState ~= stateName then
+-- 		stopAllTracks()
+-- 		currentAnimState = stateName
+-- 		if track then
+-- 			track:Play()
+-- 		end
+-- 	end
+-- end
 
-local function setupTracks()
-	-- Properly create Animation instances and set AnimationId before loading
-	local idleAnim = Instance.new("Animation")
-	idleAnim.AnimationId = idleAnimId
-	idleTrack = animator:LoadAnimation(idleAnim)
+-- local function setupTracks()
+-- 	-- Properly create Animation instances and set AnimationId before loading
+-- 	local idleAnim = Instance.new("Animation")
+-- 	idleAnim.AnimationId = idleAnimId
+-- 	idleTrack = animator:LoadAnimation(idleAnim)
 
-	local runAnim = Instance.new("Animation")
-	runAnim.AnimationId = runAnimId
-	runTrack = animator:LoadAnimation(runAnim)
+-- 	local runAnim = Instance.new("Animation")
+-- 	runAnim.AnimationId = runAnimId
+-- 	runTrack = animator:LoadAnimation(runAnim)
 
-	local jumpAnim = Instance.new("Animation")
-	jumpAnim.AnimationId = jumpAnimId
-	jumpTrack = animator:LoadAnimation(jumpAnim)
+-- 	local jumpAnim = Instance.new("Animation")
+-- 	jumpAnim.AnimationId = jumpAnimId
+-- 	jumpTrack = animator:LoadAnimation(jumpAnim)
 
-	local climbAnim = Instance.new("Animation")
-	climbAnim.AnimationId = climbAnimId
-	climbTrack = animator:LoadAnimation(climbAnim)
-end
+-- 	local climbAnim = Instance.new("Animation")
+-- 	climbAnim.AnimationId = climbAnimId
+-- 	climbTrack = animator:LoadAnimation(climbAnim)
+-- end
 
--- Helper to update climbing animation speed based on WASD input
-local function updateClimbAnimSpeed()
-	if climbTrack and humanoid and humanoid:GetState() == Enum.HumanoidStateType.Climbing then
-		if isMoving() then
-			climbTrack:AdjustSpeed(1)
-		else
-			climbTrack:AdjustSpeed(0)
-		end
-	end
-end
+-- -- Helper to update climbing animation speed based on WASD input
+-- local function updateClimbAnimSpeed()
+-- 	if climbTrack and humanoid and humanoid:GetState() == Enum.HumanoidStateType.Climbing then
+-- 		if isMoving() then
+-- 			climbTrack:AdjustSpeed(1)
+-- 		else
+-- 			climbTrack:AdjustSpeed(0)
+-- 		end
+-- 	end
+-- end
 
-local function onStateChanged(old, new)
-	if not toolEquipped then return end
-	if new == Enum.HumanoidStateType.Climbing then
-		setToolCollision(false) -- Disable collision instantly when climbing starts
-		stopAllTracks()
-		currentAnimState = "Climbing"
-		if climbTrack then
-			climbTrack:Play()
-			updateClimbAnimSpeed()
-		end
-	elseif old == Enum.HumanoidStateType.Climbing and new ~= Enum.HumanoidStateType.Climbing then
-		setToolCollision(true) -- Enable collision instantly when climbing ends
-		if climbTrack then
-			climbTrack:AdjustSpeed(1)
-		end
-		-- Play appropriate animation for new state
-		if new == Enum.HumanoidStateType.Jumping or new == Enum.HumanoidStateType.Freefall then
-			stopAllTracks()
-			currentAnimState = "Jumping"
-			if jumpTrack then
-				jumpTrack:Play()
-			end
-		elseif new == Enum.HumanoidStateType.Landed then
-			if isMoving() then
-				playTrack(runTrack, "Running")
-			else
-				playTrack(idleTrack, "Idle")
-				if runTrack and runTrack.IsPlaying then
-					runTrack:Stop()
-				end
-			end
-		elseif new == Enum.HumanoidStateType.Running then
-			if isMoving() then
-				playTrack(runTrack, "Running")
-			else
-				playTrack(idleTrack, "Idle")
-			end
-		else
-			playTrack(idleTrack, "Idle")
-		end
-	else
-		-- Not climbing, normal logic
-		if new == Enum.HumanoidStateType.Jumping or new == Enum.HumanoidStateType.Freefall then
-			stopAllTracks()
-			currentAnimState = "Jumping"
-			if jumpTrack then
-				jumpTrack:Play()
-			end
-		elseif new == Enum.HumanoidStateType.Landed then
-			if isMoving() then
-				playTrack(runTrack, "Running")
-			else
-				playTrack(idleTrack, "Idle")
-				if runTrack and runTrack.IsPlaying then
-					runTrack:Stop()
-				end
-			end
-		elseif new == Enum.HumanoidStateType.Running then
-			if isMoving() then
-				playTrack(runTrack, "Running")
-			else
-				playTrack(idleTrack, "Idle")
-			end
-		else
-			playTrack(idleTrack, "Idle")
-		end
-	end
-end
+-- local function onStateChanged(old, new)
+-- 	if not toolEquipped then return end
+-- 	if new == Enum.HumanoidStateType.Climbing then
+-- 		setToolCollision(false) -- Disable collision instantly when climbing starts
+-- 		stopAllTracks()
+-- 		currentAnimState = "Climbing"
+-- 		if climbTrack then
+-- 			climbTrack:Play()
+-- 			updateClimbAnimSpeed()
+-- 		end
+-- 	elseif old == Enum.HumanoidStateType.Climbing and new ~= Enum.HumanoidStateType.Climbing then
+-- 		setToolCollision(true) -- Enable collision instantly when climbing ends
+-- 		if climbTrack then
+-- 			climbTrack:AdjustSpeed(1)
+-- 		end
+-- 		-- Play appropriate animation for new state
+-- 		if new == Enum.HumanoidStateType.Jumping or new == Enum.HumanoidStateType.Freefall then
+-- 			stopAllTracks()
+-- 			currentAnimState = "Jumping"
+-- 			if jumpTrack then
+-- 				jumpTrack:Play()
+-- 			end
+-- 		elseif new == Enum.HumanoidStateType.Landed then
+-- 			if isMoving() then
+-- 				playTrack(runTrack, "Running")
+-- 			else
+-- 				playTrack(idleTrack, "Idle")
+-- 				if runTrack and runTrack.IsPlaying then
+-- 					runTrack:Stop()
+-- 				end
+-- 			end
+-- 		elseif new == Enum.HumanoidStateType.Running then
+-- 			if isMoving() then
+-- 				playTrack(runTrack, "Running")
+-- 			else
+-- 				playTrack(idleTrack, "Idle")
+-- 			end
+-- 		else
+-- 			playTrack(idleTrack, "Idle")
+-- 		end
+-- 	else
+-- 		-- Not climbing, normal logic
+-- 		if new == Enum.HumanoidStateType.Jumping or new == Enum.HumanoidStateType.Freefall then
+-- 			stopAllTracks()
+-- 			currentAnimState = "Jumping"
+-- 			if jumpTrack then
+-- 				jumpTrack:Play()
+-- 			end
+-- 		elseif new == Enum.HumanoidStateType.Landed then
+-- 			if isMoving() then
+-- 				playTrack(runTrack, "Running")
+-- 			else
+-- 				playTrack(idleTrack, "Idle")
+-- 				if runTrack and runTrack.IsPlaying then
+-- 					runTrack:Stop()
+-- 				end
+-- 			end
+-- 		elseif new == Enum.HumanoidStateType.Running then
+-- 			if isMoving() then
+-- 				playTrack(runTrack, "Running")
+-- 			else
+-- 				playTrack(idleTrack, "Idle")
+-- 			end
+-- 		else
+-- 			playTrack(idleTrack, "Idle")
+-- 		end
+-- 	end
+-- end
 
-local function onMove()
-	if not toolEquipped then return end
-	local state = humanoid and humanoid:GetState()
-	if state == Enum.HumanoidStateType.Climbing then
-		setToolCollision(false)
-		stopAllTracks()
-		currentAnimState = "Climbing"
-		if climbTrack then
-			climbTrack:Play()
-			updateClimbAnimSpeed()
-		end
-		return
-	elseif state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall then
-		return
-	elseif state == Enum.HumanoidStateType.Landed then
-		setToolCollision(true)
-		if isMoving() then
-			playTrack(runTrack, "Running")
-		else
-			playTrack(idleTrack, "Idle")
-			if runTrack and runTrack.IsPlaying then
-				runTrack:Stop()
-			end
-		end
-	elseif state == Enum.HumanoidStateType.Running then
-		setToolCollision(true)
-		if isMoving() then
-			playTrack(runTrack, "Running")
-		else
-			playTrack(idleTrack, "Idle")
-		end
-	else
-		setToolCollision(true)
-	end
-end
+-- local function onMove()
+-- 	if not toolEquipped then return end
+-- 	local state = humanoid and humanoid:GetState()
+-- 	if state == Enum.HumanoidStateType.Climbing then
+-- 		setToolCollision(false)
+-- 		stopAllTracks()
+-- 		currentAnimState = "Climbing"
+-- 		if climbTrack then
+-- 			climbTrack:Play()
+-- 			updateClimbAnimSpeed()
+-- 		end
+-- 		return
+-- 	elseif state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall then
+-- 		return
+-- 	elseif state == Enum.HumanoidStateType.Landed then
+-- 		setToolCollision(true)
+-- 		if isMoving() then
+-- 			playTrack(runTrack, "Running")
+-- 		else
+-- 			playTrack(idleTrack, "Idle")
+-- 			if runTrack and runTrack.IsPlaying then
+-- 				runTrack:Stop()
+-- 			end
+-- 		end
+-- 	elseif state == Enum.HumanoidStateType.Running then
+-- 		setToolCollision(true)
+-- 		if isMoving() then
+-- 			playTrack(runTrack, "Running")
+-- 		else
+-- 			playTrack(idleTrack, "Idle")
+-- 		end
+-- 	else
+-- 		setToolCollision(true)
+-- 	end
+-- end
 
-local function onInputBegan(input, gameProcessed)
-	if movementKeys[input.KeyCode] ~= nil then
-		movementKeys[input.KeyCode] = true
-		onMove()
-		updateClimbAnimSpeed()
-	end
-end
+-- local function onInputBegan(input, gameProcessed)
+-- 	if movementKeys[input.KeyCode] ~= nil then
+-- 		movementKeys[input.KeyCode] = true
+-- 		onMove()
+-- 		updateClimbAnimSpeed()
+-- 	end
+-- end
 
-local function onInputEnded(input, gameProcessed)
-	if movementKeys[input.KeyCode] ~= nil then
-		movementKeys[input.KeyCode] = false
-		onMove()
-		updateClimbAnimSpeed()
-	end
-end
+-- local function onInputEnded(input, gameProcessed)
+-- 	if movementKeys[input.KeyCode] ~= nil then
+-- 		movementKeys[input.KeyCode] = false
+-- 		onMove()
+-- 		updateClimbAnimSpeed()
+-- 	end
+-- end
 
-local function disconnectAll()
-	if stateConn then stateConn:Disconnect() stateConn = nil end
-	if inputBeganConn then inputBeganConn:Disconnect() inputBeganConn = nil end
-	if inputEndedConn then inputEndedConn:Disconnect() inputEndedConn = nil end
-	stopAllTracks()
-	currentAnimState = nil
-	setToolCollision(true) -- Restore collision when unequipped/disconnected
-end
+-- local function disconnectAll()
+-- 	if stateConn then stateConn:Disconnect() stateConn = nil end
+-- 	if inputBeganConn then inputBeganConn:Disconnect() inputBeganConn = nil end
+-- 	if inputEndedConn then inputEndedConn:Disconnect() inputEndedConn = nil end
+-- 	stopAllTracks()
+-- 	currentAnimState = nil
+-- 	setToolCollision(true) -- Restore collision when unequipped/disconnected
+-- end
 
-local function playInstantAnimation()
-	if not toolEquipped or not humanoid then return end
-	local state = humanoid:GetState()
-	if state == Enum.HumanoidStateType.Climbing then
-		setToolCollision(false)
-		stopAllTracks()
-		currentAnimState = "Climbing"
-		if climbTrack then
-			climbTrack:Play()
-			updateClimbAnimSpeed()
-		end
-	elseif state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall then
-		setToolCollision(true)
-		stopAllTracks()
-		currentAnimState = "Jumping"
-		if jumpTrack then
-			jumpTrack:Play()
-		end
-	elseif isMoving() then
-		setToolCollision(true)
-		playTrack(runTrack, "Running")
-	else
-		setToolCollision(true)
-		playTrack(idleTrack, "Idle")
-	end
-end
+-- local function playInstantAnimation()
+-- 	if not toolEquipped or not humanoid then return end
+-- 	local state = humanoid:GetState()
+-- 	if state == Enum.HumanoidStateType.Climbing then
+-- 		setToolCollision(false)
+-- 		stopAllTracks()
+-- 		currentAnimState = "Climbing"
+-- 		if climbTrack then
+-- 			climbTrack:Play()
+-- 			updateClimbAnimSpeed()
+-- 		end
+-- 	elseif state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall then
+-- 		setToolCollision(true)
+-- 		stopAllTracks()
+-- 		currentAnimState = "Jumping"
+-- 		if jumpTrack then
+-- 			jumpTrack:Play()
+-- 		end
+-- 	elseif isMoving() then
+-- 		setToolCollision(true)
+-- 		playTrack(runTrack, "Running")
+-- 	else
+-- 		setToolCollision(true)
+-- 		playTrack(idleTrack, "Idle")
+-- 	end
+-- end
 
-local function onCharacterAdded(char)
-	character = char
-	humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-	animator = humanoid:FindFirstChildOfClass("Animator")
-	if not animator then
-		animator = Instance.new("Animator")
-		animator.Parent = humanoid
-	end
+-- local function onCharacterAdded(char)
+-- 	character = char
+-- 	humanoid = character:FindFirstChildOfClass("Humanoid")
+-- 	if not humanoid then return end
+-- 	animator = humanoid:FindFirstChildOfClass("Animator")
+-- 	if not animator then
+-- 		animator = Instance.new("Animator")
+-- 		animator.Parent = humanoid
+-- 	end
 
-	setupTracks()
+-- 	setupTracks()
 
-	disconnectAll()
+-- 	disconnectAll()
 
-	if toolEquipped then
-		stateConn = humanoid.StateChanged:Connect(onStateChanged)
-		inputBeganConn = UserInputService.InputBegan:Connect(onInputBegan)
-		inputEndedConn = UserInputService.InputEnded:Connect(onInputEnded)
-		playInstantAnimation() -- Play instantly on equip
-	end
-end
+-- 	if toolEquipped then
+-- 		stateConn = humanoid.StateChanged:Connect(onStateChanged)
+-- 		inputBeganConn = UserInputService.InputBegan:Connect(onInputBegan)
+-- 		inputEndedConn = UserInputService.InputEnded:Connect(onInputEnded)
+-- 		playInstantAnimation() -- Play instantly on equip
+-- 	end
+-- end
 
-local function onEquipped()
-	toolEquipped = true
-	if player.Character then
-		onCharacterAdded(player.Character)
-	end
-end
+-- local function onEquipped()
+-- 	toolEquipped = true
+-- 	if player.Character then
+-- 		onCharacterAdded(player.Character)
+-- 	end
+-- end
 
-local function onUnequipped()
-	toolEquipped = false
-	disconnectAll()
-end
+-- local function onUnequipped()
+-- 	toolEquipped = false
+-- 	disconnectAll()
+-- end
 
--- Listen for tool equipped/unequipped
-if equippedConn then equippedConn:Disconnect() end
-if unequippedConn then unequippedConn:Disconnect() end
-equippedConn = tool.Equipped:Connect(onEquipped)
-unequippedConn = tool.Unequipped:Connect(onUnequipped)
+-- -- Listen for tool equipped/unequipped
+-- if equippedConn then equippedConn:Disconnect() end
+-- if unequippedConn then unequippedConn:Disconnect() end
+-- equippedConn = tool.Equipped:Connect(onEquipped)
+-- unequippedConn = tool.Unequipped:Connect(onUnequipped)
 
--- Listen for character added
-player.CharacterAdded:Connect(onCharacterAdded)
-if player.Character then
-	onCharacterAdded(player.Character)
-end
+-- -- Listen for character added
+-- player.CharacterAdded:Connect(onCharacterAdded)
+-- if player.Character then
+-- 	onCharacterAdded(player.Character)
+-- end
