@@ -6,6 +6,9 @@ if not success or not MainDataStore then
 	warn("MainDataStore module not found or failed to load: " .. tostring(err))
 end
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RequestXPChange = ReplicatedStorage:WaitForChild("RequestXPChange")
+
 game.Players.PlayerAdded:Connect(function(plr)
 	local teleportData = plr:GetJoinData().TeleportData
 	print("PlayerAdded: TeleportData =", teleportData)
@@ -62,6 +65,38 @@ game.Players.PlayerAdded:Connect(function(plr)
 			level.Value = level.Value + 1
 		end
 	end)
+
+	-- Listen for XP change requests from UIDevTools
+	RequestXPChange.OnServerEvent:Connect(function(requestingPlayer, amount)
+		if requestingPlayer ~= plr then return end -- Only allow self
+		if amount == "reset" then
+			currxp.Value = 0
+			level.Value = 1
+			maxxp.Value = 5
+			-- Save immediately
+			if MainDataStore then
+				local dataToSave = {
+					Level = level.Value,
+					CurrentXP = currxp.Value,
+					MaximumXP = maxxp.Value,
+					Class = class.Value
+				}
+				MainDataStore.SavePlayerData(plr.UserId, dataToSave)
+			end
+		elseif typeof(amount) == "number" then
+			currxp.Value = currxp.Value + amount
+			-- Save immediately
+			if MainDataStore then
+				local dataToSave = {
+					Level = level.Value,
+					CurrentXP = currxp.Value,
+					MaximumXP = maxxp.Value,
+					Class = class.Value
+				}
+				MainDataStore.SavePlayerData(plr.UserId, dataToSave)
+			end
+		end
+	end)
 end)
 
 game.Players.PlayerRemoving:Connect(function(plr)
@@ -81,3 +116,4 @@ game.Players.PlayerRemoving:Connect(function(plr)
 		warn("MainDataStore not available, cannot save player data for " .. plr.Name)
 	end
 end)
+

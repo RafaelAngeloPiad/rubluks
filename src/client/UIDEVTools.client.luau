@@ -1,0 +1,127 @@
+--[[
+    UIDevTools
+    Clean, expandable developer tools GUI for EXP management.
+    Appears in the bottom right corner. Click to expand/collapse.
+    Buttons: Get 1 EXP, Get 5 EXP, Get 10 EXP, Reset EXP.
+    Easily extendable for future dev tools.
+    Now uses RemoteEvent to request XP changes via EXPManager/MainDataStore.
+--]]
+
+-- MAKE SURE TO CHREATE A REMOTE EVENT IN REPLICATEDSTORAGE CALLED "RequestXPChange"
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+-- RemoteEvent for requesting XP changes
+local RequestXPChange = ReplicatedStorage:WaitForChild("RequestXPChange")
+
+-- Create ScreenGui in PlayerGui (not StarterGui!)
+local function createGui()
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "UIDevTools"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	return screenGui
+end
+
+local screenGui = createGui()
+
+-- Main frame (bottom right, static)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.AnchorPoint = Vector2.new(1, 1)
+mainFrame.Position = UDim2.new(1, -20, 1, -20)
+mainFrame.Size = UDim2.new(0, 180, 0, 40)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Parent = screenGui
+
+-- Expand/collapse button
+local expandButton = Instance.new("TextButton")
+expandButton.Name = "ExpandButton"
+expandButton.Size = UDim2.new(1, 0, 1, 0)
+expandButton.BackgroundTransparency = 1
+expandButton.Text = "DEV TOOLS ▾"
+expandButton.TextColor3 = Color3.fromRGB(200, 255, 200)
+expandButton.Font = Enum.Font.SourceSansBold
+expandButton.TextSize = 18
+expandButton.Parent = mainFrame
+
+-- Expanded panel (bottom right, static)
+local panelFrame = Instance.new("Frame")
+panelFrame.Name = "PanelFrame"
+panelFrame.AnchorPoint = Vector2.new(1, 1)
+panelFrame.Position = UDim2.new(1, 0, 1, -60)
+panelFrame.Size = UDim2.new(0, 180, 0, 180)
+panelFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+panelFrame.BorderSizePixel = 0
+panelFrame.Visible = false
+panelFrame.Active = true
+panelFrame.Parent = mainFrame
+
+-- Layout for buttons
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.FillDirection = Enum.FillDirection.Vertical
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+layout.Parent = panelFrame
+
+-- Button factory
+local function createButton(text)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -20, 0, 32)
+	btn.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 16
+	btn.Text = text
+	btn.BorderSizePixel = 0
+	btn.AutoButtonColor = true
+	btn.Parent = panelFrame
+	return btn
+end
+
+-- EXP Buttons
+local btn1 = createButton("Get 1 EXP")
+local btn5 = createButton("Get 5 EXP")
+local btn10 = createButton("Get 10 EXP")
+local btnReset = createButton("Reset EXP")
+
+-- Button callbacks (use RemoteEvent)
+btn1.MouseButton1Click:Connect(function()
+	RequestXPChange:FireServer(1)
+end)
+
+btn5.MouseButton1Click:Connect(function()
+	RequestXPChange:FireServer(5)
+end)
+
+btn10.MouseButton1Click:Connect(function()
+	RequestXPChange:FireServer(10)
+end)
+
+btnReset.MouseButton1Click:Connect(function()
+	RequestXPChange:FireServer("reset")
+end)
+
+-- Expand/collapse logic
+local expanded = false
+expandButton.MouseButton1Click:Connect(function()
+	expanded = not expanded
+	panelFrame.Visible = expanded
+	expandButton.Text = expanded and "DEV TOOLS ▴" or "DEV TOOLS ▾"
+	mainFrame.Size = expanded and UDim2.new(0, 180, 0, 220) or UDim2.new(0, 180, 0, 40)
+end)
+
+--[[
+    To add more dev tools, simply add more buttons to panelFrame and connect their logic.
+    Example:
+        local btnClass = createButton("Class Manager")
+        btnClass.MouseButton1Click:Connect(function()
+            -- Open class manager UI
+        end)
+--]]
+
