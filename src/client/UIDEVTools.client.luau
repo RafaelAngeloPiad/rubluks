@@ -113,7 +113,7 @@ btnHide.BackgroundColor3 = Color3.fromRGB(120, 60, 60)
 btnHide.TextColor3 = Color3.fromRGB(255, 255, 255)
 btnHide.Font = Enum.Font.SourceSansBold
 btnHide.TextSize = 12
-btnHide.Text = "HIDE ▴"
+btnHide.Text = "HIDE"
 btnHide.BorderSizePixel = 0
 btnHide.AutoButtonColor = true
 btnHide.Parent = panelFrame
@@ -153,7 +153,7 @@ local expanded = false
 expandButton.MouseButton1Click:Connect(function()
 	expanded = not expanded
 	panelFrame.Visible = expanded
-	expandButton.Text = "DEV TOOLS ▾" -- Always show the same text since we have a separate hide button
+	expandButton.Text = "DEV TOOLS" -- Always show the same text since we have a separate hide button
 	mainFrame.Size = expanded and UDim2.new(0, 160, 0, 185) or UDim2.new(0, 160, 0, 35)
 end)
 
