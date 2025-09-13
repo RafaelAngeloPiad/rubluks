@@ -224,9 +224,9 @@ function WeaponUtils.playInstantAnimation(state, movementKeys)
         if state.jumpTrack then
             state.jumpTrack:Play()
         end
-    elseif WeaponUtils.isMoving(movementKeys) then
-        WeaponUtils.playTrack(state, state.runTrack, "Running")
     else
+        -- Always start with idle animation when equipped, regardless of movement state
+        -- The movement detection will handle switching to run animation when needed
         WeaponUtils.playTrack(state, state.idleTrack, "Idle")
     end
 end
