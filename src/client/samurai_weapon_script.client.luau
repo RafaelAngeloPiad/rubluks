@@ -10,6 +10,7 @@ local runAnimId = "rbxassetid://80487023516839"
 local jumpAnimId = "rbxassetid://121459102540074"
 local fallAnimId = jumpAnimId
 local climbAnimId = "rbxassetid://91967450916175"
+local attackAnimId = "rbxassetid://116519685012277" -- Samurai attack animation
 
 -- Track WASD key states
 local movementKeys = {
@@ -29,6 +30,7 @@ local animations = {
 	run = runAnimId,
 	jump = jumpAnimId,
 	climb = climbAnimId,
+	attack = attackAnimId,
 }
 
 -- Use utility functions for common animation logic
@@ -56,6 +58,10 @@ local function playInstantAnimation(state)
 	WeaponUtils.playInstantAnimation(state, movementKeys)
 end
 
+local function playAttack(state)
+	WeaponUtils.playAttackAnimation(state)
+end
+
 local function onCharacterAdded(state, char)
 	state.character = char
 	state.humanoid = char:FindFirstChildOfClass("Humanoid")
@@ -75,6 +81,10 @@ local function onCharacterAdded(state, char)
 		end)
 		state.inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			onInputBegan(state, input, gameProcessed)
+			-- Only trigger attack animation on left mouse click
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
+				playAttack(state)
+			end
 		end)
 		state.inputEndedConn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
 			onInputEnded(state, input, gameProcessed)

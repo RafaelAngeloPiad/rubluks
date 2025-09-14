@@ -32,9 +32,12 @@ function WeaponUtils.stopAllTracks(state)
     if state.runTrack then state.runTrack:Stop() end
     if state.jumpTrack then state.jumpTrack:Stop() end
     if state.climbTrack then state.climbTrack:Stop() end
+    if state.attackTrack then state.attackTrack:Stop() end
 end
 
 function WeaponUtils.playTrack(state, track, stateName)
+    -- If attack animation is playing, ignore other animation requests
+    if state.attackPlaying then return end
     if state.currentAnimState ~= stateName then
         WeaponUtils.stopAllTracks(state)
         state.currentAnimState = stateName
@@ -60,6 +63,16 @@ function WeaponUtils.setupTracks(state, animations)
     local climbAnim = Instance.new("Animation")
     climbAnim.AnimationId = animations.climb
     state.climbTrack = state.animator:LoadAnimation(climbAnim)
+
+    -- Setup attack animation if provided
+    if animations.attack then
+        local attackAnim = Instance.new("Animation")
+        attackAnim.AnimationId = animations.attack
+        state.attackTrack = state.animator:LoadAnimation(attackAnim)
+        state.attackTrack.Looped = false -- Ensure attack animation only plays once per click
+    else
+        state.attackTrack = nil
+    end
 end
 
 function WeaponUtils.updateClimbAnimSpeed(state, movementKeys)
@@ -73,11 +86,33 @@ function WeaponUtils.updateClimbAnimSpeed(state, movementKeys)
 end
 
 -- ========================================
+-- ATTACK ANIMATION MANAGEMENT
+-- ========================================
+
+function WeaponUtils.playAttackAnimation(state)
+    if not state.toolEquipped or not state.attackTrack then return end
+    -- If already playing attack, ignore
+    if state.attackPlaying then return end
+    WeaponUtils.stopAllTracks(state)
+    state.attackPlaying = true
+    state.currentAnimState = "Attack"
+    state.attackTrack:Play()
+    -- When attack animation finishes, reset attackPlaying and play idle
+    if state.attackConn then state.attackConn:Disconnect() end
+    state.attackConn = state.attackTrack.Stopped:Connect(function()
+        state.attackPlaying = false
+        WeaponUtils.playTrack(state, state.idleTrack, "Idle")
+    end)
+end
+
+-- ========================================
 -- STATE MANAGEMENT
 -- ========================================
 
 function WeaponUtils.onStateChanged(state, old, new, movementKeys)
     if not state.toolEquipped then return end
+    -- If attack animation is playing, ignore state changes
+    if state.attackPlaying then return end
     if new == Enum.HumanoidStateType.Climbing then
         WeaponUtils.stopAllTracks(state)
         state.currentAnimState = "Climbing"
@@ -143,6 +178,7 @@ end
 
 function WeaponUtils.onMove(state, movementKeys)
     if not state.toolEquipped then return end
+    if state.attackPlaying then return end
     local humanoid = state.humanoid
     if not humanoid then return end
     local s = humanoid:GetState()
@@ -204,12 +240,15 @@ function WeaponUtils.disconnectAll(state)
     if state.stateConn then state.stateConn:Disconnect() state.stateConn = nil end
     if state.inputBeganConn then state.inputBeganConn:Disconnect() state.inputBeganConn = nil end
     if state.inputEndedConn then state.inputEndedConn:Disconnect() state.inputEndedConn = nil end
+    if state.attackConn then state.attackConn:Disconnect() state.attackConn = nil end
     WeaponUtils.stopAllTracks(state)
     state.currentAnimState = nil
+    state.attackPlaying = false
 end
 
 function WeaponUtils.playInstantAnimation(state, movementKeys)
     if not state.toolEquipped or not state.humanoid then return end
+    if state.attackPlaying then return end
     local s = state.humanoid:GetState()
     if s == Enum.HumanoidStateType.Climbing then
         WeaponUtils.stopAllTracks(state)
@@ -277,3 +316,4 @@ function WeaponUtils.attachPartToLimb(part, limbName, motorName, character, c0, 
 end
 
 return WeaponUtils
+
