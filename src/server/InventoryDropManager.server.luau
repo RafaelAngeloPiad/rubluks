@@ -91,28 +91,30 @@ local function createDroppedItem(tool, dropPosition, player)
                 if player then
                     local backpack = player:FindFirstChild("Backpack")
                     if backpack then
-                        -- Get fresh copy from Workspace (same as InventoryManager)
-                        local workspaceFolder = game:GetService("Workspace")
-                        local originalAsset = workspaceFolder:FindFirstChild(droppedTool.Name)
-                        if originalAsset and originalAsset:IsA("Tool") then
-                            -- Clone fresh tool to backpack
-                            local freshTool = originalAsset:Clone()
-                            freshTool.Parent = backpack
-                            print("[InventoryDropManager] Player", player.Name, "picked up", droppedTool.Name)
-                            
-                            -- Remove the dropped tool from world
-                            droppedTool:Destroy()
-                            
-                            -- Clean up tracking
-                            for i, item in ipairs(droppedItems) do
-                                if item.tool == droppedTool then
-                                    table.remove(droppedItems, i)
-                                    break
+                        -- Get fresh copy from ReplicatedStorage.assets (same as InventoryManager)
+                        local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+                        if assetsFolder then
+                            local originalAsset = assetsFolder:FindFirstChild(droppedTool.Name)
+                            if originalAsset and originalAsset:IsA("Tool") then
+                                -- Clone fresh tool to backpack
+                                local freshTool = originalAsset:Clone()
+                                freshTool.Parent = backpack
+                                print("[InventoryDropManager] Player", player.Name, "picked up", droppedTool.Name)
+                                
+                                -- Remove the dropped tool from world
+                                droppedTool:Destroy()
+                                
+                                -- Clean up tracking
+                                for i, item in ipairs(droppedItems) do
+                                    if item.tool == droppedTool then
+                                        table.remove(droppedItems, i)
+                                        break
+                                    end
                                 end
+                                
+                                connection:Disconnect()
+                                break
                             end
-                            
-                            connection:Disconnect()
-                            break
                         end
                     end
                 end
@@ -176,11 +178,15 @@ local function dropItem(player, toolName)
         return false, "Tool not found in backpack or equipped"
     end
     
-    -- Get the original asset from Workspace (same as InventoryManager)
-    local workspaceFolder = game:GetService("Workspace")
-    local originalAsset = workspaceFolder:FindFirstChild(toolName)
+    -- Get the original asset from ReplicatedStorage.assets (same as InventoryManager)
+    local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+    if not assetsFolder then
+        return false, "Assets folder not found in ReplicatedStorage"
+    end
+    
+    local originalAsset = assetsFolder:FindFirstChild(toolName)
     if not originalAsset or not originalAsset:IsA("Tool") then
-        return false, "Original tool asset not found in Workspace"
+        return false, "Original tool asset not found in ReplicatedStorage.assets"
     end
     
     -- Get drop position

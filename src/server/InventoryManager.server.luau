@@ -83,30 +83,34 @@ local function LoadPlayerInventory(player)
     local inventory = inventoryData.inventory or {}
     local equipped = inventoryData.equipped or {}
     print("[InventoryManager] Loading inventory for", player.Name, "Inventory:", inventory, "Equipped:", equipped)
-    local workspaceFolder = game:GetService("Workspace")
+    local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+    if not assetsFolder then
+        warn("[InventoryManager] Assets folder not found in ReplicatedStorage for", player.Name)
+        return
+    end
 
     -- Load Backpack tools (allow duplicates)
     for i, toolName in inventory do
-        local asset = workspaceFolder:FindFirstChild(toolName)
+        local asset = assetsFolder:FindFirstChild(toolName)
         if asset and asset:IsA("Tool") then
             asset:Clone().Parent = backpack
-            print("[InventoryManager] Cloned tool to Backpack from Workspace:", toolName)
+            print("[InventoryManager] Cloned tool to Backpack from ReplicatedStorage.assets:", toolName)
         else
-            print("[InventoryManager] Tool asset not found in Workspace for Backpack:", toolName)
+            print("[InventoryManager] Tool asset not found in ReplicatedStorage.assets for Backpack:", toolName)
         end
     end
 
     -- Load Equipped tools (to Character) - prevent duplicates for equipped items
     if character and #equipped > 0 then
         for i, toolName in equipped do
-            local asset = workspaceFolder:FindFirstChild(toolName)
+            local asset = assetsFolder:FindFirstChild(toolName)
             if asset and asset:IsA("Tool") then
                 if not character:FindFirstChild(toolName) then
                     asset:Clone().Parent = character
-                    print("[InventoryManager] Cloned tool to Character from Workspace:", toolName)
+                    print("[InventoryManager] Cloned tool to Character from ReplicatedStorage.assets:", toolName)
                 end
             else
-                print("[InventoryManager] Tool asset not found in Workspace for Equipped:", toolName)
+                print("[InventoryManager] Tool asset not found in ReplicatedStorage.assets for Equipped:", toolName)
             end
         end
     end
