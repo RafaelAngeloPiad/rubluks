@@ -10,6 +10,7 @@ local runAnimId = "rbxassetid://114148291546049"
 local jumpAnimId = "rbxassetid://118577091214692"
 local fallAnimId = jumpAnimId
 local climbAnimId = "rbxassetid://112756927751345"
+local attackAnimId = "rbxassetid://116519685012277" -- Archer attack animation (placeholder)
 
 -- Track WASD key states
 local movementKeys = {
@@ -29,6 +30,7 @@ local animations = {
 	run = runAnimId,
 	jump = jumpAnimId,
 	climb = climbAnimId,
+	attack = attackAnimId,
 }
 
 -- Use utility functions for common animation logic
@@ -54,6 +56,10 @@ end
 
 local function playInstantAnimation(state)
 	WeaponUtils.playInstantAnimation(state, movementKeys)
+end
+
+local function playAttack(state)
+	WeaponUtils.playAttackAnimation(state)
 end
 
 -- ========================================
@@ -166,6 +172,10 @@ local function onCharacterAdded(state, char)
 		end)
 		state.inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			onInputBegan(state, input, gameProcessed)
+			-- Only trigger attack animation on left mouse click
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
+				playAttack(state)
+			end
 		end)
 		state.inputEndedConn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
 			onInputEnded(state, input, gameProcessed)
