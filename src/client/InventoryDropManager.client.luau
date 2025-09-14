@@ -231,12 +231,12 @@ local function createDropButton()
     
     local button = Instance.new("TextButton")
     button.Name = "DropButton"
-    button.Size = UDim2.new(0, 80, 0, 40)
-    button.Position = UDim2.new(1, -90, 0, 10)
+    button.Size = UDim2.new(0, 60, 0, 60)
+    button.Position = UDim2.new(1, -70, 1, -70)
     button.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
     button.BackgroundTransparency = 0.2
     button.BorderSizePixel = 0
-    button.Text = "Drop Item (G)"
+    button.Text = "Drop"
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.TextScaled = true
     button.Font = Enum.Font.SourceSansBold
