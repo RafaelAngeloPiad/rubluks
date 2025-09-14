@@ -1,0 +1,124 @@
+-- local Players = game:GetService("Players")
+-- local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- local MainDataStore = require(ReplicatedStorage:FindFirstChild("MainDataStore"))
+
+-- -- Debounce table for inventory saves per player
+-- local inventorySaveDebounce = {}
+-- local DEBOUNCE_TIME = 1 -- seconds
+
+-- -- Save backpack tool names to DataStore, with debounce
+-- local function SavePlayerInventory(player)
+--     local userId = player.UserId
+--     local now = os.clock()
+--     if inventorySaveDebounce[userId] and (now - inventorySaveDebounce[userId].lastSave < DEBOUNCE_TIME) then
+--         -- Already scheduled, just update pending flag
+--         inventorySaveDebounce[userId].pending = true
+--         return
+--     end
+
+--     local function doSave()
+--         local backpack = player:FindFirstChild("Backpack")
+--         if not backpack then
+--             print("[InventoryManager] No backpack found for player:", player.Name)
+--             return
+--         end
+--         local inventory = {}
+--         for i, item in backpack:GetChildren() do
+--             if item:IsA("Tool") then
+--                 table.insert(inventory, item.Name)
+--             end
+--         end
+--         print("[InventoryManager] Saving inventory for", player.Name, "Inventory:", inventory)
+--         if #inventory == 0 then
+--             print("[InventoryManager] WARNING: Inventory is empty when saving for", player.Name)
+--         end
+--         MainDataStore.SaveInventory(player.UserId, inventory)
+--         inventorySaveDebounce[userId].lastSave = os.clock()
+--         inventorySaveDebounce[userId].pending = false
+--     end
+
+--     if not inventorySaveDebounce[userId] then
+--         inventorySaveDebounce[userId] = {lastSave = 0, pending = false}
+--     end
+
+--     -- If debounce interval hasn't passed, schedule a save after debounce time
+--     if now - inventorySaveDebounce[userId].lastSave < DEBOUNCE_TIME then
+--         if not inventorySaveDebounce[userId].pending then
+--             inventorySaveDebounce[userId].pending = true
+--             task.delay(DEBOUNCE_TIME - (now - inventorySaveDebounce[userId].lastSave), function()
+--                 if inventorySaveDebounce[userId] and inventorySaveDebounce[userId].pending then
+--                     doSave()
+--                 end
+--             end)
+--         end
+--     else
+--         doSave()
+--     end
+-- end
+
+-- -- Load inventory (tool names) and give corresponding tools from Workspace
+-- local function LoadPlayerInventory(player)
+--     local backpack = player:FindFirstChild("Backpack")
+--     if not backpack then
+--         print("[InventoryManager] Backpack not found for", player.Name, "when loading inventory, waiting for Backpack...")
+--         backpack = player:WaitForChild("Backpack")
+--     end
+--     local inventory = MainDataStore.LoadInventory(player.UserId)
+--     print("[InventoryManager] Loading inventory for", player.Name, "Inventory:", inventory)
+--     -- Use Workspace as the source for tool assets
+--     local workspaceFolder = game:GetService("Workspace")
+--     for i, toolName in inventory do
+--         local asset = workspaceFolder:FindFirstChild(toolName)
+--         if asset and asset:IsA("Tool") then
+--             if not backpack:FindFirstChild(toolName) then
+--                 asset:Clone().Parent = backpack
+--                 print("[InventoryManager] Cloned tool from Workspace:", toolName)
+--             end
+--         else
+--             print("[InventoryManager] Tool asset not found in Workspace for:", toolName)
+--         end
+--     end
+-- end
+
+-- -- Bind events to save inventory ONLY when tools are added/removed from Backpack
+-- local function BindInventoryEvents(player)
+--     local backpack = player:WaitForChild("Backpack")
+--     backpack.ChildAdded:Connect(function(child)
+--         if child:IsA("Tool") then
+--             print("[InventoryManager] Backpack ChildAdded:", child.Name)
+--             SavePlayerInventory(player)
+--         end
+--     end)
+--     backpack.ChildRemoved:Connect(function(child)
+--         if child:IsA("Tool") then
+--             print("[InventoryManager] Backpack ChildRemoved:", child.Name)
+--             SavePlayerInventory(player)
+--         end
+--     end)
+--     -- DO NOT bind Character ChildAdded/ChildRemoved for inventory saving
+-- end
+
+-- local function OnCharacterAdded(character, player)
+--     -- Wait for Backpack to exist
+--     local backpack = player:WaitForChild("Backpack")
+--     LoadPlayerInventory(player)
+--     BindInventoryEvents(player)
+-- end
+
+-- local function OnPlayerAdded(player)
+--     print("[InventoryManager] Player added:", player.Name)
+--     -- Bind to CharacterAdded to ensure Backpack exists
+--     player.CharacterAdded:Connect(function(character)
+--         OnCharacterAdded(character, player)
+--     end)
+--     -- If character already exists (e.g. when joining), handle immediately
+--     if player.Character then
+--         OnCharacterAdded(player.Character, player)
+--     end
+-- end
+
+-- Players.PlayerAdded:Connect(OnPlayerAdded)
+-- for i, player in Players:GetPlayers() do
+--     OnPlayerAdded(player)
+-- end
+

@@ -1,0 +1,76 @@
+-- local DataStoreService = game:GetService("DataStoreService")
+-- local XPStore = DataStoreService:GetDataStore("XPStore")
+-- local InventoryStore = DataStoreService:GetDataStore("InventoryStore")
+
+-- local MainDataStore = {}
+
+-- function MainDataStore.LoadPlayerData(userId)
+--     local key = "Player_" .. userId
+--     local success, data = pcall(function()
+--         return XPStore:GetAsync(key)
+--     end)
+--     if success and data then
+--         return data
+--     else
+--         warn("[MainDataStore] Failed to load XP for key:", key, "Error:", data)
+--         return nil
+--     end
+-- end
+
+-- function MainDataStore.SavePlayerData(userId, data)
+--     local key = "Player_" .. userId
+--     local success, err = pcall(function()
+--         XPStore:SetAsync(key, data)
+--     end)
+--     if not success then
+--         warn("[MainDataStore] Failed to save XP for key:", key, "Error:", err)
+--     end
+--     return success, err
+-- end
+
+-- -- InventoryStore ONLY stores a simple array of tool names (strings)
+-- function MainDataStore.LoadInventory(userId)
+--     local key = "Player_" .. userId
+--     local success, data = pcall(function()
+--         return InventoryStore:GetAsync(key)
+--     end)
+--     if success then
+--         if typeof(data) == "table" then
+--             print("[MainDataStore] Loaded inventory for key:", key, "Inventory:", data)
+--             return data
+--         elseif data == nil then
+--             print("[MainDataStore] No inventory found for key:", key)
+--             return {}
+--         else
+--             warn("[MainDataStore] Unexpected inventory format for key:", key, "Data:", data)
+--             return {}
+--         end
+--     else
+--         warn("[MainDataStore] Failed to load inventory for key:", key, "Error:", data)
+--         return {}
+--     end
+-- end
+
+-- function MainDataStore.SaveInventory(userId, inventory)
+--     local key = "Player_" .. userId
+--     -- Ensure inventory is a simple array of strings
+--     local filteredInventory = {}
+--     for i, v in inventory do
+--         if typeof(v) == "string" then
+--             table.insert(filteredInventory, v)
+--         end
+--     end
+--     print("[MainDataStore] Attempting to save inventory for key:", key, "Inventory:", filteredInventory)
+--     local success, err = pcall(function()
+--         InventoryStore:SetAsync(key, filteredInventory)
+--     end)
+--     if not success then
+--         warn("[MainDataStore] Failed to save inventory for key:", key, "Error:", err)
+--     else
+--         print("[MainDataStore] Saved inventory for key:", key, "Inventory:", filteredInventory)
+--     end
+--     return success, err
+-- end
+
+-- return MainDataStore
+
