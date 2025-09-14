@@ -107,8 +107,6 @@ end
 function WeaponScanner:_setupWeapon(tool)
     if self.weaponStates[tool] then return end
     
-    print("[WEAPON SCANNER] Setting up weapon: " .. tool.Name .. " with tag: " .. self.tagName)
-    
     local state = {
         tool = tool,
         toolEquipped = false,
@@ -128,7 +126,6 @@ function WeaponScanner:_setupWeapon(tool)
     
     -- Call the weapon-specific setup function
     if self.onWeaponFound then
-        print("[WEAPON SCANNER] Calling onWeaponFound for: " .. tool.Name)
         self.onWeaponFound(tool, state)
     end
 end

@@ -100,15 +100,11 @@ local function onUnequipped(tool)
 end
 
 local function setupTool(tool, state)
-	print("[SAMURAI WEAPON] Setting up tool: " .. tool.Name)
-	
 	-- Listen for equipped/unequipped
 	state.equippedConn = tool.Equipped:Connect(function()
-		print("[SAMURAI WEAPON] Tool equipped: " .. tool.Name)
 		onEquipped(tool)
 	end)
 	state.unequippedConn = tool.Unequipped:Connect(function()
-		print("[SAMURAI WEAPON] Tool unequipped: " .. tool.Name)
 		onUnequipped(tool)
 	end)
 
@@ -129,7 +125,5 @@ local function cleanupTool(tool, state)
 end
 
 -- Initialize weapon scanner
-print("[SAMURAI WEAPON] Initializing weapon scanner...")
 weaponScanner = WeaponScanner.new("samurai_weapon", setupTool, cleanupTool)
-print("[SAMURAI WEAPON] Weapon scanner initialized!")
 
