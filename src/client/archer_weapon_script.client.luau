@@ -10,6 +10,7 @@ local runAnimId = "rbxassetid://114148291546049"
 local jumpAnimId = "rbxassetid://118577091214692"
 local fallAnimId = jumpAnimId
 local climbAnimId = "rbxassetid://112756927751345"
+local attackAnimId = "rbxassetid://YOUR_ARCHER_ATTACK_ANIMATION_ID" -- Replace with your actual attack animation ID
 
 -- Track WASD key states
 local movementKeys = {
@@ -29,6 +30,7 @@ local animations = {
 	run = runAnimId,
 	jump = jumpAnimId,
 	climb = climbAnimId,
+	attack = attackAnimId, -- Add attack animation
 }
 
 -- Use utility functions for common animation logic
@@ -152,6 +154,9 @@ local function onCharacterAdded(state, char)
 		state.animator.Parent = state.humanoid
 	end
 
+	-- Store movement keys in state for attack system
+	state.movementKeys = movementKeys
+	
 	WeaponUtils.setupTracks(state, animations)
 	disconnectAll(state)
 

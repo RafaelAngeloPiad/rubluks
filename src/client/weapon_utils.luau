@@ -32,6 +32,7 @@ function WeaponUtils.stopAllTracks(state)
     if state.runTrack then state.runTrack:Stop() end
     if state.jumpTrack then state.jumpTrack:Stop() end
     if state.climbTrack then state.climbTrack:Stop() end
+    if state.attackTrack then state.attackTrack:Stop() end
 end
 
 function WeaponUtils.playTrack(state, track, stateName)
@@ -60,6 +61,13 @@ function WeaponUtils.setupTracks(state, animations)
     local climbAnim = Instance.new("Animation")
     climbAnim.AnimationId = animations.climb
     state.climbTrack = state.animator:LoadAnimation(climbAnim)
+
+    -- Setup attack animation if provided
+    if animations.attack then
+        local attackAnim = Instance.new("Animation")
+        attackAnim.AnimationId = animations.attack
+        state.attackTrack = state.animator:LoadAnimation(attackAnim)
+    end
 end
 
 function WeaponUtils.updateClimbAnimSpeed(state, movementKeys)
@@ -181,10 +189,18 @@ end
 -- ========================================
 
 function WeaponUtils.onInputBegan(state, input, gameProcessed, movementKeys)
+    if gameProcessed then return end
+    
+    -- Handle movement keys
     if movementKeys[input.KeyCode] ~= nil then
         movementKeys[input.KeyCode] = true
         WeaponUtils.onMove(state, movementKeys)
         WeaponUtils.updateClimbAnimSpeed(state, movementKeys)
+    end
+    
+    -- Handle attack (left mouse click)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        WeaponUtils.playAttack(state)
     end
 end
 
@@ -194,6 +210,53 @@ function WeaponUtils.onInputEnded(state, input, gameProcessed, movementKeys)
         WeaponUtils.onMove(state, movementKeys)
         WeaponUtils.updateClimbAnimSpeed(state, movementKeys)
     end
+end
+
+-- ========================================
+-- ATTACK SYSTEM
+-- ========================================
+
+function WeaponUtils.playAttack(state)
+    -- Only play attack if tool is equipped and we have an attack animation
+    if not state.toolEquipped or not state.attackTrack then return end
+    
+    -- Prevent attack spam - check if attack is already playing
+    if state.isAttacking then return end
+    
+    -- Mark as attacking to prevent spam
+    state.isAttacking = true
+    
+    -- Store current animation state to restore later
+    local previousState = state.currentAnimState
+    
+    -- Play attack animation
+    state.attackTrack:Play()
+    
+    -- Handle attack animation ending
+    local connection
+    connection = state.attackTrack.Stopped:Connect(function()
+        state.isAttacking = false
+        connection:Disconnect()
+        
+        -- Resume previous animation state after attack
+        if state.toolEquipped then
+            local humanoid = state.humanoid
+            if humanoid then
+                local currentState = humanoid:GetState()
+                if currentState == Enum.HumanoidStateType.Running and WeaponUtils.isMoving(state.movementKeys or {}) then
+                    WeaponUtils.playTrack(state, state.runTrack, "Running")
+                elseif currentState == Enum.HumanoidStateType.Climbing then
+                    WeaponUtils.playTrack(state, state.climbTrack, "Climbing")
+                elseif currentState == Enum.HumanoidStateType.Jumping or currentState == Enum.HumanoidStateType.Freefall then
+                    WeaponUtils.playTrack(state, state.jumpTrack, "Jumping")
+                else
+                    WeaponUtils.playTrack(state, state.idleTrack, "Idle")
+                end
+            end
+        end
+    end)
+    
+    print("[WeaponUtils] Attack animation played for", state.tool and state.tool.Name or "unknown weapon")
 end
 
 -- ========================================
