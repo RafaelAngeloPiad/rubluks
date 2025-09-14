@@ -85,20 +85,18 @@ local function LoadPlayerInventory(player)
     print("[InventoryManager] Loading inventory for", player.Name, "Inventory:", inventory, "Equipped:", equipped)
     local workspaceFolder = game:GetService("Workspace")
 
-    -- Load Backpack tools
+    -- Load Backpack tools (allow duplicates)
     for i, toolName in inventory do
         local asset = workspaceFolder:FindFirstChild(toolName)
         if asset and asset:IsA("Tool") then
-            if not backpack:FindFirstChild(toolName) then
-                asset:Clone().Parent = backpack
-                print("[InventoryManager] Cloned tool to Backpack from Workspace:", toolName)
-            end
+            asset:Clone().Parent = backpack
+            print("[InventoryManager] Cloned tool to Backpack from Workspace:", toolName)
         else
             print("[InventoryManager] Tool asset not found in Workspace for Backpack:", toolName)
         end
     end
 
-    -- Load Equipped tools (to Character)
+    -- Load Equipped tools (to Character) - prevent duplicates for equipped items
     if character and #equipped > 0 then
         for i, toolName in equipped do
             local asset = workspaceFolder:FindFirstChild(toolName)
