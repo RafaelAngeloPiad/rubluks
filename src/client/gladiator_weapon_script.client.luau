@@ -64,29 +64,13 @@ end
 local shieldForwardOffset = CFrame.new(-0.5, 0, 0)
 
 local function detectSwordAndShield(tool)
-	print("[GLADIATOR WEAPON] Detecting sword and shield in tool: " .. tool.Name)
-	
 	local sword = tool:FindFirstChild("Handle")
 	local shield = tool:FindFirstChild("Shield")
-	
-	if sword then
-		print("[GLADIATOR WEAPON] Found sword (Handle): " .. sword.Name)
-	else
-		print("[GLADIATOR WEAPON] WARNING: No Handle found in tool!")
-	end
-	
-	if shield then
-		print("[GLADIATOR WEAPON] Found shield: " .. shield.Name)
-	else
-		print("[GLADIATOR WEAPON] WARNING: No Shield found in tool!")
-	end
-	
 	return sword ~= nil and shield ~= nil
 end
 
 local function attachSwordAndShield(tool, character, humanoid)
 	if not character or not humanoid then return end
-	print("[GLADIATOR WEAPON] Attaching sword and shield to character")
 
 	local sword = tool:FindFirstChild("Handle")
 	local shield = tool:FindFirstChild("Shield")
@@ -112,7 +96,6 @@ end
 
 local function removeSwordAndShield(tool, character, humanoid)
 	if not character or not humanoid then return end
-	print("[GLADIATOR WEAPON] Removing sword and shield from character")
 
 	local swordMotorName = "SwordRightHandMotor"
 	local shieldMotorName = "ShieldLeftHandMotor"
@@ -220,15 +203,11 @@ local function onUnequipped(tool)
 end
 
 local function setupTool(tool, state)
-	print("[GLADIATOR WEAPON] Setting up tool: " .. tool.Name)
-	
 	-- Listen for equipped/unequipped
 	state.equippedConn = tool.Equipped:Connect(function()
-		print("[GLADIATOR WEAPON] Tool equipped: " .. tool.Name)
 		onEquipped(tool)
 	end)
 	state.unequippedConn = tool.Unequipped:Connect(function()
-		print("[GLADIATOR WEAPON] Tool unequipped: " .. tool.Name)
 		onUnequipped(tool)
 	end)
 
@@ -249,6 +228,4 @@ local function cleanupTool(tool, state)
 end
 
 -- Initialize weapon scanner
-print("[GLADIATOR WEAPON] Initializing weapon scanner...")
 weaponScanner = WeaponScanner.new("gladiator_weapon", setupTool, cleanupTool)
-print("[GLADIATOR WEAPON] Weapon scanner initialized!")
