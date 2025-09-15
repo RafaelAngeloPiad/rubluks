@@ -204,6 +204,22 @@ local function dropItem(player, toolName)
         
         -- Update drop count
         playerDropCounts[playerId] = playerDropCounts[playerId] + 1
+
+        -- Prevent auto-equipping a duplicate tool after dropping.
+        -- Roblox default behavior may auto-equip a tool if one exists in the backpack after dropping.
+        -- To avoid this, we explicitly unequip any tool after dropping.
+        -- This ensures that dropping a tool does NOT auto-equip another tool with the same name.
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid:IsA("Humanoid") then
+                humanoid:UnequipTools()
+                --[[
+                    Best Practice: 
+                    UnequipTools() is server-authoritative and will prevent any tool from being auto-equipped after dropping.
+                    This is a minimal, non-breaking change and ensures proper sync between server and client.
+                --]]
+            end
+        end
         
         return true, "Item dropped successfully"
     else
@@ -286,3 +302,4 @@ spawn(function()
 end)
 
 print("[InventoryDropManager] Server initialized with configuration:", DROP_CONFIG)
+
