@@ -6,10 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local remote = ReplicatedStorage:WaitForChild("HitRequest")
 local player = Players.LocalPlayer
 
--- Hitbox parameters
-local HITBOX_SIZE = Vector3.new(3, 3, 6)
-local HITBOX_OFFSET = Vector3.new(0, 0, 3)
-
 local function attachHitbox(tool)
     if not tool:IsA("Tool") then return end
     if not CollectionService:HasTag(tool, "has_damage") then return end
@@ -20,11 +16,12 @@ local function attachHitbox(tool)
 
     local function onActivated()
         local character = player.Character or player.CharacterAdded:Wait()
-        -- Calculate hitbox CFrame (in front of handle)
-        local hitboxCFrame = handle.CFrame * CFrame.new(HITBOX_OFFSET)
+        -- Use handle's size and CFrame for hitbox
+        local hitboxSize = handle.Size
+        local hitboxCFrame = handle.CFrame
         print("[CLIENT] Tool activated:", tool.Name)
-        print("[CLIENT] Sending hit request to server. CFrame:", hitboxCFrame.Position, "Size:", HITBOX_SIZE)
-        remote:FireServer(hitboxCFrame, HITBOX_SIZE)
+        print("[CLIENT] Sending hit request to server. CFrame:", hitboxCFrame.Position, "Size:", hitboxSize)
+        remote:FireServer(hitboxCFrame, hitboxSize)
     end
 
     tool.Activated:Connect(onActivated)
