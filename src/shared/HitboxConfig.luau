@@ -180,19 +180,19 @@ function HitboxConfig.getDefaultConfig()
     }
 end
 
--- Debug function to print all configurations
+-- Debug function to print all configurations (for development use)
 function HitboxConfig.printAllConfigs()
-    print("=== WEAPON HITBOX CONFIGURATIONS ===")
-    print("Default Config:", DEFAULT_CONFIG.size, DEFAULT_CONFIG.offset)
+    print("=== HITBOX CONFIGURATIONS ===")
+    print("Default Config:", DEFAULT_CONFIG.size, DEFAULT_CONFIG.offset, DEFAULT_CONFIG.baseDamage)
     
     print("\nWeapon Configs:")
     for tag, config in pairs(WEAPON_CONFIGS) do
-        print(string.format("  %s: Size=%s, Offset=%s", tag, tostring(config.size), tostring(config.offset)))
+        print(string.format("  %s: Size=%s, Offset=%s, Damage=%d", tag, tostring(config.size), tostring(config.offset), config.baseDamage))
     end
     
     print("\nSkill Configs:")
     for tag, config in pairs(SKILL_CONFIGS) do
-        print(string.format("  %s: Size=%s, Offset=%s", tag, tostring(config.size), tostring(config.offset)))
+        print(string.format("  %s: Size=%s, Offset=%s, Damage=%d", tag, tostring(config.size), tostring(config.offset), config.baseDamage))
     end
 end
 

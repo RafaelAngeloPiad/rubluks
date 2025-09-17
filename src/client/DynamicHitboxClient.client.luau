@@ -58,11 +58,9 @@ end
 local function getSkillHitboxConfig(skillKey)
     if HitboxConfig then
         local config = HitboxConfig.getSkillConfig(skillKey)
-        print("[HITBOX] Using HitboxConfig for skill:", skillKey, "Size:", config.size, "Damage:", config.baseDamage)
         return config.size, config.offset, config.baseDamage
     else
         -- Fallback values if config system isn't available
-        print("[HITBOX] Using fallback config for skill:", skillKey)
         return Vector3.new(8, 6, 8), Vector3.new(0, 0, 5), 40
     end
 end
@@ -122,7 +120,6 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
     -- Align the generated hitbox with the player's facing direction
     local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-    print("[HITBOX] Weapon attack:", tool.Name, "Size:", hitboxSize, "Damage:", weaponDamage)
     remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
 
     -- Create visual hitbox
@@ -146,7 +143,6 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
     local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-    print("[HITBOX] Skill cast:", skillKey, "Size:", size, "Damage:", damage)
     remote:FireServer(hitboxCFrame, size, damage)
 
     -- Create visual hitbox
@@ -161,7 +157,6 @@ local function setupHitboxGeneration(tool)
     if not tool:IsA("Tool") then return end
     if not CollectionService:HasTag(tool, "has_damage") then return end
 
-    print("[HITBOX] Setup for tool:", tool.Name)
 
     local function generateHitbox()
         DynamicHitboxClient.generateWeaponHitbox(tool)
@@ -172,17 +167,14 @@ end
 
 -- Listen for tools equipped by the player
 local function onCharacterAdded(character)
-    print("[HITBOX] Character added:", character.Name)
     character.ChildAdded:Connect(function(child)
         if child:IsA("Tool") and CollectionService:HasTag(child, "has_damage") then
-            print("[HITBOX] Tool equipped:", child.Name)
             setupHitboxGeneration(child)
         end
     end)
     -- Setup hitbox generation for already equipped tools
     for i, child in character:GetChildren() do
         if child:IsA("Tool") and CollectionService:HasTag(child, "has_damage") then
-            print("[HITBOX] Tool already equipped:", child.Name)
             setupHitboxGeneration(child)
         end
     end
