@@ -1,41 +1,66 @@
 -- WeaponHitboxConfig: Configuration for weapon-specific hitbox sizes and offsets
 -- This module manages hitbox properties for different weapon types
 
+--[[
+HITBOX COORDINATE SYSTEM GUIDE:
+===============================
+
+SIZE Vector3(X, Y, Z):
+- X = WIDTH (left/right) - How wide the hitbox extends sideways
+- Y = HEIGHT (up/down) - How tall the hitbox extends vertically  
+- Z = DEPTH/REACH (forward/back) - How far the hitbox extends forward from player
+
+OFFSET Vector3(X, Y, Z):
+- X = SIDEWAYS OFFSET (+ = right, - = left) - Usually 0 for centered attacks
+- Y = VERTICAL OFFSET (+ = up, - = down) - Usually 0 for player height attacks
+- Z = FORWARD DISTANCE (+ = forward) - How far in front of player the hitbox appears
+
+EXAMPLES:
+- Vector3.new(8, 6, 10) = 8 studs wide, 6 studs tall, 10 studs deep
+- offset Vector3.new(0, 0, 5) = 5 studs in front of player, centered
+- offset Vector3.new(2, 1, 3) = 2 studs right, 1 stud up, 3 studs forward
+]]
+
 local WeaponHitboxConfig = {}
 
 -- Default hitbox configuration (fallback)
 local DEFAULT_CONFIG = {
-    size = Vector3.new(6, 6, 6),
-    offset = Vector3.new(0, 0, 4), -- (x, y, z) offset from HumanoidRootPart; z is forward
+    size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
+    offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward
 }
 
 -- Weapon-specific hitbox configurations
 -- Each weapon tag gets its own hitbox size and offset
+-- Reach order: Gladiator (longest) > Samurai (long) > Knight (mid) > Archer (short) > Berserker (shortest)
 local WEAPON_CONFIGS = {
-    -- Melee weapons with different reach and coverage
-    ["archer_weapon"] = {
-        size = Vector3.new(5, 5, 5), -- Smaller, precise hitbox for archer melee
-        offset = Vector3.new(0, 0, 3.5),
-    },
-    
-    ["samurai_weapon"] = {
-        size = Vector3.new(7, 6, 8), -- Long reach for katana
-        offset = Vector3.new(0, 0, 5),
-    },
-    
-    ["knight_weapon"] = {
-        size = Vector3.new(6, 7, 6), -- Balanced sword and shield
-        offset = Vector3.new(0, 0, 4),
-    },
-    
-    ["gladiator_weapon"] = {
-        size = Vector3.new(8, 6, 7), -- Wide sweeping attacks
-        offset = Vector3.new(0, 0, 4.5),
-    },
-    
+    -- Berserker: Significantly shortest reach - claw weapons, ultra close combat
     ["berserker_weapon"] = {
-        size = Vector3.new(9, 8, 7), -- Large, powerful swings
-        offset = Vector3.new(0, 0, 5),
+        size = Vector3.new(5, 5, 3), -- 5 wide, 5 tall, 3 deep (very short reach)
+        offset = Vector3.new(0, 0, 1.5), -- centered, 1.5 studs forward (ultra close)
+    },
+    
+    -- Archer: Short reach - backup melee weapon
+    ["archer_weapon"] = {
+        size = Vector3.new(5, 5, 6), -- 5 wide, 5 tall, 6 deep (precise hitbox)
+        offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (short reach)
+    },
+    
+    -- Knight: Mid reach - sword and shield, balanced combat
+    ["knight_weapon"] = {
+        size = Vector3.new(6, 6, 7), -- 6 wide, 6 tall, 7 deep (balanced)
+        offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward (medium reach)
+    },
+    
+    -- Samurai: Long reach - katana with extended blade
+    ["samurai_weapon"] = {
+        size = Vector3.new(6, 6, 9), -- 6 wide, 6 tall, 9 deep (long katana)
+        offset = Vector3.new(0, 0, 5.5), -- centered, 5.5 studs forward (long reach)
+    },
+    
+    -- Gladiator: Longest reach - spears, tridents, long weapons
+    ["gladiator_weapon"] = {
+        size = Vector3.new(7, 6, 11), -- 7 wide, 6 tall, 11 deep (maximum reach)
+        offset = Vector3.new(0, 0, 6.5), -- centered, 6.5 studs forward (longest reach)
     },
 }
 
