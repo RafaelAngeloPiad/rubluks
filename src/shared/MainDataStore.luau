@@ -36,13 +36,11 @@ function MainDataStore.LoadInventory(userId)
     end)
     if success then
         if typeof(data) == "table" then
-            print("[MainDataStore] Loaded inventory for key:", key, "Inventory:", data)
             -- Ensure both inventory and equipped arrays exist
             data.inventory = data.inventory or {}
             data.equipped = data.equipped or {}
             return data
         elseif data == nil then
-            print("[MainDataStore] No inventory found for key:", key)
             return {inventory = {}, equipped = {}}
         else
             warn("[MainDataStore] Unexpected inventory format for key:", key, "Data:", data)
@@ -79,14 +77,12 @@ function MainDataStore.SaveInventory(userId, inventoryTable)
         inventory = filteredInventory,
         equipped = filteredEquipped
     }
-    print("[MainDataStore] Attempting to save inventory for key:", key, "Inventory:", saveData)
     local success, err = pcall(function()
         InventoryStore:SetAsync(key, saveData)
     end)
     if not success then
         warn("[MainDataStore] Failed to save inventory for key:", key, "Error:", err)
     else
-        print("[MainDataStore] Saved inventory for key:", key, "Inventory:", saveData)
     end
     return success, err
 end
