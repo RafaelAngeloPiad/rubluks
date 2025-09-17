@@ -192,6 +192,13 @@ if player.Character then
 end
 
 -- =====================================================================================
+-- GLOBAL ACCESS (so other scripts can use skill hitbox generation)
+-- =====================================================================================
+
+-- Make skill hitbox generation available globally
+_G.generateSkillHitbox = DynamicHitboxClient.generateSkillHitbox
+
+-- =====================================================================================
 -- EXPORT MODULE
 -- =====================================================================================
 
