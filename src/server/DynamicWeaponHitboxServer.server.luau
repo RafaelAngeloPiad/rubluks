@@ -1,4 +1,4 @@
--- DynamicWeaponHitboxServer: Handles hit requests for any Tool with "has_damage" tag
+-- DynamicWeaponHitboxServer: Processes generated hitbox requests for any Tool with "has_damage" tag
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -7,62 +7,62 @@ local remote = ReplicatedStorage:WaitForChild("HitRequest")
 
 local DAMAGE = 25
 
-local function isValidHitbox(player, tool, hitboxCFrame)
+local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     local character = player.Character
     if not character then 
         print("[SERVER] Invalid hitbox: No character for player", player.Name)
         return false 
     end
-    if not tool:IsA("Tool") then 
-        print("[SERVER] Invalid hitbox: Tool is not a Tool instance")
+    if not equippedTool:IsA("Tool") then 
+        print("[SERVER] Invalid hitbox: Equipped item is not a Tool instance")
         return false 
     end
-    local handle = tool:FindFirstChild("Handle")
+    local handle = equippedTool:FindFirstChild("Handle")
     if not handle then 
-        print("[SERVER] Invalid hitbox: Tool has no Handle")
+        print("[SERVER] Invalid hitbox: Equipped tool has no Handle")
         return false 
     end
     local distance = (handle.Position - hitboxCFrame.Position).Magnitude
     if distance > 10 then
-        print("[SERVER] Invalid hitbox: Distance too far", distance)
+        print("[SERVER] Invalid hitbox: Generated hitbox too far from tool", distance)
         return false
     end
-    print("[SERVER] Hitbox validated for tool", tool.Name, "Distance:", distance)
+    print("[SERVER] Generated hitbox validated for tool", equippedTool.Name, "Distance:", distance)
     return true
 end
 
-remote.OnServerEvent:Connect(function(player, hitboxCFrame, hitboxSize)
-    print("[SERVER] HitRequest received from player:", player.Name, "CFrame:", hitboxCFrame.Position, "Size:", hitboxSize)
+remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize)
+    print("[SERVER] Generated hitbox request received from player:", player.Name, "CFrame:", generatedHitboxCFrame.Position, "Size:", hitboxSize)
     local character = player.Character
     if not character then 
         print("[SERVER] No character for player", player.Name)
         return 
     end
 
-    -- Find equipped tool with "has_damage" tag
-    local equippedTool = nil
+    -- Find currently equipped tool with "has_damage" tag
+    local currentEquippedTool = nil
     for i, child in character:GetChildren() do
         if child:IsA("Tool") and CollectionService:HasTag(child, "has_damage") then
-            equippedTool = child
-            print("[SERVER] Found equipped tool with damage tag:", child.Name)
+            currentEquippedTool = child
+            print("[SERVER] Found currently equipped tool with damage tag:", child.Name)
             break
         end
     end
-    if not equippedTool then 
-        print("[SERVER] No equipped tool with damage tag for player", player.Name)
+    if not currentEquippedTool then 
+        print("[SERVER] No currently equipped tool with damage tag for player", player.Name)
         return 
     end
 
-    -- Validate hitbox position for anti-exploit
-    if not isValidHitbox(player, equippedTool, hitboxCFrame) then 
-        print("[SERVER] Hitbox validation failed for player", player.Name)
+    -- Validate generated hitbox position for anti-exploit
+    if not validateGeneratedHitbox(player, currentEquippedTool, generatedHitboxCFrame) then 
+        print("[SERVER] Generated hitbox validation failed for player", player.Name)
         return 
     end
 
-    local regionParts = workspace:GetPartBoundsInBox(hitboxCFrame, hitboxSize)
+    local regionParts = workspace:GetPartBoundsInBox(generatedHitboxCFrame, hitboxSize)
     local damagedHumanoids = {}
 
-    print("[SERVER] Checking region for hit targets. Parts found:", #regionParts)
+    print("[SERVER] Checking generated hitbox region for hit targets. Parts found:", #regionParts)
     for i, part in regionParts do
         local model = part:FindFirstAncestorOfClass("Model")
         if model and model ~= character then
@@ -70,10 +70,10 @@ remote.OnServerEvent:Connect(function(player, hitboxCFrame, hitboxSize)
             if humanoid and not damagedHumanoids[humanoid] then
                 humanoid:TakeDamage(DAMAGE)
                 damagedHumanoids[humanoid] = true
-                print("[SERVER] Damaged humanoid in model:", model.Name, "Damage:", DAMAGE)
+                print("[SERVER] Damaged humanoid in model:", model.Name, "with damage:", DAMAGE)
             end
         end
     end
-    print("[SERVER] HitRequest processing complete for player:", player.Name)
+    print("[SERVER] Generated hitbox request processing complete for player:", player.Name)
 end)
 
