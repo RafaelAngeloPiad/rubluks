@@ -30,7 +30,7 @@ local HITBOX_OFFSET = Vector3.new(0, 0, 4) -- (x, y, z) offset from HumanoidRoot
 local function getHitboxConfig(tool)
     -- If config system is not available, use defaults
     if not WeaponHitboxConfig then
-        return HITBOX_SIZE, HITBOX_OFFSET
+        return HITBOX_SIZE, HITBOX_OFFSET, 25 -- default damage
     end
     
     -- Check for weapon-specific tags
@@ -38,12 +38,12 @@ local function getHitboxConfig(tool)
     for _, weaponTag in ipairs(weaponTags) do
         if CollectionService:HasTag(tool, weaponTag) then
             local config = WeaponHitboxConfig.getWeaponConfig(weaponTag)
-            return config.size, config.offset
+            return config.size, config.offset, config.baseDamage
         end
     end
     
     -- No specific weapon tag found, use defaults
-    return HITBOX_SIZE, HITBOX_OFFSET
+    return HITBOX_SIZE, HITBOX_OFFSET, 25 -- default damage
 end
 
 local function setupHitboxGeneration(tool)
@@ -53,7 +53,7 @@ local function setupHitboxGeneration(tool)
     print("[CLIENT] Hitbox generation setup for tool:", tool.Name)
     
     -- Get weapon-specific hitbox configuration
-    local hitboxSize, hitboxOffset = getHitboxConfig(tool)
+    local hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
 
     local function generateHitbox()
         local character = player.Character or player.CharacterAdded:Wait()
@@ -71,8 +71,8 @@ local function setupHitboxGeneration(tool)
         local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
         print("[CLIENT] Tool activated:", tool.Name)
-        print("[CLIENT] Sending hitbox request - Size:", hitboxSize, "Offset:", hitboxOffset)
-        remote:FireServer(hitboxCFrame, hitboxSize)
+        print("[CLIENT] Sending hitbox request - Size:", hitboxSize, "Offset:", hitboxOffset, "Damage:", weaponDamage)
+        remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
 
         -- Visualize the generated hitbox for testing
         local hitboxPart = Instance.new("Part")

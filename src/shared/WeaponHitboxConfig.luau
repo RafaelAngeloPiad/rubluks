@@ -27,6 +27,7 @@ local WeaponHitboxConfig = {}
 local DEFAULT_CONFIG = {
     size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
     offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward
+    baseDamage = 25, -- default damage
 }
 
 -- Weapon-specific hitbox configurations
@@ -34,33 +35,43 @@ local DEFAULT_CONFIG = {
 -- Reach order: Gladiator (longest) > Samurai (long) > Knight (mid) > Archer (short) > Berserker (shortest)
 local WEAPON_CONFIGS = {
     -- Berserker: Significantly shortest reach - claw weapons, ultra close combat
+    -- High damage to compensate for ultra short range
     ["berserker_weapon"] = {
         size = Vector3.new(5, 5, 3), -- 5 wide, 5 tall, 3 deep (very short reach)
         offset = Vector3.new(0, 0, 1.5), -- centered, 1.5 studs forward (ultra close)
+        baseDamage = 40, -- High damage for high-risk close combat
     },
     
     -- Archer: Short reach - backup melee weapon
+    -- Low damage as it's secondary to ranged attacks
     ["archer_weapon"] = {
         size = Vector3.new(5, 5, 6), -- 5 wide, 5 tall, 6 deep (precise hitbox)
         offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (short reach)
+        baseDamage = 20, -- Low damage, backup weapon
     },
     
     -- Knight: Mid reach - sword and shield, balanced combat
+    -- Balanced damage for versatile fighter
     ["knight_weapon"] = {
         size = Vector3.new(6, 6, 7), -- 6 wide, 6 tall, 7 deep (balanced)
         offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward (medium reach)
+        baseDamage = 30, -- Balanced damage
     },
     
     -- Samurai: Long reach - katana with extended blade
+    -- Good damage with precision strikes
     ["samurai_weapon"] = {
         size = Vector3.new(6, 6, 9), -- 6 wide, 6 tall, 9 deep (long katana)
         offset = Vector3.new(0, 0, 5.5), -- centered, 5.5 studs forward (long reach)
+        baseDamage = 35, -- High damage, skilled warrior
     },
     
     -- Gladiator: Longest reach - spears, tridents, long weapons
+    -- Moderate damage balanced by superior reach
     ["gladiator_weapon"] = {
         size = Vector3.new(7, 6, 11), -- 7 wide, 6 tall, 11 deep (maximum reach)
         offset = Vector3.new(0, 0, 6.5), -- centered, 6.5 studs forward (longest reach)
+        baseDamage = 25, -- Moderate damage, reach advantage
     },
 }
 
@@ -90,6 +101,7 @@ function WeaponHitboxConfig.getWeaponConfig(weaponTag)
         return {
             size = config.size,
             offset = config.offset,
+            baseDamage = config.baseDamage,
         }
     end
     
@@ -97,6 +109,7 @@ function WeaponHitboxConfig.getWeaponConfig(weaponTag)
     return {
         size = DEFAULT_CONFIG.size,
         offset = DEFAULT_CONFIG.offset,
+        baseDamage = DEFAULT_CONFIG.baseDamage,
     }
 end
 
@@ -150,6 +163,7 @@ function WeaponHitboxConfig.getDefaultConfig()
     return {
         size = DEFAULT_CONFIG.size,
         offset = DEFAULT_CONFIG.offset,
+        baseDamage = DEFAULT_CONFIG.baseDamage,
     }
 end
 

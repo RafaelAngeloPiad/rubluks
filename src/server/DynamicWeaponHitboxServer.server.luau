@@ -5,7 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local remote = ReplicatedStorage:WaitForChild("HitRequest")
 
-local DAMAGE = 25
+local DEFAULT_DAMAGE = 25 -- Fallback damage if none specified
 
 local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     local character = player.Character
@@ -31,8 +31,10 @@ local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     return true
 end
 
-remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize)
-    print("[SERVER] Generated hitbox request received from player:", player.Name, "CFrame:", generatedHitboxCFrame.Position, "Size:", hitboxSize)
+remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize, weaponDamage)
+    -- Use weapon-specific damage or fallback to default
+    local damageToApply = weaponDamage or DEFAULT_DAMAGE
+    print("[SERVER] Generated hitbox request received from player:", player.Name, "CFrame:", generatedHitboxCFrame.Position, "Size:", hitboxSize, "Damage:", damageToApply)
     local character = player.Character
     if not character then 
         print("[SERVER] No character for player", player.Name)
@@ -68,9 +70,9 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize)
         if model and model ~= character then
             local humanoid = model:FindFirstChild("Humanoid")
             if humanoid and not damagedHumanoids[humanoid] then
-                humanoid:TakeDamage(DAMAGE)
+                humanoid:TakeDamage(damageToApply)
                 damagedHumanoids[humanoid] = true
-                print("[SERVER] Damaged humanoid in model:", model.Name, "with damage:", DAMAGE)
+                print("[SERVER] Damaged humanoid in model:", model.Name, "with damage:", damageToApply)
             end
         end
     end
