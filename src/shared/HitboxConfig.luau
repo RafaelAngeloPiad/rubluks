@@ -27,7 +27,7 @@ local HitboxConfig = {}
 local DEFAULT_CONFIG = {
     size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
     offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward
-    baseDamage = 25, -- default damage
+    baseDamage = 2, -- default damage
 }
 
 -- Weapon-specific hitbox configurations
@@ -39,7 +39,7 @@ local WEAPON_CONFIGS = {
     ["berserker_weapon"] = {
         size = Vector3.new(5, 5, 3), -- 5 wide, 5 tall, 3 deep (very short reach)
         offset = Vector3.new(0, 0, 1.5), -- centered, 1.5 studs forward (ultra close)
-        baseDamage = 40, -- High damage for high-risk close combat
+        baseDamage = 12, -- High damage for high-risk close combat
     },
     
     -- Archer: Short reach - backup melee weapon
@@ -47,7 +47,7 @@ local WEAPON_CONFIGS = {
     ["archer_weapon"] = {
         size = Vector3.new(5, 5, 6), -- 5 wide, 5 tall, 6 deep (precise hitbox)
         offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (short reach)
-        baseDamage = 20, -- Low damage, backup weapon
+        baseDamage = 5, -- Low damage, backup weapon
     },
     
     -- Knight: Mid reach - sword and shield, balanced combat
@@ -55,7 +55,7 @@ local WEAPON_CONFIGS = {
     ["knight_weapon"] = {
         size = Vector3.new(6, 6, 7), -- 6 wide, 6 tall, 7 deep (balanced)
         offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward (medium reach)
-        baseDamage = 30, -- Balanced damage
+        baseDamage = 7, -- Balanced damage
     },
     
     -- Samurai: Long reach - katana with extended blade
@@ -63,7 +63,7 @@ local WEAPON_CONFIGS = {
     ["samurai_weapon"] = {
         size = Vector3.new(6, 6, 9), -- 6 wide, 6 tall, 9 deep (long katana)
         offset = Vector3.new(0, 0, 5.5), -- centered, 5.5 studs forward (long reach)
-        baseDamage = 35, -- High damage, skilled warrior
+        baseDamage = 9, -- High damage, skilled warrior
     },
     
     -- Gladiator: Longest reach - spears, tridents, long weapons
@@ -71,7 +71,7 @@ local WEAPON_CONFIGS = {
     ["gladiator_weapon"] = {
         size = Vector3.new(7, 6, 11), -- 7 wide, 6 tall, 11 deep (maximum reach)
         offset = Vector3.new(0, 0, 6.5), -- centered, 6.5 studs forward (longest reach)
-        baseDamage = 25, -- Moderate damage, reach advantage
+        baseDamage = 10, -- Moderate damage, reach advantage
     },
 }
 
@@ -83,7 +83,7 @@ local SKILL_CONFIGS = {
         -- Forward dash slash: long reach, medium width
         size = Vector3.new(6, 6, 12), -- 6 wide, 6 tall, 12 deep (long dash)
         offset = Vector3.new(0, 0, 6), -- centered, 6 studs forward (extended reach)
-        baseDamage = 45, -- High skill damage
+        baseDamage = 10, -- High skill damage
         animationId = "rbxassetid://116519685012277", -- Dash Slash animation
         name = "Dash Slash",
         keyCode = Enum.KeyCode.K,
@@ -92,7 +92,7 @@ local SKILL_CONFIGS = {
         -- Wide sweeping arc: shorter reach, wider area
         size = Vector3.new(10, 6, 8), -- 10 wide, 6 tall, 8 deep (wide sweep)
         offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
-        baseDamage = 55, -- Higher skill damage
+        baseDamage = 10, -- Higher skill damage
         animationId = "rbxassetid://116519685012277", -- Wide Arc animation
         name = "Wide Arc",
         keyCode = Enum.KeyCode.L,
