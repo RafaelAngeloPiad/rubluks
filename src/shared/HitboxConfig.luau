@@ -1,5 +1,5 @@
--- WeaponHitboxConfig: Configuration for weapon-specific hitbox sizes and offsets
--- This module manages hitbox properties for different weapon types
+-- HitboxConfig: Configuration for weapon and skill hitbox sizes, offsets, and damage
+-- This module manages hitbox properties for different weapon types and skills
 
 --[[
 HITBOX COORDINATE SYSTEM GUIDE:
@@ -21,7 +21,7 @@ EXAMPLES:
 - offset Vector3.new(2, 1, 3) = 2 studs right, 1 stud up, 3 studs forward
 ]]
 
-local WeaponHitboxConfig = {}
+local HitboxConfig = {}
 
 -- Default hitbox configuration (fallback)
 local DEFAULT_CONFIG = {
@@ -81,20 +81,26 @@ local SKILL_CONFIGS = {
     -- Samurai-specific skills
     ["samurai_skill_1"] = {
         -- Forward dash slash: long reach, medium width
-        size = Vector3.new(6, 6, 12),
-        offset = Vector3.new(0, 0, 6),
-        baseDamage = 45,
+        size = Vector3.new(6, 6, 12), -- 6 wide, 6 tall, 12 deep (long dash)
+        offset = Vector3.new(0, 0, 6), -- centered, 6 studs forward (extended reach)
+        baseDamage = 45, -- High skill damage
+        animationId = "rbxassetid://116519685012277", -- Dash Slash animation
+        name = "Dash Slash",
+        keyCode = Enum.KeyCode.K,
     },
     ["samurai_skill_2"] = {
         -- Wide sweeping arc: shorter reach, wider area
-        size = Vector3.new(10, 6, 8),
-        offset = Vector3.new(0, 0, 4.5),
-        baseDamage = 55,
+        size = Vector3.new(10, 6, 8), -- 10 wide, 6 tall, 8 deep (wide sweep)
+        offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
+        baseDamage = 55, -- Higher skill damage
+        animationId = "rbxassetid://116519685012277", -- Wide Arc animation
+        name = "Wide Arc",
+        keyCode = Enum.KeyCode.L,
     },
 }
 
 -- Get hitbox configuration for a specific weapon tag
-function WeaponHitboxConfig.getWeaponConfig(weaponTag)
+function HitboxConfig.getWeaponConfig(weaponTag)
     local config = WEAPON_CONFIGS[weaponTag]
     if config then
         return {
@@ -112,13 +118,17 @@ function WeaponHitboxConfig.getWeaponConfig(weaponTag)
     }
 end
 
--- Get hitbox configuration for a specific skill tag (for future use)
-function WeaponHitboxConfig.getSkillConfig(skillTag)
+-- Get hitbox configuration for a specific skill tag
+function HitboxConfig.getSkillConfig(skillTag)
     local config = SKILL_CONFIGS[skillTag]
     if config then
         return {
             size = config.size,
             offset = config.offset,
+            baseDamage = config.baseDamage,
+            animationId = config.animationId,
+            name = config.name,
+            keyCode = config.keyCode,
         }
     end
     
@@ -126,11 +136,15 @@ function WeaponHitboxConfig.getSkillConfig(skillTag)
     return {
         size = DEFAULT_CONFIG.size,
         offset = DEFAULT_CONFIG.offset,
+        baseDamage = DEFAULT_CONFIG.baseDamage,
+        animationId = "rbxassetid://116519685012277",
+        name = "Unknown Skill",
+        keyCode = Enum.KeyCode.Unknown,
     }
 end
 
 -- Get all available weapon tags
-function WeaponHitboxConfig.getAllWeaponTags()
+function HitboxConfig.getAllWeaponTags()
     local tags = {}
     for tag, _ in pairs(WEAPON_CONFIGS) do
         table.insert(tags, tag)
@@ -139,7 +153,7 @@ function WeaponHitboxConfig.getAllWeaponTags()
 end
 
 -- Get all available skill tags
-function WeaponHitboxConfig.getAllSkillTags()
+function HitboxConfig.getAllSkillTags()
     local tags = {}
     for tag, _ in pairs(SKILL_CONFIGS) do
         table.insert(tags, tag)
@@ -148,17 +162,17 @@ function WeaponHitboxConfig.getAllSkillTags()
 end
 
 -- Check if a weapon tag has a custom configuration
-function WeaponHitboxConfig.hasWeaponConfig(weaponTag)
+function HitboxConfig.hasWeaponConfig(weaponTag)
     return WEAPON_CONFIGS[weaponTag] ~= nil
 end
 
 -- Check if a skill tag has a custom configuration
-function WeaponHitboxConfig.hasSkillConfig(skillTag)
+function HitboxConfig.hasSkillConfig(skillTag)
     return SKILL_CONFIGS[skillTag] ~= nil
 end
 
 -- Get default configuration
-function WeaponHitboxConfig.getDefaultConfig()
+function HitboxConfig.getDefaultConfig()
     return {
         size = DEFAULT_CONFIG.size,
         offset = DEFAULT_CONFIG.offset,
@@ -167,7 +181,7 @@ function WeaponHitboxConfig.getDefaultConfig()
 end
 
 -- Debug function to print all configurations
-function WeaponHitboxConfig.printAllConfigs()
+function HitboxConfig.printAllConfigs()
     print("=== WEAPON HITBOX CONFIGURATIONS ===")
     print("Default Config:", DEFAULT_CONFIG.size, DEFAULT_CONFIG.offset)
     
@@ -182,4 +196,4 @@ function WeaponHitboxConfig.printAllConfigs()
     end
 end
 
-return WeaponHitboxConfig
+return HitboxConfig

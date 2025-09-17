@@ -10,35 +10,60 @@ local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 local HitRequest = ReplicatedStorage:WaitForChild("HitRequest")
 
--- Import weapon configuration (with safe fallback)
-local WeaponHitboxConfig
+-- Import hitbox configuration (with safe fallback)
+local HitboxConfig
 local configLoadSuccess, configError = pcall(function()
-    WeaponHitboxConfig = require(script.Parent.Parent.shared.WeaponHitboxConfig)
+    HitboxConfig = require(script.Parent.Parent.shared.HitboxConfig)
 end)
 if not configLoadSuccess then
     -- Try alternative path
     local success2, error2 = pcall(function()
-        WeaponHitboxConfig = require(game.ReplicatedStorage:WaitForChild("WeaponHitboxConfig"))
+        HitboxConfig = require(game.ReplicatedStorage:WaitForChild("HitboxConfig"))
     end)
     if not success2 then
-        WeaponHitboxConfig = nil
-        print("[SAMURAI SKILLS] Warning: Could not load WeaponHitboxConfig")
+        HitboxConfig = nil
+        print("[SAMURAI SKILLS] Warning: Could not load HitboxConfig")
     end
 end
 
--- Samurai skill configuration
-local SAMURAI_SKILLS = {
-    [Enum.KeyCode.K] = {
-        skillKey = "samurai_skill_1",
-        animationId = "rbxassetid://116519685012277", -- Dash Slash
-        name = "Dash Slash"
-    },
-    [Enum.KeyCode.L] = {
-        skillKey = "samurai_skill_2", 
-        animationId = "rbxassetid://116519685012277", -- Wide Arc
-        name = "Wide Arc"
-    }
-}
+-- Get samurai skills from centralized config
+local function getSamuraiSkills()
+    local skills = {}
+    if HitboxConfig then
+        -- Get samurai skills from HitboxConfig
+        local skill1Config = HitboxConfig.getSkillConfig("samurai_skill_1")
+        local skill2Config = HitboxConfig.getSkillConfig("samurai_skill_2")
+        
+        skills[skill1Config.keyCode] = {
+            skillKey = "samurai_skill_1",
+            animationId = skill1Config.animationId,
+            name = skill1Config.name
+        }
+        skills[skill2Config.keyCode] = {
+            skillKey = "samurai_skill_2",
+            animationId = skill2Config.animationId,
+            name = skill2Config.name
+        }
+        
+        print("[SAMURAI SKILLS] Loaded skills from HitboxConfig")
+    else
+        -- Fallback if config not available
+        skills[Enum.KeyCode.K] = {
+            skillKey = "samurai_skill_1",
+            animationId = "rbxassetid://116519685012277",
+            name = "Dash Slash"
+        }
+        skills[Enum.KeyCode.L] = {
+            skillKey = "samurai_skill_2",
+            animationId = "rbxassetid://116519685012277",
+            name = "Wide Arc"
+        }
+        print("[SAMURAI SKILLS] Using fallback skill config")
+    end
+    return skills
+end
+
+local SAMURAI_SKILLS = getSamuraiSkills()
 
 -- Track current state
 local currentCharacter = nil

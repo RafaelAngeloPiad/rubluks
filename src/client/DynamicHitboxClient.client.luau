@@ -8,18 +8,18 @@ local remote = ReplicatedStorage:WaitForChild("HitRequest")
 local player = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
--- Import weapon configuration (with safe fallback)
-local WeaponHitboxConfig
+-- Import hitbox configuration (with safe fallback)
+local HitboxConfig
 local configLoadSuccess, configError = pcall(function()
-    WeaponHitboxConfig = require(script.Parent.Parent.shared.WeaponHitboxConfig)
+    HitboxConfig = require(script.Parent.Parent.shared.HitboxConfig)
 end)
 if not configLoadSuccess then
     -- Try alternative path
     local success2, error2 = pcall(function()
-        WeaponHitboxConfig = require(game.ReplicatedStorage:WaitForChild("WeaponHitboxConfig"))
+        HitboxConfig = require(game.ReplicatedStorage:WaitForChild("HitboxConfig"))
     end)
     if not success2 then
-        WeaponHitboxConfig = nil
+        HitboxConfig = nil
     end
 end
 
@@ -35,17 +35,17 @@ local DEFAULT_DAMAGE = 25
 local DynamicHitboxClient = {}
 
 -- Helper function to get weapon hitbox configuration for a tool
-local function getWeaponHitboxConfig(tool)
+local function getHitboxConfig(tool)
     -- If config system is not available, use defaults
-    if not WeaponHitboxConfig then
+    if not HitboxConfig then
         return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE
     end
     
     -- Check for weapon-specific tags
-    local weaponTags = WeaponHitboxConfig.getAllWeaponTags()
+    local weaponTags = HitboxConfig.getAllWeaponTags()
     for _, weaponTag in ipairs(weaponTags) do
         if CollectionService:HasTag(tool, weaponTag) then
-            local config = WeaponHitboxConfig.getWeaponConfig(weaponTag)
+            local config = HitboxConfig.getWeaponConfig(weaponTag)
             return config.size, config.offset, config.baseDamage
         end
     end
@@ -56,11 +56,13 @@ end
 
 -- Helper function to get skill hitbox configuration
 local function getSkillHitboxConfig(skillKey)
-    if WeaponHitboxConfig then
-        local config = WeaponHitboxConfig.getSkillConfig(skillKey)
+    if HitboxConfig then
+        local config = HitboxConfig.getSkillConfig(skillKey)
+        print("[HITBOX] Using HitboxConfig for skill:", skillKey, "Size:", config.size, "Damage:", config.baseDamage)
         return config.size, config.offset, config.baseDamage
     else
         -- Fallback values if config system isn't available
+        print("[HITBOX] Using fallback config for skill:", skillKey)
         return Vector3.new(8, 6, 8), Vector3.new(0, 0, 5), 40
     end
 end
@@ -108,7 +110,7 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
     if not humanoidRootPart then return end
 
     -- Get weapon-specific hitbox configuration
-    local hitboxSize, hitboxOffset, weaponDamage = getWeaponHitboxConfig(tool)
+    local hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
 
     -- Generate hitbox position in front of the player using LookVector
     local rootCFrame = humanoidRootPart.CFrame
