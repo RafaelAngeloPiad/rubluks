@@ -1,4 +1,4 @@
--- DynamicWeaponHitboxServer: Processes generated hitbox requests for any Tool with "has_damage" tag
+-- DynamicHitboxServer: Processes generated hitbox requests for weapons and skills
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -34,7 +34,7 @@ end
 remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize, weaponDamage)
     -- Use weapon-specific damage or fallback to default
     local damageToApply = weaponDamage or DEFAULT_DAMAGE
-    print("[SERVER] Generated hitbox request received from player:", player.Name, "CFrame:", generatedHitboxCFrame.Position, "Size:", hitboxSize, "Damage:", damageToApply)
+    print("[SERVER] Hitbox request received from player:", player.Name, "CFrame:", generatedHitboxCFrame.Position, "Size:", hitboxSize, "Damage:", damageToApply)
     local character = player.Character
     if not character then 
         print("[SERVER] No character for player", player.Name)

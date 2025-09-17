@@ -77,20 +77,19 @@ local WEAPON_CONFIGS = {
 
 -- Future: Skills can have their own configurations too
 local SKILL_CONFIGS = {
-    -- Example skill configurations (for future use)
-    ["fire_slash"] = {
-        size = Vector3.new(10, 8, 12),
+
+    -- Samurai-specific skills
+    ["samurai_skill_1"] = {
+        -- Forward dash slash: long reach, medium width
+        size = Vector3.new(6, 6, 12),
         offset = Vector3.new(0, 0, 6),
+        baseDamage = 45,
     },
-    
-    ["ice_spear"] = {
-        size = Vector3.new(4, 4, 15),
-        offset = Vector3.new(0, 0, 8),
-    },
-    
-    ["thunder_strike"] = {
-        size = Vector3.new(12, 15, 8),
-        offset = Vector3.new(0, 0, 4),
+    ["samurai_skill_2"] = {
+        -- Wide sweeping arc: shorter reach, wider area
+        size = Vector3.new(10, 6, 8),
+        offset = Vector3.new(0, 0, 4.5),
+        baseDamage = 55,
     },
 }
 
