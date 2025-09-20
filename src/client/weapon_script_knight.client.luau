@@ -1,7 +1,7 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
-local WeaponScanner = require(script.Parent.scan_for_weapon_tag)
+local WeaponScanner = require(script.Parent.weapon_scan_for_weapon_tag)
 local WeaponUtils = require(script.Parent.weapon_utils)
 
 -- Knight weapon animation IDs (from old working script)

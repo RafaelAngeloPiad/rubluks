@@ -75,7 +75,7 @@ local WEAPON_CONFIGS = {
     },
 }
 
--- Future: Skills can have their own configurations too
+-- Skills can have their own configurations for each weapon type
 local SKILL_CONFIGS = {
 
     -- Samurai-specific skills
@@ -95,6 +95,86 @@ local SKILL_CONFIGS = {
         baseDamage = 10, -- Higher skill damage
         animationId = "rbxassetid://116519685012277", -- Wide Arc animation
         name = "Wide Arc",
+        keyCode = Enum.KeyCode.L,
+    },
+
+    -- Berserker-specific skills
+    ["berserker_skill_1"] = {
+        -- Berserker rage: short range but high damage burst
+        size = Vector3.new(6, 6, 5), -- 6 wide, 6 tall, 5 deep (close combat)
+        offset = Vector3.new(0, 0, 2.5), -- centered, 2.5 studs forward (close range)
+        baseDamage = 15, -- Very high damage for berserker rage
+        animationId = "rbxassetid://116519685012277", -- Berserker Rage animation
+        name = "Berserker Rage",
+        keyCode = Enum.KeyCode.K,
+    },
+    ["berserker_skill_2"] = {
+        -- Whirlwind attack: wide area, short reach
+        size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (wide area)
+        offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (medium reach)
+        baseDamage = 12, -- High damage whirlwind
+        animationId = "rbxassetid://116519685012277", -- Whirlwind animation
+        name = "Whirlwind",
+        keyCode = Enum.KeyCode.L,
+    },
+
+    -- Gladiator-specific skills
+    ["gladiator_skill_1"] = {
+        -- Spear thrust: maximum reach attack
+        size = Vector3.new(4, 6, 15), -- 4 wide, 6 tall, 15 deep (precise long thrust)
+        offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (maximum reach)
+        baseDamage = 12, -- High damage precise thrust
+        animationId = "rbxassetid://116519685012277", -- Spear Thrust animation
+        name = "Spear Thrust",
+        keyCode = Enum.KeyCode.K,
+    },
+    ["gladiator_skill_2"] = {
+        -- Arena sweep: wide but shorter reach
+        size = Vector3.new(12, 6, 8), -- 12 wide, 6 tall, 8 deep (wide arena sweep)
+        offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (medium reach)
+        baseDamage = 10, -- Moderate damage sweep
+        animationId = "rbxassetid://116519685012277", -- Arena Sweep animation
+        name = "Arena Sweep",
+        keyCode = Enum.KeyCode.L,
+    },
+
+    -- Knight-specific skills
+    ["knight_skill_1"] = {
+        -- Shield bash: forward shield attack
+        size = Vector3.new(6, 6, 8), -- 6 wide, 6 tall, 8 deep (shield bash)
+        offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
+        baseDamage = 8, -- Moderate damage shield bash
+        animationId = "rbxassetid://116519685012277", -- Shield Bash animation
+        name = "Shield Bash",
+        keyCode = Enum.KeyCode.K,
+    },
+    ["knight_skill_2"] = {
+        -- Defensive stance: protective area around knight
+        size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (defensive area)
+        offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (close protection)
+        baseDamage = 6, -- Lower damage, defensive skill
+        animationId = "rbxassetid://116519685012277", -- Defensive Stance animation
+        name = "Defensive Stance",
+        keyCode = Enum.KeyCode.L,
+    },
+
+    -- Archer-specific skills
+    ["archer_skill_1"] = {
+        -- Quick shot: precise ranged attack (using melee hitbox for now)
+        size = Vector3.new(4, 6, 8), -- 4 wide, 6 tall, 8 deep (precise shot)
+        offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (ranged)
+        baseDamage = 8, -- Moderate damage precise shot
+        animationId = "rbxassetid://116519685012277", -- Quick Shot animation
+        name = "Quick Shot",
+        keyCode = Enum.KeyCode.K,
+    },
+    ["archer_skill_2"] = {
+        -- Volley: wide area shot
+        size = Vector3.new(10, 6, 10), -- 10 wide, 6 tall, 10 deep (wide volley)
+        offset = Vector3.new(0, 0, 6), -- centered, 6 studs forward (medium range)
+        baseDamage = 6, -- Lower damage per shot, area effect
+        animationId = "rbxassetid://116519685012277", -- Volley animation
+        name = "Volley",
         keyCode = Enum.KeyCode.L,
     },
 }
