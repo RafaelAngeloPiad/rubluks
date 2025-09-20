@@ -179,6 +179,130 @@ local SKILL_CONFIGS = {
     },
 }
 
+-- Combo attack configurations for each weapon type
+-- Each combo has 3 attacks with individual timing, damage, and hitbox settings
+local COMBO_CONFIGS = {
+    -- Berserker combo: Fast, aggressive 3-hit combo
+    ["berserker_combo"] = {
+        comboWindow = 2.0, -- Time window to continue combo (seconds)
+        resetTime = 3.0, -- Time before combo resets if no input (seconds)
+        
+        -- Attack 1: Quick opener
+        attack1 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.8, -- Animation duration
+            hitboxDelay = 0.3, -- When hitbox appears in animation
+            hitboxDuration = 0.4, -- How long hitbox stays active
+            size = Vector3.new(5, 5, 3), -- Hitbox size
+            offset = Vector3.new(0, 0, 1.5), -- Hitbox offset
+            baseDamage = 8, -- Damage for this attack
+            name = "Berserker Strike 1",
+        },
+        
+        -- Attack 2: Medium follow-up
+        attack2 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.0,
+            hitboxDelay = 0.2,
+            hitboxDuration = 0.5,
+            size = Vector3.new(6, 5, 4),
+            offset = Vector3.new(0, 0, 2),
+            baseDamage = 10,
+            name = "Berserker Strike 2",
+        },
+        
+        -- Attack 3: Powerful finisher
+        attack3 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.2,
+            hitboxDelay = 0.4,
+            hitboxDuration = 0.6,
+            size = Vector3.new(7, 6, 5),
+            offset = Vector3.new(0, 0, 2.5),
+            baseDamage = 15,
+            name = "Berserker Finisher",
+        },
+    },
+}
+
+-- Get combo configuration for a specific weapon tag
+function HitboxConfig.getComboConfig(weaponTag)
+    local comboKey = weaponTag .. "_combo"
+    local config = COMBO_CONFIGS[comboKey]
+    if config then
+        return {
+            comboWindow = config.comboWindow,
+            resetTime = config.resetTime,
+            attack1 = {
+                animationId = config.attack1.animationId,
+                duration = config.attack1.duration,
+                hitboxDelay = config.attack1.hitboxDelay,
+                hitboxDuration = config.attack1.hitboxDuration,
+                size = config.attack1.size,
+                offset = config.attack1.offset,
+                baseDamage = config.attack1.baseDamage,
+                name = config.attack1.name,
+            },
+            attack2 = {
+                animationId = config.attack2.animationId,
+                duration = config.attack2.duration,
+                hitboxDelay = config.attack2.hitboxDelay,
+                hitboxDuration = config.attack2.hitboxDuration,
+                size = config.attack2.size,
+                offset = config.attack2.offset,
+                baseDamage = config.attack2.baseDamage,
+                name = config.attack2.name,
+            },
+            attack3 = {
+                animationId = config.attack3.animationId,
+                duration = config.attack3.duration,
+                hitboxDelay = config.attack3.hitboxDelay,
+                hitboxDuration = config.attack3.hitboxDuration,
+                size = config.attack3.size,
+                offset = config.attack3.offset,
+                baseDamage = config.attack3.baseDamage,
+                name = config.attack3.name,
+            },
+        }
+    end
+    
+    -- Return default combo if weapon tag not found
+    return {
+        comboWindow = 2.0,
+        resetTime = 3.0,
+        attack1 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.8,
+            hitboxDelay = 0.3,
+            hitboxDuration = 0.4,
+            size = Vector3.new(5, 5, 3),
+            offset = Vector3.new(0, 0, 1.5),
+            baseDamage = 8,
+            name = "Default Strike 1",
+        },
+        attack2 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.0,
+            hitboxDelay = 0.2,
+            hitboxDuration = 0.5,
+            size = Vector3.new(6, 5, 4),
+            offset = Vector3.new(0, 0, 2),
+            baseDamage = 10,
+            name = "Default Strike 2",
+        },
+        attack3 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.2,
+            hitboxDelay = 0.4,
+            hitboxDuration = 0.6,
+            size = Vector3.new(7, 6, 5),
+            offset = Vector3.new(0, 0, 2.5),
+            baseDamage = 15,
+            name = "Default Finisher",
+        },
+    }
+end
+
 -- Get hitbox configuration for a specific weapon tag
 function HitboxConfig.getWeaponConfig(weaponTag)
     local config = WEAPON_CONFIGS[weaponTag]

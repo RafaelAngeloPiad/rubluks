@@ -79,7 +79,7 @@ local function createVisualHitbox(hitboxCFrame, size, hitboxType)
     
     -- Different colors and durations for different hitbox types
     if hitboxType == "weapon" then
-        hitboxPart.Transparency = 0.5
+        hitboxPart.Transparency = 0.7
         hitboxPart.Color = Color3.new(1, 0, 0) -- Red for weapons
         hitboxPart.Name = "WeaponHitboxVisual"
         -- Remove after 0.3 seconds
@@ -89,7 +89,7 @@ local function createVisualHitbox(hitboxCFrame, size, hitboxType)
             end
         end)
     elseif hitboxType == "skill" then
-        hitboxPart.Transparency = 0.3
+        hitboxPart.Transparency = 0.7
         hitboxPart.Color = Color3.new(0, 0, 1) -- Blue for skills
         hitboxPart.Name = "SkillHitboxVisual"
         -- Remove after 0.5 seconds (longer for skills)
