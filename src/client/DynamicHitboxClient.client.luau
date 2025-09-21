@@ -58,10 +58,18 @@ end
 local function getSkillHitboxConfig(skillKey)
     if HitboxConfig then
         local config = HitboxConfig.getSkillConfig(skillKey)
-        return config.size, config.offset, config.baseDamage
+        return config -- Return full config object with timing info
     else
         -- Fallback values if config system isn't available
-        return Vector3.new(8, 6, 8), Vector3.new(0, 0, 5), 40
+        return {
+            size = Vector3.new(8, 6, 8),
+            offset = Vector3.new(0, 0, 5),
+            baseDamage = 40,
+            name = "Unknown Skill",
+            cooldownTime = 2.0,
+            castTime = 0.8,
+            hitboxDelay = 0.3,
+        }
     end
 end
 
@@ -126,27 +134,94 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
     createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
 end
 
--- Generate hitbox for skill attacks
+-- =====================================================================================
+-- SKILL COOLDOWN SYSTEM
+-- =====================================================================================
+
+-- Skill cooldown management functions
+local SkillCooldownSystem = {}
+
+function SkillCooldownSystem.isSkillOnCooldown(skillKey, cooldownTime)
+    local lastUseTime = _G.skillCooldowns[skillKey] or 0
+    local timeSinceLastUse = tick() - lastUseTime
+    return timeSinceLastUse < cooldownTime
+end
+
+function SkillCooldownSystem.isSkillCasting(skillKey)
+    return _G.skillCasting[skillKey] == true
+end
+
+function SkillCooldownSystem.setSkillCooldown(skillKey)
+    _G.skillCooldowns[skillKey] = tick()
+end
+
+function SkillCooldownSystem.setSkillCasting(skillKey, isCasting)
+    _G.skillCasting[skillKey] = isCasting
+end
+
+function SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime)
+    local lastUseTime = _G.skillCooldowns[skillKey] or 0
+    local timeSinceLastUse = tick() - lastUseTime
+    return math.max(0, cooldownTime - timeSinceLastUse)
+end
+
+-- Generate hitbox for skill attacks (with cooldown and casting management)
 function DynamicHitboxClient.generateSkillHitbox(skillKey)
     if not player.Character then return end
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
 
-    -- Get skill-specific hitbox configuration
-    local size, offset, damage = getSkillHitboxConfig(skillKey)
+    -- Get skill-specific configuration including timing
+    local skillConfig = getSkillHitboxConfig(skillKey)
+    local size, offset, damage = skillConfig.size, skillConfig.offset, skillConfig.baseDamage
+    local cooldownTime = skillConfig.cooldownTime or 2.0
+    local castTime = skillConfig.castTime or 0.8
+    local hitboxDelay = skillConfig.hitboxDelay or 0.3
 
-    -- Calculate hitbox position
-    local rootCFrame = humanoidRootPart.CFrame
-    local forwardOffset = rootCFrame.LookVector * offset.Z
-    local rightOffset = rootCFrame.RightVector * offset.X
-    local upOffset = rootCFrame.UpVector * offset.Y
-    local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
-    local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+    -- Check if skill is on cooldown
+    if SkillCooldownSystem.isSkillOnCooldown(skillKey, cooldownTime) then
+        local remainingTime = SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime)
+        print(string.format("[SKILL COOLDOWN] ❌ %s on cooldown! %.1fs remaining", skillConfig.name or skillKey, remainingTime))
+        return
+    end
 
-    remote:FireServer(hitboxCFrame, size, damage)
+    -- Check if skill is already casting
+    if SkillCooldownSystem.isSkillCasting(skillKey) then
+        print(string.format("[SKILL COOLDOWN] ❌ %s already casting!", skillConfig.name or skillKey))
+        return
+    end
 
-    -- Create visual hitbox
-    createVisualHitbox(hitboxCFrame, size, "skill")
+    print(string.format("[SKILL COOLDOWN] ✅ Casting %s (Cast: %.1fs, Cooldown: %.1fs)", skillConfig.name or skillKey, castTime, cooldownTime))
+
+    -- Start casting
+    SkillCooldownSystem.setSkillCasting(skillKey, true)
+    SkillCooldownSystem.setSkillCooldown(skillKey) -- Set cooldown immediately when cast starts
+
+    -- Schedule hitbox generation after delay
+    task.delay(hitboxDelay, function()
+        if SkillCooldownSystem.isSkillCasting(skillKey) then -- Only generate if still casting
+            -- Calculate hitbox position
+            local rootCFrame = humanoidRootPart.CFrame
+            local forwardOffset = rootCFrame.LookVector * offset.Z
+            local rightOffset = rootCFrame.RightVector * offset.X
+            local upOffset = rootCFrame.UpVector * offset.Y
+            local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+            local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+
+            remote:FireServer(hitboxCFrame, size, damage)
+
+            -- Create visual hitbox
+            createVisualHitbox(hitboxCFrame, size, "skill")
+            
+            print(string.format("[SKILL COOLDOWN] 💥 %s hitbox generated!", skillConfig.name or skillKey))
+        end
+    end)
+
+    -- End casting after cast time
+    task.delay(castTime, function()
+        SkillCooldownSystem.setSkillCasting(skillKey, false)
+        print(string.format("[SKILL COOLDOWN] ⏰ %s cast completed", skillConfig.name or skillKey))
+    end)
 end
 
 -- Generate hitbox for combo attacks (uses weapon config but allows custom override)
@@ -188,6 +263,10 @@ end
 -- Global combo state tracking
 _G.comboSystemActive = false -- Set to true when any combo system is running
 _G.lastComboTime = 0 -- Track when last combo attack happened
+
+-- Global skill cooldown tracking
+_G.skillCooldowns = {} -- Track last use time for each skill
+_G.skillCasting = {} -- Track if skills are currently casting
 
 -- Function to check if we should allow tool activation
 local function shouldAllowToolActivation(tool)
@@ -262,6 +341,32 @@ _G.generateSkillHitbox = DynamicHitboxClient.generateSkillHitbox
 
 -- Make combo hitbox generation available globally
 _G.generateComboHitbox = DynamicHitboxClient.generateComboHitbox
+
+-- Make skill cooldown functions available globally for debugging
+_G.getSkillCooldown = function(skillKey, cooldownTime)
+    return SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime or 2.0)
+end
+
+_G.resetSkillCooldown = function(skillKey)
+    _G.skillCooldowns[skillKey] = 0
+    _G.skillCasting[skillKey] = false
+    print(string.format("[SKILL COOLDOWN] ⚙️ Reset cooldown for %s", skillKey))
+end
+
+_G.resetAllSkillCooldowns = function()
+    _G.skillCooldowns = {}
+    _G.skillCasting = {}
+    print("[SKILL COOLDOWN] ⚙️ Reset all skill cooldowns")
+end
+
+_G.debugSkillCooldowns = function()
+    print("[SKILL COOLDOWN DEBUG] Current skill states:")
+    for skillKey, lastUse in pairs(_G.skillCooldowns) do
+        local isCasting = _G.skillCasting[skillKey] or false
+        local timeSinceUse = tick() - lastUse
+        print(string.format("  %s: Last used %.1fs ago, Casting: %s", skillKey, timeSinceUse, tostring(isCasting)))
+    end
+end
 
 -- =====================================================================================
 -- EXPORT MODULE

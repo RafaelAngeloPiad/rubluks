@@ -7,7 +7,7 @@ This document explains how the weapon and skill hitbox systems work together, in
 The hitbox system has **three main types** of hitboxes:
 1. **Weapon Hitboxes** (Red) - Regular weapon attacks
 2. **Combo Hitboxes** (Red) - Custom combo attacks with timing
-3. **Skill Hitboxes** (Blue) - Special abilities (K/L keys)
+3. **Skill Hitboxes** (Blue) - Special abilities (K/L keys) with cooldowns
 
 ## 🏗️ System Architecture
 
@@ -38,8 +38,10 @@ Left Mouse Click
 
 K/L Key Press
 └── UserInputService.InputBegan (SkillScript)
-    ├── generateSkillHitbox()
-    └── _G.generateSkillHitbox() → Blue Hitbox
+    ├── Check cooldown via _G.getSkillCooldown()
+    ├── if (on cooldown) → Show cooldown feedback, exit
+    ├── else → generateSkillHitbox()
+    └── _G.generateSkillHitbox() → Check cooldown → Blue Hitbox + Set cooldown
 ```
 
 ## 🚫 Tool Activation Blocking System
@@ -49,6 +51,8 @@ Located in `DynamicHitboxClient.client.luau`:
 ```lua
 _G.comboSystemActive = false  -- Combo system running status
 _G.lastComboTime = 0         -- Timestamp of last combo activity
+_G.skillCooldowns = {}       -- Track last use time for each skill
+_G.skillCasting = {}         -- Track if skills are currently casting
 ```
 
 ### Blocking Logic
@@ -115,6 +119,8 @@ resetTime = 3.0,    -- Time before combo auto-resets (seconds)
 - **Function**: `_G.generateSkillHitbox(skillKey)`
 - **Color**: 🔵 Blue
 - **Config**: Uses skill config from `HitboxConfig.luau`
+- **Cooldown**: Prevents spam casting (3-4s cooldowns)
+- **Cast Time**: Skills have cast duration (0.8-1.0s)
 
 ## 🔧 Configuration System
 
@@ -144,6 +150,10 @@ SKILL_CONFIGS = {
         offset = Vector3.new(0, 0, 2.5),
         baseDamage = 15,
         keyCode = Enum.KeyCode.K,
+        -- Timing configuration
+        cooldownTime = 3.0, -- 3 second cooldown
+        castTime = 0.8,     -- 0.8 second cast duration
+        hitboxDelay = 0.3,  -- Hitbox appears 0.3s into cast
     }
 }
 ```
@@ -151,6 +161,8 @@ SKILL_CONFIGS = {
 ## 🐛 Debugging Commands
 
 ### Available Global Functions
+
+#### Combo System
 ```lua
 _G.debugCombo()              -- Show current combo state
 _G.checkHitboxSystem()       -- Verify hitbox system availability
@@ -161,12 +173,30 @@ _G.setAttackDuration(n, s)   -- Change attack duration
 _G.getAttackDurations()      -- Get current durations
 ```
 
+#### Skill System
+```lua
+_G.getSkillCooldown(skillKey, cooldownTime)  -- Get remaining cooldown time
+_G.resetSkillCooldown(skillKey)              -- Reset specific skill cooldown
+_G.resetAllSkillCooldowns()                  -- Reset all skill cooldowns
+_G.debugSkillCooldowns()                     -- Show all skill cooldown states
+```
+
 ### Debug Output Examples
+
+#### Combo System
 ```
 [BERSERKER COMBO] Executing attack 1: Berserker Strike 1 (Duration: 0.80s)
 [DYNAMIC HITBOX] ❌ Tool activation blocked - combo system is active
 [BERSERKER COMBO] Attack 1 duration completed (0.80s)
 [BERSERKER COMBO] Still in combo window, waiting for next input...
+```
+
+#### Skill System
+```
+[SKILL COOLDOWN] ✅ Casting Berserker Rage (Cast: 0.8s, Cooldown: 3.0s)
+[SKILL COOLDOWN] 💥 Berserker Rage hitbox generated!
+[SKILL COOLDOWN] ⏰ Berserker Rage cast completed
+[SKILL COOLDOWN] ❌ Berserker Rage on cooldown! 2.3s remaining
 ```
 
 ## 🚨 Common Issues & Solutions
@@ -185,6 +215,16 @@ _G.getAttackDurations()      -- Get current durations
 **Symptom**: Combo feels wrong
 **Solution**: Adjust `comboWindow` and `resetTime` in `HitboxConfig.luau`
 
+### Issue: Skills Can Be Spammed
+**Symptom**: Skills fire too frequently
+**Cause**: Cooldown system not working
+**Solution**: Check `_G.debugSkillCooldowns()` and verify timing in `HitboxConfig.luau`
+
+### Issue: Skills Never Come Off Cooldown
+**Symptom**: Skills permanently disabled
+**Cause**: Cooldown tracking stuck
+**Solution**: Call `_G.resetAllSkillCooldowns()` or restart
+
 ## 📝 Development Notes
 
 ### Adding New Weapon Types
@@ -193,8 +233,19 @@ _G.getAttackDurations()      -- Get current durations
 3. Update blocking logic if needed (currently only blocks `berserker_weapon`)
 
 ### Adding New Skills
-1. Add skill config to `SKILL_CONFIGS`
-2. Skills automatically work with `_G.generateSkillHitbox()`
+1. Add skill config to `SKILL_CONFIGS` with timing parameters:
+   ```lua
+   ["new_skill"] = {
+       size = Vector3.new(6, 6, 6),
+       offset = Vector3.new(0, 0, 3),
+       baseDamage = 10,
+       keyCode = Enum.KeyCode.J,
+       cooldownTime = 2.5, -- Cooldown between uses
+       castTime = 0.6,     -- How long the skill takes to cast
+       hitboxDelay = 0.2,  -- When hitbox appears during cast
+   }
+   ```
+2. Skills automatically work with `_G.generateSkillHitbox()` and cooldown system
 
 ### Modifying Combo Logic
 - Main combo logic in `weapon_script_berserker_combo.lua`
@@ -208,3 +259,4 @@ _G.getAttackDurations()      -- Get current durations
 3. **Configuration-Driven**: Easy to adjust timing and damage without code changes
 4. **Fail-Safe Design**: System falls back to basic weapon hitboxes if combo fails
 5. **Visual Feedback**: Different colors help distinguish hitbox types during development
+6. **Anti-Spam Protection**: Cooldowns prevent skill abuse while maintaining responsive gameplay

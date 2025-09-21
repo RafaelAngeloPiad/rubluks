@@ -194,10 +194,54 @@ local function onInputBegan(input, gameProcessed)
     
     local skill = BERSERKER_SKILLS[input.KeyCode]
     if skill then
-        print("[BERSERKER SKILLS] Casting:", skill.name)
+        print("[BERSERKER SKILLS] Attempting to cast:", skill.name)
+        
+        -- Get skill config to check proper cooldown time
+        local skillConfig = nil
+        if HitboxConfig then
+            skillConfig = HitboxConfig.getSkillConfig(skill.skillKey)
+        end
+        local cooldownTime = skillConfig and skillConfig.cooldownTime or 3.0
+        
+        -- Check cooldown before playing animation (for immediate feedback)
+        if _G.getSkillCooldown and _G.getSkillCooldown(skill.skillKey, cooldownTime) > 0 then
+            local remaining = _G.getSkillCooldown(skill.skillKey, cooldownTime)
+            print(string.format("[BERSERKER SKILLS] ❌ %s on cooldown! %.1fs remaining", skill.name, remaining))
+            
+            -- Show cooldown feedback
+            if currentCharacter and currentCharacter:FindFirstChild("Head") then
+                local gui = Instance.new("BillboardGui")
+                gui.Size = UDim2.new(0, 120, 0, 40)
+                gui.StudsOffset = Vector3.new(0, 4, 0)
+                gui.Parent = currentCharacter.Head
+                
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = string.format("COOLDOWN %.1fs", remaining)
+                label.TextColor3 = Color3.new(0.8, 0.8, 0.8) -- Gray for cooldown
+                label.TextScaled = true
+                label.Font = Enum.Font.SourceSansBold
+                label.Parent = gui
+                
+                -- Remove after 1 second
+                task.delay(1, function()
+                    if gui then gui:Destroy() end
+                end)
+            end
+            return
+        end
+        
+        -- Check if skill is currently casting (prevents animation spam)
+        if _G.skillCasting and _G.skillCasting[skill.skillKey] then
+            print(string.format("[BERSERKER SKILLS] ❌ %s already casting!", skill.name))
+            return
+        end
+        
+        print("[BERSERKER SKILLS] ✅ Casting:", skill.name)
         -- Play animation
         playSkillAnimation(skill.skillKey)
-        -- Generate hitbox
+        -- Generate hitbox (with built-in cooldown system)
         generateSkillHitbox(skill.skillKey)
     end
 end

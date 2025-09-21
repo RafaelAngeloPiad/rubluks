@@ -107,6 +107,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Berserker Rage animation
         name = "Berserker Rage",
         keyCode = Enum.KeyCode.K,
+        -- Timing configuration
+        cooldownTime = 3.0, -- 3 second cooldown between uses
+        castTime = 0.8, -- 0.8 second cast/animation duration
+        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation
     },
     ["berserker_skill_2"] = {
         -- Whirlwind attack: wide area, short reach
@@ -116,6 +120,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Whirlwind animation
         name = "Whirlwind",
         keyCode = Enum.KeyCode.L,
+        -- Timing configuration
+        cooldownTime = 4.0, -- 4 second cooldown between uses
+        castTime = 1.0, -- 1.0 second cast/animation duration
+        hitboxDelay = 0.4, -- Hitbox appears 0.4s into animation
     },
 
     -- Gladiator-specific skills
@@ -333,6 +341,10 @@ function HitboxConfig.getSkillConfig(skillTag)
             animationId = config.animationId,
             name = config.name,
             keyCode = config.keyCode,
+            -- Timing configuration
+            cooldownTime = config.cooldownTime or 2.0, -- Default 2s cooldown
+            castTime = config.castTime or 0.8, -- Default 0.8s cast time
+            hitboxDelay = config.hitboxDelay or 0.3, -- Default 0.3s hitbox delay
         }
     end
     
@@ -344,6 +356,10 @@ function HitboxConfig.getSkillConfig(skillTag)
         animationId = "rbxassetid://116519685012277",
         name = "Unknown Skill",
         keyCode = Enum.KeyCode.Unknown,
+        -- Default timing configuration
+        cooldownTime = 2.0,
+        castTime = 0.8,
+        hitboxDelay = 0.3,
     }
 end
 
