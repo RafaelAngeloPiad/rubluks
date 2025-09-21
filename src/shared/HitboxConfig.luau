@@ -463,18 +463,54 @@ function HitboxConfig.getDamageInterval()
     return DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
 end
 
--- Calculate damage per tick for sustained hitboxes
-function HitboxConfig.calculateDamagePerTick(totalDamage, hitboxDuration)
+-- Calculate DOT info for sustained hitboxes (simple: full damage every interval)
+function HitboxConfig.calculateDamagePerTick(baseDamage, hitboxDuration)
     local interval = DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
-    local tickCount = math.max(1, math.floor(hitboxDuration / interval))
-    local damagePerTick = math.ceil(totalDamage / tickCount)
+    local maxTicks = math.floor(hitboxDuration / interval) + 1 -- +1 for immediate first tick
+    
+    print(string.format("[DOT CALCULATION] Base damage: %d every %.2fs, Duration: %.2fs", baseDamage, interval, hitboxDuration))
+    print(string.format("[DOT CALCULATION] Max possible ticks: %d (immediate + every %.2fs)", maxTicks, interval))
     
     return {
-        damagePerTick = damagePerTick,
-        tickCount = tickCount,
-        actualTotalDamage = damagePerTick * tickCount,
-        interval = interval
+        damagePerTick = baseDamage, -- Full base damage every tick
+        maxTicks = maxTicks,
+        interval = interval,
+        duration = hitboxDuration
     }
+end
+
+-- Test function to verify DOT calculations
+function HitboxConfig.testDOTCalculations()
+    print("=== DOT CALCULATION TESTS ===")
+    
+    -- Test berserker combo attacks
+    local combo = HitboxConfig.getComboConfig("berserker_weapon")
+    if combo then
+        print("\nBerserker Combo DOT Tests:")
+        
+        print("Attack 1:")
+        local result1 = HitboxConfig.calculateDamagePerTick(combo.attack1.baseDamage, combo.attack1.hitboxDuration)
+        
+        print("Attack 2:")
+        local result2 = HitboxConfig.calculateDamagePerTick(combo.attack2.baseDamage, combo.attack2.hitboxDuration)
+        
+        print("Attack 3:")
+        local result3 = HitboxConfig.calculateDamagePerTick(combo.attack3.baseDamage, combo.attack3.hitboxDuration)
+    end
+    
+    -- Test berserker skills
+    print("\nBerserker Skill DOT Tests:")
+    local skill1 = HitboxConfig.getSkillConfig("berserker_skill_1")
+    if skill1 then
+        print("Berserker Rage:")
+        HitboxConfig.calculateDamagePerTick(skill1.baseDamage, skill1.hitboxDuration)
+    end
+    
+    local skill2 = HitboxConfig.getSkillConfig("berserker_skill_2")
+    if skill2 then
+        print("Whirlwind:")
+        HitboxConfig.calculateDamagePerTick(skill2.baseDamage, skill2.hitboxDuration)
+    end
 end
 
 -- Debug function to print all configurations (for development use)

@@ -225,13 +225,13 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
                 local damageInfo = HitboxConfig.calculateDamagePerTick(damage, hitboxDuration)
                 local hitboxId = DOTSystem.generateUniqueHitboxId(skillKey, "skill")
                 
-                print(string.format("[SKILL COOLDOWN] 💥 Creating DOT skill hitbox: %d damage over %.1fs (%d ticks of %d damage)", 
-                    damageInfo.actualTotalDamage, hitboxDuration, damageInfo.tickCount, damageInfo.damagePerTick))
+                print(string.format("[SKILL COOLDOWN] 💥 Creating simple DOT skill hitbox: %d damage every %.1fs for %.1fs", 
+                    damage, damageInterval, hitboxDuration))
                 
-                DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damageInfo.damagePerTick, damageInfo.tickCount, damageInfo.interval, "skill")
+                DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damage, hitboxDuration, damageInterval, "skill")
             else
                 -- Single-hit hitbox (traditional)
-    remote:FireServer(hitboxCFrame, size, damage)
+                remote:FireServer(hitboxCFrame, size, damage)
                 print(string.format("[SKILL COOLDOWN] 💥 Single-hit skill hitbox: %d damage", damage))
             end
 
@@ -292,10 +292,10 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
             local damageInfo = HitboxConfig.calculateDamagePerTick(weaponDamage, hitboxDuration)
             local hitboxId = DOTSystem.generateUniqueHitboxId("combo", "attack")
             
-            print(string.format("[COMBO HITBOX] 💥 Creating DOT combo hitbox: %d damage over %.2fs (%d ticks of %d damage)", 
-                damageInfo.actualTotalDamage, hitboxDuration, damageInfo.tickCount, damageInfo.damagePerTick))
+            print(string.format("[COMBO HITBOX] 💥 Creating simple DOT combo hitbox: %d damage every %.1fs for %.1fs", 
+                weaponDamage, damageInterval, hitboxDuration))
             
-            DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, hitboxSize, damageInfo.damagePerTick, damageInfo.tickCount, damageInfo.interval, "weapon")
+            DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, hitboxSize, weaponDamage, hitboxDuration, damageInterval, "weapon")
         else
             -- Single-hit hitbox (traditional)
             remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
@@ -335,27 +335,36 @@ _G.playerDamageImmunity = {} -- Track player immunity to specific hitboxes
 -- DOT Hitbox Management System
 DOTSystem = {}
 
-function DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damagePerTick, tickCount, interval, hitboxType)
+function DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damagePerTick, duration, interval, hitboxType)
     local dotHitbox = {
         id = hitboxId,
         cframe = hitboxCFrame,
         size = size,
-        damagePerTick = damagePerTick,
-        tickCount = tickCount,
+        damagePerTick = damagePerTick, -- Full base damage every tick
+        duration = duration,
         interval = interval,
-        currentTick = 0,
         startTime = tick(),
         hitboxType = hitboxType,
-        playersHit = {} -- Track which players have been hit by this tick
+        nextTickTime = tick() + interval, -- When next damage tick should happen
+        isActive = true
     }
     
     _G.activeDOTHitboxes[hitboxId] = dotHitbox
     
-    print(string.format("[DOT SYSTEM] Created DOT hitbox %s: %d damage per %.1fs, %d ticks total", 
-        hitboxId, damagePerTick, interval, tickCount))
+    print(string.format("[DOT SYSTEM] Created simple DOT hitbox %s: %d damage every %.1fs for %.1fs", 
+        hitboxId, damagePerTick, interval, duration))
     
-    -- Start the DOT damage loop
+    -- Apply first damage immediately
+    print(string.format("[DOT SYSTEM] %s tick 1 (immediate) - applying %d damage", hitboxId, damagePerTick))
+    remote:FireServer(hitboxCFrame, size, damagePerTick, hitboxId, 1)
+    
+    -- Start the DOT damage loop for subsequent ticks
     DOTSystem.startDamageLoop(hitboxId)
+    
+    -- Auto-cleanup after duration
+    task.delay(duration, function()
+        DOTSystem.removeDOTHitbox(hitboxId)
+    end)
     
     return dotHitbox
 end
@@ -364,32 +373,42 @@ function DOTSystem.startDamageLoop(hitboxId)
     local dotHitbox = _G.activeDOTHitboxes[hitboxId]
     if not dotHitbox then return end
     
-    local function applyDamageTick()
+    local tickNumber = 1 -- First tick already applied
+    
+    local function applyNextTick()
         dotHitbox = _G.activeDOTHitboxes[hitboxId] -- Refresh reference
-        if not dotHitbox then return end -- Hitbox was removed
+        if not dotHitbox or not dotHitbox.isActive then return end -- Hitbox was removed or expired
         
-        dotHitbox.currentTick = dotHitbox.currentTick + 1
-        dotHitbox.playersHit = {} -- Reset players hit for this tick
+        local currentTime = tick()
+        local elapsedTime = currentTime - dotHitbox.startTime
         
-        print(string.format("[DOT SYSTEM] %s tick %d/%d - applying %d damage", 
-            hitboxId, dotHitbox.currentTick, dotHitbox.tickCount, dotHitbox.damagePerTick))
-        
-        -- Send damage to server for this tick
-        remote:FireServer(dotHitbox.cframe, dotHitbox.size, dotHitbox.damagePerTick, hitboxId, dotHitbox.currentTick)
-        
-        -- Check if we need more ticks
-        if dotHitbox.currentTick < dotHitbox.tickCount then
-            -- Schedule next tick
-            task.delay(dotHitbox.interval, applyDamageTick)
-        else
-            -- DOT completed, cleanup
-            print(string.format("[DOT SYSTEM] %s completed all %d ticks", hitboxId, dotHitbox.tickCount))
+        -- Check if hitbox duration has expired
+        if elapsedTime >= dotHitbox.duration then
+            print(string.format("[DOT SYSTEM] %s duration expired (%.2fs)", hitboxId, elapsedTime))
             DOTSystem.removeDOTHitbox(hitboxId)
+            return
+        end
+        
+        -- Apply damage for this tick
+        tickNumber = tickNumber + 1
+        print(string.format("[DOT SYSTEM] %s tick %d (%.2fs elapsed) - applying %d damage", 
+            hitboxId, tickNumber, elapsedTime, dotHitbox.damagePerTick))
+        
+        -- Send damage to server
+        remote:FireServer(dotHitbox.cframe, dotHitbox.size, dotHitbox.damagePerTick, hitboxId, tickNumber)
+        
+        -- Schedule next tick if there's still time
+        local timeUntilExpiry = dotHitbox.duration - elapsedTime
+        if timeUntilExpiry > dotHitbox.interval then
+            task.delay(dotHitbox.interval, applyNextTick)
+        else
+            print(string.format("[DOT SYSTEM] %s no more ticks - %.2fs remaining < %.2fs interval", 
+                hitboxId, timeUntilExpiry, dotHitbox.interval))
         end
     end
     
-    -- Start first tick immediately
-    applyDamageTick()
+    -- Schedule first interval tick
+    task.delay(dotHitbox.interval, applyNextTick)
 end
 
 function DOTSystem.removeDOTHitbox(hitboxId)
@@ -518,6 +537,14 @@ _G.getDamageInterval = function()
         return HitboxConfig.getDamageInterval()
     end
     return 0.5
+end
+
+_G.testDOTCalculations = function()
+    if HitboxConfig then
+        return HitboxConfig.testDOTCalculations()
+    else
+        print("[DOT TEST] HitboxConfig not available")
+    end
 end
 
 -- =====================================================================================
