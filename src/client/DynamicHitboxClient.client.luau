@@ -73,8 +73,8 @@ local function getSkillHitboxConfig(skillKey)
     end
 end
 
--- Create visual hitbox (unified for weapons and skills with custom duration)
-local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration)
+-- Create visual hitbox (unified for weapons and skills)
+local function createVisualHitbox(hitboxCFrame, size, hitboxType)
     local hitboxPart = Instance.new("Part")
     hitboxPart.Size = size
     hitboxPart.CFrame = hitboxCFrame
@@ -85,34 +85,28 @@ local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration
     hitboxPart.Material = Enum.Material.Neon
     hitboxPart.Parent = Workspace
     
-    -- Determine duration and visual properties
-    local duration, color, name
+    -- Different colors and durations for different hitbox types
     if hitboxType == "weapon" then
-        duration = customDuration or 0.3 -- Use custom duration or default 0.3s
-        color = Color3.new(1, 0, 0) -- Red for weapons
-        name = "WeaponHitboxVisual"
+        hitboxPart.Transparency = 0.7
+        hitboxPart.Color = Color3.new(1, 0, 0) -- Red for weapons
+        hitboxPart.Name = "WeaponHitboxVisual"
+        -- Remove after 0.3 seconds
+        task.delay(0.3, function()
+            if hitboxPart then
+                hitboxPart:Destroy()
+            end
+        end)
     elseif hitboxType == "skill" then
-        duration = customDuration or 0.5 -- Use custom duration or default 0.5s
-        color = Color3.new(0, 0, 1) -- Blue for skills
-        name = "SkillHitboxVisual"
-    else
-        duration = customDuration or 0.3
-        color = Color3.new(1, 1, 1) -- White for unknown
-        name = "HitboxVisual"
+        hitboxPart.Transparency = 0.7
+        hitboxPart.Color = Color3.new(0, 0, 1) -- Blue for skills
+        hitboxPart.Name = "SkillHitboxVisual"
+        -- Remove after 0.5 seconds (longer for skills)
+        task.delay(0.5, function()
+            if hitboxPart then
+                hitboxPart:Destroy()
+            end
+        end)
     end
-    
-    hitboxPart.Transparency = 0.7
-    hitboxPart.Color = color
-    hitboxPart.Name = name
-    
-    -- Remove after specified duration
-    print(string.format("[VISUAL HITBOX] %s will last %.2fs", name, duration))
-    task.delay(duration, function()
-        if hitboxPart then
-            hitboxPart:Destroy()
-            print(string.format("[VISUAL HITBOX] %s destroyed after %.2fs", name, duration))
-        end
-    end)
 end
 
 -- Generate hitbox for weapon attacks
@@ -183,7 +177,6 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     local cooldownTime = skillConfig.cooldownTime or 2.0
     local castTime = skillConfig.castTime or 0.8
     local hitboxDelay = skillConfig.hitboxDelay or 0.3
-    local hitboxDuration = skillConfig.hitboxDuration or 0.5
 
     -- Check if skill is on cooldown
     if SkillCooldownSystem.isSkillOnCooldown(skillKey, cooldownTime) then
@@ -198,7 +191,7 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
         return
     end
 
-    print(string.format("[SKILL COOLDOWN] ✅ Casting %s (Cast: %.1fs, Cooldown: %.1fs, Duration: %.1fs)", skillConfig.name or skillKey, castTime, cooldownTime, hitboxDuration))
+    print(string.format("[SKILL COOLDOWN] ✅ Casting %s (Cast: %.1fs, Cooldown: %.1fs)", skillConfig.name or skillKey, castTime, cooldownTime))
 
     -- Start casting
     SkillCooldownSystem.setSkillCasting(skillKey, true)
@@ -217,10 +210,10 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
 
             remote:FireServer(hitboxCFrame, size, damage)
 
-            -- Create visual hitbox with custom duration
-            createVisualHitbox(hitboxCFrame, size, "skill", hitboxDuration)
+            -- Create visual hitbox
+            createVisualHitbox(hitboxCFrame, size, "skill")
             
-            print(string.format("[SKILL COOLDOWN] 💥 %s hitbox generated, lasting %.1fs!", skillConfig.name or skillKey, hitboxDuration))
+            print(string.format("[SKILL COOLDOWN] 💥 %s hitbox generated!", skillConfig.name or skillKey))
         end
     end)
 
@@ -231,26 +224,24 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     end)
 end
 
--- Generate hitbox for combo attacks (uses weapon config but allows custom override with optional delay and duration)
-function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage, customDelay, customDuration)
+-- Generate hitbox for combo attacks (uses weapon config but allows custom override with optional delay)
+function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage, customDelay)
     if not player.Character then return end
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
 
     -- Use custom values if provided, otherwise get weapon config
-    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay, hitboxDuration
+    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay
     if customSize and customOffset and customDamage then
         hitboxSize = customSize
         hitboxOffset = customOffset
         weaponDamage = customDamage
         hitboxDelay = customDelay or 0.0 -- Default to immediate if no delay specified
-        hitboxDuration = customDuration or 0.3 -- Default to 0.3s if no duration specified
-        print(string.format("[COMBO HITBOX] Using custom combo hitbox config: Size=%s, Offset=%s, Damage=%d, Delay=%.2fs, Duration=%.2fs", 
-            tostring(customSize), tostring(customOffset), customDamage, hitboxDelay, hitboxDuration))
+        print(string.format("[COMBO HITBOX] Using custom combo hitbox config: Size=%s, Offset=%s, Damage=%d, Delay=%.2fs", 
+            tostring(customSize), tostring(customOffset), customDamage, hitboxDelay))
     else
         hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
         hitboxDelay = 0.0 -- Default weapon hitboxes have no delay
-        hitboxDuration = 0.3 -- Default weapon hitboxes last 0.3s
         print("[COMBO HITBOX] Using weapon hitbox config for combo")
     end
 
@@ -266,10 +257,10 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
 
         remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
 
-        -- Create visual hitbox (red like weapon attacks) with custom duration
-        createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", hitboxDuration)
+        -- Create visual hitbox (red like weapon attacks)
+        createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
         
-        print(string.format("[COMBO HITBOX] 💥 Combo hitbox generated after %.2fs delay, lasting %.2fs!", hitboxDelay, hitboxDuration))
+        print(string.format("[COMBO HITBOX] 💥 Combo hitbox generated after %.2fs delay!", hitboxDelay))
     end
 
     -- Generate hitbox immediately or after delay

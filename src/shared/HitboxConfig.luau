@@ -91,7 +91,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 2.5, -- 2.5 second cooldown between uses
         castTime = 0.7, -- 0.7 second cast/animation duration
         hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (fast dash)
-        hitboxDuration = 0.4, -- Hitbox lasts 0.4s (quick dash strike)
     },
     ["samurai_skill_2"] = {
         -- Wide sweeping arc: shorter reach, wider area
@@ -105,7 +104,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 3.5, -- 3.5 second cooldown between uses
         castTime = 0.9, -- 0.9 second cast/animation duration
         hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (wide sweep)
-        hitboxDuration = 0.6, -- Hitbox lasts 0.6s (extended sweep)
     },
 
     -- Berserker-specific skills
@@ -121,7 +119,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 3.0, -- 3 second cooldown between uses
         castTime = 0.8, -- 0.8 second cast/animation duration
         hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation
-        hitboxDuration = 0.5, -- Hitbox lasts 0.5s (berserker rage burst)
     },
     ["berserker_skill_2"] = {
         -- Whirlwind attack: wide area, short reach
@@ -135,7 +132,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 4.0, -- 4 second cooldown between uses
         castTime = 1.0, -- 1.0 second cast/animation duration
         hitboxDelay = 0.4, -- Hitbox appears 0.4s into animation
-        hitboxDuration = 0.8, -- Hitbox lasts 0.8s (extended whirlwind)
     },
 
     -- Gladiator-specific skills
@@ -151,7 +147,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 3.0, -- 3.0 second cooldown between uses
         castTime = 0.8, -- 0.8 second cast/animation duration
         hitboxDelay = 0.4, -- Hitbox appears 0.4s into animation (precise thrust timing)
-        hitboxDuration = 0.3, -- Hitbox lasts 0.3s (quick precise thrust)
     },
     ["gladiator_skill_2"] = {
         -- Arena sweep: wide but shorter reach
@@ -165,7 +160,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 4.5, -- 4.5 second cooldown between uses
         castTime = 1.1, -- 1.1 second cast/animation duration
         hitboxDelay = 0.5, -- Hitbox appears 0.5s into animation (wide sweep buildup)
-        hitboxDuration = 0.7, -- Hitbox lasts 0.7s (long arena sweep)
     },
 
     -- Knight-specific skills
@@ -181,7 +175,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 2.0, -- 2.0 second cooldown between uses
         castTime = 0.6, -- 0.6 second cast/animation duration
         hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (quick bash)
-        hitboxDuration = 0.3, -- Hitbox lasts 0.3s (quick shield bash)
     },
     ["knight_skill_2"] = {
         -- Defensive stance: protective area around knight
@@ -195,7 +188,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 5.0, -- 5.0 second cooldown between uses (defensive skill)
         castTime = 0.8, -- 0.8 second cast/animation duration
         hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (defensive setup)
-        hitboxDuration = 1.0, -- Hitbox lasts 1.0s (extended defensive area)
     },
 
     -- Archer-specific skills
@@ -211,7 +203,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 1.5, -- 1.5 second cooldown between uses (quick shots)
         castTime = 0.5, -- 0.5 second cast/animation duration
         hitboxDelay = 0.1, -- Hitbox appears 0.1s into animation (very quick shot)
-        hitboxDuration = 0.2, -- Hitbox lasts 0.2s (very quick shot)
     },
     ["archer_skill_2"] = {
         -- Volley: wide area shot
@@ -225,7 +216,6 @@ local SKILL_CONFIGS = {
         cooldownTime = 3.0, -- 3.0 second cooldown between uses
         castTime = 1.0, -- 1.0 second cast/animation duration
         hitboxDelay = 0.6, -- Hitbox appears 0.6s into animation (volley buildup)
-        hitboxDuration = 0.6, -- Hitbox lasts 0.6s (sustained volley)
     },
 }
 
@@ -242,7 +232,6 @@ local COMBO_CONFIGS = {
             animationId = "rbxassetid://116519685012277",
             duration = 0.8, -- Animation duration
             hitboxDelay = 0.3, -- When hitbox appears in animation
-            hitboxDuration = 0.4, -- How long hitbox stays active
             size = Vector3.new(5, 5, 3), -- Hitbox size
             offset = Vector3.new(0, 0, 1.5), -- Hitbox offset
             baseDamage = 8, -- Damage for this attack
@@ -254,7 +243,6 @@ local COMBO_CONFIGS = {
             animationId = "rbxassetid://116519685012277",
             duration = 1.0,
             hitboxDelay = 0.2,
-            hitboxDuration = 0.5,
             size = Vector3.new(6, 5, 4),
             offset = Vector3.new(0, 0, 2),
             baseDamage = 10,
@@ -265,8 +253,7 @@ local COMBO_CONFIGS = {
         attack3 = {
             animationId = "rbxassetid://116519685012277",
             duration = 1.2,
-            hitboxDelay = 10,
-            hitboxDuration = 10,
+            hitboxDelay = 1,
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
             baseDamage = 15,
@@ -287,7 +274,6 @@ function HitboxConfig.getComboConfig(weaponTag)
                 animationId = config.attack1.animationId,
                 duration = config.attack1.duration,
                 hitboxDelay = config.attack1.hitboxDelay,
-                hitboxDuration = config.attack1.hitboxDuration,
                 size = config.attack1.size,
                 offset = config.attack1.offset,
                 baseDamage = config.attack1.baseDamage,
@@ -297,7 +283,6 @@ function HitboxConfig.getComboConfig(weaponTag)
                 animationId = config.attack2.animationId,
                 duration = config.attack2.duration,
                 hitboxDelay = config.attack2.hitboxDelay,
-                hitboxDuration = config.attack2.hitboxDuration,
                 size = config.attack2.size,
                 offset = config.attack2.offset,
                 baseDamage = config.attack2.baseDamage,
@@ -307,7 +292,6 @@ function HitboxConfig.getComboConfig(weaponTag)
                 animationId = config.attack3.animationId,
                 duration = config.attack3.duration,
                 hitboxDelay = config.attack3.hitboxDelay,
-                hitboxDuration = config.attack3.hitboxDuration,
                 size = config.attack3.size,
                 offset = config.attack3.offset,
                 baseDamage = config.attack3.baseDamage,
@@ -324,7 +308,6 @@ function HitboxConfig.getComboConfig(weaponTag)
             animationId = "rbxassetid://116519685012277",
             duration = 0.8,
             hitboxDelay = 0.3,
-            hitboxDuration = 0.4,
             size = Vector3.new(5, 5, 3),
             offset = Vector3.new(0, 0, 1.5),
             baseDamage = 8,
@@ -334,7 +317,6 @@ function HitboxConfig.getComboConfig(weaponTag)
             animationId = "rbxassetid://116519685012277",
             duration = 1.0,
             hitboxDelay = 0.2,
-            hitboxDuration = 0.5,
             size = Vector3.new(6, 5, 4),
             offset = Vector3.new(0, 0, 2),
             baseDamage = 10,
@@ -344,7 +326,6 @@ function HitboxConfig.getComboConfig(weaponTag)
             animationId = "rbxassetid://116519685012277",
             duration = 1.2,
             hitboxDelay = 0.4,
-            hitboxDuration = 0.6,
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
             baseDamage = 15,
@@ -387,7 +368,6 @@ function HitboxConfig.getSkillConfig(skillTag)
             cooldownTime = config.cooldownTime or 2.0, -- Default 2s cooldown
             castTime = config.castTime or 0.8, -- Default 0.8s cast time
             hitboxDelay = config.hitboxDelay or 0.3, -- Default 0.3s hitbox delay
-            hitboxDuration = config.hitboxDuration or 0.5, -- Default 0.5s hitbox duration
         }
     end
     
@@ -403,7 +383,6 @@ function HitboxConfig.getSkillConfig(skillTag)
         cooldownTime = 2.0,
         castTime = 0.8,
         hitboxDelay = 0.3,
-        hitboxDuration = 0.5,
     }
 end
 
