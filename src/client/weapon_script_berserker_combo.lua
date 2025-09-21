@@ -106,10 +106,10 @@ local function generateComboHitbox(attackConfig, state)
     if equippedTool then
         print("[BERSERKER COMBO] Found berserker weapon tool:", equippedTool.Name)
         
-        -- Use the global combo hitbox function with custom attack config
+        -- Use the global combo hitbox function with custom attack config including delay
         if _G.generateComboHitbox then
-            print("[BERSERKER COMBO] Using _G.generateComboHitbox with custom attack config")
-            _G.generateComboHitbox(equippedTool, attackConfig.size, attackConfig.offset, attackConfig.baseDamage)
+            print(string.format("[BERSERKER COMBO] Using _G.generateComboHitbox with delay: %.2fs", attackConfig.hitboxDelay))
+            _G.generateComboHitbox(equippedTool, attackConfig.size, attackConfig.offset, attackConfig.baseDamage, attackConfig.hitboxDelay)
         else
             warn("[BERSERKER COMBO] ❌ _G.generateComboHitbox not available!")
         end
@@ -236,12 +236,8 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     -- Show visual feedback
     showComboFeedback(attackNumber, attackConfig.name)
     
-    -- Schedule hitbox generation
-    task.delay(attackConfig.hitboxDelay, function()
-        if comboState.isAttacking and comboState.currentCombo == attackNumber then
-            generateComboHitbox(attackConfig, state)
-        end
-    end)
+    -- Generate combo hitbox immediately (delay is handled inside the function)
+    generateComboHitbox(attackConfig, state)
     
     -- Wait for the full duration before allowing next attack
     task.delay(attackConfig.duration, function()

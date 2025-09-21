@@ -224,36 +224,51 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     end)
 end
 
--- Generate hitbox for combo attacks (uses weapon config but allows custom override)
-function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage)
+-- Generate hitbox for combo attacks (uses weapon config but allows custom override with optional delay)
+function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage, customDelay)
     if not player.Character then return end
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
 
     -- Use custom values if provided, otherwise get weapon config
-    local hitboxSize, hitboxOffset, weaponDamage
+    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay
     if customSize and customOffset and customDamage then
         hitboxSize = customSize
         hitboxOffset = customOffset
         weaponDamage = customDamage
-        print("[COMBO HITBOX] Using custom combo hitbox config:", customSize, customOffset, customDamage)
+        hitboxDelay = customDelay or 0.0 -- Default to immediate if no delay specified
+        print(string.format("[COMBO HITBOX] Using custom combo hitbox config: Size=%s, Offset=%s, Damage=%d, Delay=%.2fs", 
+            tostring(customSize), tostring(customOffset), customDamage, hitboxDelay))
     else
         hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
+        hitboxDelay = 0.0 -- Default weapon hitboxes have no delay
         print("[COMBO HITBOX] Using weapon hitbox config for combo")
     end
 
-    -- Calculate hitbox position
-    local rootCFrame = humanoidRootPart.CFrame
-    local forwardOffset = rootCFrame.LookVector * hitboxOffset.Z
-    local rightOffset = rootCFrame.RightVector * hitboxOffset.X
-    local upOffset = rootCFrame.UpVector * hitboxOffset.Y
-    local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
-    local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+    -- Apply hitbox delay (like skills)
+    local function generateActualHitbox()
+        -- Calculate hitbox position
+        local rootCFrame = humanoidRootPart.CFrame
+        local forwardOffset = rootCFrame.LookVector * hitboxOffset.Z
+        local rightOffset = rootCFrame.RightVector * hitboxOffset.X
+        local upOffset = rootCFrame.UpVector * hitboxOffset.Y
+        local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+        local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-    remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
+        remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
 
-    -- Create visual hitbox (red like weapon attacks)
-    createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
+        -- Create visual hitbox (red like weapon attacks)
+        createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
+        
+        print(string.format("[COMBO HITBOX] 💥 Combo hitbox generated after %.2fs delay!", hitboxDelay))
+    end
+
+    -- Generate hitbox immediately or after delay
+    if hitboxDelay > 0 then
+        task.delay(hitboxDelay, generateActualHitbox)
+    else
+        generateActualHitbox()
+    end
 end
 
 -- =====================================================================================

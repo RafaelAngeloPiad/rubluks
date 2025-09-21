@@ -87,6 +87,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Dash Slash animation
         name = "Dash Slash",
         keyCode = Enum.KeyCode.K,
+        -- Timing configuration
+        cooldownTime = 2.5, -- 2.5 second cooldown between uses
+        castTime = 0.7, -- 0.7 second cast/animation duration
+        hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (fast dash)
     },
     ["samurai_skill_2"] = {
         -- Wide sweeping arc: shorter reach, wider area
@@ -96,6 +100,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Wide Arc animation
         name = "Wide Arc",
         keyCode = Enum.KeyCode.L,
+        -- Timing configuration
+        cooldownTime = 3.5, -- 3.5 second cooldown between uses
+        castTime = 0.9, -- 0.9 second cast/animation duration
+        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (wide sweep)
     },
 
     -- Berserker-specific skills
@@ -135,6 +143,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Spear Thrust animation
         name = "Spear Thrust",
         keyCode = Enum.KeyCode.K,
+        -- Timing configuration
+        cooldownTime = 3.0, -- 3.0 second cooldown between uses
+        castTime = 0.8, -- 0.8 second cast/animation duration
+        hitboxDelay = 0.4, -- Hitbox appears 0.4s into animation (precise thrust timing)
     },
     ["gladiator_skill_2"] = {
         -- Arena sweep: wide but shorter reach
@@ -144,6 +156,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Arena Sweep animation
         name = "Arena Sweep",
         keyCode = Enum.KeyCode.L,
+        -- Timing configuration
+        cooldownTime = 4.5, -- 4.5 second cooldown between uses
+        castTime = 1.1, -- 1.1 second cast/animation duration
+        hitboxDelay = 0.5, -- Hitbox appears 0.5s into animation (wide sweep buildup)
     },
 
     -- Knight-specific skills
@@ -155,6 +171,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Shield Bash animation
         name = "Shield Bash",
         keyCode = Enum.KeyCode.K,
+        -- Timing configuration
+        cooldownTime = 2.0, -- 2.0 second cooldown between uses
+        castTime = 0.6, -- 0.6 second cast/animation duration
+        hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (quick bash)
     },
     ["knight_skill_2"] = {
         -- Defensive stance: protective area around knight
@@ -164,6 +184,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Defensive Stance animation
         name = "Defensive Stance",
         keyCode = Enum.KeyCode.L,
+        -- Timing configuration
+        cooldownTime = 5.0, -- 5.0 second cooldown between uses (defensive skill)
+        castTime = 0.8, -- 0.8 second cast/animation duration
+        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (defensive setup)
     },
 
     -- Archer-specific skills
@@ -175,6 +199,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Quick Shot animation
         name = "Quick Shot",
         keyCode = Enum.KeyCode.K,
+        -- Timing configuration
+        cooldownTime = 1.5, -- 1.5 second cooldown between uses (quick shots)
+        castTime = 0.5, -- 0.5 second cast/animation duration
+        hitboxDelay = 0.1, -- Hitbox appears 0.1s into animation (very quick shot)
     },
     ["archer_skill_2"] = {
         -- Volley: wide area shot
@@ -184,6 +212,10 @@ local SKILL_CONFIGS = {
         animationId = "rbxassetid://116519685012277", -- Volley animation
         name = "Volley",
         keyCode = Enum.KeyCode.L,
+        -- Timing configuration
+        cooldownTime = 3.0, -- 3.0 second cooldown between uses
+        castTime = 1.0, -- 1.0 second cast/animation duration
+        hitboxDelay = 0.6, -- Hitbox appears 0.6s into animation (volley buildup)
     },
 }
 
