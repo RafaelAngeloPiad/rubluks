@@ -149,6 +149,69 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     createVisualHitbox(hitboxCFrame, size, "skill")
 end
 
+-- Generate hitbox for combo attacks (uses weapon config but allows custom override)
+function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage)
+    if not player.Character then return end
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    -- Use custom values if provided, otherwise get weapon config
+    local hitboxSize, hitboxOffset, weaponDamage
+    if customSize and customOffset and customDamage then
+        hitboxSize = customSize
+        hitboxOffset = customOffset
+        weaponDamage = customDamage
+        print("[COMBO HITBOX] Using custom combo hitbox config:", customSize, customOffset, customDamage)
+    else
+        hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
+        print("[COMBO HITBOX] Using weapon hitbox config for combo")
+    end
+
+    -- Calculate hitbox position
+    local rootCFrame = humanoidRootPart.CFrame
+    local forwardOffset = rootCFrame.LookVector * hitboxOffset.Z
+    local rightOffset = rootCFrame.RightVector * hitboxOffset.X
+    local upOffset = rootCFrame.UpVector * hitboxOffset.Y
+    local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+    local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+
+    remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
+
+    -- Create visual hitbox (red like weapon attacks)
+    createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
+end
+
+-- =====================================================================================
+-- COMBO STATE TRACKING (to disable tool activation during combos)
+-- =====================================================================================
+
+-- Global combo state tracking
+_G.comboSystemActive = false -- Set to true when any combo system is running
+_G.lastComboTime = 0 -- Track when last combo attack happened
+
+-- Function to check if we should allow tool activation
+local function shouldAllowToolActivation(tool)
+    -- Check if this is a berserker weapon with combo system
+    if CollectionService:HasTag(tool, "berserker_weapon") then
+        local currentTime = tick()
+        local timeSinceLastCombo = currentTime - _G.lastComboTime
+        
+        -- If combo system is active, block tool activation
+        if _G.comboSystemActive then
+            print("[DYNAMIC HITBOX] ❌ Tool activation blocked - combo system is active")
+            return false
+        end
+        
+        -- If recent combo activity, block tool activation (small buffer)
+        if timeSinceLastCombo < 0.1 then
+            print("[DYNAMIC HITBOX] ❌ Tool activation blocked - recent combo activity")
+            return false
+        end
+    end
+    
+    return true
+end
+
 -- =====================================================================================
 -- WEAPON TOOL INTEGRATION (existing functionality)
 -- =====================================================================================
@@ -157,8 +220,13 @@ local function setupHitboxGeneration(tool)
     if not tool:IsA("Tool") then return end
     if not CollectionService:HasTag(tool, "has_damage") then return end
 
-
     local function generateHitbox()
+        -- Check if we should allow tool activation
+        if not shouldAllowToolActivation(tool) then
+            return
+        end
+        
+        print("[DYNAMIC HITBOX] Tool activation allowed - generating weapon hitbox")
         DynamicHitboxClient.generateWeaponHitbox(tool)
     end
 
@@ -186,11 +254,14 @@ if player.Character then
 end
 
 -- =====================================================================================
--- GLOBAL ACCESS (so other scripts can use skill hitbox generation)
+-- GLOBAL ACCESS (so other scripts can use skill and combo hitbox generation)
 -- =====================================================================================
 
 -- Make skill hitbox generation available globally
 _G.generateSkillHitbox = DynamicHitboxClient.generateSkillHitbox
+
+-- Make combo hitbox generation available globally
+_G.generateComboHitbox = DynamicHitboxClient.generateComboHitbox
 
 -- =====================================================================================
 -- EXPORT MODULE

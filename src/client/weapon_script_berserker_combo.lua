@@ -88,9 +88,9 @@ local function getComboConfig()
     }
 end
 
--- Generate hitbox for combo attack using weapon hitbox system
+-- Generate hitbox for combo attack using the global combo hitbox system
 local function generateComboHitbox(attackConfig, state)
-    print(string.format("[BERSERKER COMBO] Generating weapon hitbox for attack %d: %s", comboState.currentCombo, attackConfig.name))
+    print(string.format("[BERSERKER COMBO] Generating combo hitbox for attack %d: %s", comboState.currentCombo, attackConfig.name))
     
     -- Find the equipped berserker weapon tool
     local equippedTool = nil
@@ -106,14 +106,12 @@ local function generateComboHitbox(attackConfig, state)
     if equippedTool then
         print("[BERSERKER COMBO] Found berserker weapon tool:", equippedTool.Name)
         
-        -- Use the DynamicHitboxClient to generate weapon hitbox (red color)
-        -- This will use the weapon's configuration from HitboxConfig.luau automatically
-        local DynamicHitboxClient = require(script.Parent.Parent.DynamicHitboxClient)
-        if DynamicHitboxClient and DynamicHitboxClient.generateWeaponHitbox then
-            print("[BERSERKER COMBO] Using DynamicHitboxClient.generateWeaponHitbox (red weapon hitbox)")
-            DynamicHitboxClient.generateWeaponHitbox(equippedTool)
+        -- Use the global combo hitbox function with custom attack config
+        if _G.generateComboHitbox then
+            print("[BERSERKER COMBO] Using _G.generateComboHitbox with custom attack config")
+            _G.generateComboHitbox(equippedTool, attackConfig.size, attackConfig.offset, attackConfig.baseDamage)
         else
-            warn("[BERSERKER COMBO] ❌ DynamicHitboxClient not available!")
+            warn("[BERSERKER COMBO] ❌ _G.generateComboHitbox not available!")
         end
     else
         warn("[BERSERKER COMBO] ❌ No berserker weapon tool found!")
@@ -176,6 +174,10 @@ local function resetComboTimer(config)
             comboState.animationStartTime = 0
             comboState.currentAnimationDuration = 0
             comboState.comboResetThread = nil
+            
+            -- Reset global combo state to allow tool activation
+            _G.comboSystemActive = false
+            _G.lastComboTime = tick()
         end)
     else
         print("[BERSERKER COMBO] No combo active, skipping timeout timer")
@@ -187,6 +189,10 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     if not state.animator or not state.character then
         return
     end
+    
+    -- Update global combo state to block tool activation
+    _G.comboSystemActive = true
+    _G.lastComboTime = tick()
     
     comboState.isAttacking = true
     comboState.lastAttackTime = tick()
@@ -245,6 +251,9 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
             comboState.isAttacking = false
             state.attackPlaying = false
             
+            -- Update global combo time but keep combo system active if still in combo
+            _G.lastComboTime = tick()
+            
             print(string.format("[BERSERKER COMBO] Attack %d duration completed (%.2fs)", attackNumber, attackConfig.duration))
             
             -- Check if we're still in combo window for next attack
@@ -270,6 +279,10 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
                 end
                 
                 comboState.currentCombo = 0
+                
+                -- Reset global combo state to allow tool activation
+                _G.comboSystemActive = false
+                _G.lastComboTime = tick()
                 
                 -- Cancel any pending timeout timer since we're resetting manually
                 if comboState.comboResetThread then
@@ -388,6 +401,10 @@ function BerserkerCombo.resetCombo()
     comboState.animationStartTime = 0
     comboState.currentAnimationDuration = 0
     
+    -- Reset global combo state to allow tool activation
+    _G.comboSystemActive = false
+    _G.lastComboTime = tick()
+    
     if comboState.comboResetThread then
         task.cancel(comboState.comboResetThread)
         comboState.comboResetThread = nil
@@ -497,21 +514,15 @@ function BerserkerCombo.getAttackDurations()
     return {attack1 = 0.8, attack2 = 1.0, attack3 = 1.2} -- Default fallback
 end
 
--- Function to check if DynamicHitboxClient is available
+-- Function to check if combo hitbox system is available
 function BerserkerCombo.checkHitboxSystem()
-    print("[BERSERKER COMBO] Checking hitbox system availability:")
+    print("[BERSERKER COMBO] Checking combo hitbox system availability:")
     
-    local DynamicHitboxClient = require(script.Parent.Parent.DynamicHitboxClient)
-    if DynamicHitboxClient then
-        print("  ✅ DynamicHitboxClient module loaded")
-        if DynamicHitboxClient.generateWeaponHitbox then
-            print("  ✅ generateWeaponHitbox function available")
-        else
-            print("  ❌ generateWeaponHitbox function not found")
-        end
+    if _G.generateComboHitbox then
+        print("  ✅ _G.generateComboHitbox function available")
         return true
     else
-        print("  ❌ DynamicHitboxClient module not available")
+        print("  ❌ _G.generateComboHitbox function not available")
         return false
     end
 end
