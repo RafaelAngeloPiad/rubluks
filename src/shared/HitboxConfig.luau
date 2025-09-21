@@ -23,6 +23,12 @@ EXAMPLES:
 
 local HitboxConfig = {}
 
+-- Global hitbox damage interval configuration
+local DAMAGE_INTERVAL_CONFIG = {
+    hitboxDamageInterval = 0.5, -- Damage is applied every 0.5 seconds for sustained hitboxes
+    immunityBuffer = 0.1, -- Small buffer to prevent double-hits due to timing
+}
+
 -- Default hitbox configuration (fallback)
 local DEFAULT_CONFIG = {
     size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
@@ -265,8 +271,8 @@ local COMBO_CONFIGS = {
         attack3 = {
             animationId = "rbxassetid://116519685012277",
             duration = 1.2,
-            hitboxDelay = 10,
-            hitboxDuration = 10,
+            hitboxDelay = 1,
+            hitboxDuration = 2,
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
             baseDamage = 15,
@@ -441,6 +447,33 @@ function HitboxConfig.getDefaultConfig()
         size = DEFAULT_CONFIG.size,
         offset = DEFAULT_CONFIG.offset,
         baseDamage = DEFAULT_CONFIG.baseDamage,
+    }
+end
+
+-- Get damage interval configuration
+function HitboxConfig.getDamageIntervalConfig()
+    return {
+        hitboxDamageInterval = DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval,
+        immunityBuffer = DAMAGE_INTERVAL_CONFIG.immunityBuffer,
+    }
+end
+
+-- Get damage interval value (convenience function)
+function HitboxConfig.getDamageInterval()
+    return DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
+end
+
+-- Calculate damage per tick for sustained hitboxes
+function HitboxConfig.calculateDamagePerTick(totalDamage, hitboxDuration)
+    local interval = DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
+    local tickCount = math.max(1, math.floor(hitboxDuration / interval))
+    local damagePerTick = math.ceil(totalDamage / tickCount)
+    
+    return {
+        damagePerTick = damagePerTick,
+        tickCount = tickCount,
+        actualTotalDamage = damagePerTick * tickCount,
+        interval = interval
     }
 end
 

@@ -175,8 +175,7 @@ local function resetComboTimer(config)
             comboState.currentAnimationDuration = 0
             comboState.comboResetThread = nil
             
-            -- Reset global combo state to allow tool activation
-            _G.comboSystemActive = false
+            -- Update global combo time
             _G.lastComboTime = tick()
         end)
     else
@@ -189,10 +188,6 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     if not state.animator or not state.character then
         return
     end
-    
-    -- Update global combo state to block tool activation
-    _G.comboSystemActive = true
-    _G.lastComboTime = tick()
     
     comboState.isAttacking = true
     comboState.lastAttackTime = tick()
@@ -247,7 +242,7 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
             comboState.isAttacking = false
             state.attackPlaying = false
             
-            -- Update global combo time but keep combo system active if still in combo
+            -- Update global combo time
             _G.lastComboTime = tick()
             
             print(string.format("[BERSERKER COMBO] Attack %d duration completed (%.2fs)", attackNumber, attackConfig.duration))
@@ -276,8 +271,7 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
                 
                 comboState.currentCombo = 0
                 
-                -- Reset global combo state to allow tool activation
-                _G.comboSystemActive = false
+                -- Update global combo time
                 _G.lastComboTime = tick()
                 
                 -- Cancel any pending timeout timer since we're resetting manually
@@ -315,6 +309,9 @@ function BerserkerCombo.executeComboAttack(state)
     local config = getComboConfig()
     local currentTime = tick()
     
+    -- Update global combo time for tracking
+    _G.lastComboTime = tick()
+    
     -- Check if we're already attacking (respect WeaponUtils state)
     if comboState.isAttacking or state.attackPlaying then
         print("[BERSERKER COMBO] ❌ ATTACK BLOCKED - Attack in progress, ignoring input")
@@ -330,6 +327,8 @@ function BerserkerCombo.executeComboAttack(state)
                 print("[BERSERKER COMBO] ⏱️ Animation duration complete, but still in attack state")
             end
         end
+        
+        -- Note: Tool activation is already blocked for berserker weapons
         return
     end
     
@@ -397,8 +396,7 @@ function BerserkerCombo.resetCombo()
     comboState.animationStartTime = 0
     comboState.currentAnimationDuration = 0
     
-    -- Reset global combo state to allow tool activation
-    _G.comboSystemActive = false
+    -- Update global combo time
     _G.lastComboTime = tick()
     
     if comboState.comboResetThread then

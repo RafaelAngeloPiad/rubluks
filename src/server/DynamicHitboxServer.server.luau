@@ -26,12 +26,20 @@ local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     return true
 end
 
-remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize, weaponDamage)
+-- Track player damage immunity for DOT hitboxes
+local playerDamageImmunity = {} -- [playerId][hitboxId] = lastDamageTime
+
+remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize, weaponDamage, hitboxId, tickNumber)
     -- Use weapon-specific damage or fallback to default
     local damageToApply = weaponDamage or DEFAULT_DAMAGE
     local character = player.Character
     if not character then 
         return 
+    end
+    
+    -- Initialize immunity tracking for this player if needed
+    if not playerDamageImmunity[player.UserId] then
+        playerDamageImmunity[player.UserId] = {}
     end
 
     -- Find currently equipped tool with "has_damage" tag
@@ -58,10 +66,41 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
         local model = part:FindFirstAncestorOfClass("Model")
         if model and model ~= character then
             local humanoid = model:FindFirstChild("Humanoid")
+            local targetPlayer = game.Players:GetPlayerFromCharacter(model)
+            
             if humanoid and not damagedHumanoids[humanoid] then
-                humanoid:TakeDamage(damageToApply)
-                damagedHumanoids[humanoid] = true
-                print("[SERVER] Damaged:", model.Name, "(", damageToApply, "damage)")
+                local canDamage = true
+                
+                -- Check DOT immunity if this is a DOT hitbox
+                if hitboxId and targetPlayer then
+                    local targetUserId = targetPlayer.UserId
+                    if not playerDamageImmunity[targetUserId] then
+                        playerDamageImmunity[targetUserId] = {}
+                    end
+                    
+                    local lastDamageTime = playerDamageImmunity[targetUserId][hitboxId] or 0
+                    local timeSinceLastDamage = tick() - lastDamageTime
+                    
+                    -- Prevent damage if hit too recently by this specific DOT hitbox
+                    if timeSinceLastDamage < 0.4 then -- 0.4s immunity per DOT tick
+                        canDamage = false
+                        print(string.format("[SERVER DOT] %s immune to %s (%.2fs since last hit)", model.Name, hitboxId or "unknown", timeSinceLastDamage))
+                    else
+                        -- Update last damage time for this DOT hitbox
+                        playerDamageImmunity[targetUserId][hitboxId] = tick()
+                    end
+                end
+                
+                if canDamage then
+                    humanoid:TakeDamage(damageToApply)
+                    damagedHumanoids[humanoid] = true
+                    
+                    local logMessage = string.format("[SERVER] Damaged: %s (%d damage)", model.Name, damageToApply)
+                    if hitboxId then
+                        logMessage = logMessage .. string.format(" [DOT: %s tick %d]", hitboxId, tickNumber or 1)
+                    end
+                    print(logMessage)
+                end
             end
         end
     end

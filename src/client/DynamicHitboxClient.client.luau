@@ -101,18 +101,18 @@ local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration
         name = "HitboxVisual"
     end
     
-    hitboxPart.Transparency = 0.7
+        hitboxPart.Transparency = 0.7
     hitboxPart.Color = color
     hitboxPart.Name = name
     
     -- Remove after specified duration
     print(string.format("[VISUAL HITBOX] %s will last %.2fs", name, duration))
     task.delay(duration, function()
-        if hitboxPart then
-            hitboxPart:Destroy()
+            if hitboxPart then
+                hitboxPart:Destroy()
             print(string.format("[VISUAL HITBOX] %s destroyed after %.2fs", name, duration))
-        end
-    end)
+            end
+        end)
 end
 
 -- Generate hitbox for weapon attacks
@@ -207,20 +207,38 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     -- Schedule hitbox generation after delay
     task.delay(hitboxDelay, function()
         if SkillCooldownSystem.isSkillCasting(skillKey) then -- Only generate if still casting
-            -- Calculate hitbox position
-            local rootCFrame = humanoidRootPart.CFrame
-            local forwardOffset = rootCFrame.LookVector * offset.Z
-            local rightOffset = rootCFrame.RightVector * offset.X
-            local upOffset = rootCFrame.UpVector * offset.Y
-            local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
-            local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+    -- Calculate hitbox position
+    local rootCFrame = humanoidRootPart.CFrame
+    local forwardOffset = rootCFrame.LookVector * offset.Z
+    local rightOffset = rootCFrame.RightVector * offset.X
+    local upOffset = rootCFrame.UpVector * offset.Y
+    local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+    local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-            remote:FireServer(hitboxCFrame, size, damage)
+            -- Get damage interval configuration
+            local damageIntervalConfig = HitboxConfig.getDamageIntervalConfig()
+            local damageInterval = damageIntervalConfig.hitboxDamageInterval
+            
+            -- Check if this should be a DOT hitbox (duration > damage interval)
+            if hitboxDuration > damageInterval then
+                -- Create DOT hitbox
+                local damageInfo = HitboxConfig.calculateDamagePerTick(damage, hitboxDuration)
+                local hitboxId = DOTSystem.generateUniqueHitboxId(skillKey, "skill")
+                
+                print(string.format("[SKILL COOLDOWN] 💥 Creating DOT skill hitbox: %d damage over %.1fs (%d ticks of %d damage)", 
+                    damageInfo.actualTotalDamage, hitboxDuration, damageInfo.tickCount, damageInfo.damagePerTick))
+                
+                DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damageInfo.damagePerTick, damageInfo.tickCount, damageInfo.interval, "skill")
+            else
+                -- Single-hit hitbox (traditional)
+    remote:FireServer(hitboxCFrame, size, damage)
+                print(string.format("[SKILL COOLDOWN] 💥 Single-hit skill hitbox: %d damage", damage))
+            end
 
             -- Create visual hitbox with custom duration
             createVisualHitbox(hitboxCFrame, size, "skill", hitboxDuration)
             
-            print(string.format("[SKILL COOLDOWN] 💥 %s hitbox generated, lasting %.1fs!", skillConfig.name or skillKey, hitboxDuration))
+            print(string.format("[SKILL COOLDOWN] %s visual hitbox lasting %.1fs!", skillConfig.name or skillKey, hitboxDuration))
         end
     end)
 
@@ -264,12 +282,30 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
         local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
         local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-        remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
+        -- Get damage interval configuration
+        local damageIntervalConfig = HitboxConfig.getDamageIntervalConfig()
+        local damageInterval = damageIntervalConfig.hitboxDamageInterval
+        
+        -- Check if this should be a DOT hitbox (duration > damage interval)
+        if hitboxDuration > damageInterval then
+            -- Create DOT hitbox
+            local damageInfo = HitboxConfig.calculateDamagePerTick(weaponDamage, hitboxDuration)
+            local hitboxId = DOTSystem.generateUniqueHitboxId("combo", "attack")
+            
+            print(string.format("[COMBO HITBOX] 💥 Creating DOT combo hitbox: %d damage over %.2fs (%d ticks of %d damage)", 
+                damageInfo.actualTotalDamage, hitboxDuration, damageInfo.tickCount, damageInfo.damagePerTick))
+            
+            DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, hitboxSize, damageInfo.damagePerTick, damageInfo.tickCount, damageInfo.interval, "weapon")
+        else
+            -- Single-hit hitbox (traditional)
+            remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
+            print(string.format("[COMBO HITBOX] 💥 Single-hit combo hitbox: %d damage", weaponDamage))
+        end
 
         -- Create visual hitbox (red like weapon attacks) with custom duration
         createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", hitboxDuration)
         
-        print(string.format("[COMBO HITBOX] 💥 Combo hitbox generated after %.2fs delay, lasting %.2fs!", hitboxDelay, hitboxDuration))
+        print(string.format("[COMBO HITBOX] Visual hitbox lasting %.2fs!", hitboxDuration))
     end
 
     -- Generate hitbox immediately or after delay
@@ -292,24 +328,90 @@ _G.lastComboTime = 0 -- Track when last combo attack happened
 _G.skillCooldowns = {} -- Track last use time for each skill
 _G.skillCasting = {} -- Track if skills are currently casting
 
+-- Global damage over time tracking
+_G.activeDOTHitboxes = {} -- Track active DOT hitboxes
+_G.playerDamageImmunity = {} -- Track player immunity to specific hitboxes
+
+-- DOT Hitbox Management System
+DOTSystem = {}
+
+function DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damagePerTick, tickCount, interval, hitboxType)
+    local dotHitbox = {
+        id = hitboxId,
+        cframe = hitboxCFrame,
+        size = size,
+        damagePerTick = damagePerTick,
+        tickCount = tickCount,
+        interval = interval,
+        currentTick = 0,
+        startTime = tick(),
+        hitboxType = hitboxType,
+        playersHit = {} -- Track which players have been hit by this tick
+    }
+    
+    _G.activeDOTHitboxes[hitboxId] = dotHitbox
+    
+    print(string.format("[DOT SYSTEM] Created DOT hitbox %s: %d damage per %.1fs, %d ticks total", 
+        hitboxId, damagePerTick, interval, tickCount))
+    
+    -- Start the DOT damage loop
+    DOTSystem.startDamageLoop(hitboxId)
+    
+    return dotHitbox
+end
+
+function DOTSystem.startDamageLoop(hitboxId)
+    local dotHitbox = _G.activeDOTHitboxes[hitboxId]
+    if not dotHitbox then return end
+    
+    local function applyDamageTick()
+        dotHitbox = _G.activeDOTHitboxes[hitboxId] -- Refresh reference
+        if not dotHitbox then return end -- Hitbox was removed
+        
+        dotHitbox.currentTick = dotHitbox.currentTick + 1
+        dotHitbox.playersHit = {} -- Reset players hit for this tick
+        
+        print(string.format("[DOT SYSTEM] %s tick %d/%d - applying %d damage", 
+            hitboxId, dotHitbox.currentTick, dotHitbox.tickCount, dotHitbox.damagePerTick))
+        
+        -- Send damage to server for this tick
+        remote:FireServer(dotHitbox.cframe, dotHitbox.size, dotHitbox.damagePerTick, hitboxId, dotHitbox.currentTick)
+        
+        -- Check if we need more ticks
+        if dotHitbox.currentTick < dotHitbox.tickCount then
+            -- Schedule next tick
+            task.delay(dotHitbox.interval, applyDamageTick)
+        else
+            -- DOT completed, cleanup
+            print(string.format("[DOT SYSTEM] %s completed all %d ticks", hitboxId, dotHitbox.tickCount))
+            DOTSystem.removeDOTHitbox(hitboxId)
+        end
+    end
+    
+    -- Start first tick immediately
+    applyDamageTick()
+end
+
+function DOTSystem.removeDOTHitbox(hitboxId)
+    if _G.activeDOTHitboxes[hitboxId] then
+        _G.activeDOTHitboxes[hitboxId] = nil
+        print(string.format("[DOT SYSTEM] Removed DOT hitbox %s", hitboxId))
+    end
+end
+
+function DOTSystem.generateUniqueHitboxId(skillKey, attackType)
+    local timestamp = tostring(tick()):gsub("%.", "_")
+    return string.format("%s_%s_%s_%s", player.Name, skillKey or "weapon", attackType or "attack", timestamp)
+end
+
 -- Function to check if we should allow tool activation
 local function shouldAllowToolActivation(tool)
     -- Check if this is a berserker weapon with combo system
     if CollectionService:HasTag(tool, "berserker_weapon") then
-        local currentTime = tick()
-        local timeSinceLastCombo = currentTime - _G.lastComboTime
-        
-        -- If combo system is active, block tool activation
-        if _G.comboSystemActive then
-            print("[DYNAMIC HITBOX] ❌ Tool activation blocked - combo system is active")
-            return false
-        end
-        
-        -- If recent combo activity, block tool activation (small buffer)
-        if timeSinceLastCombo < 0.1 then
-            print("[DYNAMIC HITBOX] ❌ Tool activation blocked - recent combo activity")
-            return false
-        end
+        -- For berserker weapons, ALWAYS block tool activation
+        -- The combo system should handle ALL berserker weapon attacks
+        print("[DYNAMIC HITBOX] ❌ Tool activation blocked - berserker weapon uses combo system")
+        return false
     end
     
     return true
@@ -390,6 +492,32 @@ _G.debugSkillCooldowns = function()
         local timeSinceUse = tick() - lastUse
         print(string.format("  %s: Last used %.1fs ago, Casting: %s", skillKey, timeSinceUse, tostring(isCasting)))
     end
+end
+
+-- Make DOT system functions available globally for debugging
+_G.debugDOTHitboxes = function()
+    print("[DOT SYSTEM DEBUG] Active DOT hitboxes:")
+    for hitboxId, dotHitbox in pairs(_G.activeDOTHitboxes) do
+        local elapsed = tick() - dotHitbox.startTime
+        print(string.format("  %s: Tick %d/%d, Elapsed: %.1fs, %d damage per %.1fs", 
+            hitboxId, dotHitbox.currentTick, dotHitbox.tickCount, elapsed, dotHitbox.damagePerTick, dotHitbox.interval))
+    end
+end
+
+_G.clearAllDOTHitboxes = function()
+    local count = 0
+    for hitboxId, _ in pairs(_G.activeDOTHitboxes) do
+        _G.activeDOTHitboxes[hitboxId] = nil
+        count = count + 1
+    end
+    print(string.format("[DOT SYSTEM] Cleared %d active DOT hitboxes", count))
+end
+
+_G.getDamageInterval = function()
+    if HitboxConfig then
+        return HitboxConfig.getDamageInterval()
+    end
+    return 0.5
 end
 
 -- =====================================================================================
