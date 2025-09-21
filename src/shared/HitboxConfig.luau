@@ -230,7 +230,7 @@ local COMBO_CONFIGS = {
         -- Attack 1: Quick opener
         attack1 = {
             animationId = "rbxassetid://116519685012277",
-            duration = 0.8, -- Animation duration
+            duration = 0.1, -- Animation duration
             hitboxDelay = 0.3, -- When hitbox appears in animation
             size = Vector3.new(5, 5, 3), -- Hitbox size
             offset = Vector3.new(0, 0, 1.5), -- Hitbox offset
@@ -241,7 +241,7 @@ local COMBO_CONFIGS = {
         -- Attack 2: Medium follow-up
         attack2 = {
             animationId = "rbxassetid://116519685012277",
-            duration = 1.0,
+            duration = 0.1,
             hitboxDelay = 0.2,
             size = Vector3.new(6, 5, 4),
             offset = Vector3.new(0, 0, 2),
@@ -252,8 +252,8 @@ local COMBO_CONFIGS = {
         -- Attack 3: Powerful finisher
         attack3 = {
             animationId = "rbxassetid://116519685012277",
-            duration = 1.2,
-            hitboxDelay = 1,
+            duration = 0.1,
+            hitboxDelay = 0.5,
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
             baseDamage = 15,
