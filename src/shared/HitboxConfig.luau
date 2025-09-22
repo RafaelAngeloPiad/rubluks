@@ -238,7 +238,7 @@ local SKILL_CONFIGS = {
 -- Combo attack configurations for each weapon type
 -- Each combo has 3 attacks with individual timing, damage, and hitbox settings
 local COMBO_CONFIGS = {
-    -- Berserker combo: Fast, aggressive 3-hit combo
+    -- Berserker combo: Fast, aggressive 3-hit combo with shortest reach
     ["berserker_weapon_combo"] = {
         comboWindow = 2.0, -- Time window to continue combo (seconds)
         resetTime = 3.0, -- Time before combo resets if no input (seconds)
@@ -271,12 +271,180 @@ local COMBO_CONFIGS = {
         attack3 = {
             animationId = "rbxassetid://116519685012277",
             duration = 1.2,
-            hitboxDelay = 1,
-            hitboxDuration = 0.5,
+            hitboxDelay = 0.4,
+            hitboxDuration = 0.6,
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
             baseDamage = 15,
             name = "Berserker Finisher",
+        },
+    },
+
+    -- Archer combo: Precise, quick 3-hit combo with short reach
+    ["archer_weapon_combo"] = {
+        comboWindow = 2.0,
+        resetTime = 3.0,
+        
+        -- Attack 1: Quick precise strike
+        attack1 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.7, -- Faster than berserker
+            hitboxDelay = 0.2,
+            hitboxDuration = 0.3,
+            size = Vector3.new(4, 5, 5), -- Narrower, more precise
+            offset = Vector3.new(0, 0, 2.5), -- Slightly longer than berserker
+            baseDamage = 6,
+            name = "Quick Strike 1",
+        },
+        
+        -- Attack 2: Follow-up strike
+        attack2 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.8,
+            hitboxDelay = 0.15,
+            hitboxDuration = 0.4,
+            size = Vector3.new(5, 5, 6), -- Same as weapon config
+            offset = Vector3.new(0, 0, 3),
+            baseDamage = 7,
+            name = "Quick Strike 2",
+        },
+        
+        -- Attack 3: Precision finisher
+        attack3 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.0,
+            hitboxDelay = 0.3,
+            hitboxDuration = 0.5,
+            size = Vector3.new(6, 6, 7), -- Wider final strike
+            offset = Vector3.new(0, 0, 3.5),
+            baseDamage = 12,
+            name = "Precision Shot",
+        },
+    },
+
+    -- Knight combo: Balanced, defensive 3-hit combo with medium reach
+    ["knight_weapon_combo"] = {
+        comboWindow = 2.0,
+        resetTime = 3.0,
+        
+        -- Attack 1: Defensive opener
+        attack1 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.9,
+            hitboxDelay = 0.3,
+            hitboxDuration = 0.4,
+            size = Vector3.new(6, 6, 6), -- Balanced size
+            offset = Vector3.new(0, 0, 3.5),
+            baseDamage = 7,
+            name = "Shield Strike 1",
+        },
+        
+        -- Attack 2: Balanced follow-up
+        attack2 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.0,
+            hitboxDelay = 0.25,
+            hitboxDuration = 0.5,
+            size = Vector3.new(6, 6, 7), -- Same as weapon config
+            offset = Vector3.new(0, 0, 4),
+            baseDamage = 8,
+            name = "Shield Strike 2",
+        },
+        
+        -- Attack 3: Noble finisher
+        attack3 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.1,
+            hitboxDelay = 0.4,
+            hitboxDuration = 0.6,
+            size = Vector3.new(7, 6, 8), -- Slightly larger final strike
+            offset = Vector3.new(0, 0, 4.5),
+            baseDamage = 14,
+            name = "Noble Strike",
+        },
+    },
+
+    -- Samurai combo: Precise, elegant 3-hit combo with long reach
+    ["samurai_weapon_combo"] = {
+        comboWindow = 2.0,
+        resetTime = 3.0,
+        
+        -- Attack 1: Elegant opener
+        attack1 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.8,
+            hitboxDelay = 0.2,
+            hitboxDuration = 0.3,
+            size = Vector3.new(5, 6, 8), -- Narrow, precise
+            offset = Vector3.new(0, 0, 4.5),
+            baseDamage = 8,
+            name = "Katana Slash 1",
+        },
+        
+        -- Attack 2: Flowing follow-up
+        attack2 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.9,
+            hitboxDelay = 0.15,
+            hitboxDuration = 0.4,
+            size = Vector3.new(6, 6, 9), -- Same as weapon config
+            offset = Vector3.new(0, 0, 5.5),
+            baseDamage = 9,
+            name = "Katana Slash 2",
+        },
+        
+        -- Attack 3: Iaijutsu finisher
+        attack3 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.2,
+            hitboxDelay = 0.5,
+            hitboxDuration = 0.4,
+            size = Vector3.new(7, 6, 10), -- Longest reach finisher
+            offset = Vector3.new(0, 0, 6),
+            baseDamage = 16,
+            name = "Iaijutsu Strike",
+        },
+    },
+
+    -- Gladiator combo: Powerful, arena-style 3-hit combo with longest reach
+    ["gladiator_weapon_combo"] = {
+        comboWindow = 2.0,
+        resetTime = 3.0,
+        
+        -- Attack 1: Arena opener
+        attack1 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 0.9,
+            hitboxDelay = 0.3,
+            hitboxDuration = 0.4,
+            size = Vector3.new(6, 6, 10), -- Long reach
+            offset = Vector3.new(0, 0, 5.5),
+            baseDamage = 9,
+            name = "Spear Thrust 1",
+        },
+        
+        -- Attack 2: Arena follow-up
+        attack2 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.0,
+            hitboxDelay = 0.25,
+            hitboxDuration = 0.5,
+            size = Vector3.new(7, 6, 11), -- Same as weapon config
+            offset = Vector3.new(0, 0, 6.5),
+            baseDamage = 10,
+            name = "Spear Thrust 2",
+        },
+        
+        -- Attack 3: Arena champion finisher
+        attack3 = {
+            animationId = "rbxassetid://116519685012277",
+            duration = 1.3,
+            hitboxDelay = 0.5,
+            hitboxDuration = 0.6,
+            size = Vector3.new(8, 6, 12), -- Widest and longest finisher
+            offset = Vector3.new(0, 0, 7),
+            baseDamage = 18,
+            name = "Arena Strike",
         },
     },
 }

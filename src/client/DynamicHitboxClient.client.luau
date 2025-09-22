@@ -425,12 +425,16 @@ end
 
 -- Function to check if we should allow tool activation
 local function shouldAllowToolActivation(tool)
-    -- Check if this is a berserker weapon with combo system
-    if CollectionService:HasTag(tool, "berserker_weapon") then
-        -- For berserker weapons, ALWAYS block tool activation
-        -- The combo system should handle ALL berserker weapon attacks
-        print("[DYNAMIC HITBOX] ❌ Tool activation blocked - berserker weapon uses combo system")
-        return false
+    -- Check if this is a weapon with combo system
+    local weaponTags = {"berserker_weapon", "archer_weapon", "gladiator_weapon", "knight_weapon", "samurai_weapon"}
+    
+    for _, weaponTag in ipairs(weaponTags) do
+        if CollectionService:HasTag(tool, weaponTag) then
+            -- For all class weapons, ALWAYS block tool activation
+            -- The combo system should handle ALL weapon attacks
+            print("[DYNAMIC HITBOX] ❌ Tool activation blocked - " .. weaponTag .. " uses combo system")
+            return false
+        end
     end
     
     return true
