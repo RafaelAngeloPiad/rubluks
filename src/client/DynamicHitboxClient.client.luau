@@ -141,6 +141,45 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
 end
 
 -- =====================================================================================
+-- GLOBAL ATTACK COOLDOWN SYSTEM
+-- =====================================================================================
+
+-- Global cooldown to prevent rapid weapon switching exploits
+local GlobalAttackCooldown = {}
+
+-- Global cooldown settings
+local GLOBAL_COOLDOWN_TIME = 0.5 -- 0.5 seconds global cooldown after any attack ends
+
+-- Initialize global cooldown in _G to persist across weapon switches
+if not _G.lastGlobalAttackEndTime then
+    _G.lastGlobalAttackEndTime = 0
+end
+
+function GlobalAttackCooldown.isOnGlobalCooldown()
+    local timeSinceLastAttack = tick() - _G.lastGlobalAttackEndTime
+    return timeSinceLastAttack < GLOBAL_COOLDOWN_TIME
+end
+
+function GlobalAttackCooldown.getGlobalCooldownRemaining()
+    local timeSinceLastAttack = tick() - _G.lastGlobalAttackEndTime
+    return math.max(0, GLOBAL_COOLDOWN_TIME - timeSinceLastAttack)
+end
+
+function GlobalAttackCooldown.setGlobalCooldown()
+    _G.lastGlobalAttackEndTime = tick()
+    print(string.format("[GLOBAL COOLDOWN] ⏰ Global cooldown set for %.1fs", GLOBAL_COOLDOWN_TIME))
+end
+
+function GlobalAttackCooldown.canStartNewAttack()
+    if GlobalAttackCooldown.isOnGlobalCooldown() then
+        local remaining = GlobalAttackCooldown.getGlobalCooldownRemaining()
+        print(string.format("[GLOBAL COOLDOWN] ❌ Global cooldown active - %.2fs remaining", remaining))
+        return false, remaining
+    end
+    return true, 0
+end
+
+-- =====================================================================================
 -- SKILL COOLDOWN SYSTEM
 -- =====================================================================================
 
@@ -163,6 +202,11 @@ end
 
 function SkillCooldownSystem.setSkillCasting(skillKey, isCasting)
     _G.skillCasting[skillKey] = isCasting
+    
+    -- Set global cooldown when skill casting ends
+    if not isCasting then
+        GlobalAttackCooldown.setGlobalCooldown()
+    end
 end
 
 function SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime)
@@ -507,6 +551,11 @@ _G.resetAllSkillCooldowns = function()
     _G.skillCasting = {}
     print("[SKILL COOLDOWN] ⚙️ Reset all skill cooldowns")
 end
+
+-- Expose global cooldown system
+_G.canStartNewAttack = GlobalAttackCooldown.canStartNewAttack
+_G.setGlobalCooldown = GlobalAttackCooldown.setGlobalCooldown
+_G.getGlobalCooldownRemaining = GlobalAttackCooldown.getGlobalCooldownRemaining
 
 _G.debugSkillCooldowns = function()
     print("[SKILL COOLDOWN DEBUG] Current skill states:")

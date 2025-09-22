@@ -211,6 +211,12 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     if not success or not track then
         print("[GLADIATOR COMBO] Failed to load animation for attack", attackNumber)
         comboState.isAttacking = false
+        
+        -- Set global cooldown even on animation failure
+        if _G.setGlobalCooldown then
+            _G.setGlobalCooldown()
+        end
+        
         state.attackPlaying = false
         return
     end
@@ -240,6 +246,12 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
         if comboState.currentCombo == attackNumber and comboState.isAttacking then
             -- Reset attack states
             comboState.isAttacking = false
+            
+            -- Set global cooldown to prevent rapid weapon switching
+            if _G.setGlobalCooldown then
+                _G.setGlobalCooldown()
+            end
+            
             state.attackPlaying = false
             
             -- Update global combo time
@@ -311,6 +323,15 @@ function GladiatorCombo.executeComboAttack(state)
     
     -- Update global combo time for tracking
     _G.lastComboTime = tick()
+    
+    -- Check global cooldown first (prevents rapid weapon switching exploits)
+    if _G.canStartNewAttack then
+        local canStart, remaining = _G.canStartNewAttack()
+        if not canStart then
+            print(string.format("[GLADIATOR COMBO] ❌ ATTACK BLOCKED - Global cooldown active (%.2fs remaining)", remaining))
+            return
+        end
+    end
     
     -- Check if we're already attacking (respect WeaponUtils state)
     if comboState.isAttacking or state.attackPlaying then
@@ -405,6 +426,11 @@ function GladiatorCombo.resetCombo()
     end
     
     print("[GLADIATOR COMBO] Combo state manually reset")
+    
+    -- Set global cooldown when combo is reset during weapon cleanup
+    if _G.setGlobalCooldown then
+        _G.setGlobalCooldown()
+    end
 end
 
 -- Clean up combo system (called when weapon is removed)
