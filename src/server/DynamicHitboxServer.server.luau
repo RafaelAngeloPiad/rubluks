@@ -84,7 +84,6 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
                     -- Prevent damage if hit too recently by this specific DOT hitbox
                     if timeSinceLastDamage < 0.4 then -- 0.4s immunity per DOT tick
                         canDamage = false
-                        print(string.format("[SERVER DOT] %s immune to %s (%.2fs since last hit)", model.Name, hitboxId or "unknown", timeSinceLastDamage))
                     else
                         -- Update last damage time for this DOT hitbox
                         playerDamageImmunity[targetUserId][hitboxId] = tick()
@@ -94,12 +93,6 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
                 if canDamage then
                     humanoid:TakeDamage(damageToApply)
                     damagedHumanoids[humanoid] = true
-                    
-                    local logMessage = string.format("[SERVER] Damaged: %s (%d damage)", model.Name, damageToApply)
-                    if hitboxId then
-                        logMessage = logMessage .. string.format(" [DOT: %s tick %d]", hitboxId, tickNumber or 1)
-                    end
-                    print(logMessage)
                 end
             end
         end

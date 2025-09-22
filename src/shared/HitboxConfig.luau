@@ -636,8 +636,6 @@ function HitboxConfig.calculateDamagePerTick(baseDamage, hitboxDuration)
     local interval = DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
     local maxTicks = math.floor(hitboxDuration / interval) + 1 -- +1 for immediate first tick
     
-    print(string.format("[DOT CALCULATION] Base damage: %d every %.2fs, Duration: %.2fs", baseDamage, interval, hitboxDuration))
-    print(string.format("[DOT CALCULATION] Max possible ticks: %d (immediate + every %.2fs)", maxTicks, interval))
     
     return {
         damagePerTick = baseDamage, -- Full base damage every tick
@@ -649,51 +647,37 @@ end
 
 -- Test function to verify DOT calculations
 function HitboxConfig.testDOTCalculations()
-    print("=== DOT CALCULATION TESTS ===")
     
     -- Test berserker combo attacks
     local combo = HitboxConfig.getComboConfig("berserker_weapon")
     if combo then
-        print("\nBerserker Combo DOT Tests:")
         
-        print("Attack 1:")
         local result1 = HitboxConfig.calculateDamagePerTick(combo.attack1.baseDamage, combo.attack1.hitboxDuration)
         
-        print("Attack 2:")
         local result2 = HitboxConfig.calculateDamagePerTick(combo.attack2.baseDamage, combo.attack2.hitboxDuration)
         
-        print("Attack 3:")
         local result3 = HitboxConfig.calculateDamagePerTick(combo.attack3.baseDamage, combo.attack3.hitboxDuration)
     end
     
     -- Test berserker skills
-    print("\nBerserker Skill DOT Tests:")
     local skill1 = HitboxConfig.getSkillConfig("berserker_skill_1")
     if skill1 then
-        print("Berserker Rage:")
         HitboxConfig.calculateDamagePerTick(skill1.baseDamage, skill1.hitboxDuration)
     end
     
     local skill2 = HitboxConfig.getSkillConfig("berserker_skill_2")
     if skill2 then
-        print("Whirlwind:")
         HitboxConfig.calculateDamagePerTick(skill2.baseDamage, skill2.hitboxDuration)
     end
 end
 
 -- Debug function to print all configurations (for development use)
 function HitboxConfig.printAllConfigs()
-    print("=== HITBOX CONFIGURATIONS ===")
-    print("Default Config:", DEFAULT_CONFIG.size, DEFAULT_CONFIG.offset, DEFAULT_CONFIG.baseDamage)
     
-    print("\nWeapon Configs:")
     for tag, config in pairs(WEAPON_CONFIGS) do
-        print(string.format("  %s: Size=%s, Offset=%s, Damage=%d", tag, tostring(config.size), tostring(config.offset), config.baseDamage))
     end
     
-    print("\nSkill Configs:")
     for tag, config in pairs(SKILL_CONFIGS) do
-        print(string.format("  %s: Size=%s, Offset=%s, Damage=%d", tag, tostring(config.size), tostring(config.offset), config.baseDamage))
     end
 end
 

@@ -33,18 +33,15 @@ end
 
 game.Players.PlayerAdded:Connect(function(plr)
 	local teleportData = plr:GetJoinData().TeleportData
-	print("PlayerAdded: TeleportData =", teleportData)
 	local data
 
 	if teleportData then
 		-- Use TeleportData if present
 		data = teleportData
-		print("Loaded data from TeleportData:", data)
 	else
 		-- Otherwise, load from MainDataStore
 		if MainDataStore then
 			data = MainDataStore.LoadPlayerData(plr.UserId)
-			print("Loaded data from MainDataStore:", data)
 		else
 			warn("MainDataStore not available, cannot load player data.")
 		end
@@ -188,7 +185,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 	currxp.Changed:Connect(function(newv)
 		if newv >= maxxp.Value then
 			local overtop = newv - maxxp.Value
-			print("LEVELED UP! Excess XP: " .. overtop)
 			currxp.Value = overtop
 			
 			-- Harder to level up after 40

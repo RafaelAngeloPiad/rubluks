@@ -106,11 +106,9 @@ local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration
     hitboxPart.Name = name
     
     -- Remove after specified duration
-    print(string.format("[VISUAL HITBOX] %s will last %.2fs", name, duration))
     task.delay(duration, function()
             if hitboxPart then
                 hitboxPart:Destroy()
-            print(string.format("[VISUAL HITBOX] %s destroyed after %.2fs", name, duration))
             end
         end)
 end
@@ -167,13 +165,11 @@ end
 
 function GlobalAttackCooldown.setGlobalCooldown()
     _G.lastGlobalAttackEndTime = tick()
-    print(string.format("[GLOBAL COOLDOWN] ⏰ Global cooldown set for %.1fs", GLOBAL_COOLDOWN_TIME))
 end
 
 function GlobalAttackCooldown.canStartNewAttack()
     if GlobalAttackCooldown.isOnGlobalCooldown() then
         local remaining = GlobalAttackCooldown.getGlobalCooldownRemaining()
-        print(string.format("[GLOBAL COOLDOWN] ❌ Global cooldown active - %.2fs remaining", remaining))
         return false, remaining
     end
     return true, 0
@@ -232,17 +228,14 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     -- Check if skill is on cooldown
     if SkillCooldownSystem.isSkillOnCooldown(skillKey, cooldownTime) then
         local remainingTime = SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime)
-        print(string.format("[SKILL COOLDOWN] ❌ %s on cooldown! %.1fs remaining", skillConfig.name or skillKey, remainingTime))
         return
     end
 
     -- Check if skill is already casting
     if SkillCooldownSystem.isSkillCasting(skillKey) then
-        print(string.format("[SKILL COOLDOWN] ❌ %s already casting!", skillConfig.name or skillKey))
         return
     end
 
-    print(string.format("[SKILL COOLDOWN] ✅ Casting %s (Cast: %.1fs, Cooldown: %.1fs, Duration: %.1fs)", skillConfig.name or skillKey, castTime, cooldownTime, hitboxDuration))
 
     -- Start casting
     SkillCooldownSystem.setSkillCasting(skillKey, true)
@@ -269,27 +262,22 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
                 local damageInfo = HitboxConfig.calculateDamagePerTick(damage, hitboxDuration)
                 local hitboxId = DOTSystem.generateUniqueHitboxId(skillKey, "skill")
                 
-                print(string.format("[SKILL COOLDOWN] 💥 Creating simple DOT skill hitbox: %d damage every %.1fs for %.1fs", 
-                    damage, damageInterval, hitboxDuration))
                 
                 DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damage, hitboxDuration, damageInterval, "skill")
             else
                 -- Single-hit hitbox (traditional)
                 remote:FireServer(hitboxCFrame, size, damage)
-                print(string.format("[SKILL COOLDOWN] 💥 Single-hit skill hitbox: %d damage", damage))
             end
 
             -- Create visual hitbox with custom duration
             createVisualHitbox(hitboxCFrame, size, "skill", hitboxDuration)
             
-            print(string.format("[SKILL COOLDOWN] %s visual hitbox lasting %.1fs!", skillConfig.name or skillKey, hitboxDuration))
         end
     end)
 
     -- End casting after cast time
     task.delay(castTime, function()
         SkillCooldownSystem.setSkillCasting(skillKey, false)
-        print(string.format("[SKILL COOLDOWN] ⏰ %s cast completed", skillConfig.name or skillKey))
     end)
 end
 
@@ -307,13 +295,10 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
         weaponDamage = customDamage
         hitboxDelay = customDelay or 0.0 -- Default to immediate if no delay specified
         hitboxDuration = customDuration or 0.3 -- Default to 0.3s if no duration specified
-        print(string.format("[COMBO HITBOX] Using custom combo hitbox config: Size=%s, Offset=%s, Damage=%d, Delay=%.2fs, Duration=%.2fs", 
-            tostring(customSize), tostring(customOffset), customDamage, hitboxDelay, hitboxDuration))
     else
         hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
         hitboxDelay = 0.0 -- Default weapon hitboxes have no delay
         hitboxDuration = 0.3 -- Default weapon hitboxes last 0.3s
-        print("[COMBO HITBOX] Using weapon hitbox config for combo")
     end
 
     -- Apply hitbox delay (like skills)
@@ -336,20 +321,16 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
             local damageInfo = HitboxConfig.calculateDamagePerTick(weaponDamage, hitboxDuration)
             local hitboxId = DOTSystem.generateUniqueHitboxId("combo", "attack")
             
-            print(string.format("[COMBO HITBOX] 💥 Creating simple DOT combo hitbox: %d damage every %.1fs for %.1fs", 
-                weaponDamage, damageInterval, hitboxDuration))
             
             DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, hitboxSize, weaponDamage, hitboxDuration, damageInterval, "weapon")
         else
             -- Single-hit hitbox (traditional)
             remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
-            print(string.format("[COMBO HITBOX] 💥 Single-hit combo hitbox: %d damage", weaponDamage))
         end
 
         -- Create visual hitbox (red like weapon attacks) with custom duration
         createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", hitboxDuration)
         
-        print(string.format("[COMBO HITBOX] Visual hitbox lasting %.2fs!", hitboxDuration))
     end
 
     -- Generate hitbox immediately or after delay
@@ -395,11 +376,8 @@ function DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damagePerTick, 
     
     _G.activeDOTHitboxes[hitboxId] = dotHitbox
     
-    print(string.format("[DOT SYSTEM] Created simple DOT hitbox %s: %d damage every %.1fs for %.1fs", 
-        hitboxId, damagePerTick, interval, duration))
     
     -- Apply first damage immediately
-    print(string.format("[DOT SYSTEM] %s tick 1 (immediate) - applying %d damage", hitboxId, damagePerTick))
     remote:FireServer(hitboxCFrame, size, damagePerTick, hitboxId, 1)
     
     -- Start the DOT damage loop for subsequent ticks
@@ -428,15 +406,12 @@ function DOTSystem.startDamageLoop(hitboxId)
         
         -- Check if hitbox duration has expired
         if elapsedTime >= dotHitbox.duration then
-            print(string.format("[DOT SYSTEM] %s duration expired (%.2fs)", hitboxId, elapsedTime))
             DOTSystem.removeDOTHitbox(hitboxId)
             return
         end
         
         -- Apply damage for this tick
         tickNumber = tickNumber + 1
-        print(string.format("[DOT SYSTEM] %s tick %d (%.2fs elapsed) - applying %d damage", 
-            hitboxId, tickNumber, elapsedTime, dotHitbox.damagePerTick))
         
         -- Send damage to server
         remote:FireServer(dotHitbox.cframe, dotHitbox.size, dotHitbox.damagePerTick, hitboxId, tickNumber)
@@ -446,8 +421,6 @@ function DOTSystem.startDamageLoop(hitboxId)
         if timeUntilExpiry > dotHitbox.interval then
             task.delay(dotHitbox.interval, applyNextTick)
         else
-            print(string.format("[DOT SYSTEM] %s no more ticks - %.2fs remaining < %.2fs interval", 
-                hitboxId, timeUntilExpiry, dotHitbox.interval))
         end
     end
     
@@ -458,7 +431,6 @@ end
 function DOTSystem.removeDOTHitbox(hitboxId)
     if _G.activeDOTHitboxes[hitboxId] then
         _G.activeDOTHitboxes[hitboxId] = nil
-        print(string.format("[DOT SYSTEM] Removed DOT hitbox %s", hitboxId))
     end
 end
 
@@ -476,7 +448,6 @@ local function shouldAllowToolActivation(tool)
         if CollectionService:HasTag(tool, weaponTag) then
             -- For all class weapons, ALWAYS block tool activation
             -- The combo system should handle ALL weapon attacks
-            print("[DYNAMIC HITBOX] ❌ Tool activation blocked - " .. weaponTag .. " uses combo system")
             return false
         end
     end
@@ -498,7 +469,6 @@ local function setupHitboxGeneration(tool)
             return
         end
         
-        print("[DYNAMIC HITBOX] Tool activation allowed - generating weapon hitbox")
         DynamicHitboxClient.generateWeaponHitbox(tool)
     end
 
@@ -543,13 +513,11 @@ end
 _G.resetSkillCooldown = function(skillKey)
     _G.skillCooldowns[skillKey] = 0
     _G.skillCasting[skillKey] = false
-    print(string.format("[SKILL COOLDOWN] ⚙️ Reset cooldown for %s", skillKey))
 end
 
 _G.resetAllSkillCooldowns = function()
     _G.skillCooldowns = {}
     _G.skillCasting = {}
-    print("[SKILL COOLDOWN] ⚙️ Reset all skill cooldowns")
 end
 
 -- Expose global cooldown system
@@ -558,21 +526,16 @@ _G.setGlobalCooldown = GlobalAttackCooldown.setGlobalCooldown
 _G.getGlobalCooldownRemaining = GlobalAttackCooldown.getGlobalCooldownRemaining
 
 _G.debugSkillCooldowns = function()
-    print("[SKILL COOLDOWN DEBUG] Current skill states:")
     for skillKey, lastUse in pairs(_G.skillCooldowns) do
         local isCasting = _G.skillCasting[skillKey] or false
         local timeSinceUse = tick() - lastUse
-        print(string.format("  %s: Last used %.1fs ago, Casting: %s", skillKey, timeSinceUse, tostring(isCasting)))
     end
 end
 
 -- Make DOT system functions available globally for debugging
 _G.debugDOTHitboxes = function()
-    print("[DOT SYSTEM DEBUG] Active DOT hitboxes:")
     for hitboxId, dotHitbox in pairs(_G.activeDOTHitboxes) do
         local elapsed = tick() - dotHitbox.startTime
-        print(string.format("  %s: Tick %d/%d, Elapsed: %.1fs, %d damage per %.1fs", 
-            hitboxId, dotHitbox.currentTick, dotHitbox.tickCount, elapsed, dotHitbox.damagePerTick, dotHitbox.interval))
     end
 end
 
@@ -582,7 +545,6 @@ _G.clearAllDOTHitboxes = function()
         _G.activeDOTHitboxes[hitboxId] = nil
         count = count + 1
     end
-    print(string.format("[DOT SYSTEM] Cleared %d active DOT hitboxes", count))
 end
 
 _G.getDamageInterval = function()
@@ -596,7 +558,6 @@ _G.testDOTCalculations = function()
     if HitboxConfig then
         return HitboxConfig.testDOTCalculations()
     else
-        print("[DOT TEST] HitboxConfig not available")
     end
 end
 

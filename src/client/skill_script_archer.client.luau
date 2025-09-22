@@ -194,7 +194,6 @@ local function onInputBegan(input, gameProcessed)
     
     local skill = ARCHER_SKILLS[input.KeyCode]
     if skill then
-        print("[ARCHER SKILLS] Attempting to cast:", skill.name)
         
         -- Get skill config to check proper cooldown time
         local skillConfig = nil
@@ -206,7 +205,6 @@ local function onInputBegan(input, gameProcessed)
         -- Check cooldown before playing animation (for immediate feedback)
         if _G.getSkillCooldown and _G.getSkillCooldown(skill.skillKey, cooldownTime) > 0 then
             local remaining = _G.getSkillCooldown(skill.skillKey, cooldownTime)
-            print(string.format("[ARCHER SKILLS] ❌ %s on cooldown! %.1fs remaining", skill.name, remaining))
             
             -- Show cooldown feedback
             if currentCharacter and currentCharacter:FindFirstChild("Head") then
@@ -234,11 +232,9 @@ local function onInputBegan(input, gameProcessed)
         
         -- Check if skill is currently casting (prevents animation spam)
         if _G.skillCasting and _G.skillCasting[skill.skillKey] then
-            print(string.format("[ARCHER SKILLS] ❌ %s already casting!", skill.name))
             return
         end
         
-        print("[ARCHER SKILLS] ✅ Casting:", skill.name)
         -- Play animation
         playSkillAnimation(skill.skillKey)
         -- Generate hitbox (with built-in cooldown system)

@@ -99,7 +99,6 @@ local function createDroppedItem(tool, dropPosition, player)
                                 -- Clone fresh tool to backpack
                                 local freshTool = originalAsset:Clone()
                                 freshTool.Parent = backpack
-                                print("[InventoryDropManager] Player", player.Name, "picked up", droppedTool.Name)
                                 
                                 -- Remove the dropped tool from world
                                 droppedTool:Destroy()
@@ -134,7 +133,6 @@ local function createDroppedItem(tool, dropPosition, player)
     -- Schedule despawn
     game:GetService("Debris"):AddItem(droppedTool, DROP_CONFIG.DESPAWN_TIME)
     
-    print("[InventoryDropManager] Dropped", tool.Name, "for player", player.Name, "at position", dropPosition)
     return droppedTool
 end
 
@@ -200,7 +198,6 @@ local function dropItem(player, toolName)
     if droppedTool then
         -- Remove the tool from player's inventory
         tool:Destroy()
-        print("[InventoryDropManager] Removed", toolName, "from player's", toolLocation)
         
         -- Update drop count
         playerDropCounts[playerId] = playerDropCounts[playerId] + 1
@@ -234,13 +231,11 @@ dropItemRemote.OnServerEvent:Connect(function(player, toolName)
         return
     end
     
-    print("[InventoryDropManager] Processing drop request for", player.Name, "- Tool:", toolName)
     local success, message = dropItem(player, toolName)
     if not success then
         warn("[InventoryDropManager] Drop failed for", player.Name, ":", message)
         -- Could send error message back to client here if needed
     else
-        print("[InventoryDropManager] Drop successful for", player.Name, ":", message)
     end
 end)
 
@@ -301,5 +296,4 @@ spawn(function()
     end
 end)
 
-print("[InventoryDropManager] Server initialized with configuration:", DROP_CONFIG)
 

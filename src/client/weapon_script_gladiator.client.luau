@@ -8,17 +8,12 @@ local WeaponUtils = require(script.Parent.weapon_utils)
 local GladiatorCombo = nil
 local comboLoadSuccess, comboError = pcall(function()
     -- Check if combo module exists first
-    print("[GLADIATOR WEAPON] Checking for combo module...")
     local comboModule = script.Parent:FindFirstChild("weapon_script_gladiator_combo")
     
     if comboModule then
-        print("[GLADIATOR WEAPON] Found combo module:", comboModule.Name, "Type:", comboModule.ClassName)
         GladiatorCombo = require(comboModule)
-        print("[GLADIATOR WEAPON] ✅ Successfully loaded combo module!")
     else
-        print("[GLADIATOR WEAPON] Combo module not found, listing all children:")
         for _, child in pairs(script.Parent:GetChildren()) do
-            print("  -", child.Name, "(" .. child.ClassName .. ")")
         end
         error("Combo module not found in script.Parent")
     end
@@ -83,18 +78,12 @@ local function playInstantAnimation(state)
 end
 
 local function playAttack(state)
-	print("[GLADIATOR WEAPON] playAttack called")
-	print("[GLADIATOR WEAPON] State info - Character:", state.character, "Humanoid:", state.humanoid, "Animator:", state.animator)
 	
 	-- Use combo system if available, otherwise fall back to standard attack
 	if GladiatorCombo then
-		print("[GLADIATOR WEAPON] Using combo system for attack")
 		GladiatorCombo.executeComboAttack(state)
 	else
-		print("[GLADIATOR WEAPON] Using standard attack system")
-		print("[GLADIATOR WEAPON] Calling WeaponUtils.playAttackAnimation")
 		WeaponUtils.playAttackAnimation(state)
-		print("[GLADIATOR WEAPON] WeaponUtils.playAttackAnimation completed")
 	end
 end
 
@@ -185,7 +174,6 @@ local function removeSwordAndShield(tool, character, humanoid)
 end
 
 local function onCharacterAdded(state, char)
-	print("[GLADIATOR WEAPON] Character added, setting up animations")
 	state.character = char
 	state.humanoid = char:FindFirstChildOfClass("Humanoid")
 	if not state.humanoid then 
@@ -194,56 +182,44 @@ local function onCharacterAdded(state, char)
 	end
 	state.animator = state.humanoid:FindFirstChildOfClass("Animator")
 	if not state.animator then
-		print("[GLADIATOR WEAPON] Creating new animator")
 		state.animator = Instance.new("Animator")
 		state.animator.Parent = state.humanoid
 	end
 
-	print("[GLADIATOR WEAPON] Setting up animation tracks")
 	WeaponUtils.setupTracks(state, animations)
 	disconnectAll(state)
 
 	if state.toolEquipped then
-		print("[GLADIATOR WEAPON] Tool is equipped, connecting events")
 		-- Detect and attach sword and shield
 		if state.tool and detectSwordAndShield(state.tool) then
-			print("[GLADIATOR WEAPON] Attaching sword and shield")
 			attachSwordAndShield(state.tool, char, state.humanoid)
 		end
 		
 		state.stateConn = state.humanoid.StateChanged:Connect(function(old, new)
-			print("[GLADIATOR WEAPON] State changed:", old, "->", new)
 			onStateChanged(state, old, new)
 			
 			-- Test if movement animations are working
 			if new == Enum.HumanoidStateType.Running then
-				print("[GLADIATOR WEAPON] ✅ Running animation should be playing")
 			elseif new == Enum.HumanoidStateType.RunningNoPhysics then
-				print("[GLADIATOR WEAPON] ✅ Idle animation should be playing")
 			elseif new == Enum.HumanoidStateType.Jumping then
-				print("[GLADIATOR WEAPON] ✅ Jump animation should be playing")
 			end
 		end)
 		state.inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			onInputBegan(state, input, gameProcessed)
 			-- Only trigger attack animation on left mouse click
 			if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
-				print("[GLADIATOR WEAPON] Attack input detected")
 				playAttack(state)
 			end
 		end)
 		state.inputEndedConn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
 			onInputEnded(state, input, gameProcessed)
 		end)
-		print("[GLADIATOR WEAPON] Playing instant animation")
 		playInstantAnimation(state)
 	else
-		print("[GLADIATOR WEAPON] Tool not equipped, skipping event connections")
 	end
 end
 
 local function onEquipped(tool)
-	print("[GLADIATOR WEAPON] Tool equipped:", tool.Name)
 	local state = weaponScanner:getWeaponState(tool)
 	if not state then 
 		warn("[GLADIATOR WEAPON] No weapon state found for tool:", tool.Name)
@@ -254,10 +230,8 @@ local function onEquipped(tool)
 	
 	-- Detect sword and shield
 	local hasSwordShield = detectSwordAndShield(tool)
-	print("[GLADIATOR WEAPON] Sword and shield detected:", hasSwordShield)
 	
 	if player.Character then
-		print("[GLADIATOR WEAPON] Character exists, setting up animations")
 		onCharacterAdded(state, player.Character)
 	else
 		warn("[GLADIATOR WEAPON] No character found when equipping tool")
@@ -265,24 +239,20 @@ local function onEquipped(tool)
 end
 
 local function onUnequipped(tool)
-	print("[GLADIATOR WEAPON] Tool unequipped:", tool.Name)
 	local state = weaponScanner:getWeaponState(tool)
 	if not state then return end
 	state.toolEquipped = false
 	
 	-- Reset combo if available
 	if GladiatorCombo then
-		print("[GLADIATOR WEAPON] Resetting combo system")
 		GladiatorCombo.resetCombo()
 	end
 	
 	-- Remove sword and shield
 	if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-		print("[GLADIATOR WEAPON] Removing sword and shield")
 		removeSwordAndShield(tool, player.Character, player.Character:FindFirstChildOfClass("Humanoid"))
 	end
 	
-	print("[GLADIATOR WEAPON] Disconnecting all events")
 	disconnectAll(state)
 	state.tool = nil
 end
@@ -306,11 +276,9 @@ local function setupTool(tool, state)
 end
 
 local function cleanupTool(tool, state)
-	print("[GLADIATOR WEAPON] Cleaning up tool:", tool.Name)
 	
 	-- Reset combo when cleaning up
 	if GladiatorCombo then
-		print("[GLADIATOR WEAPON] Resetting combo system during cleanup")
 		GladiatorCombo.resetCombo()
 	end
 	
@@ -325,14 +293,10 @@ local function debugAnimationSystem()
     if player.Character then
         local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
-            print("[GLADIATOR DEBUG] Character found, humanoid state:", humanoid:GetState())
             local animator = humanoid:FindFirstChildOfClass("Animator")
             if animator then
-                print("[GLADIATOR DEBUG] Animator found")
                 local playingTracks = animator:GetPlayingAnimationTracks()
-                print("[GLADIATOR DEBUG] Playing tracks:", #playingTracks)
                 for i, track in ipairs(playingTracks) do
-                    print("[GLADIATOR DEBUG] Track", i, ":", track.Animation.AnimationId)
                 end
             else
                 warn("[GLADIATOR DEBUG] No animator found")
@@ -378,17 +342,7 @@ if GladiatorCombo then
         return GladiatorCombo.checkHitboxSystem()
     end
     
-    print("[GLADIATOR WEAPON] Global combo debug functions available:")
-    print("  _G.debugGladiatorCombo() - Show current combo state")
-    print("  _G.setGladiatorComboTimeout(seconds) - Change combo timeout")
-    print("  _G.getGladiatorComboTimeout() - Get current timeout")
-    print("  _G.setGladiatorAttackDuration(1/2/3, seconds) - Change attack duration")
-    print("  _G.getGladiatorAttackDurations() - Get current durations")
-    print("  _G.checkGladiatorHitboxSystem() - Check hitbox system availability")
-    print("  _G.resetGladiatorCombo() - Manually reset combo")
 end
 
 -- Initialize weapon scanner
-print("[GLADIATOR WEAPON] Initializing weapon scanner")
 weaponScanner = WeaponScanner.new("gladiator_weapon", setupTool, cleanupTool)
-print("[GLADIATOR WEAPON] Weapon scanner initialized successfully")

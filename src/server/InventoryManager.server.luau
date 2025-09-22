@@ -38,7 +38,6 @@ local function SavePlayerInventory(player)
         end
 
         if #inventory == 0 and #equipped == 0 then
-            print("[InventoryManager] WARNING: Inventory and equipped are empty when saving for", player.Name)
         end
         MainDataStore.SaveInventory(player.UserId, {inventory = inventory, equipped = equipped})
         inventorySaveDebounce[userId].lastSave = os.clock()
@@ -67,14 +66,12 @@ end
 local function LoadPlayerInventory(player)
     local backpack = player:FindFirstChild("Backpack")
     if not backpack then
-        print("[InventoryManager] Backpack not found for", player.Name, "when loading inventory, waiting for Backpack...")
         backpack = player:WaitForChild("Backpack")
     end
     
     -- Wait for character if we need to load equipped items
     local character = player.Character
     if not character then
-        print("[InventoryManager] Character not found for", player.Name, "when loading inventory, waiting for Character...")
         character = player:WaitForChild("Character")
     end
     
@@ -93,7 +90,6 @@ local function LoadPlayerInventory(player)
         if asset and asset:IsA("Tool") then
             asset:Clone().Parent = backpack
         else
-            print("[InventoryManager] Tool asset not found in ReplicatedStorage.assets for Backpack:", toolName)
         end
     end
 
@@ -106,7 +102,6 @@ local function LoadPlayerInventory(player)
                     asset:Clone().Parent = character
                 end
             else
-                print("[InventoryManager] Tool asset not found in ReplicatedStorage.assets for Equipped:", toolName)
             end
         end
     end

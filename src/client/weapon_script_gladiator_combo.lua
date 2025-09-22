@@ -10,19 +10,15 @@ local configLoadSuccess, configError = pcall(function()
     HitboxConfig = require(script.Parent.Parent.shared.HitboxConfig)
 end)
 if not configLoadSuccess then
-    print("[GLADIATOR COMBO] Failed to load HitboxConfig from shared folder:", configError)
     -- Try alternative path
     local success2, error2 = pcall(function()
         HitboxConfig = require(game.ReplicatedStorage:WaitForChild("HitboxConfig"))
     end)
     if not success2 then
-        print("[GLADIATOR COMBO] Failed to load HitboxConfig from ReplicatedStorage:", error2)
         HitboxConfig = nil
     else
-        print("[GLADIATOR COMBO] Successfully loaded HitboxConfig from ReplicatedStorage")
     end
 else
-    print("[GLADIATOR COMBO] Successfully loaded HitboxConfig from shared folder")
 end
 
 local GladiatorCombo = {}
@@ -42,13 +38,8 @@ local function getComboConfig()
     if HitboxConfig then
         local config = HitboxConfig.getComboConfig("gladiator_weapon")
         if config then
-            print("[GLADIATOR COMBO] Using HitboxConfig combo configuration")
             return config
-        else
-            print("[GLADIATOR COMBO] HitboxConfig returned nil, using fallback")
         end
-    else
-        print("[GLADIATOR COMBO] HitboxConfig not available, using fallback configuration")
     end
     
     -- Fallback configuration
@@ -90,7 +81,6 @@ end
 
 -- Generate hitbox for combo attack using the global combo hitbox system
 local function generateComboHitbox(attackConfig, state)
-    print(string.format("[GLADIATOR COMBO] Generating combo hitbox for attack %d: %s", comboState.currentCombo, attackConfig.name))
     
     -- Find the equipped gladiator weapon tool
     local equippedTool = nil
@@ -104,24 +94,9 @@ local function generateComboHitbox(attackConfig, state)
     end
     
     if equippedTool then
-        print("[GLADIATOR COMBO] Found gladiator weapon tool:", equippedTool.Name)
-        
         -- Use the global combo hitbox function with custom attack config including delay and duration
         if _G.generateComboHitbox then
-            print(string.format("[GLADIATOR COMBO] Using _G.generateComboHitbox with delay: %.2fs, duration: %.2fs", attackConfig.hitboxDelay, attackConfig.hitboxDuration))
             _G.generateComboHitbox(equippedTool, attackConfig.size, attackConfig.offset, attackConfig.baseDamage, attackConfig.hitboxDelay, attackConfig.hitboxDuration)
-        else
-            warn("[GLADIATOR COMBO] ❌ _G.generateComboHitbox not available!")
-        end
-    else
-        warn("[GLADIATOR COMBO] ❌ No gladiator weapon tool found!")
-        if state.character then
-            print("[GLADIATOR COMBO] Available tools:")
-            for _, child in pairs(state.character:GetChildren()) do
-                if child:IsA("Tool") then
-                    print("  -", child.Name)
-                end
-            end
         end
     end
 end
@@ -159,16 +134,13 @@ local function resetComboTimer(config)
     if comboState.comboResetThread then
         task.cancel(comboState.comboResetThread)
         comboState.comboResetThread = nil
-        print("[GLADIATOR COMBO] Cancelled previous combo timer")
     end
     
     -- Only start timer if we're in a combo (not at 0)
     if comboState.currentCombo > 0 then
-        print(string.format("[GLADIATOR COMBO] Starting combo timeout timer: %.1f seconds", config.resetTime))
         
         -- Set new timer
         comboState.comboResetThread = task.delay(config.resetTime, function()
-            print(string.format("[GLADIATOR COMBO] ⏰ COMBO TIMEOUT! No input for %.1f seconds - resetting combo", config.resetTime))
             comboState.currentCombo = 0
             comboState.isAttacking = false
             comboState.animationStartTime = 0
@@ -179,7 +151,6 @@ local function resetComboTimer(config)
             _G.lastComboTime = tick()
         end)
     else
-        print("[GLADIATOR COMBO] No combo active, skipping timeout timer")
     end
 end
 
@@ -194,7 +165,6 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     comboState.animationStartTime = tick()
     comboState.currentAnimationDuration = attackConfig.duration
     
-    print(string.format("[GLADIATOR COMBO] Executing attack %d: %s (Duration: %.2fs)", attackNumber, attackConfig.name, attackConfig.duration))
     
     -- Set the WeaponUtils state to indicate we're attacking
     state.attackPlaying = true
@@ -209,7 +179,6 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     end)
     
     if not success or not track then
-        print("[GLADIATOR COMBO] Failed to load animation for attack", attackNumber)
         comboState.isAttacking = false
         
         -- Set global cooldown even on animation failure
@@ -257,15 +226,12 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
             -- Update global combo time
             _G.lastComboTime = tick()
             
-            print(string.format("[GLADIATOR COMBO] Attack %d duration completed (%.2fs)", attackNumber, attackConfig.duration))
             
             -- Check if we're still in combo window for next attack
             local timeSinceLastAttack = tick() - comboState.lastAttackTime
-            print(string.format("[GLADIATOR COMBO] Time since last attack: %.2fs, Combo window: %.2fs", timeSinceLastAttack, comboConfig.comboWindow))
             
             if timeSinceLastAttack <= comboConfig.comboWindow and comboState.currentCombo < 3 then
                 -- Still in combo window, wait for next input
-                print("[GLADIATOR COMBO] Still in combo window, waiting for next input...")
                 resetComboTimer(comboConfig)
                 
                 -- Return to idle animation for combo window
@@ -276,9 +242,6 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
             else
                 -- Combo finished or timed out
                 if timeSinceLastAttack > comboConfig.comboWindow then
-                    print(string.format("[GLADIATOR COMBO] ⏰ COMBO WINDOW EXPIRED! %.2fs > %.2fs - resetting combo", timeSinceLastAttack, comboConfig.comboWindow))
-                else
-                    print("[GLADIATOR COMBO] Combo sequence completed naturally")
                 end
                 
                 comboState.currentCombo = 0
@@ -305,7 +268,6 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     local connection
     connection = track.Stopped:Connect(function()
         connection:Disconnect()
-        print(string.format("[GLADIATOR COMBO] Animation for attack %d finished, but waiting for full duration (%.2fs)", attackNumber, attackConfig.duration))
     end)
 end
 
@@ -316,7 +278,6 @@ function GladiatorCombo.executeComboAttack(state)
         return
     end
     
-    print("[GLADIATOR COMBO] executeComboAttack called")
     
     local config = getComboConfig()
     local currentTime = tick()
@@ -328,24 +289,18 @@ function GladiatorCombo.executeComboAttack(state)
     if _G.canStartNewAttack then
         local canStart, remaining = _G.canStartNewAttack()
         if not canStart then
-            print(string.format("[GLADIATOR COMBO] ❌ ATTACK BLOCKED - Global cooldown active (%.2fs remaining)", remaining))
             return
         end
     end
     
     -- Check if we're already attacking (respect WeaponUtils state)
     if comboState.isAttacking or state.attackPlaying then
-        print("[GLADIATOR COMBO] ❌ ATTACK BLOCKED - Attack in progress, ignoring input")
-        print("[GLADIATOR COMBO] Current combo:", comboState.currentCombo, "isAttacking:", comboState.isAttacking, "attackPlaying:", state.attackPlaying)
         
         -- Show how much time is left in current animation
         if comboState.currentAnimationDuration > 0 then
             local timeElapsed = tick() - comboState.animationStartTime
             local timeRemaining = comboState.currentAnimationDuration - timeElapsed
             if timeRemaining > 0 then
-                print(string.format("[GLADIATOR COMBO] ⏱️ Animation time remaining: %.2fs (must wait for full duration)", timeRemaining))
-            else
-                print("[GLADIATOR COMBO] ⏱️ Animation duration complete, but still in attack state")
             end
         end
         
@@ -355,19 +310,16 @@ function GladiatorCombo.executeComboAttack(state)
     
     -- Safety check: Make sure we're not interfering with other systems
     if state.humanoid and state.humanoid:GetState() == Enum.HumanoidStateType.Dead then
-        print("[GLADIATOR COMBO] Character is dead, ignoring attack")
         return
     end
     
     -- Check if we're within combo window
     local timeSinceLastAttack = currentTime - comboState.lastAttackTime
-    print("[GLADIATOR COMBO] Time check - Current combo:", comboState.currentCombo, "Time since last attack:", timeSinceLastAttack, "Combo window:", config.comboWindow)
     
     if comboState.currentCombo > 0 and timeSinceLastAttack > config.comboWindow then
         -- Combo window expired, reset
         comboState.currentCombo = 0
         comboState.pendingComboInput = false
-        print("[GLADIATOR COMBO] Combo window expired, resetting")
     end
     
     -- Determine next attack in combo
@@ -376,7 +328,6 @@ function GladiatorCombo.executeComboAttack(state)
         -- Combo sequence completed, reset to first attack
         comboState.currentCombo = 1
         nextAttack = 1
-        print("[GLADIATOR COMBO] Combo sequence completed, restarting from attack 1")
     else
         comboState.currentCombo = nextAttack
     end
@@ -391,7 +342,6 @@ function GladiatorCombo.executeComboAttack(state)
         attackConfig = config.attack3
     end
     
-    print("[GLADIATOR COMBO] Next attack will be:", nextAttack, "with config:", attackConfig.name)
     
     -- Reset combo timer
     resetComboTimer(config)
@@ -425,8 +375,6 @@ function GladiatorCombo.resetCombo()
         comboState.comboResetThread = nil
     end
     
-    print("[GLADIATOR COMBO] Combo state manually reset")
-    
     -- Set global cooldown when combo is reset during weapon cleanup
     if _G.setGlobalCooldown then
         _G.setGlobalCooldown()
@@ -436,7 +384,6 @@ end
 -- Clean up combo system (called when weapon is removed)
 function GladiatorCombo.cleanup()
     GladiatorCombo.resetCombo()
-    print("[GLADIATOR COMBO] Combo system cleaned up")
 end
 
 -- Check if combo is active
@@ -458,12 +405,7 @@ function GladiatorCombo.debugComboState()
         timeRemaining = math.max(0, comboState.currentAnimationDuration - timeElapsed)
     end
     
-    print(string.format("[GLADIATOR COMBO DEBUG] Current: %d, Attacking: %s, Time Since Last: %.2fs, Animation Time Remaining: %.2fs", 
-        state.currentCombo, 
-        tostring(state.isAttacking),
-        state.timeSinceLastAttack,
-        timeRemaining
-    ))
+
     return state
 end
 
@@ -473,12 +415,10 @@ function GladiatorCombo.setComboTimeout(newTimeoutSeconds)
         local config = HitboxConfig.getComboConfig("gladiator_weapon")
         if config then
             config.resetTime = newTimeoutSeconds
-            print(string.format("[GLADIATOR COMBO] ⚙️ Combo timeout adjusted to %.1f seconds", newTimeoutSeconds))
             return true
         end
     end
     
-    print("[GLADIATOR COMBO] ❌ Could not adjust timeout - HitboxConfig not available")
     return false
 end
 
@@ -500,22 +440,17 @@ function GladiatorCombo.setAttackDuration(attackNumber, newDurationSeconds)
         if config then
             if attackNumber == 1 then
                 config.attack1.duration = newDurationSeconds
-                print(string.format("[GLADIATOR COMBO] ⚙️ Attack 1 duration set to %.2f seconds", newDurationSeconds))
             elseif attackNumber == 2 then
                 config.attack2.duration = newDurationSeconds
-                print(string.format("[GLADIATOR COMBO] ⚙️ Attack 2 duration set to %.2f seconds", newDurationSeconds))
             elseif attackNumber == 3 then
                 config.attack3.duration = newDurationSeconds
-                print(string.format("[GLADIATOR COMBO] ⚙️ Attack 3 duration set to %.2f seconds", newDurationSeconds))
             else
-                print("[GLADIATOR COMBO] ❌ Invalid attack number. Use 1, 2, or 3")
                 return false
             end
             return true
         end
     end
     
-    print("[GLADIATOR COMBO] ❌ Could not adjust duration - HitboxConfig not available")
     return false
 end
 
@@ -536,13 +471,10 @@ end
 
 -- Function to check if combo hitbox system is available
 function GladiatorCombo.checkHitboxSystem()
-    print("[GLADIATOR COMBO] Checking combo hitbox system availability:")
     
     if _G.generateComboHitbox then
-        print("  ✅ _G.generateComboHitbox function available")
         return true
     else
-        print("  ❌ _G.generateComboHitbox function not available")
         return false
     end
 end

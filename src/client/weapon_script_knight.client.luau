@@ -8,17 +8,12 @@ local WeaponUtils = require(script.Parent.weapon_utils)
 local KnightCombo = nil
 local comboLoadSuccess, comboError = pcall(function()
     -- Check if combo module exists first
-    print("[KNIGHT WEAPON] Checking for combo module...")
     local comboModule = script.Parent:FindFirstChild("weapon_script_knight_combo")
     
     if comboModule then
-        print("[KNIGHT WEAPON] Found combo module:", comboModule.Name, "Type:", comboModule.ClassName)
         KnightCombo = require(comboModule)
-        print("[KNIGHT WEAPON] ✅ Successfully loaded combo module!")
     else
-        print("[KNIGHT WEAPON] Combo module not found, listing all children:")
         for _, child in pairs(script.Parent:GetChildren()) do
-            print("  -", child.Name, "(" .. child.ClassName .. ")")
         end
         error("Combo module not found in script.Parent")
     end
@@ -83,18 +78,12 @@ local function playInstantAnimation(state)
 end
 
 local function playAttack(state)
-	print("[KNIGHT WEAPON] playAttack called")
-	print("[KNIGHT WEAPON] State info - Character:", state.character, "Humanoid:", state.humanoid, "Animator:", state.animator)
 	
 	-- Use combo system if available, otherwise fall back to standard attack
 	if KnightCombo then
-		print("[KNIGHT WEAPON] Using combo system for attack")
 		KnightCombo.executeComboAttack(state)
 	else
-		print("[KNIGHT WEAPON] Using standard attack system")
-		print("[KNIGHT WEAPON] Calling WeaponUtils.playAttackAnimation")
 		WeaponUtils.playAttackAnimation(state)
-		print("[KNIGHT WEAPON] WeaponUtils.playAttackAnimation completed")
 	end
 end
 
@@ -185,7 +174,6 @@ local function removeSwordAndShield(tool, character, humanoid)
 end
 
 local function onCharacterAdded(state, char)
-	print("[KNIGHT WEAPON] Character added, setting up animations")
 	state.character = char
 	state.humanoid = char:FindFirstChildOfClass("Humanoid")
 	if not state.humanoid then 
@@ -194,56 +182,44 @@ local function onCharacterAdded(state, char)
 	end
 	state.animator = state.humanoid:FindFirstChildOfClass("Animator")
 	if not state.animator then
-		print("[KNIGHT WEAPON] Creating new animator")
 		state.animator = Instance.new("Animator")
 		state.animator.Parent = state.humanoid
 	end
 
-	print("[KNIGHT WEAPON] Setting up animation tracks")
 	WeaponUtils.setupTracks(state, animations)
 	disconnectAll(state)
 
 	if state.toolEquipped then
-		print("[KNIGHT WEAPON] Tool is equipped, connecting events")
 		-- Detect and attach sword and shield
 		if state.tool and detectSwordAndShield(state.tool) then
-			print("[KNIGHT WEAPON] Attaching sword and shield")
 			attachSwordAndShield(state.tool, char, state.humanoid)
 		end
 		
 		state.stateConn = state.humanoid.StateChanged:Connect(function(old, new)
-			print("[KNIGHT WEAPON] State changed:", old, "->", new)
 			onStateChanged(state, old, new)
 			
 			-- Test if movement animations are working
 			if new == Enum.HumanoidStateType.Running then
-				print("[KNIGHT WEAPON] ✅ Running animation should be playing")
 			elseif new == Enum.HumanoidStateType.RunningNoPhysics then
-				print("[KNIGHT WEAPON] ✅ Idle animation should be playing")
 			elseif new == Enum.HumanoidStateType.Jumping then
-				print("[KNIGHT WEAPON] ✅ Jump animation should be playing")
 			end
 		end)
 		state.inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			onInputBegan(state, input, gameProcessed)
 			-- Only trigger attack animation on left mouse click
 			if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
-				print("[KNIGHT WEAPON] Attack input detected")
 				playAttack(state)
 			end
 		end)
 		state.inputEndedConn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
 			onInputEnded(state, input, gameProcessed)
 		end)
-		print("[KNIGHT WEAPON] Playing instant animation")
 		playInstantAnimation(state)
 	else
-		print("[KNIGHT WEAPON] Tool not equipped, skipping event connections")
 	end
 end
 
 local function onEquipped(tool)
-	print("[KNIGHT WEAPON] Tool equipped:", tool.Name)
 	local state = weaponScanner:getWeaponState(tool)
 	if not state then 
 		warn("[KNIGHT WEAPON] No weapon state found for tool:", tool.Name)
@@ -254,10 +230,8 @@ local function onEquipped(tool)
 	
 	-- Detect sword and shield
 	local hasSwordShield = detectSwordAndShield(tool)
-	print("[KNIGHT WEAPON] Sword and shield detected:", hasSwordShield)
 	
 	if player.Character then
-		print("[KNIGHT WEAPON] Character exists, setting up animations")
 		onCharacterAdded(state, player.Character)
 	else
 		warn("[KNIGHT WEAPON] No character found when equipping tool")
@@ -265,24 +239,20 @@ local function onEquipped(tool)
 end
 
 local function onUnequipped(tool)
-	print("[KNIGHT WEAPON] Tool unequipped:", tool.Name)
 	local state = weaponScanner:getWeaponState(tool)
 	if not state then return end
 	state.toolEquipped = false
 	
 	-- Reset combo if available
 	if KnightCombo then
-		print("[KNIGHT WEAPON] Resetting combo system")
 		KnightCombo.resetCombo()
 	end
 	
 	-- Remove sword and shield
 	if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-		print("[KNIGHT WEAPON] Removing sword and shield")
 		removeSwordAndShield(tool, player.Character, player.Character:FindFirstChildOfClass("Humanoid"))
 	end
 	
-	print("[KNIGHT WEAPON] Disconnecting all events")
 	disconnectAll(state)
 	state.tool = nil
 end
@@ -306,11 +276,9 @@ local function setupTool(tool, state)
 end
 
 local function cleanupTool(tool, state)
-	print("[KNIGHT WEAPON] Cleaning up tool:", tool.Name)
 	
 	-- Reset combo when cleaning up
 	if KnightCombo then
-		print("[KNIGHT WEAPON] Resetting combo system during cleanup")
 		KnightCombo.resetCombo()
 	end
 	
@@ -325,14 +293,10 @@ local function debugAnimationSystem()
     if player.Character then
         local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
-            print("[KNIGHT DEBUG] Character found, humanoid state:", humanoid:GetState())
             local animator = humanoid:FindFirstChildOfClass("Animator")
             if animator then
-                print("[KNIGHT DEBUG] Animator found")
                 local playingTracks = animator:GetPlayingAnimationTracks()
-                print("[KNIGHT DEBUG] Playing tracks:", #playingTracks)
                 for i, track in ipairs(playingTracks) do
-                    print("[KNIGHT DEBUG] Track", i, ":", track.Animation.AnimationId)
                 end
             else
                 warn("[KNIGHT DEBUG] No animator found")
@@ -378,17 +342,7 @@ if KnightCombo then
         return KnightCombo.checkHitboxSystem()
     end
     
-    print("[KNIGHT WEAPON] Global combo debug functions available:")
-    print("  _G.debugKnightCombo() - Show current combo state")
-    print("  _G.setKnightComboTimeout(seconds) - Change combo timeout")
-    print("  _G.getKnightComboTimeout() - Get current timeout")
-    print("  _G.setKnightAttackDuration(1/2/3, seconds) - Change attack duration")
-    print("  _G.getKnightAttackDurations() - Get current durations")
-    print("  _G.checkKnightHitboxSystem() - Check hitbox system availability")
-    print("  _G.resetKnightCombo() - Manually reset combo")
 end
 
 -- Initialize weapon scanner
-print("[KNIGHT WEAPON] Initializing weapon scanner")
 weaponScanner = WeaponScanner.new("knight_weapon", setupTool, cleanupTool)
-print("[KNIGHT WEAPON] Weapon scanner initialized successfully")
