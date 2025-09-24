@@ -50,6 +50,8 @@ local archerUI = nil
 local crosshairGui = nil
 local shiftLockEnabled = false
 local shiftLockConnection = nil
+local cameraOffsetEnabled = false
+local originalCameraOffset = nil
 
 -- Animation configuration
 local animations = {
@@ -98,6 +100,37 @@ end
 -- ========================================
 -- ARCHER UI AND CONTROLS FUNCTIONS
 -- ========================================
+
+-- Enable camera offset using Humanoid.CameraOffset (the correct property!)
+local function enableCameraOffset()
+	if cameraOffsetEnabled then return end
+	
+	if not player.Character or not player.Character:FindFirstChild("Humanoid") then return end
+	
+	local humanoid = player.Character.Humanoid
+	
+	-- Store original camera offset
+	originalCameraOffset = humanoid.CameraOffset
+	
+	-- Set camera offset to move player to the left side of screen
+	-- This moves the player but keeps the crosshair centered
+	humanoid.CameraOffset = Vector3.new(2.5, 0, 0) -- 2.5 studs to the left
+	
+	cameraOffsetEnabled = true
+end
+
+-- Disable camera offset and restore original
+local function disableCameraOffset()
+	if not cameraOffsetEnabled then return end
+	
+	cameraOffsetEnabled = false
+	
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		local humanoid = player.Character.Humanoid
+		-- Restore original camera offset
+		humanoid.CameraOffset = originalCameraOffset or Vector3.new(0, 0, 0)
+	end
+end
 
 -- Create crosshair UI
 local function createCrosshair()
@@ -188,12 +221,14 @@ end
 local function setupArcherUI()
 	createCrosshair()
 	enableShiftLock()
+	enableCameraOffset()
 end
 
 -- Cleanup archer UI and controls
 local function cleanupArcherUI()
 	removeCrosshair()
 	disableShiftLock()
+	disableCameraOffset()
 end
 
 -- ========================================

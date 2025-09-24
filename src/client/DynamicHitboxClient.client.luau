@@ -334,16 +334,14 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
 
     -- Apply hitbox delay
     local function fireProjectile()
-        -- Get starting position (in front of player, aligned with camera direction)
-        local rootCFrame = humanoidRootPart.CFrame
+        -- Get starting position from camera position (where crosshair is pointing from)
         local camera = workspace.CurrentCamera
         local cameraDirection = camera.CFrame.LookVector
+        local cameraPosition = camera.CFrame.Position
         
-        -- Use camera direction for forward offset, but keep character's right/up vectors for positioning
-        local forwardOffset = cameraDirection * hitboxOffset.Z
-        local rightOffset = rootCFrame.RightVector * hitboxOffset.X
-        local upOffset = rootCFrame.UpVector * hitboxOffset.Y
-        local startPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+        -- Start projectile from camera position with a small forward offset
+        local forwardOffset = cameraDirection * 2 -- 2 studs in front of camera
+        local startPosition = cameraPosition + forwardOffset
         
         -- Use camera direction for precise aiming
         local direction = cameraDirection
