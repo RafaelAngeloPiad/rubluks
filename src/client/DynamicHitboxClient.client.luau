@@ -282,7 +282,7 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
 end
 
 -- Generate arrow projectile hitbox (raycast-based for precise arrow hits)
-function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOffset, customDamage, customDelay, customDuration)
+function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOffset, customDamage, customDelay, customDuration, customAimAngleOffset)
     if not player.Character then return end
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
@@ -340,7 +340,7 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
         
         -- Get configuration settings
         local spawnOffset = HitboxConfig and HitboxConfig.getArcherSpawnOffset() or Vector3.new(0, 2, 1)
-        local aimAngleOffset = HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0)
+        local aimAngleOffset = customAimAngleOffset or (HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0))
         
         -- Debug: Print configuration loading
         print("[ARCHER PROJECTILE] HitboxConfig available:", HitboxConfig ~= nil)
@@ -732,6 +732,57 @@ _G.generateComboHitbox = DynamicHitboxClient.generateComboHitbox
 
 -- Make arrow projectile generation available globally
 _G.generateArrowProjectile = DynamicHitboxClient.generateArrowProjectile
+
+-- Generate burst shot (multiple arrows with spread)
+function DynamicHitboxClient.generateBurstShot(weapon, skillConfig)
+    if not weapon or not skillConfig then return end
+    
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Get projectile configuration
+    local projectileConfig = HitboxConfig and HitboxConfig.getProjectileConfig("archer_weapon") or {}
+    local weaponConfig = HitboxConfig and HitboxConfig.getWeaponConfig("archer_weapon") or {}
+    local weaponDamage = weaponConfig.baseDamage or 5
+    
+    -- Get burst shot configuration
+    local projectileCount = skillConfig.projectileCount or 5
+    local spreadAngle = skillConfig.spreadAngle or 30
+    local fireDelay = skillConfig.fireDelay or 0.1
+    
+    print("[ARCHER BURST SHOT] Firing", projectileCount, "arrows with", spreadAngle, "degree spread")
+    
+    -- Get spawn offset and aim angle offset
+    local spawnOffset = HitboxConfig and HitboxConfig.getArcherSpawnOffset() or Vector3.new(0, 0, 1)
+    local baseAimAngleOffset = HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0)
+    
+    -- Calculate spread angles
+    local angleStep = spreadAngle / (projectileCount - 1)
+    local startAngle = -spreadAngle / 2
+    
+    -- Fire arrows with delay
+    for i = 1, projectileCount do
+        task.delay((i - 1) * fireDelay, function()
+            -- Calculate this arrow's angle offset
+            local currentAngle = startAngle + (i - 1) * angleStep
+            local aimAngleOffset = Vector3.new(
+                baseAimAngleOffset.X,
+                baseAimAngleOffset.Y + currentAngle, -- Add spread to yaw
+                baseAimAngleOffset.Z
+            )
+            
+            -- Generate single arrow with custom aim offset
+            DynamicHitboxClient.generateArrowProjectile(weapon, projectileConfig.size, spawnOffset, weaponDamage, 0, projectileConfig.hitboxDuration, aimAngleOffset)
+        end)
+    end
+end
+
+-- Make burst shot generation available globally
+_G.generateBurstShot = DynamicHitboxClient.generateBurstShot
 
 -- Force reload HitboxConfig (for testing configuration changes)
 _G.reloadHitboxConfig = function()

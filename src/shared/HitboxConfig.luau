@@ -247,32 +247,37 @@ local SKILL_CONFIGS = {
 
     -- Archer-specific skills
     ["archer_skill_1"] = {
-        -- Quick shot: precise ranged attack (using melee hitbox for now)
-        size = Vector3.new(4, 6, 8), -- 4 wide, 6 tall, 8 deep (precise shot)
+        -- Burst Shot: Multiple arrows with spread
+        size = Vector3.new(4, 6, 8), -- 4 wide, 6 tall, 8 deep (per arrow)
         offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (ranged)
-        baseDamage = 8, -- Moderate damage precise shot
-        animationId = "rbxassetid://116519685012277", -- Quick Shot animation
-        name = "Quick Shot",
+        baseDamage = 5, -- Lower damage per arrow (multiple arrows)
+        animationId = "rbxassetid://116519685012277", -- Burst Shot animation
+        name = "Burst Shot",
         keyCode = Enum.KeyCode.K,
         -- Timing configuration
-        cooldownTime = 1.5, -- 1.5 second cooldown between uses (quick shots)
-        castTime = 0.5, -- 0.5 second cast/animation duration
-        hitboxDelay = 0.1, -- Hitbox appears 0.1s into animation (very quick shot)
-        hitboxDuration = 0.2, -- Hitbox lasts 0.2s (very quick shot)
+        cooldownTime = 3.0, -- 3.0 second cooldown between uses
+        castTime = 1.2, -- 1.2 second cast/animation duration
+        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (burst buildup)
+        hitboxDuration = 0.8, -- Hitbox lasts 0.8s (sustained burst)
+        
+        -- Burst Shot specific configuration
+        projectileCount = 5, -- Number of arrows to fire
+        spreadAngle = 30, -- Total spread angle in degrees (15 degrees each side)
+        fireDelay = 0.1, -- Delay between each arrow (0.1s between shots)
     },
     ["archer_skill_2"] = {
-        -- Volley: wide area shot
-        size = Vector3.new(10, 6, 10), -- 10 wide, 6 tall, 10 deep (wide volley)
-        offset = Vector3.new(0, 0, 6), -- centered, 6 studs forward (medium range)
-        baseDamage = 6, -- Lower damage per shot, area effect
-        animationId = "rbxassetid://116519685012277", -- Volley animation
-        name = "Volley",
+        -- Aerial Strike: Large area hitbox in front
+        size = Vector3.new(15, 8, 12), -- 15 wide, 8 tall, 12 deep (large area)
+        offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (long range)
+        baseDamage = 12, -- High damage area attack
+        animationId = "rbxassetid://116519685012277", -- Aerial Strike animation
+        name = "Aerial Strike",
         keyCode = Enum.KeyCode.L,
         -- Timing configuration
-        cooldownTime = 3.0, -- 3.0 second cooldown between uses
-        castTime = 1.0, -- 1.0 second cast/animation duration
-        hitboxDelay = 0.6, -- Hitbox appears 0.6s into animation (volley buildup)
-        hitboxDuration = 0.6, -- Hitbox lasts 0.6s (sustained volley)
+        cooldownTime = 5.0, -- 5.0 second cooldown between uses
+        castTime = 1.5, -- 1.5 second cast/animation duration
+        hitboxDelay = 0.8, -- Hitbox appears 0.8s into animation (aerial buildup)
+        hitboxDuration = 0.4, -- Hitbox lasts 0.4s (powerful strike)
     },
 }
 

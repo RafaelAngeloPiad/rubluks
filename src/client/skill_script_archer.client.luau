@@ -71,10 +71,35 @@ local showCooldownText = true -- Toggle for cooldown text feedback
 
 -- Generate skill hitbox using unified system
 local function generateSkillHitbox(skillKey)
-    -- Wait for the global function to be available
-    if _G.generateSkillHitbox then
-        _G.generateSkillHitbox(skillKey)
+    -- Check if this is an archer-specific skill that needs special handling
+    if skillKey == "archer_skill_1" then
+        -- Burst Shot - use projectile system
+        local equippedTool = nil
+        if currentCharacter then
+            for _, child in pairs(currentCharacter:GetChildren()) do
+                if child:IsA("Tool") and child.Name:find("Archer") then
+                    equippedTool = child
+                    break
+                end
+            end
+        end
+        
+        if equippedTool and _G.generateBurstShot then
+            local skillConfig = HitboxConfig and HitboxConfig.getSkillConfig("archer_skill_1")
+            if skillConfig then
+                _G.generateBurstShot(equippedTool, skillConfig)
+            end
+        end
+    elseif skillKey == "archer_skill_2" then
+        -- Aerial Strike - use standard hitbox system
+        if _G.generateSkillHitbox then
+            _G.generateSkillHitbox(skillKey)
+        end
     else
+        -- Default skill handling
+        if _G.generateSkillHitbox then
+            _G.generateSkillHitbox(skillKey)
+        end
     end
 end
 
@@ -173,7 +198,7 @@ local function playSkillAnimation(skillKey)
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(1, 0, 1, 0)
         label.BackgroundTransparency = 1
-        label.Text = ARCHER_SKILLS[Enum.KeyCode.K].skillKey == skillKey and "QUICK SHOT!" or "VOLLEY!"
+        label.Text = ARCHER_SKILLS[Enum.KeyCode.K].skillKey == skillKey and "BURST SHOT!" or "AERIAL STRIKE!"
         label.TextColor3 = Color3.new(0, 1, 1)
         label.TextScaled = true
         label.Font = Enum.Font.SourceSansBold
