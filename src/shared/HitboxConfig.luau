@@ -45,6 +45,28 @@ local PROJECTILE_CONFIGS = {
         trailEffect = true, -- whether to show trail effect
         trailLength = 5, -- trail length in studs
         trailTransparency = 0.7, -- trail transparency
+        
+        -- ========================================
+        -- ARCHER PROJECTILE POSITIONING
+        -- ========================================
+        
+        -- Arrow spawn position (relative to player)
+        spawnOffset = Vector3.new(0, 0, 1), -- (X, Y, Z) offset from player position
+        -- X = left/right (+ = right, - = left)
+        -- Y = height (+ = up, - = down) 
+        -- Z = forward/back (+ = forward, - = back)
+        
+        -- Arrow aim angle offset (horizontal/vertical angle adjustment)
+        aimAngleOffset = Vector3.new(0, -2, 0), -- (X, Y, Z) angle offset in degrees
+        -- X = pitch (up/down angle)
+        -- Y = yaw (left/right angle) 
+        -- Z = roll (tilt angle)
+        
+        -- Crosshair offset (where crosshair appears on screen)
+        crosshairOffset = Vector3.new(0, 0, 0), -- (X, Y, Z) screen offset
+        -- X = left/right screen offset
+        -- Y = up/down screen offset
+        -- Z = not used (depth)
     }
 }
 
@@ -667,6 +689,10 @@ function HitboxConfig.getProjectileConfig(weaponTag)
             trailEffect = config.trailEffect,
             trailLength = config.trailLength,
             trailTransparency = config.trailTransparency,
+            -- Add the missing positioning properties
+            spawnOffset = config.spawnOffset,
+            aimAngleOffset = config.aimAngleOffset,
+            crosshairOffset = config.crosshairOffset,
         }
     end
     
@@ -717,6 +743,56 @@ function HitboxConfig.getDefaultProjectileConfig()
         trailLength = 3,
         trailTransparency = 0.8,
     }
+end
+
+-- =====================================================================================
+-- ARCHER PROJECTILE POSITIONING FUNCTIONS
+-- =====================================================================================
+
+-- Get archer spawn offset (where arrow comes from)
+function HitboxConfig.getArcherSpawnOffset()
+    local config = HitboxConfig.getProjectileConfig("archer_weapon")
+    return config.spawnOffset or Vector3.new(0, 2, 1)
+end
+
+-- Get archer aim angle offset (horizontal/vertical angle adjustment)
+function HitboxConfig.getArcherAimAngleOffset()
+    local config = HitboxConfig.getProjectileConfig("archer_weapon")
+    return config.aimAngleOffset or Vector3.new(0, 0, 0)
+end
+
+-- Get archer crosshair offset (where crosshair appears on screen)
+function HitboxConfig.getArcherCrosshairOffset()
+    local config = HitboxConfig.getProjectileConfig("archer_weapon")
+    return config.crosshairOffset or Vector3.new(0, 0, 0)
+end
+
+-- Quick adjustment functions
+function HitboxConfig.setArcherSpawnOffset(x, y, z)
+    local config = PROJECTILE_CONFIGS["archer_weapon"]
+    if config then
+        config.spawnOffset = Vector3.new(x, y, z)
+        return true
+    end
+    return false
+end
+
+function HitboxConfig.setArcherAimAngleOffset(x, y, z)
+    local config = PROJECTILE_CONFIGS["archer_weapon"]
+    if config then
+        config.aimAngleOffset = Vector3.new(x, y, z)
+        return true
+    end
+    return false
+end
+
+function HitboxConfig.setArcherCrosshairOffset(x, y, z)
+    local config = PROJECTILE_CONFIGS["archer_weapon"]
+    if config then
+        config.crosshairOffset = Vector3.new(x, y, z)
+        return true
+    end
+    return false
 end
 
 -- Calculate DOT info for sustained hitboxes (simple: full damage every interval)

@@ -334,18 +334,58 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
 
     -- Apply hitbox delay
     local function fireProjectile()
-        -- Get starting position from camera position (where crosshair is pointing from)
+        -- Get starting position from player's hand/bow position
+        local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+        
+        -- Get configuration settings
+        local spawnOffset = HitboxConfig and HitboxConfig.getArcherSpawnOffset() or Vector3.new(0, 2, 1)
+        local aimAngleOffset = HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0)
+        
+        -- Debug: Print configuration loading
+        print("[ARCHER PROJECTILE] HitboxConfig available:", HitboxConfig ~= nil)
+        if HitboxConfig then
+            local config = HitboxConfig.getProjectileConfig("archer_weapon")
+            print("[ARCHER PROJECTILE] Config found:", config ~= nil)
+            if config then
+                local keys = {}
+                for k, v in pairs(config) do
+                    table.insert(keys, tostring(k))
+                end
+                print("[ARCHER PROJECTILE] Config keys:", table.concat(keys, ", "))
+                print("[ARCHER PROJECTILE] Raw config spawnOffset:", config.spawnOffset)
+                print("[ARCHER PROJECTILE] Raw config aimAngleOffset:", config.aimAngleOffset)
+                print("[ARCHER PROJECTILE] Raw config crosshairOffset:", config.crosshairOffset)
+            else
+                print("[ARCHER PROJECTILE] getProjectileConfig returned nil!")
+            end
+        end
+        
+        -- Start projectile from player's position with configurable offset
+        local playerPosition = humanoidRootPart.Position
+        local playerCFrame = humanoidRootPart.CFrame
+        
+        -- Apply spawn offset to player position
+        local startPosition = playerPosition + (playerCFrame.RightVector * spawnOffset.X) + 
+                             (playerCFrame.UpVector * spawnOffset.Y) + 
+                             (playerCFrame.LookVector * spawnOffset.Z)
+        
+        -- Get camera's aim direction
         local camera = workspace.CurrentCamera
         local cameraDirection = camera.CFrame.LookVector
-        local cameraPosition = camera.CFrame.Position
         
-        -- Start projectile from camera position with a small forward offset
-        local forwardOffset = cameraDirection * 2 -- 2 studs in front of camera
-        local startPosition = cameraPosition + forwardOffset
+        -- Apply aim angle offset to camera direction
+        local angleOffsetCFrame = CFrame.Angles(
+            math.rad(aimAngleOffset.X), -- pitch
+            math.rad(aimAngleOffset.Y), -- yaw
+            math.rad(aimAngleOffset.Z)  -- roll
+        )
+        local adjustedDirection = angleOffsetCFrame * cameraDirection
         
-        -- Use camera direction for precise aiming
-        local direction = cameraDirection
-        local endPosition = startPosition + (direction * projectileConfig.range)
+        -- Calculate target position with adjusted direction
+        local targetPosition = startPosition + (adjustedDirection * projectileConfig.range)
+        local direction = adjustedDirection
+        local endPosition = targetPosition
         
         -- Perform raycast for hit detection
         local raycastParams = RaycastParams.new()
@@ -353,9 +393,12 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
         raycastParams.FilterDescendantsInstances = {player.Character} -- Don't hit self
         
         -- Debug: Print raycast parameters
-        print("[ARCHER PROJECTILE] Raycast start:", startPosition)
-        print("[ARCHER PROJECTILE] Raycast direction:", direction)
-        print("[ARCHER PROJECTILE] Raycast distance:", projectileConfig.range)
+        print("[ARCHER PROJECTILE] Player position:", playerPosition)
+        print("[ARCHER PROJECTILE] Spawn offset:", spawnOffset)
+        print("[ARCHER PROJECTILE] Start position:", startPosition)
+        print("[ARCHER PROJECTILE] Aim angle offset:", aimAngleOffset)
+        print("[ARCHER PROJECTILE] Direction:", direction)
+        print("[ARCHER PROJECTILE] Target position:", targetPosition)
         
         local raycastResult = workspace:Raycast(startPosition, direction * projectileConfig.range, raycastParams)
         
@@ -689,6 +732,51 @@ _G.generateComboHitbox = DynamicHitboxClient.generateComboHitbox
 
 -- Make arrow projectile generation available globally
 _G.generateArrowProjectile = DynamicHitboxClient.generateArrowProjectile
+
+-- Force reload HitboxConfig (for testing configuration changes)
+_G.reloadHitboxConfig = function()
+    local success, newConfig = pcall(function()
+        return require(script.Parent.Parent.shared.HitboxConfig)
+    end)
+    if success then
+        HitboxConfig = newConfig
+        print("[ARCHER PROJECTILE] HitboxConfig reloaded successfully")
+        return true
+    else
+        print("[ARCHER PROJECTILE] Failed to reload HitboxConfig:", newConfig)
+        return false
+    end
+end
+
+-- Quick configuration test functions
+_G.testArcherConfig = function()
+    if HitboxConfig then
+        local config = HitboxConfig.getProjectileConfig("archer_weapon")
+        print("[ARCHER PROJECTILE] Current spawnOffset:", config.spawnOffset)
+        print("[ARCHER PROJECTILE] Current aimAngleOffset:", config.aimAngleOffset)
+        print("[ARCHER PROJECTILE] Current crosshairOffset:", config.crosshairOffset)
+    else
+        print("[ARCHER PROJECTILE] HitboxConfig not available")
+    end
+end
+
+_G.setArcherSpawnOffset = function(x, y, z)
+    if HitboxConfig and HitboxConfig.setArcherSpawnOffset then
+        return HitboxConfig.setArcherSpawnOffset(x, y, z)
+    else
+        print("[ARCHER PROJECTILE] HitboxConfig not available or function not found")
+        return false
+    end
+end
+
+_G.setArcherAimAngleOffset = function(x, y, z)
+    if HitboxConfig and HitboxConfig.setArcherAimAngleOffset then
+        return HitboxConfig.setArcherAimAngleOffset(x, y, z)
+    else
+        print("[ARCHER PROJECTILE] HitboxConfig not available or function not found")
+        return false
+    end
+end
 
 -- Make skill cooldown functions available globally for debugging
 _G.getSkillCooldown = function(skillKey, cooldownTime)

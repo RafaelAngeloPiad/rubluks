@@ -152,31 +152,39 @@ local function createCrosshair()
 	crosshairFrame.BorderSizePixel = 0
 	crosshairFrame.Parent = crosshairGui
 	
-	-- Position crosshair to match camera's center view exactly
-	local function updateCrosshairPosition()
-		if not crosshairGui or not crosshairGui.Parent then return end
-		
-		local camera = workspace.CurrentCamera
-		if not camera then return end
-		
-		-- Get camera's center view direction (same as projectile)
-		local cameraDirection = camera.CFrame.LookVector
-		local cameraPosition = camera.CFrame.Position
-		
-		-- Calculate where camera is looking in world space (same as projectile target)
-		local lookTarget = cameraPosition + cameraDirection * 100
-		
-		-- Convert world position to screen position
-		local screenPoint, onScreen = camera:WorldToScreenPoint(lookTarget)
-		
-		if onScreen then
-			-- Position crosshair exactly where camera is looking
-			crosshairFrame.Position = UDim2.new(0, screenPoint.X - 4, 0, screenPoint.Y - 4)
-		else
-			-- If off-screen, keep it centered
-			crosshairFrame.Position = UDim2.new(0.5, -4, 0.5, -4)
-		end
-	end
+        -- Position crosshair to match camera's center view exactly
+        local function updateCrosshairPosition()
+            if not crosshairGui or not crosshairGui.Parent then return end
+            
+            local camera = workspace.CurrentCamera
+            if not camera then return end
+            
+            -- Get crosshair offset from configuration
+            local crosshairOffset = Vector3.new(0, 0, 0)
+            if HitboxConfig and HitboxConfig.getArcherCrosshairOffset then
+                crosshairOffset = HitboxConfig.getArcherCrosshairOffset()
+            end
+            
+            -- Get camera's center view direction (same as projectile)
+            local cameraDirection = camera.CFrame.LookVector
+            local cameraPosition = camera.CFrame.Position
+            
+            -- Calculate where camera is looking in world space (same as projectile target)
+            local lookTarget = cameraPosition + cameraDirection * 100
+            
+            -- Convert world position to screen position
+            local screenPoint, onScreen = camera:WorldToScreenPoint(lookTarget)
+            
+            if onScreen then
+                -- Position crosshair with configurable offset
+                local xPos = screenPoint.X - 4 + crosshairOffset.X
+                local yPos = screenPoint.Y - 4 + crosshairOffset.Y
+                crosshairFrame.Position = UDim2.new(0, xPos, 0, yPos)
+            else
+                -- If off-screen, keep it centered with offset
+                crosshairFrame.Position = UDim2.new(0.5, -4 + crosshairOffset.X, 0.5, -4 + crosshairOffset.Y)
+            end
+        end
 	
 	-- Update crosshair position every frame to match camera
 	crosshairConnection = RunService.Heartbeat:Connect(function()
