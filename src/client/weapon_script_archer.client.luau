@@ -110,28 +110,20 @@ local function createCrosshair()
 	crosshairGui.ResetOnSpawn = false
 	crosshairGui.Parent = player.PlayerGui
 	
-	-- Create crosshair frame
+	-- Create simple black dot crosshair
 	local crosshairFrame = Instance.new("Frame")
 	crosshairFrame.Name = "CrosshairFrame"
-	crosshairFrame.Size = UDim2.new(0, 50, 0, 50)
-	crosshairFrame.Position = UDim2.new(0.5, -25, 0.5, -25) -- Center of screen
-	crosshairFrame.BackgroundTransparency = 1
+	crosshairFrame.Size = UDim2.new(0, 8, 0, 8) -- Small 8x8 pixel dot
+	crosshairFrame.Position = UDim2.new(0.5, -4, 0.5, -4) -- Center of screen
+	crosshairFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Black dot
+	crosshairFrame.BorderSizePixel = 0
 	crosshairFrame.Parent = crosshairGui
-	
-	-- Create crosshair image
-	local crosshairImage = Instance.new("ImageLabel")
-	crosshairImage.Name = "CrosshairImage"
-	crosshairImage.Size = UDim2.new(1, 0, 1, 0)
-	crosshairImage.BackgroundTransparency = 1
-	crosshairImage.Image = "rbxassetid://4923489424"
-	crosshairImage.ScaleType = Enum.ScaleType.Fit
-	crosshairImage.Parent = crosshairFrame
 	
 	-- Add subtle pulsing animation
 	local pulseTween = TweenService:Create(
-		crosshairImage,
+		crosshairFrame,
 		TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-		{Size = UDim2.new(1.1, 0, 1.1, 0)}
+		{Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0.5, -6, 0.5, -6)}
 	)
 	pulseTween:Play()
 end

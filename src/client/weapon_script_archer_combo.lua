@@ -66,7 +66,7 @@ local function getShotConfig()
     }
 end
 
--- Generate hitbox for arrow shot using the global hitbox system
+-- Generate arrow projectile for archer shot using the global projectile system
 local function generateShotHitbox(shotConfig, state)
     
     -- Find the equipped archer weapon tool
@@ -81,9 +81,9 @@ local function generateShotHitbox(shotConfig, state)
     end
     
     if equippedTool then
-        -- Use the global hitbox function with custom shot config including delay and duration
-        if _G.generateComboHitbox then
-            _G.generateComboHitbox(equippedTool, shotConfig.size, shotConfig.offset, shotConfig.baseDamage, shotConfig.hitboxDelay, shotConfig.hitboxDuration)
+        -- Use the global arrow projectile function with custom shot config including delay and duration
+        if _G.generateArrowProjectile then
+            _G.generateArrowProjectile(equippedTool, shotConfig.size, shotConfig.offset, shotConfig.baseDamage, shotConfig.hitboxDelay, shotConfig.hitboxDuration)
         end
     end
 end

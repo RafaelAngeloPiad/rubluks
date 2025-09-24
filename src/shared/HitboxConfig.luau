@@ -29,6 +29,25 @@ local DAMAGE_INTERVAL_CONFIG = {
     immunityBuffer = 0.1, -- Small buffer to prevent double-hits due to timing
 }
 
+-- Projectile configuration for different weapon types
+local PROJECTILE_CONFIGS = {
+    -- Archer projectiles: Fast, precise arrows
+    ["archer_weapon"] = {
+        projectileType = "arrow",
+        speed = 200, -- studs per second
+        range = 100, -- maximum range in studs
+        size = Vector3.new(0.5, 0.5, 3), -- thin, long arrow shape
+        color = Color3.new(1, 1, 0), -- yellow arrow
+        transparency = 0.3,
+        material = Enum.Material.Neon,
+        hitboxSize = Vector3.new(2, 2, 2), -- small hitbox at impact
+        hitboxDuration = 0.2, -- how long impact hitbox lasts
+        trailEffect = true, -- whether to show trail effect
+        trailLength = 5, -- trail length in studs
+        trailTransparency = 0.7, -- trail transparency
+    }
+}
+
 -- Default hitbox configuration (fallback)
 local DEFAULT_CONFIG = {
     size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
@@ -629,6 +648,75 @@ end
 -- Get damage interval value (convenience function)
 function HitboxConfig.getDamageInterval()
     return DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
+end
+
+-- Get projectile configuration for a specific weapon tag
+function HitboxConfig.getProjectileConfig(weaponTag)
+    local config = PROJECTILE_CONFIGS[weaponTag]
+    if config then
+        return {
+            projectileType = config.projectileType,
+            speed = config.speed,
+            range = config.range,
+            size = config.size,
+            color = config.color,
+            transparency = config.transparency,
+            material = config.material,
+            hitboxSize = config.hitboxSize,
+            hitboxDuration = config.hitboxDuration,
+            trailEffect = config.trailEffect,
+            trailLength = config.trailLength,
+            trailTransparency = config.trailTransparency,
+        }
+    end
+    
+    -- Return default projectile config if weapon tag not found
+    return {
+        projectileType = "arrow",
+        speed = 200,
+        range = 100,
+        size = Vector3.new(0.5, 0.5, 3),
+        color = Color3.new(1, 1, 1),
+        transparency = 0.5,
+        material = Enum.Material.Neon,
+        hitboxSize = Vector3.new(2, 2, 2),
+        hitboxDuration = 0.2,
+        trailEffect = false,
+        trailLength = 3,
+        trailTransparency = 0.8,
+    }
+end
+
+-- Get all available projectile weapon tags
+function HitboxConfig.getAllProjectileWeaponTags()
+    local tags = {}
+    for tag, _ in pairs(PROJECTILE_CONFIGS) do
+        table.insert(tags, tag)
+    end
+    return tags
+end
+
+-- Check if a weapon tag has projectile configuration
+function HitboxConfig.hasProjectileConfig(weaponTag)
+    return PROJECTILE_CONFIGS[weaponTag] ~= nil
+end
+
+-- Get default projectile configuration
+function HitboxConfig.getDefaultProjectileConfig()
+    return {
+        projectileType = "arrow",
+        speed = 200,
+        range = 100,
+        size = Vector3.new(0.5, 0.5, 3),
+        color = Color3.new(1, 1, 1),
+        transparency = 0.5,
+        material = Enum.Material.Neon,
+        hitboxSize = Vector3.new(2, 2, 2),
+        hitboxDuration = 0.2,
+        trailEffect = false,
+        trailLength = 3,
+        trailTransparency = 0.8,
+    }
 end
 
 -- Calculate DOT info for sustained hitboxes (simple: full damage every interval)

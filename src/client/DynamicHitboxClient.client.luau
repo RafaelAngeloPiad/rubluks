@@ -281,6 +281,150 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
     end)
 end
 
+-- Generate arrow projectile hitbox (raycast-based for precise arrow hits)
+function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOffset, customDamage, customDelay, customDuration)
+    if not player.Character then return end
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    -- Use custom values if provided, otherwise get weapon config
+    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay, hitboxDuration
+    if customSize and customOffset and customDamage then
+        hitboxSize = customSize
+        hitboxOffset = customOffset
+        weaponDamage = customDamage
+        hitboxDelay = customDelay or 0.0
+        hitboxDuration = customDuration or 0.3
+    else
+        hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
+        hitboxDelay = 0.0
+        hitboxDuration = 0.3
+    end
+
+    -- Get projectile configuration for this weapon type
+    local projectileConfig = nil
+    if HitboxConfig then
+        -- Find the weapon tag for this tool
+        local weaponTags = HitboxConfig.getAllProjectileWeaponTags()
+        for _, weaponTag in ipairs(weaponTags) do
+            if CollectionService:HasTag(tool, weaponTag) then
+                projectileConfig = HitboxConfig.getProjectileConfig(weaponTag)
+                break
+            end
+        end
+    end
+    
+    -- Use default projectile config if none found
+    if not projectileConfig then
+        projectileConfig = HitboxConfig and HitboxConfig.getDefaultProjectileConfig() or {
+            projectileType = "arrow",
+            speed = 200,
+            range = 100,
+            size = Vector3.new(0.5, 0.5, 3),
+            color = Color3.new(1, 1, 0),
+            transparency = 0.3,
+            material = Enum.Material.Neon,
+            hitboxSize = Vector3.new(2, 2, 2),
+            hitboxDuration = 0.2,
+            trailEffect = false,
+            trailLength = 3,
+            trailTransparency = 0.8,
+        }
+    end
+
+    -- Apply hitbox delay
+    local function fireProjectile()
+        -- Get starting position (in front of player, aligned with camera direction)
+        local rootCFrame = humanoidRootPart.CFrame
+        local camera = workspace.CurrentCamera
+        local cameraDirection = camera.CFrame.LookVector
+        
+        -- Use camera direction for forward offset, but keep character's right/up vectors for positioning
+        local forwardOffset = cameraDirection * hitboxOffset.Z
+        local rightOffset = rootCFrame.RightVector * hitboxOffset.X
+        local upOffset = rootCFrame.UpVector * hitboxOffset.Y
+        local startPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+        
+        -- Use camera direction for precise aiming
+        local direction = cameraDirection
+        local endPosition = startPosition + (direction * projectileConfig.range)
+        
+        -- Perform raycast for hit detection
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        raycastParams.FilterDescendantsInstances = {player.Character} -- Don't hit self
+        
+        local raycastResult = workspace:Raycast(startPosition, direction * projectileConfig.range, raycastParams)
+        
+        -- Calculate hit position
+        local hitPosition = raycastResult and raycastResult.Position or endPosition
+        local actualRange = (hitPosition - startPosition).Magnitude
+        
+        -- Create projectile visual
+        local projectile = Instance.new("Part")
+        projectile.Name = projectileConfig.projectileType:gsub("^%l", string.upper) .. "Projectile"
+        projectile.Size = projectileConfig.size
+        projectile.Material = projectileConfig.material
+        projectile.Color = projectileConfig.color
+        projectile.Transparency = projectileConfig.transparency
+        projectile.CanCollide = false
+        projectile.Anchored = true
+        projectile.Parent = workspace
+        
+        -- Position projectile at start
+        local projectileCFrame = CFrame.lookAt(startPosition, hitPosition)
+        projectile.CFrame = projectileCFrame
+        
+        -- Calculate travel time
+        local travelTime = actualRange / projectileConfig.speed
+        
+        -- Animate projectile movement
+        local startTime = tick()
+        local connection
+        connection = game:GetService("RunService").Heartbeat:Connect(function()
+            local elapsed = tick() - startTime
+            local progress = math.min(elapsed / travelTime, 1)
+            
+            if progress >= 1 then
+                -- Projectile reached target
+                connection:Disconnect()
+                projectile:Destroy()
+                
+                -- Create hit effect at target
+                if raycastResult then
+                    -- Hit something - create hitbox at impact point
+                    local hitCFrame = CFrame.new(hitPosition, hitPosition + direction)
+                    remote:FireServer(hitCFrame, projectileConfig.hitboxSize, weaponDamage)
+                    
+                    -- Create visual hit effect
+                    createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration)
+                end
+            else
+                -- Move projectile along path
+                local currentPosition = startPosition + (direction * actualRange * progress)
+                projectile.CFrame = CFrame.lookAt(currentPosition, hitPosition)
+            end
+        end)
+        
+        -- Safety cleanup after maximum time
+        task.delay(travelTime + 1, function()
+            if projectile and projectile.Parent then
+                projectile:Destroy()
+            end
+            if connection then
+                connection:Disconnect()
+            end
+        end)
+    end
+
+    -- Fire projectile immediately or after delay
+    if hitboxDelay > 0 then
+        task.delay(hitboxDelay, fireProjectile)
+    else
+        fireProjectile()
+    end
+end
+
 -- Generate hitbox for combo attacks (uses weapon config but allows custom override with optional delay and duration)
 function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage, customDelay, customDuration)
     if not player.Character then return end
@@ -504,6 +648,9 @@ _G.generateSkillHitbox = DynamicHitboxClient.generateSkillHitbox
 
 -- Make combo hitbox generation available globally
 _G.generateComboHitbox = DynamicHitboxClient.generateComboHitbox
+
+-- Make arrow projectile generation available globally
+_G.generateArrowProjectile = DynamicHitboxClient.generateArrowProjectile
 
 -- Make skill cooldown functions available globally for debugging
 _G.getSkillCooldown = function(skillKey, cooldownTime)
