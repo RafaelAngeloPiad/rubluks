@@ -191,13 +191,7 @@ local function createCrosshair()
 		updateCrosshairPosition()
 	end)
 	
-	-- Add subtle pulsing animation
-	local pulseTween = TweenService:Create(
-		crosshairFrame,
-		TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-		{Size = UDim2.new(0, 12, 0, 12)}
-	)
-	pulseTween:Play()
+	-- No animation - just a steady dot
 end
 
 -- Remove crosshair UI

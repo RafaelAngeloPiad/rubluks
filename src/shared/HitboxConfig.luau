@@ -57,7 +57,7 @@ local PROJECTILE_CONFIGS = {
         -- Z = forward/back (+ = forward, - = back)
         
         -- Arrow aim angle offset (horizontal/vertical angle adjustment)
-        aimAngleOffset = Vector3.new(0, -2, 0), -- (X, Y, Z) angle offset in degrees
+        aimAngleOffset = Vector3.new(-3, -2.5, 0), -- (X, Y, Z) angle offset in degrees
         -- X = pitch (up/down angle)
         -- Y = yaw (left/right angle) 
         -- Z = roll (tilt angle)
