@@ -352,11 +352,27 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
         raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
         raycastParams.FilterDescendantsInstances = {player.Character} -- Don't hit self
         
+        -- Debug: Print raycast parameters
+        print("[ARCHER PROJECTILE] Raycast start:", startPosition)
+        print("[ARCHER PROJECTILE] Raycast direction:", direction)
+        print("[ARCHER PROJECTILE] Raycast distance:", projectileConfig.range)
+        
         local raycastResult = workspace:Raycast(startPosition, direction * projectileConfig.range, raycastParams)
         
         -- Calculate hit position
         local hitPosition = raycastResult and raycastResult.Position or endPosition
         local actualRange = (hitPosition - startPosition).Magnitude
+        
+        -- Debug: Print raycast results
+        print("[ARCHER PROJECTILE] Raycast hit:", raycastResult ~= nil)
+        if raycastResult then
+            print("[ARCHER PROJECTILE] Hit object:", raycastResult.Instance.Name)
+            print("[ARCHER PROJECTILE] Hit parent:", raycastResult.Instance.Parent.Name)
+        end
+        print("[ARCHER PROJECTILE] Hit position:", hitPosition)
+        print("[ARCHER PROJECTILE] End position:", endPosition)
+        print("[ARCHER PROJECTILE] Actual range:", actualRange)
+        print("[ARCHER PROJECTILE] Config range:", projectileConfig.range)
         
         -- Create projectile visual
         local projectile = Instance.new("Part")
@@ -383,20 +399,44 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
             local elapsed = tick() - startTime
             local progress = math.min(elapsed / travelTime, 1)
             
-            if progress >= 1 then
-                -- Projectile reached target
-                connection:Disconnect()
-                projectile:Destroy()
-                
-                -- Create hit effect at target
-                if raycastResult then
-                    -- Hit something - create hitbox at impact point
-                    local hitCFrame = CFrame.new(hitPosition, hitPosition + direction)
-                    remote:FireServer(hitCFrame, projectileConfig.hitboxSize, weaponDamage)
-                    
-                    -- Create visual hit effect
-                    createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration)
-                end
+                    if progress >= 1 then
+                        -- Projectile reached target
+                        connection:Disconnect()
+                        projectile:Destroy()
+                        
+                        -- Simple damage logic: if raycast hits a humanoid within range, damage them
+                        if raycastResult then
+                            local hitInstance = raycastResult.Instance
+                            local hitCharacter = hitInstance.Parent
+                            
+                            -- Check if we hit a humanoid
+                            if hitCharacter and hitCharacter:FindFirstChild("Humanoid") then
+                                -- Calculate distance from player to hit target
+                                local distanceToTarget = (hitPosition - startPosition).Magnitude
+                                
+                                print("[ARCHER PROJECTILE] Hit humanoid:", hitCharacter.Name)
+                                print("[ARCHER PROJECTILE] Distance to target:", distanceToTarget)
+                                print("[ARCHER PROJECTILE] Max range:", projectileConfig.range)
+                                
+                                -- Only damage if within range
+                                if distanceToTarget <= projectileConfig.range then
+                                    print("[ARCHER PROJECTILE] Target within range - applying damage!")
+                                    
+                                    -- Create damage hitbox at the hit position
+                                    local hitCFrame = CFrame.new(hitPosition, hitPosition + direction)
+                                    remote:FireServer(hitCFrame, projectileConfig.hitboxSize, weaponDamage)
+                                    
+                                    -- Create visual hit effect
+                                    createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration)
+                                else
+                                    print("[ARCHER PROJECTILE] Target out of range - no damage")
+                                end
+                            else
+                                print("[ARCHER PROJECTILE] Hit non-humanoid object:", hitInstance.Name)
+                            end
+                        else
+                            print("[ARCHER PROJECTILE] No hit detected")
+                        end
             else
                 -- Move projectile along path
                 local currentPosition = startPosition + (direction * actualRange * progress)

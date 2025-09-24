@@ -19,8 +19,19 @@ local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     if not handle then 
         return false 
     end
+    
+    -- Check if this is an archer weapon (allow long range for projectiles)
+    local isArcherWeapon = false
+    if equippedTool.Name:lower():find("archer") then
+        isArcherWeapon = true
+    end
+    
+    -- For archer weapons, allow much longer range (up to 1000 studs)
+    -- For other weapons, keep the 10-stud limit for anti-exploit
+    local maxDistance = isArcherWeapon and 1000 or 10
     local distance = (handle.Position - hitboxCFrame.Position).Magnitude
-    if distance > 10 then
+    
+    if distance > maxDistance then
         return false
     end
     return true
@@ -56,6 +67,7 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
 
     -- Validate generated hitbox position for anti-exploit
     if not validateGeneratedHitbox(player, currentEquippedTool, generatedHitboxCFrame) then 
+        print("[SERVER] Hitbox validation failed for", player.Name, "with tool", currentEquippedTool.Name)
         return 
     end
 
@@ -93,6 +105,7 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
                 if canDamage then
                     humanoid:TakeDamage(damageToApply)
                     damagedHumanoids[humanoid] = true
+                    print("[SERVER] Applied", damageToApply, "damage to", model.Name, "from", player.Name)
                 end
             end
         end
