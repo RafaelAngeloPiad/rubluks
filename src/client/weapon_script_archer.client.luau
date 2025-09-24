@@ -52,6 +52,7 @@ local shiftLockEnabled = false
 local shiftLockConnection = nil
 local cameraOffsetEnabled = false
 local originalCameraOffset = nil
+local crosshairConnection = nil
 
 -- Animation configuration
 local animations = {
@@ -132,7 +133,7 @@ local function disableCameraOffset()
 	end
 end
 
--- Create crosshair UI
+-- Create crosshair UI that matches camera's center view
 local function createCrosshair()
 	if crosshairGui then
 		crosshairGui:Destroy()
@@ -147,16 +148,46 @@ local function createCrosshair()
 	local crosshairFrame = Instance.new("Frame")
 	crosshairFrame.Name = "CrosshairFrame"
 	crosshairFrame.Size = UDim2.new(0, 8, 0, 8) -- Small 8x8 pixel dot
-	crosshairFrame.Position = UDim2.new(0.5, -4, 0.5, -4) -- Center of screen
 	crosshairFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Black dot
 	crosshairFrame.BorderSizePixel = 0
 	crosshairFrame.Parent = crosshairGui
+	
+	-- Position crosshair to match camera's center view exactly
+	local function updateCrosshairPosition()
+		if not crosshairGui or not crosshairGui.Parent then return end
+		
+		local camera = workspace.CurrentCamera
+		if not camera then return end
+		
+		-- Get camera's center view direction (same as projectile)
+		local cameraDirection = camera.CFrame.LookVector
+		local cameraPosition = camera.CFrame.Position
+		
+		-- Calculate where camera is looking in world space (same as projectile target)
+		local lookTarget = cameraPosition + cameraDirection * 100
+		
+		-- Convert world position to screen position
+		local screenPoint, onScreen = camera:WorldToScreenPoint(lookTarget)
+		
+		if onScreen then
+			-- Position crosshair exactly where camera is looking
+			crosshairFrame.Position = UDim2.new(0, screenPoint.X - 4, 0, screenPoint.Y - 4)
+		else
+			-- If off-screen, keep it centered
+			crosshairFrame.Position = UDim2.new(0.5, -4, 0.5, -4)
+		end
+	end
+	
+	-- Update crosshair position every frame to match camera
+	crosshairConnection = RunService.Heartbeat:Connect(function()
+		updateCrosshairPosition()
+	end)
 	
 	-- Add subtle pulsing animation
 	local pulseTween = TweenService:Create(
 		crosshairFrame,
 		TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-		{Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0.5, -6, 0.5, -6)}
+		{Size = UDim2.new(0, 12, 0, 12)}
 	)
 	pulseTween:Play()
 end
@@ -166,6 +197,12 @@ local function removeCrosshair()
 	if crosshairGui then
 		crosshairGui:Destroy()
 		crosshairGui = nil
+	end
+	
+	-- Disconnect crosshair position update connection
+	if crosshairConnection then
+		crosshairConnection:Disconnect()
+		crosshairConnection = nil
 	end
 end
 
