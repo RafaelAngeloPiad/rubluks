@@ -1,25 +1,27 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local WeaponScanner = require(script.Parent.weapon_scan_for_weapon_tag)
 local WeaponUtils = require(script.Parent.weapon_utils)
 
--- Try to load combo module with error handling
-local ArcherCombo = nil
-local comboLoadSuccess, comboError = pcall(function()
-    -- Check if combo module exists first
-    local comboModule = script.Parent:FindFirstChild("weapon_script_archer_combo")
+-- Try to load shot module with error handling
+local ArcherShot = nil
+local shotLoadSuccess, shotError = pcall(function()
+    -- Check if shot module exists first
+    local shotModule = script.Parent:FindFirstChild("weapon_script_archer_combo")
     
-    if comboModule then
-        ArcherCombo = require(comboModule)
+    if shotModule then
+        ArcherShot = require(shotModule)
     else
         for _, child in pairs(script.Parent:GetChildren()) do
         end
-        error("Combo module not found in script.Parent")
+        error("Shot module not found in script.Parent")
     end
 end)
-if not comboLoadSuccess then
-    warn("[ARCHER WEAPON] Failed to load combo module:", comboError)
+if not shotLoadSuccess then
+    warn("[ARCHER WEAPON] Failed to load shot module:", shotError)
     warn("[ARCHER WEAPON] Falling back to standard attack system")
 end
 
@@ -42,6 +44,12 @@ local movementKeys = {
 -- Store per-tool connections and animation state
 local toolStates = {}
 local weaponScanner = nil
+
+-- Archer-specific UI and controls
+local archerUI = nil
+local crosshairGui = nil
+local shiftLockEnabled = false
+local shiftLockConnection = nil
 
 -- Animation configuration
 local animations = {
@@ -79,12 +87,121 @@ end
 
 local function playAttack(state)
 	
-	-- Use combo system if available, otherwise fall back to standard attack
-	if ArcherCombo then
-		ArcherCombo.executeComboAttack(state)
+	-- Use shot system if available, otherwise fall back to standard attack
+	if ArcherShot then
+		ArcherShot.executeShot(state)
 	else
 		WeaponUtils.playAttackAnimation(state)
 	end
+end
+
+-- ========================================
+-- ARCHER UI AND CONTROLS FUNCTIONS
+-- ========================================
+
+-- Create crosshair UI
+local function createCrosshair()
+	if crosshairGui then
+		crosshairGui:Destroy()
+	end
+	
+	crosshairGui = Instance.new("ScreenGui")
+	crosshairGui.Name = "ArcherCrosshair"
+	crosshairGui.ResetOnSpawn = false
+	crosshairGui.Parent = player.PlayerGui
+	
+	-- Create crosshair frame
+	local crosshairFrame = Instance.new("Frame")
+	crosshairFrame.Name = "CrosshairFrame"
+	crosshairFrame.Size = UDim2.new(0, 50, 0, 50)
+	crosshairFrame.Position = UDim2.new(0.5, -25, 0.5, -25) -- Center of screen
+	crosshairFrame.BackgroundTransparency = 1
+	crosshairFrame.Parent = crosshairGui
+	
+	-- Create crosshair image
+	local crosshairImage = Instance.new("ImageLabel")
+	crosshairImage.Name = "CrosshairImage"
+	crosshairImage.Size = UDim2.new(1, 0, 1, 0)
+	crosshairImage.BackgroundTransparency = 1
+	crosshairImage.Image = "rbxassetid://4923489424"
+	crosshairImage.ScaleType = Enum.ScaleType.Fit
+	crosshairImage.Parent = crosshairFrame
+	
+	-- Add subtle pulsing animation
+	local pulseTween = TweenService:Create(
+		crosshairImage,
+		TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+		{Size = UDim2.new(1.1, 0, 1.1, 0)}
+	)
+	pulseTween:Play()
+end
+
+-- Remove crosshair UI
+local function removeCrosshair()
+	if crosshairGui then
+		crosshairGui:Destroy()
+		crosshairGui = nil
+	end
+end
+
+-- Enable shift lock for archer (client-side implementation)
+local function enableShiftLock()
+	if shiftLockEnabled then return end
+	
+	shiftLockEnabled = true
+	
+	-- Create shift lock connection to maintain camera behavior
+	-- This simulates shift lock by making the character constantly face the camera direction
+	shiftLockConnection = RunService.Heartbeat:Connect(function()
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			local humanoid = player.Character.Humanoid
+			local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+			
+			if rootPart then
+				-- Get camera direction
+				local camera = workspace.CurrentCamera
+				local cameraDirection = camera.CFrame.LookVector
+				
+				-- Always make character face camera direction (even when idle)
+				local lookDirection = Vector3.new(cameraDirection.X, 0, cameraDirection.Z).Unit
+				
+				-- Rotate character to face camera direction constantly
+				if lookDirection.Magnitude > 0 then
+					rootPart.CFrame = CFrame.new(rootPart.Position, rootPart.Position + lookDirection)
+				end
+				
+				-- Apply movement if character is moving
+				if humanoid.MoveDirection.Magnitude > 0 then
+					humanoid:Move(humanoid.MoveDirection)
+				end
+			end
+		end
+	end)
+end
+
+-- Disable shift lock for archer
+local function disableShiftLock()
+	if not shiftLockEnabled then return end
+	
+	shiftLockEnabled = false
+	
+	-- Disconnect shift lock connection
+	if shiftLockConnection then
+		shiftLockConnection:Disconnect()
+		shiftLockConnection = nil
+	end
+end
+
+-- Setup archer UI and controls
+local function setupArcherUI()
+	createCrosshair()
+	enableShiftLock()
+end
+
+-- Cleanup archer UI and controls
+local function cleanupArcherUI()
+	removeCrosshair()
+	disableShiftLock()
 end
 
 -- ========================================
@@ -228,6 +345,9 @@ local function onEquipped(tool)
 	state.toolEquipped = true
 	state.tool = tool
 	
+	-- Setup archer UI and controls
+	setupArcherUI()
+	
 	-- Detect sword and shield
 	local hasSwordShield = detectSwordAndShield(tool)
 	
@@ -243,9 +363,12 @@ local function onUnequipped(tool)
 	if not state then return end
 	state.toolEquipped = false
 	
-	-- Reset combo if available
-	if ArcherCombo then
-		ArcherCombo.resetCombo()
+	-- Cleanup archer UI and controls
+	cleanupArcherUI()
+	
+	-- Reset shot if available
+	if ArcherShot then
+		ArcherShot.resetShot()
 	end
 	
 	-- Remove sword and shield
@@ -277,9 +400,12 @@ end
 
 local function cleanupTool(tool, state)
 	
-	-- Reset combo when cleaning up
-	if ArcherCombo then
-		ArcherCombo.resetCombo()
+	-- Cleanup archer UI and controls
+	cleanupArcherUI()
+	
+	-- Reset shot when cleaning up
+	if ArcherShot then
+		ArcherShot.resetShot()
 	end
 	
 	if state.equippedConn then state.equippedConn:Disconnect() end
@@ -312,34 +438,47 @@ end
 -- Make debug function globally accessible
 _G.debugArcherAnimations = debugAnimationSystem
 
--- Global debug functions for combo system
-if ArcherCombo then
-    _G.debugArcherCombo = function()
-        return ArcherCombo.debugComboState()
+-- Global debug functions for shot system
+if ArcherShot then
+    _G.debugArcherShot = function()
+        return ArcherShot.debugShotState()
     end
     
-    _G.setArcherComboTimeout = function(seconds)
-        return ArcherCombo.setComboTimeout(seconds)
+    _G.setArcherCooldown = function(seconds)
+        return ArcherShot.setCooldown(seconds)
     end
     
-    _G.getArcherComboTimeout = function()
-        return ArcherCombo.getComboTimeout()
+    _G.getArcherCooldown = function()
+        return ArcherShot.getCooldown()
     end
     
-    _G.resetArcherCombo = function()
-        return ArcherCombo.resetCombo()
+    _G.resetArcherShot = function()
+        return ArcherShot.resetShot()
     end
     
-    _G.setArcherAttackDuration = function(attackNumber, seconds)
-        return ArcherCombo.setAttackDuration(attackNumber, seconds)
+    _G.setArcherAnimationDuration = function(seconds)
+        return ArcherShot.setAnimationDuration(seconds)
     end
     
-    _G.getArcherAttackDurations = function()
-        return ArcherCombo.getAttackDurations()
+    _G.getArcherAnimationDuration = function()
+        return ArcherShot.getAnimationDuration()
     end
     
     _G.checkArcherHitboxSystem = function()
-        return ArcherCombo.checkHitboxSystem()
+        return ArcherShot.checkHitboxSystem()
+    end
+    
+    -- Cooldown text toggle functions
+    _G.toggleArcherShotCooldownText = function()
+        return ArcherShot.toggleCooldownText()
+    end
+    
+    _G.setArcherShotCooldownTextEnabled = function(enabled)
+        return ArcherShot.setCooldownTextEnabled(enabled)
+    end
+    
+    _G.getArcherShotCooldownTextEnabled = function()
+        return ArcherShot.getCooldownTextEnabled()
     end
     
 end

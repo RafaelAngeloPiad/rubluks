@@ -67,6 +67,7 @@ local currentCharacter = nil
 local currentArcherTool = nil
 local skillConnections = {}
 local skillAnimationTracks = {} -- Store loaded animation tracks
+local showCooldownText = true -- Toggle for cooldown text feedback
 
 -- Generate skill hitbox using unified system
 local function generateSkillHitbox(skillKey)
@@ -206,8 +207,8 @@ local function onInputBegan(input, gameProcessed)
         if _G.getSkillCooldown and _G.getSkillCooldown(skill.skillKey, cooldownTime) > 0 then
             local remaining = _G.getSkillCooldown(skill.skillKey, cooldownTime)
             
-            -- Show cooldown feedback
-            if currentCharacter and currentCharacter:FindFirstChild("Head") then
+            -- Show cooldown feedback only if enabled
+            if showCooldownText and currentCharacter and currentCharacter:FindFirstChild("Head") then
                 local gui = Instance.new("BillboardGui")
                 gui.Size = UDim2.new(0, 120, 0, 40)
                 gui.StudsOffset = Vector3.new(0, 4, 0)
@@ -313,6 +314,28 @@ local function onCharacterRemoving()
     currentArcherTool = nil
     deactivateSkills()
 end
+
+-- Toggle cooldown text display
+local function toggleCooldownText()
+    showCooldownText = not showCooldownText
+    return showCooldownText
+end
+
+-- Set cooldown text display state
+local function setCooldownTextEnabled(enabled)
+    showCooldownText = enabled
+    return showCooldownText
+end
+
+-- Get cooldown text display state
+local function getCooldownTextEnabled()
+    return showCooldownText
+end
+
+-- Make toggle functions globally accessible
+_G.toggleArcherCooldownText = toggleCooldownText
+_G.setArcherCooldownTextEnabled = setCooldownTextEnabled
+_G.getArcherCooldownTextEnabled = getCooldownTextEnabled
 
 -- Initialize
 

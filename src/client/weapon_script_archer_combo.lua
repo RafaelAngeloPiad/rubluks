@@ -1,5 +1,5 @@
--- Archer Combo System: Handles 3-attack combo system for archer weapons
--- This module provides a clean, organized combo system with configurable timing, damage, and hitboxes
+-- Archer Single Shot System: Handles single arrow shot for archer weapons
+-- This module provides a clean, organized single shot system with configurable timing, damage, and hitboxes
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HitRequest = ReplicatedStorage:WaitForChild("HitRequest")
@@ -21,66 +21,53 @@ if not configLoadSuccess then
 else
 end
 
-local ArcherCombo = {}
+local ArcherShot = {}
 
--- Combo state tracking
-local comboState = {
-    currentCombo = 0, -- 0 = no combo, 1-3 = current attack in combo
-    lastAttackTime = 0, -- Time of last attack input
-    isAttacking = false, -- Whether currently performing an attack
-    comboResetThread = nil, -- Thread for combo reset timer
+-- Shot state tracking
+local shotState = {
+    lastShotTime = 0, -- Time of last shot input
+    isShooting = false, -- Whether currently performing a shot
     animationStartTime = 0, -- When current animation started
     currentAnimationDuration = 0, -- Duration of current animation
+    cooldownTime = 1.5, -- Cooldown between shots in seconds
+    showCooldownText = true, -- Toggle for cooldown text feedback
 }
 
--- Get archer combo configuration
-local function getComboConfig()
+-- Get archer shot configuration
+local function getShotConfig()
     if HitboxConfig then
-        local config = HitboxConfig.getComboConfig("archer_weapon")
+        local config = HitboxConfig.getWeaponConfig("archer_weapon")
         if config then
-            return config
+            return {
+                animationId = "rbxassetid://116519685012277",
+                duration = 0.8,
+                hitboxDelay = 0.3,
+                hitboxDuration = 0.4,
+                size = config.size,
+                offset = config.offset,
+                baseDamage = config.baseDamage,
+                name = "Arrow Shot",
+                cooldownTime = 1.5,
+            }
         end
     end
     
     -- Fallback configuration
     return {
-        comboWindow = 2.0,
-        resetTime = 3.0,
-        attack1 = {
-            animationId = "rbxassetid://116519685012277",
-            duration = 0.8,
-            hitboxDelay = 0.3,
-            hitboxDuration = 0.4,
-            size = Vector3.new(5, 5, 3),
-            offset = Vector3.new(0, 0, 1.5),
-            baseDamage = 8,
-            name = "Quick Shot 1",
-        },
-        attack2 = {
-            animationId = "rbxassetid://116519685012277",
-            duration = 1.0,
-            hitboxDelay = 0.2,
-            hitboxDuration = 0.5,
-            size = Vector3.new(6, 5, 4),
-            offset = Vector3.new(0, 0, 2),
-            baseDamage = 10,
-            name = "Quick Shot 2",
-        },
-        attack3 = {
-            animationId = "rbxassetid://116519685012277",
-            duration = 1.2,
-            hitboxDelay = 0.4,
-            hitboxDuration = 0.6,
-            size = Vector3.new(7, 6, 5),
-            offset = Vector3.new(0, 0, 2.5),
-            baseDamage = 15,
-            name = "Precision Shot",
-        },
+        animationId = "rbxassetid://116519685012277",
+        duration = 0.8,
+        hitboxDelay = 0.3,
+        hitboxDuration = 0.4,
+        size = Vector3.new(5, 5, 6),
+        offset = Vector3.new(0, 0, 3),
+        baseDamage = 5,
+        name = "Arrow Shot",
+        cooldownTime = 1.5,
     }
 end
 
--- Generate hitbox for combo attack using the global combo hitbox system
-local function generateComboHitbox(attackConfig, state)
+-- Generate hitbox for arrow shot using the global hitbox system
+local function generateShotHitbox(shotConfig, state)
     
     -- Find the equipped archer weapon tool
     local equippedTool = nil
@@ -94,28 +81,28 @@ local function generateComboHitbox(attackConfig, state)
     end
     
     if equippedTool then
-        -- Use the global combo hitbox function with custom attack config including delay and duration
+        -- Use the global hitbox function with custom shot config including delay and duration
         if _G.generateComboHitbox then
-            _G.generateComboHitbox(equippedTool, attackConfig.size, attackConfig.offset, attackConfig.baseDamage, attackConfig.hitboxDelay, attackConfig.hitboxDuration)
+            _G.generateComboHitbox(equippedTool, shotConfig.size, shotConfig.offset, shotConfig.baseDamage, shotConfig.hitboxDelay, shotConfig.hitboxDuration)
         end
     end
 end
 
--- Show combo feedback
-local function showComboFeedback(attackNumber, attackName)
+-- Show shot feedback (always shows attack name - like skill name)
+local function showShotFeedback(shotName)
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
     
     if player.Character and player.Character:FindFirstChild("Head") then
         local gui = Instance.new("BillboardGui")
-        gui.Size = UDim2.new(0, 120, 0, 60)
-        gui.StudsOffset = Vector3.new(0, 3, 0)
+        gui.Size = UDim2.new(0, 100, 0, 50) -- Same as skill name text
+        gui.StudsOffset = Vector3.new(0, 3, 0) -- Same as skill name text (lower position)
         gui.Parent = player.Character.Head
         
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(1, 0, 1, 0)
         label.BackgroundTransparency = 1
-        label.Text = string.format("COMBO %d!\n%s", attackNumber, attackName)
+        label.Text = shotName
         label.TextColor3 = Color3.new(0, 1, 1) -- Cyan for archer
         label.TextScaled = true
         label.Font = Enum.Font.SourceSansBold
@@ -128,43 +115,62 @@ local function showComboFeedback(attackNumber, attackName)
     end
 end
 
--- Reset combo timer
-local function resetComboTimer(config)
-    -- Cancel existing timer if it exists
-    if comboState.comboResetThread then
-        task.cancel(comboState.comboResetThread)
-        comboState.comboResetThread = nil
+-- Show cooldown feedback (can be toggled - like skill cooldown)
+local function showCooldownFeedback(shotName)
+    -- Don't show cooldown text if disabled
+    if not shotState.showCooldownText then
+        return
     end
     
-    -- Only start timer if we're in a combo (not at 0)
-    if comboState.currentCombo > 0 then
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    
+    if player.Character and player.Character:FindFirstChild("Head") then
+        local gui = Instance.new("BillboardGui")
+        gui.Size = UDim2.new(0, 120, 0, 40) -- Same as skill cooldown text
+        gui.StudsOffset = Vector3.new(0, 4, 0) -- Same as skill cooldown text (higher position)
+        gui.Parent = player.Character.Head
         
-        -- Set new timer
-        comboState.comboResetThread = task.delay(config.resetTime, function()
-            comboState.currentCombo = 0
-            comboState.isAttacking = false
-            comboState.animationStartTime = 0
-            comboState.currentAnimationDuration = 0
-            comboState.comboResetThread = nil
-            
-            -- Update global combo time
-            _G.lastComboTime = tick()
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = shotName
+        label.TextColor3 = Color3.new(0.8, 0.8, 0.8) -- Gray for cooldown
+        label.TextScaled = true
+        label.Font = Enum.Font.SourceSansBold
+        label.Parent = gui
+        
+        -- Remove after 1 second
+        task.delay(1, function()
+            if gui then gui:Destroy() end
         end)
-    else
     end
 end
 
--- Execute a single attack in the combo
-local function executeAttack(state, attackConfig, attackNumber, comboConfig)
+-- Check if shot is on cooldown
+local function isShotOnCooldown()
+    local currentTime = tick()
+    local timeSinceLastShot = currentTime - shotState.lastShotTime
+    return timeSinceLastShot < shotState.cooldownTime
+end
+
+-- Get remaining cooldown time
+local function getRemainingCooldown()
+    local currentTime = tick()
+    local timeSinceLastShot = currentTime - shotState.lastShotTime
+    return math.max(0, shotState.cooldownTime - timeSinceLastShot)
+end
+
+-- Execute a single arrow shot
+local function executeShot(state, shotConfig)
     if not state.animator or not state.character then
         return
     end
     
-    comboState.isAttacking = true
-    comboState.lastAttackTime = tick()
-    comboState.animationStartTime = tick()
-    comboState.currentAnimationDuration = attackConfig.duration
-    
+    shotState.isShooting = true
+    shotState.lastShotTime = tick()
+    shotState.animationStartTime = tick()
+    shotState.currentAnimationDuration = shotConfig.duration
     
     -- Set the WeaponUtils state to indicate we're attacking
     state.attackPlaying = true
@@ -172,14 +178,14 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     
     -- Create and load animation
     local animationObject = Instance.new("Animation")
-    animationObject.AnimationId = attackConfig.animationId
+    animationObject.AnimationId = shotConfig.animationId
     
     local success, track = pcall(function()
         return state.animator:LoadAnimation(animationObject)
     end)
     
     if not success or not track then
-        comboState.isAttacking = false
+        shotState.isShooting = false
         
         -- Set global cooldown even on animation failure
         if _G.setGlobalCooldown then
@@ -203,18 +209,18 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
     -- Play animation
     track:Play()
     
-    -- Show visual feedback
-    showComboFeedback(attackNumber, attackConfig.name)
+    -- Show visual feedback (always show attack name)
+    showShotFeedback(shotConfig.name)
     
-    -- Generate combo hitbox immediately (delay is handled inside the function)
-    generateComboHitbox(attackConfig, state)
+    -- Generate shot hitbox immediately (delay is handled inside the function)
+    generateShotHitbox(shotConfig, state)
     
-    -- Wait for the full duration before allowing next attack
-    task.delay(attackConfig.duration, function()
-        -- Only proceed if this is still the current attack
-        if comboState.currentCombo == attackNumber and comboState.isAttacking then
-            -- Reset attack states
-            comboState.isAttacking = false
+    -- Wait for the full duration before allowing next shot
+    task.delay(shotConfig.duration, function()
+        -- Only proceed if this is still the current shot
+        if shotState.isShooting then
+            -- Reset shot states
+            shotState.isShooting = false
             
             -- Set global cooldown to prevent rapid weapon switching
             if _G.setGlobalCooldown then
@@ -223,67 +229,29 @@ local function executeAttack(state, attackConfig, attackNumber, comboConfig)
             
             state.attackPlaying = false
             
-            -- Update global combo time
-            _G.lastComboTime = tick()
-            
-            
-            -- Check if we're still in combo window for next attack
-            local timeSinceLastAttack = tick() - comboState.lastAttackTime
-            
-            if timeSinceLastAttack <= comboConfig.comboWindow and comboState.currentCombo < 3 then
-                -- Still in combo window, wait for next input
-                resetComboTimer(comboConfig)
-                
-                -- Return to idle animation for combo window
-                if state.idleTrack then
-                    state.currentAnimState = "Idle"
-                    state.idleTrack:Play()
-                end
-            else
-                -- Combo finished or timed out
-                if timeSinceLastAttack > comboConfig.comboWindow then
-                end
-                
-                comboState.currentCombo = 0
-                
-                -- Update global combo time
-                _G.lastComboTime = tick()
-                
-                -- Cancel any pending timeout timer since we're resetting manually
-                if comboState.comboResetThread then
-                    task.cancel(comboState.comboResetThread)
-                    comboState.comboResetThread = nil
-                end
-                
-                -- Return to idle animation
-                if state.idleTrack then
-                    state.currentAnimState = "Idle"
-                    state.idleTrack:Play()
-                end
+            -- Return to idle animation
+            if state.idleTrack then
+                state.currentAnimState = "Idle"
+                state.idleTrack:Play()
             end
         end
     end)
     
-    -- Handle animation completion (but don't advance combo until duration is up)
+    -- Handle animation completion
     local connection
     connection = track.Stopped:Connect(function()
         connection:Disconnect()
     end)
 end
 
--- Main combo attack function
-function ArcherCombo.executeComboAttack(state)
+-- Main shot function
+function ArcherShot.executeShot(state)
     if not state or not state.character or not state.animator then
-        warn("[ARCHER COMBO] Invalid state provided - falling back to standard attack")
+        warn("[ARCHER SHOT] Invalid state provided - falling back to standard attack")
         return
     end
     
-    
-    local config = getComboConfig()
-    local currentTime = tick()
-    
-    -- Update global combo time for tracking
-    _G.lastComboTime = tick()
+    local config = getShotConfig()
     
     -- Check global cooldown first (prevents rapid weapon switching exploits)
     if _G.canStartNewAttack then
@@ -293,18 +261,27 @@ function ArcherCombo.executeComboAttack(state)
         end
     end
     
-    -- Check if we're already attacking (respect WeaponUtils state)
-    if comboState.isAttacking or state.attackPlaying then
-        
+    -- Check if we're already shooting (respect WeaponUtils state)
+    if shotState.isShooting or state.attackPlaying then
         -- Show how much time is left in current animation
-        if comboState.currentAnimationDuration > 0 then
-            local timeElapsed = tick() - comboState.animationStartTime
-            local timeRemaining = comboState.currentAnimationDuration - timeElapsed
+        if shotState.currentAnimationDuration > 0 then
+            local timeElapsed = tick() - shotState.animationStartTime
+            local timeRemaining = shotState.currentAnimationDuration - timeElapsed
             if timeRemaining > 0 then
+                -- Show cooldown feedback
+                local remainingCooldown = getRemainingCooldown()
+                if remainingCooldown > 0 then
+                    showCooldownFeedback(string.format("COOLDOWN %.1fs", remainingCooldown))
+                end
             end
         end
-        
-        -- Note: Tool activation is already blocked for archer weapons
+        return
+    end
+    
+    -- Check if shot is on cooldown
+    if isShotOnCooldown() then
+        local remaining = getRemainingCooldown()
+        showCooldownFeedback(string.format("COOLDOWN %.1fs", remaining))
         return
     end
     
@@ -313,165 +290,85 @@ function ArcherCombo.executeComboAttack(state)
         return
     end
     
-    -- Check if we're within combo window
-    local timeSinceLastAttack = currentTime - comboState.lastAttackTime
-    
-    if comboState.currentCombo > 0 and timeSinceLastAttack > config.comboWindow then
-        -- Combo window expired, reset
-        comboState.currentCombo = 0
-        comboState.pendingComboInput = false
-    end
-    
-    -- Determine next attack in combo
-    local nextAttack = comboState.currentCombo + 1
-    if nextAttack > 3 then
-        -- Combo sequence completed, reset to first attack
-        comboState.currentCombo = 1
-        nextAttack = 1
-    else
-        comboState.currentCombo = nextAttack
-    end
-    
-    -- Get attack configuration
-    local attackConfig
-    if nextAttack == 1 then
-        attackConfig = config.attack1
-    elseif nextAttack == 2 then
-        attackConfig = config.attack2
-    else
-        attackConfig = config.attack3
-    end
-    
-    
-    -- Reset combo timer
-    resetComboTimer(config)
-    
-    -- Execute the attack
-    executeAttack(state, attackConfig, nextAttack, config)
+    -- Execute the shot
+    executeShot(state, config)
 end
 
--- Get current combo state (for debugging)
-function ArcherCombo.getComboState()
+-- Get current shot state (for debugging)
+function ArcherShot.getShotState()
     return {
-        currentCombo = comboState.currentCombo,
-        isAttacking = comboState.isAttacking,
-        timeSinceLastAttack = tick() - comboState.lastAttackTime,
+        isShooting = shotState.isShooting,
+        timeSinceLastShot = tick() - shotState.lastShotTime,
+        cooldownRemaining = getRemainingCooldown(),
     }
 end
 
--- Reset combo state (useful for testing or when switching weapons)
-function ArcherCombo.resetCombo()
-    comboState.currentCombo = 0
-    comboState.isAttacking = false
-    comboState.lastAttackTime = 0
-    comboState.animationStartTime = 0
-    comboState.currentAnimationDuration = 0
+-- Reset shot state (useful for testing or when switching weapons)
+function ArcherShot.resetShot()
+    shotState.isShooting = false
+    shotState.lastShotTime = 0
+    shotState.animationStartTime = 0
+    shotState.currentAnimationDuration = 0
     
-    -- Update global combo time
-    _G.lastComboTime = tick()
-    
-    if comboState.comboResetThread then
-        task.cancel(comboState.comboResetThread)
-        comboState.comboResetThread = nil
-    end
-    
-    
-    -- Set global cooldown when combo is reset during weapon cleanup
+    -- Set global cooldown when shot is reset during weapon cleanup
     if _G.setGlobalCooldown then
         _G.setGlobalCooldown()
     end
 end
 
--- Clean up combo system (called when weapon is removed)
-function ArcherCombo.cleanup()
-    ArcherCombo.resetCombo()
+-- Clean up shot system (called when weapon is removed)
+function ArcherShot.cleanup()
+    ArcherShot.resetShot()
 end
 
--- Check if combo is active
-function ArcherCombo.isComboActive()
-    return comboState.currentCombo > 0
+-- Check if currently shooting
+function ArcherShot.isShooting()
+    return shotState.isShooting
 end
 
--- Check if currently attacking
-function ArcherCombo.isAttacking()
-    return comboState.isAttacking
+-- Check if shot is on cooldown
+function ArcherShot.isOnCooldown()
+    return isShotOnCooldown()
 end
 
--- Debug function to print current combo state
-function ArcherCombo.debugComboState()
-    local state = ArcherCombo.getComboState()
+-- Debug function to print current shot state
+function ArcherShot.debugShotState()
+    local state = ArcherShot.getShotState()
     local timeRemaining = 0
-    if comboState.currentAnimationDuration > 0 then
-        local timeElapsed = tick() - comboState.animationStartTime
-        timeRemaining = math.max(0, comboState.currentAnimationDuration - timeElapsed)
+    if shotState.currentAnimationDuration > 0 then
+        local timeElapsed = tick() - shotState.animationStartTime
+        timeRemaining = math.max(0, shotState.currentAnimationDuration - timeElapsed)
     end
     
 
     return state
 end
 
--- Function to easily adjust combo timeout (for testing/debugging)
-function ArcherCombo.setComboTimeout(newTimeoutSeconds)
-    if HitboxConfig then
-        local config = HitboxConfig.getComboConfig("archer_weapon")
-        if config then
-            config.resetTime = newTimeoutSeconds
-            return true
-        end
-    end
-    
+-- Function to easily adjust shot cooldown (for testing/debugging)
+function ArcherShot.setCooldown(newCooldownSeconds)
+    shotState.cooldownTime = newCooldownSeconds
+    return true
+end
+
+-- Function to get current cooldown setting
+function ArcherShot.getCooldown()
+    return shotState.cooldownTime
+end
+
+-- Function to adjust animation duration (for testing/debugging)
+function ArcherShot.setAnimationDuration(newDurationSeconds)
+    -- This would need to be implemented in the config system
     return false
 end
 
--- Function to get current combo timeout setting
-function ArcherCombo.getComboTimeout()
-    if HitboxConfig then
-        local config = HitboxConfig.getComboConfig("archer_weapon")
-        if config then
-            return config.resetTime
-        end
-    end
-    return 3.0 -- Default fallback
+-- Function to get current animation duration
+function ArcherShot.getAnimationDuration()
+    local config = getShotConfig()
+    return config.duration
 end
 
--- Function to adjust animation duration for specific attacks (for testing/debugging)
-function ArcherCombo.setAttackDuration(attackNumber, newDurationSeconds)
-    if HitboxConfig then
-        local config = HitboxConfig.getComboConfig("archer_weapon")
-        if config then
-            if attackNumber == 1 then
-                config.attack1.duration = newDurationSeconds
-            elseif attackNumber == 2 then
-                config.attack2.duration = newDurationSeconds
-            elseif attackNumber == 3 then
-                config.attack3.duration = newDurationSeconds
-            else
-                return false
-            end
-            return true
-        end
-    end
-    
-    return false
-end
-
--- Function to get current animation durations
-function ArcherCombo.getAttackDurations()
-    if HitboxConfig then
-        local config = HitboxConfig.getComboConfig("archer_weapon")
-        if config then
-            return {
-                attack1 = config.attack1.duration,
-                attack2 = config.attack2.duration,
-                attack3 = config.attack3.duration,
-            }
-        end
-    end
-    return {attack1 = 0.8, attack2 = 1.0, attack3 = 1.2} -- Default fallback
-end
-
--- Function to check if combo hitbox system is available
-function ArcherCombo.checkHitboxSystem()
+-- Function to check if shot hitbox system is available
+function ArcherShot.checkHitboxSystem()
     
     if _G.generateComboHitbox then
         return true
@@ -480,4 +377,21 @@ function ArcherCombo.checkHitboxSystem()
     end
 end
 
-return ArcherCombo
+-- Toggle cooldown text display
+function ArcherShot.toggleCooldownText()
+    shotState.showCooldownText = not shotState.showCooldownText
+    return shotState.showCooldownText
+end
+
+-- Set cooldown text display state
+function ArcherShot.setCooldownTextEnabled(enabled)
+    shotState.showCooldownText = enabled
+    return shotState.showCooldownText
+end
+
+-- Get cooldown text display state
+function ArcherShot.getCooldownTextEnabled()
+    return shotState.showCooldownText
+end
+
+return ArcherShot
