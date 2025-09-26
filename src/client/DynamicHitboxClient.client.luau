@@ -28,8 +28,8 @@ local HITBOX_SIZE = Vector3.new(6, 6, 6) -- width, height, depth of the hitbox
 local HITBOX_OFFSET = Vector3.new(0, 0, 4) -- (x, y, z) offset from HumanoidRootPart; z is forward
 local DEFAULT_DAMAGE = 25
 
--- Visual hitbox preview toggle - ENABLED for demo particle effects
-local SHOW_HITBOX_VISUALS = true -- Set to false to disable hitbox previews
+-- Visual hitbox preview toggle
+local SHOW_HITBOX_VISUALS = false -- Set to false to disable hitbox previews
 
 -- =====================================================================================
 -- CENTRALIZED ANNOUNCEMENT SYSTEM
@@ -165,7 +165,7 @@ local DynamicHitboxClient = {}
 local function getHitboxConfig(tool)
     -- If config system is not available, use defaults
     if not HitboxConfig then
-        return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE, nil
+        return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE
     end
     
     -- Check for weapon-specific tags
@@ -173,12 +173,12 @@ local function getHitboxConfig(tool)
     for _, weaponTag in ipairs(weaponTags) do
         if CollectionService:HasTag(tool, weaponTag) then
             local config = HitboxConfig.getWeaponConfig(weaponTag)
-            return config.size, config.offset, config.baseDamage, weaponTag
+            return config.size, config.offset, config.baseDamage
         end
     end
     
     -- No specific weapon tag found, use defaults
-    return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE, nil
+    return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE
 end
 
 -- Helper function to get skill hitbox configuration
@@ -201,154 +201,48 @@ local function getSkillHitboxConfig(skillKey)
 end
 
 -- Create visual hitbox (unified for weapons and skills with custom duration)
-local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration, weaponTag)
+local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration)
     -- Check if visual hitboxes are enabled
     if not SHOW_HITBOX_VISUALS then
         return -- Skip creating visual if disabled
     end
     
-    -- Create particle effect container
-    local effectContainer = Instance.new("Part")
-    effectContainer.Size = Vector3.new(1, 1, 1) -- Small container
-    effectContainer.CFrame = hitboxCFrame
-    effectContainer.Anchored = true
-    effectContainer.CanCollide = false
-    effectContainer.CanQuery = false
-    effectContainer.CanTouch = false
-    effectContainer.Transparency = 1 -- Invisible container
-    effectContainer.Parent = Workspace
+    local hitboxPart = Instance.new("Part")
+    hitboxPart.Size = size
+    hitboxPart.CFrame = hitboxCFrame
+    hitboxPart.Anchored = true
+    hitboxPart.CanCollide = false
+    hitboxPart.CanQuery = false
+    hitboxPart.CanTouch = false
+    hitboxPart.Material = Enum.Material.Neon
+    hitboxPart.Parent = Workspace
     
     -- Determine duration and visual properties
     local duration, color, name
     if hitboxType == "weapon" then
         duration = customDuration or 0.3 -- Use custom duration or default 0.3s
-        color = Color3.new(1, 0.2, 0.2) -- Bright red for weapons
-        name = "WeaponHitboxEffect"
+        color = Color3.new(1, 0, 0) -- Red for weapons
+        name = "WeaponHitboxVisual"
     elseif hitboxType == "skill" then
         duration = customDuration or 0.5 -- Use custom duration or default 0.5s
-        color = Color3.new(0.2, 0.5, 1) -- Bright blue for skills
-        name = "SkillHitboxEffect"
+        color = Color3.new(0, 0, 1) -- Blue for skills
+        name = "SkillHitboxVisual"
     else
         duration = customDuration or 0.3
-        color = Color3.new(1, 1, 0.5) -- Bright yellow for unknown
-        name = "HitboxEffect"
+        color = Color3.new(1, 1, 1) -- White for unknown
+        name = "HitboxVisual"
     end
     
-    effectContainer.Name = name
+        hitboxPart.Transparency = 0.7
+    hitboxPart.Color = color
+    hitboxPart.Name = name
     
-    -- Create multiple particle effects for different visual layers
-    local function createParticleEffect(part, particleColor, particleSize, particleSpeed, particleLifetime, particleRate)
-        local attachment = Instance.new("Attachment")
-        attachment.Parent = part
-        
-        local particles = Instance.new("ParticleEmitter")
-        particles.Parent = attachment
-        particles.Color = ColorSequence.new(particleColor)
-        particles.Size = NumberSequence.new{
-            NumberSequenceKeypoint.new(0, particleSize * 0.5),
-            NumberSequenceKeypoint.new(0.5, particleSize),
-            NumberSequenceKeypoint.new(1, particleSize * 0.1)
-        }
-        particles.Transparency = NumberSequence.new{
-            NumberSequenceKeypoint.new(0, 0.2),
-            NumberSequenceKeypoint.new(0.7, 0.5),
-            NumberSequenceKeypoint.new(1, 1)
-        }
-        particles.Lifetime = NumberRange.new(particleLifetime, particleLifetime * 1.5)
-        particles.Rate = particleRate
-        particles.SpreadAngle = Vector2.new(45, 45)
-        particles.Speed = NumberRange.new(particleSpeed * 0.5, particleSpeed)
-        particles.VelocityInheritance = 0
-        particles.Acceleration = Vector3.new(0, -10, 0) -- Gravity effect
-        particles.Drag = 2
-        
-        return particles
-    end
-    
-    -- Create main impact particles (explosion effect)
-    local mainParticles = createParticleEffect(effectContainer, color, 2, 15, 0.8, 200)
-    
-    -- Create spark particles (smaller, faster)
-    local sparkParticles = createParticleEffect(effectContainer, Color3.new(1, 1, 0.8), 0.5, 25, 0.4, 150)
-    
-    -- Create energy ring particles (outward expanding)
-    local ringParticles = createParticleEffect(effectContainer, color, 1.5, 8, 1.2, 100)
-    ringParticles.SpreadAngle = Vector2.new(360, 360) -- Full circle
-    ringParticles.Speed = NumberRange.new(5, 12)
-    
-    -- Add weapon-specific effects
-    if hitboxType == "weapon" then
-        -- Create slash effect particles (for melee weapons)
-        local slashParticles = createParticleEffect(effectContainer, Color3.new(1, 0.8, 0.2), 1, 20, 0.6, 80)
-        slashParticles.SpreadAngle = Vector2.new(30, 30) -- Narrower spread for slash effect
-        slashParticles.Speed = NumberRange.new(10, 20)
-        
-        -- Add weapon-type specific effects
-        if weaponTag then
-            if weaponTag == "berserker_weapon" then
-                -- Berserker: Red, aggressive particles
-                local berserkerParticles = createParticleEffect(effectContainer, Color3.new(1, 0.2, 0.2), 1.5, 25, 0.5, 150)
-                berserkerParticles.SpreadAngle = Vector2.new(25, 25)
-                berserkerParticles.Speed = NumberRange.new(15, 30)
-            elseif weaponTag == "samurai_weapon" then
-                -- Samurai: Blue, precise particles
-                local samuraiParticles = createParticleEffect(effectContainer, Color3.new(0.2, 0.5, 1), 1.2, 18, 0.7, 100)
-                samuraiParticles.SpreadAngle = Vector2.new(20, 20)
-                samuraiParticles.Speed = NumberRange.new(12, 25)
-            elseif weaponTag == "knight_weapon" then
-                -- Knight: Gold, noble particles
-                local knightParticles = createParticleEffect(effectContainer, Color3.new(1, 0.8, 0.2), 1.3, 15, 0.8, 120)
-                knightParticles.SpreadAngle = Vector2.new(35, 35)
-                knightParticles.Speed = NumberRange.new(10, 20)
-            elseif weaponTag == "gladiator_weapon" then
-                -- Gladiator: Purple, arena particles
-                local gladiatorParticles = createParticleEffect(effectContainer, Color3.new(0.8, 0.2, 0.8), 1.8, 22, 0.6, 180)
-                gladiatorParticles.SpreadAngle = Vector2.new(40, 40)
-                gladiatorParticles.Speed = NumberRange.new(15, 28)
-            elseif weaponTag == "archer_weapon" then
-                -- Archer: Green, nature particles
-                local archerParticles = createParticleEffect(effectContainer, Color3.new(0.2, 1, 0.3), 1.1, 20, 0.5, 130)
-                archerParticles.SpreadAngle = Vector2.new(30, 30)
-                archerParticles.Speed = NumberRange.new(12, 22)
-            end
-        end
-        
-        -- Add combo-specific effects (if this is a combo attack)
-        if name and name:find("Combo") then
-            -- Create combo burst effect
-            local comboParticles = createParticleEffect(effectContainer, Color3.new(1, 0.5, 0), 2.5, 30, 0.4, 300)
-            comboParticles.SpreadAngle = Vector2.new(20, 20) -- Tight burst
-            comboParticles.Speed = NumberRange.new(15, 30)
-        end
-    elseif hitboxType == "skill" then
-        -- Create magical energy particles (for skills)
-        local magicParticles = createParticleEffect(effectContainer, Color3.new(0.8, 0.2, 1), 1.5, 12, 1.0, 120)
-        magicParticles.SpreadAngle = Vector2.new(60, 60) -- Wider spread for magic
-        magicParticles.Acceleration = Vector3.new(0, 5, 0) -- Upward float effect
-        
-        -- Add skill-specific effects
-        if name and name:find("Storm") then
-            -- Create storm effect (lightning-like)
-            local stormParticles = createParticleEffect(effectContainer, Color3.new(0.5, 0.8, 1), 1, 35, 0.3, 250)
-            stormParticles.SpreadAngle = Vector2.new(15, 15) -- Lightning-like
-            stormParticles.Speed = NumberRange.new(20, 40)
-        end
-    end
-    
-    -- Square hitbox outline removed - only particles now!
-    
-    -- Stop particles and clean up after duration
+    -- Remove after specified duration
     task.delay(duration, function()
-        if mainParticles then mainParticles.Enabled = false end
-        if sparkParticles then sparkParticles.Enabled = false end
-        if ringParticles then ringParticles.Enabled = false end
-        
-        -- Wait a bit for particles to finish, then destroy
-        task.wait(1.5)
-        if effectContainer then
-            effectContainer:Destroy()
-        end
-    end)
+            if hitboxPart then
+                hitboxPart:Destroy()
+            end
+        end)
 end
 
 -- Generate hitbox for weapon attacks
@@ -358,7 +252,7 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
     if not humanoidRootPart then return end
 
     -- Get weapon-specific hitbox configuration
-    local hitboxSize, hitboxOffset, weaponDamage, weaponTag = getHitboxConfig(tool)
+    local hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
 
     -- Generate hitbox position in front of the player using LookVector
     local rootCFrame = humanoidRootPart.CFrame
@@ -374,7 +268,7 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
     remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
 
     -- Create visual hitbox
-    createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", nil, weaponTag)
+    createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
 end
 
 -- =====================================================================================
@@ -525,7 +419,7 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
             end
 
             -- Create visual hitbox with custom duration
-            createVisualHitbox(hitboxCFrame, size, "skill", hitboxDuration, nil)
+            createVisualHitbox(hitboxCFrame, size, "skill", hitboxDuration)
             
         end
     end)
@@ -684,7 +578,7 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
                                     remote:FireServer(hitCFrame, projectileConfig.hitboxSize, weaponDamage)
                                     
                                     -- Create visual hit effect
-                                    createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration, "archer_weapon")
+                                    createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration)
                                 end
                             end
                         end
@@ -721,16 +615,15 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
     if not humanoidRootPart then return end
 
     -- Use custom values if provided, otherwise get weapon config
-    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay, hitboxDuration, weaponTag
+    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay, hitboxDuration
     if customSize and customOffset and customDamage then
         hitboxSize = customSize
         hitboxOffset = customOffset
         weaponDamage = customDamage
         hitboxDelay = customDelay or 0.0 -- Default to immediate if no delay specified
         hitboxDuration = customDuration or 0.3 -- Default to 0.3s if no duration specified
-        weaponTag = nil -- No weapon tag for custom hitboxes
     else
-        hitboxSize, hitboxOffset, weaponDamage, weaponTag = getHitboxConfig(tool)
+        hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
         hitboxDelay = 0.0 -- Default weapon hitboxes have no delay
         hitboxDuration = 0.3 -- Default weapon hitboxes last 0.3s
     end
@@ -764,7 +657,7 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
         end
 
         -- Create visual hitbox (red like weapon attacks) with custom duration
-        createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", hitboxDuration, weaponTag)
+        createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", hitboxDuration)
         
     end
 
@@ -1113,28 +1006,9 @@ end
 -- Toggle hitbox visuals on/off
 _G.toggleHitboxVisuals = function()
     SHOW_HITBOX_VISUALS = not SHOW_HITBOX_VISUALS
-    print("[HITBOX VISUALS] Particle effects", SHOW_HITBOX_VISUALS and "ENABLED" or "DISABLED")
+    print("[HITBOX VISUALS] Visual previews", SHOW_HITBOX_VISUALS and "ENABLED" or "DISABLED")
     return SHOW_HITBOX_VISUALS
 end
-
--- Demo-specific functions for easy testing
-_G.enableParticleEffects = function()
-    SHOW_HITBOX_VISUALS = true
-    print("[DEMO] ✨ Particle effects ENABLED - Hitboxes now show cool particle effects!")
-    return true
-end
-
-_G.disableParticleEffects = function()
-    SHOW_HITBOX_VISUALS = false
-    print("[DEMO] 🚫 Particle effects DISABLED - Hitboxes are invisible")
-    return false
-end
-
--- Quick demo commands
-print("[DEMO] 🎮 Particle Effects Demo Commands:")
-print("  _G.enableParticleEffects()  - Enable cool particle effects")
-print("  _G.disableParticleEffects() - Disable particle effects")
-print("  _G.toggleHitboxVisuals()    - Toggle particle effects on/off")
 
 -- =====================================================================================
 -- ANNOUNCEMENT SYSTEM EXPORTS
