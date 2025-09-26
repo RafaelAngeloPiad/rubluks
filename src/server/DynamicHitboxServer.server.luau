@@ -7,6 +7,25 @@ local remote = ReplicatedStorage:WaitForChild("HitRequest")
 
 local DEFAULT_DAMAGE = 25 -- Fallback damage if none specified
 
+-- Simple PvP toggle
+local PVP_ENABLED = true -- Set to false to disable player vs player damage
+
+-- Simple PvP control functions
+_G.setPVPEnabled = function(enabled)
+    PVP_ENABLED = enabled
+    print("[PVP] Player vs Player damage", enabled and "ENABLED" or "DISABLED")
+end
+
+_G.getPVPEnabled = function()
+    return PVP_ENABLED
+end
+
+_G.togglePVP = function()
+    PVP_ENABLED = not PVP_ENABLED
+    print("[PVP] Player vs Player damage", PVP_ENABLED and "ENABLED" or "DISABLED")
+    return PVP_ENABLED
+end
+
 local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     local character = player.Character
     if not character then 
@@ -37,8 +56,6 @@ local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     return true
 end
 
--- Track player damage immunity for DOT hitboxes
-local playerDamageImmunity = {} -- [playerId][hitboxId] = lastDamageTime
 
 remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize, weaponDamage, hitboxId, tickNumber)
     -- Use weapon-specific damage or fallback to default
@@ -46,11 +63,6 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
     local character = player.Character
     if not character then 
         return 
-    end
-    
-    -- Initialize immunity tracking for this player if needed
-    if not playerDamageImmunity[player.UserId] then
-        playerDamageImmunity[player.UserId] = {}
     end
 
     -- Find currently equipped tool with "has_damage" tag
@@ -83,23 +95,9 @@ remote.OnServerEvent:Connect(function(player, generatedHitboxCFrame, hitboxSize,
             if humanoid and not damagedHumanoids[humanoid] then
                 local canDamage = true
                 
-                -- Check DOT immunity if this is a DOT hitbox
-                if hitboxId and targetPlayer then
-                    local targetUserId = targetPlayer.UserId
-                    if not playerDamageImmunity[targetUserId] then
-                        playerDamageImmunity[targetUserId] = {}
-                    end
-                    
-                    local lastDamageTime = playerDamageImmunity[targetUserId][hitboxId] or 0
-                    local timeSinceLastDamage = tick() - lastDamageTime
-                    
-                    -- Prevent damage if hit too recently by this specific DOT hitbox
-                    if timeSinceLastDamage < 0.4 then -- 0.4s immunity per DOT tick
-                        canDamage = false
-                    else
-                        -- Update last damage time for this DOT hitbox
-                        playerDamageImmunity[targetUserId][hitboxId] = tick()
-                    end
+                -- Simple PvP check: if target is a player and PvP is disabled, don't damage
+                if targetPlayer and not PVP_ENABLED then
+                    canDamage = false
                 end
                 
                 if canDamage then
