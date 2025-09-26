@@ -29,40 +29,42 @@ local shotState = {
     isShooting = false, -- Whether currently performing a shot
     animationStartTime = 0, -- When current animation started
     currentAnimationDuration = 0, -- Duration of current animation
-    cooldownTime = 1.5, -- Cooldown between shots in seconds
+    cooldownTime = 0.1, -- Cooldown between shots in seconds (rapid fire)
     showCooldownText = true, -- Toggle for cooldown text feedback
 }
 
--- Get archer shot configuration
+-- Get archer shot configuration (uses unified ARCHER_CONFIG)
 local function getShotConfig()
     if HitboxConfig then
-        local config = HitboxConfig.getWeaponConfig("archer_weapon")
-        if config then
+        local weaponConfig = HitboxConfig.getWeaponConfig("archer_weapon")
+        local archerConfig = HitboxConfig.getArcherConfig()
+        
+        if weaponConfig and archerConfig then
             return {
                 animationId = "rbxassetid://116519685012277",
-                duration = 0.8,
-                hitboxDelay = 0.3,
-                hitboxDuration = 0.4,
-                size = config.size,
-                offset = config.offset,
-                baseDamage = config.baseDamage,
-                name = "Arrow Shot",
-                cooldownTime = 1.5,
+                duration = archerConfig.shotAnimationDuration,
+                hitboxDelay = archerConfig.shotHitboxDelay,
+                hitboxDuration = archerConfig.shotHitboxDuration,
+                size = weaponConfig.size,
+                offset = weaponConfig.offset,
+                baseDamage = weaponConfig.baseDamage,
+                name = "Rapid Arrow",
+                cooldownTime = archerConfig.shotCooldown,
             }
         end
     end
     
-    -- Fallback configuration
+    -- Fallback configuration (uses default values)
     return {
         animationId = "rbxassetid://116519685012277",
-        duration = 0.8,
-        hitboxDelay = 0.3,
-        hitboxDuration = 0.4,
+        duration = 0.3,
+        hitboxDelay = 0.1,
+        hitboxDuration = 0.2,
         size = Vector3.new(5, 5, 6),
         offset = Vector3.new(0, 0, 3),
         baseDamage = 5,
-        name = "Arrow Shot",
-        cooldownTime = 1.5,
+        name = "Rapid Arrow",
+        cooldownTime = 0.1,
     }
 end
 

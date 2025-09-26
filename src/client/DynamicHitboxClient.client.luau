@@ -146,7 +146,8 @@ end
 local GlobalAttackCooldown = {}
 
 -- Global cooldown settings
-local GLOBAL_COOLDOWN_TIME = 0.5 -- 0.5 seconds global cooldown after any attack ends
+-- Global cooldown will be set dynamically based on archer config
+local GLOBAL_COOLDOWN_TIME = 0.1 -- Default fallback
 
 -- Initialize global cooldown in _G to persist across weapon switches
 if not _G.lastGlobalAttackEndTime then
@@ -155,12 +156,26 @@ end
 
 function GlobalAttackCooldown.isOnGlobalCooldown()
     local timeSinceLastAttack = tick() - _G.lastGlobalAttackEndTime
-    return timeSinceLastAttack < GLOBAL_COOLDOWN_TIME
+    
+    -- Use archer config if available, otherwise use default
+    local cooldownTime = GLOBAL_COOLDOWN_TIME
+    if HitboxConfig and HitboxConfig.getArcherSetting then
+        cooldownTime = HitboxConfig.getArcherSetting("globalCooldownOverride") or GLOBAL_COOLDOWN_TIME
+    end
+    
+    return timeSinceLastAttack < cooldownTime
 end
 
 function GlobalAttackCooldown.getGlobalCooldownRemaining()
     local timeSinceLastAttack = tick() - _G.lastGlobalAttackEndTime
-    return math.max(0, GLOBAL_COOLDOWN_TIME - timeSinceLastAttack)
+    
+    -- Use archer config if available, otherwise use default
+    local cooldownTime = GLOBAL_COOLDOWN_TIME
+    if HitboxConfig and HitboxConfig.getArcherSetting then
+        cooldownTime = HitboxConfig.getArcherSetting("globalCooldownOverride") or GLOBAL_COOLDOWN_TIME
+    end
+    
+    return math.max(0, cooldownTime - timeSinceLastAttack)
 end
 
 function GlobalAttackCooldown.setGlobalCooldown()

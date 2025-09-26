@@ -29,6 +29,38 @@ local DAMAGE_INTERVAL_CONFIG = {
     immunityBuffer = 0.1, -- Small buffer to prevent double-hits due to timing
 }
 
+-- Archer-specific configuration for easy tweaking
+local ARCHER_CONFIG = {
+    -- Basic shot configuration
+    shotCooldown = 0.1, -- Cooldown between individual shots (seconds)
+    shotAnimationDuration = 0.3, -- Duration of shot animation
+    shotHitboxDelay = 0.1, -- When hitbox appears in shot animation
+    shotHitboxDuration = 0.2, -- How long shot hitbox stays active
+    
+    -- Combo configuration
+    comboWindow = 1.0, -- Time window to continue combo (seconds)
+    comboResetTime = 1.0, -- Time before combo resets if no input (seconds)
+    
+    -- Global cooldown override (affects all weapons)
+    globalCooldownOverride = 0.1, -- Override global cooldown for rapid fire (seconds)
+    
+    -- Skill configuration
+    skill1Cooldown = 1.0, -- Rapid Burst cooldown
+    skill1CastTime = 0.4, -- Rapid Burst cast time
+    skill1HitboxDelay = 0.08, -- Rapid Burst hitbox delay
+    skill1HitboxDuration = 0.3, -- Rapid Burst hitbox duration
+    
+    skill2Cooldown = 1.5, -- Storm Strike cooldown
+    skill2CastTime = 0.5, -- Storm Strike cast time
+    skill2HitboxDelay = 0.2, -- Storm Strike hitbox delay
+    skill2HitboxDuration = 0.2, -- Storm Strike hitbox duration
+    
+    -- Burst shot specific
+    projectileCount = 7, -- Number of arrows in burst shot
+    spreadAngle = 40, -- Total spread angle in degrees
+    fireDelay = 0.05, -- Delay between each arrow in burst shot
+}
+
 -- Projectile configuration for different weapon types
 local PROJECTILE_CONFIGS = {
     -- Archer projectiles: Fast, precise arrows
@@ -246,39 +278,39 @@ local SKILL_CONFIGS = {
         hitboxDuration = 0.8, -- Hitbox lasts 0.8s (extended defensive area)
     },
 
-    -- Archer-specific skills
+    -- Archer-specific skills - RAPID FIRE VERSION (uses unified config)
     ["archer_skill_1"] = {
-        -- Burst Shot: Multiple arrows with spread
+        -- Rapid Burst: Multiple arrows with spread - LIGHTNING FAST
         size = Vector3.new(4, 6, 8), -- 4 wide, 6 tall, 8 deep (per arrow)
         offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (ranged)
         baseDamage = 5, -- Lower damage per arrow (multiple arrows)
         animationId = "rbxassetid://567479941", -- Burst Shot animation
-        name = "Burst Shot",
+        name = "Rapid Burst",
         keyCode = Enum.KeyCode.K,
-        -- Timing configuration
-        cooldownTime = 2.0, -- 2.0 second cooldown between uses
-        castTime = 0.8, -- 0.8 second cast/animation duration
-        hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (burst buildup)
-        hitboxDuration = 0.6, -- Hitbox lasts 0.6s (sustained burst)
+        -- Timing configuration - uses unified ARCHER_CONFIG
+        cooldownTime = ARCHER_CONFIG.skill1Cooldown,
+        castTime = ARCHER_CONFIG.skill1CastTime,
+        hitboxDelay = ARCHER_CONFIG.skill1HitboxDelay,
+        hitboxDuration = ARCHER_CONFIG.skill1HitboxDuration,
         
-        -- Burst Shot specific configuration
-        projectileCount = 5, -- Number of arrows to fire
-        spreadAngle = 30, -- Total spread angle in degrees (15 degrees each side)
-        fireDelay = 0.1, -- Delay between each arrow (0.1s between shots)
+        -- Burst Shot specific configuration - uses unified ARCHER_CONFIG
+        projectileCount = ARCHER_CONFIG.projectileCount,
+        spreadAngle = ARCHER_CONFIG.spreadAngle,
+        fireDelay = ARCHER_CONFIG.fireDelay,
     },
     ["archer_skill_2"] = {
-        -- Aerial Strike: Large area hitbox in front
+        -- Storm Strike: Large area hitbox - LIGHTNING FAST
         size = Vector3.new(15, 8, 12), -- 15 wide, 8 tall, 12 deep (large area)
         offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (long range)
         baseDamage = 12, -- High damage area attack
         animationId = "rbxassetid://567479941", -- Aerial Strike animation
-        name = "Aerial Strike",
+        name = "Storm Strike",
         keyCode = Enum.KeyCode.L,
-        -- Timing configuration
-        cooldownTime = 3.0, -- 3.0 second cooldown between uses
-        castTime = 1.0, -- 1.0 second cast/animation duration
-        hitboxDelay = 0.5, -- Hitbox appears 0.5s into animation (aerial buildup)
-        hitboxDuration = 0.3, -- Hitbox lasts 0.3s (powerful strike)
+        -- Timing configuration - uses unified ARCHER_CONFIG
+        cooldownTime = ARCHER_CONFIG.skill2Cooldown,
+        castTime = ARCHER_CONFIG.skill2CastTime,
+        hitboxDelay = ARCHER_CONFIG.skill2HitboxDelay,
+        hitboxDuration = ARCHER_CONFIG.skill2HitboxDuration,
     },
 }
 
@@ -293,9 +325,9 @@ local COMBO_CONFIGS = {
         -- Attack 1: Quick opener
         attack1 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.6, -- Animation duration
-            hitboxDelay = 0.2, -- When hitbox appears in animation
-            hitboxDuration = 0.3, -- How long hitbox stays active
+            duration = 0.4, -- Animation duration (faster for demo)
+            hitboxDelay = 0.1, -- When hitbox appears in animation (faster)
+            hitboxDuration = 0.25, -- How long hitbox stays active (shorter)
             size = Vector3.new(5, 5, 3), -- Hitbox size
             offset = Vector3.new(0, 0, 1.5), -- Hitbox offset
             baseDamage = 8, -- Damage for this attack
@@ -305,9 +337,9 @@ local COMBO_CONFIGS = {
         -- Attack 2: Medium follow-up
         attack2 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.7,
-            hitboxDelay = 0.15,
-            hitboxDuration = 0.4,
+            duration = 0.45, -- Faster
+            hitboxDelay = 0.08, -- Faster
+            hitboxDuration = 0.3, -- Shorter
             size = Vector3.new(6, 5, 4),
             offset = Vector3.new(0, 0, 2),
             baseDamage = 10,
@@ -317,9 +349,9 @@ local COMBO_CONFIGS = {
         -- Attack 3: Powerful finisher
         attack3 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.9,
-            hitboxDelay = 0.3,
-            hitboxDuration = 0.5,
+            duration = 0.6, -- Faster
+            hitboxDelay = 0.2, -- Faster
+            hitboxDuration = 0.35, -- Shorter
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
             baseDamage = 15,
@@ -327,45 +359,45 @@ local COMBO_CONFIGS = {
         },
     },
 
-    -- Archer combo: Precise, quick 3-hit combo with short reach
+    -- Archer combo: RAPID FIRE - Lightning fast 3-hit combo for high-level archer
     ["archer_weapon_combo"] = {
-        comboWindow = 2.0,
-        resetTime = 3.0,
+        comboWindow = ARCHER_CONFIG.comboWindow,
+        resetTime = ARCHER_CONFIG.comboResetTime,
         
-        -- Attack 1: Quick precise strike
+        -- Attack 1: Lightning Strike
         attack1 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.5, -- Faster than berserker
-            hitboxDelay = 0.15,
-            hitboxDuration = 0.25,
+            duration = 0.2, -- EXTREMELY fast - rapid fire
+            hitboxDelay = 0.04, -- Lightning fast hitbox
+            hitboxDuration = 0.15, -- Very short
             size = Vector3.new(4, 5, 5), -- Narrower, more precise
             offset = Vector3.new(0, 0, 2.5), -- Slightly longer than berserker
             baseDamage = 6,
-            name = "Quick Strike",
+            name = "Lightning Strike",
         },
         
-        -- Attack 2: Follow-up strike
+        -- Attack 2: Rapid Shot
         attack2 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.6,
-            hitboxDelay = 0.1,
-            hitboxDuration = 0.3,
+            duration = 0.22, -- EXTREMELY fast
+            hitboxDelay = 0.03, -- Lightning fast
+            hitboxDuration = 0.12, -- Very short
             size = Vector3.new(5, 5, 6), -- Same as weapon config
             offset = Vector3.new(0, 0, 3),
             baseDamage = 7,
-            name = "Quick Strike",
+            name = "Rapid Shot",
         },
         
-        -- Attack 3: Precision finisher
+        -- Attack 3: Storm Finisher
         attack3 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.8,
-            hitboxDelay = 0.25,
-            hitboxDuration = 0.4,
+            duration = 0.28, -- EXTREMELY fast
+            hitboxDelay = 0.08, -- Lightning fast
+            hitboxDuration = 0.18, -- Very short
             size = Vector3.new(6, 6, 7), -- Wider final strike
             offset = Vector3.new(0, 0, 3.5),
             baseDamage = 12,
-            name = "Precision Shot",
+            name = "Storm Finisher",
         },
     },
 
@@ -377,21 +409,21 @@ local COMBO_CONFIGS = {
         -- Attack 1: Defensive opener
         attack1 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.7,
-            hitboxDelay = 0.2,
-            hitboxDuration = 0.3,
+            duration = 0.5, -- Faster for demo
+            hitboxDelay = 0.12, -- Faster
+            hitboxDuration = 0.25, -- Shorter
             size = Vector3.new(6, 6, 6), -- Balanced size
             offset = Vector3.new(0, 0, 3.5),
             baseDamage = 7,
-            name = "Shield Strike",
+            name = "Holy Strike",
         },
         
         -- Attack 2: Balanced follow-up
         attack2 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.8,
-            hitboxDelay = 0.2,
-            hitboxDuration = 0.4,
+            duration = 0.55, -- Faster
+            hitboxDelay = 0.12, -- Faster
+            hitboxDuration = 0.3, -- Shorter
             size = Vector3.new(6, 6, 7), -- Same as weapon config
             offset = Vector3.new(0, 0, 4),
             baseDamage = 8,
@@ -401,9 +433,9 @@ local COMBO_CONFIGS = {
         -- Attack 3: Noble finisher
         attack3 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.9,
-            hitboxDelay = 0.3,
-            hitboxDuration = 0.5,
+            duration = 0.65, -- Faster
+            hitboxDelay = 0.2, -- Faster
+            hitboxDuration = 0.35, -- Shorter
             size = Vector3.new(7, 6, 8), -- Slightly larger final strike
             offset = Vector3.new(0, 0, 4.5),
             baseDamage = 14,
@@ -419,9 +451,9 @@ local COMBO_CONFIGS = {
         -- Attack 1: Elegant opener
         attack1 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.6,
-            hitboxDelay = 0.15,
-            hitboxDuration = 0.25,
+            duration = 0.4, -- Faster for demo
+            hitboxDelay = 0.08, -- Faster
+            hitboxDuration = 0.2, -- Shorter
             size = Vector3.new(5, 6, 8), -- Narrow, precise
             offset = Vector3.new(0, 0, 4.5),
             baseDamage = 8,
@@ -431,9 +463,9 @@ local COMBO_CONFIGS = {
         -- Attack 2: Flowing follow-up
         attack2 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.7,
-            hitboxDelay = 0.1,
-            hitboxDuration = 0.3,
+            duration = 0.45, -- Faster
+            hitboxDelay = 0.06, -- Faster
+            hitboxDuration = 0.25, -- Shorter
             size = Vector3.new(6, 6, 9), -- Same as weapon config
             offset = Vector3.new(0, 0, 5.5),
             baseDamage = 9,
@@ -443,9 +475,9 @@ local COMBO_CONFIGS = {
         -- Attack 3: Iaijutsu finisher
         attack3 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.9,
-            hitboxDelay = 0.4,
-            hitboxDuration = 0.35,
+            duration = 0.6, -- Faster
+            hitboxDelay = 0.25, -- Faster
+            hitboxDuration = 0.28, -- Shorter
             size = Vector3.new(7, 6, 10), -- Longest reach finisher
             offset = Vector3.new(0, 0, 6),
             baseDamage = 16,
@@ -461,9 +493,9 @@ local COMBO_CONFIGS = {
         -- Attack 1: Arena opener
         attack1 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.7,
-            hitboxDelay = 0.2,
-            hitboxDuration = 0.3,
+            duration = 0.5, -- Faster for demo
+            hitboxDelay = 0.12, -- Faster
+            hitboxDuration = 0.25, -- Shorter
             size = Vector3.new(6, 6, 10), -- Long reach
             offset = Vector3.new(0, 0, 5.5),
             baseDamage = 9,
@@ -473,9 +505,9 @@ local COMBO_CONFIGS = {
         -- Attack 2: Arena follow-up
         attack2 = {
             animationId = "rbxassetid://567479941",
-            duration = 0.8,
-            hitboxDelay = 0.2,
-            hitboxDuration = 0.4,
+            duration = 0.55, -- Faster
+            hitboxDelay = 0.12, -- Faster
+            hitboxDuration = 0.3, -- Shorter
             size = Vector3.new(7, 6, 11), -- Same as weapon config
             offset = Vector3.new(0, 0, 6.5),
             baseDamage = 10,
@@ -485,9 +517,9 @@ local COMBO_CONFIGS = {
         -- Attack 3: Arena champion finisher
         attack3 = {
             animationId = "rbxassetid://567479941",
-            duration = 1.0,
-            hitboxDelay = 0.4,
-            hitboxDuration = 0.5,
+            duration = 0.7, -- Faster
+            hitboxDelay = 0.25, -- Faster
+            hitboxDuration = 0.35, -- Shorter
             size = Vector3.new(8, 6, 12), -- Widest and longest finisher
             offset = Vector3.new(0, 0, 7),
             baseDamage = 18,
@@ -772,6 +804,49 @@ function HitboxConfig.getArcherCrosshairOffset()
     local config = HitboxConfig.getProjectileConfig("archer_weapon")
     local offset = config.crosshairOffset or Vector3.new(0, 0, 0)
     return offset
+end
+
+-- Get unified archer configuration
+function HitboxConfig.getArcherConfig()
+    return ARCHER_CONFIG
+end
+
+-- Get specific archer setting
+function HitboxConfig.getArcherSetting(settingName)
+    return ARCHER_CONFIG[settingName]
+end
+
+-- Set specific archer setting (for runtime tweaking)
+function HitboxConfig.setArcherSetting(settingName, value)
+    if ARCHER_CONFIG[settingName] ~= nil then
+        ARCHER_CONFIG[settingName] = value
+        return true
+    end
+    return false
+end
+
+-- Convenience functions for common archer tweaks
+function HitboxConfig.setArcherShotSpeed(cooldown, animationDuration, hitboxDelay, hitboxDuration)
+    ARCHER_CONFIG.shotCooldown = cooldown
+    ARCHER_CONFIG.shotAnimationDuration = animationDuration
+    ARCHER_CONFIG.shotHitboxDelay = hitboxDelay
+    ARCHER_CONFIG.shotHitboxDuration = hitboxDuration
+end
+
+function HitboxConfig.setArcherComboSpeed(comboWindow, resetTime)
+    ARCHER_CONFIG.comboWindow = comboWindow
+    ARCHER_CONFIG.comboResetTime = resetTime
+end
+
+function HitboxConfig.setArcherGlobalCooldown(cooldownTime)
+    ARCHER_CONFIG.globalCooldownOverride = cooldownTime
+end
+
+function HitboxConfig.setArcherSkillSpeed(skill1Cooldown, skill1CastTime, skill2Cooldown, skill2CastTime)
+    ARCHER_CONFIG.skill1Cooldown = skill1Cooldown
+    ARCHER_CONFIG.skill1CastTime = skill1CastTime
+    ARCHER_CONFIG.skill2Cooldown = skill2Cooldown
+    ARCHER_CONFIG.skill2CastTime = skill2CastTime
 end
 
 -- Quick adjustment functions
