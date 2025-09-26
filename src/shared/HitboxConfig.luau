@@ -164,7 +164,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(6, 6, 12), -- 6 wide, 6 tall, 12 deep (long dash)
         offset = Vector3.new(0, 0, 6), -- centered, 6 studs forward (extended reach)
         baseDamage = 10, -- High skill damage
-        animationId = "rbxassetid://567479941", -- Dash Slash animation
+        animationId = "rbxassetid://131924293052517", -- Dash Slash animation
         name = "Dash Slash",
         keyCode = Enum.KeyCode.K,
         -- Timing configuration
@@ -178,7 +178,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(10, 6, 8), -- 10 wide, 6 tall, 8 deep (wide sweep)
         offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
         baseDamage = 10, -- Higher skill damage
-        animationId = "rbxassetid://567479941", -- Wide Arc animation
+        animationId = "rbxassetid://98046878574797", -- Wide Arc animation
         name = "Wide Arc",
         keyCode = Enum.KeyCode.L,
         -- Timing configuration
@@ -194,7 +194,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(6, 6, 5), -- 6 wide, 6 tall, 5 deep (close combat)
         offset = Vector3.new(0, 0, 2.5), -- centered, 2.5 studs forward (close range)
         baseDamage = 15, -- Very high damage for berserker rage
-        animationId = "rbxassetid://567479941", -- Berserker Rage animation
+        animationId = "rbxassetid://119714592567966", -- Berserker Rage animation
         name = "Berserker Rage",
         keyCode = Enum.KeyCode.K,
         -- Timing configuration
@@ -208,7 +208,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (wide area)
         offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (medium reach)
             baseDamage = 1000, -- High damage whirlwind
-        animationId = "rbxassetid://567479941", -- Whirlwind animation
+        animationId = "rbxassetid://94093991325514", -- Whirlwind animation
         name = "Whirlwind",
         keyCode = Enum.KeyCode.L,
         -- Timing configuration
@@ -224,7 +224,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(4, 6, 15), -- 4 wide, 6 tall, 15 deep (precise long thrust)
         offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (maximum reach)
             baseDamage = 1000, -- High damage precise thrust
-        animationId = "rbxassetid://567479941", -- Spear Thrust animation
+        animationId = "rbxassetid://74493342749743", -- Spear Thrust animation
         name = "Spear Thrust",
         keyCode = Enum.KeyCode.K,
         -- Timing configuration
@@ -238,7 +238,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(12, 6, 8), -- 12 wide, 6 tall, 8 deep (wide arena sweep)
         offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (medium reach)
         baseDamage = 10, -- Moderate damage sweep
-        animationId = "rbxassetid://567479941", -- Arena Sweep animation
+        animationId = "rbxassetid://107545823152214", -- Arena Sweep animation
         name = "Arena Sweep",
         keyCode = Enum.KeyCode.L,
         -- Timing configuration
@@ -254,7 +254,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(6, 6, 8), -- 6 wide, 6 tall, 8 deep (shield bash)
         offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
         baseDamage = 8, -- Moderate damage shield bash
-        animationId = "rbxassetid://567479941", -- Shield Bash animation
+        animationId = "rbxassetid://131924293052517", -- Shield Bash animation
         name = "Shield Bash",
         keyCode = Enum.KeyCode.K,
         -- Timing configuration
@@ -268,7 +268,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (defensive area)
         offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (close protection)
         baseDamage = 6, -- Lower damage, defensive skill
-        animationId = "rbxassetid://567479941", -- Defensive Stance animation
+        animationId = "rbxassetid://98046878574797", -- Defensive Stance animation
         name = "Defensive Stance",
         keyCode = Enum.KeyCode.L,
         -- Timing configuration
@@ -284,7 +284,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(4, 6, 8), -- 4 wide, 6 tall, 8 deep (per arrow)
         offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (ranged)
         baseDamage = 5, -- Lower damage per arrow (multiple arrows)
-        animationId = "rbxassetid://567479941", -- Burst Shot animation
+        animationId = "rbxassetid://119714592567966", -- Burst Shot animation
         name = "Rapid Burst",
         keyCode = Enum.KeyCode.K,
         -- Timing configuration - uses unified ARCHER_CONFIG
@@ -303,7 +303,7 @@ local SKILL_CONFIGS = {
         size = Vector3.new(15, 8, 12), -- 15 wide, 8 tall, 12 deep (large area)
         offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (long range)
             baseDamage = 1000, -- High damage area attack
-        animationId = "rbxassetid://567479941", -- Aerial Strike animation
+        animationId = "rbxassetid://94093991325514", -- Aerial Strike animation
         name = "Storm Strike",
         keyCode = Enum.KeyCode.L,
         -- Timing configuration - uses unified ARCHER_CONFIG
@@ -336,7 +336,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 2: Medium follow-up
         attack2 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://119714592567966",
             duration = 0.45, -- Faster
             hitboxDelay = 0.08, -- Faster
             hitboxDuration = 0.3, -- Shorter
@@ -348,7 +348,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 3: Powerful finisher
         attack3 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://94093991325514",
             duration = 0.6, -- Faster
             hitboxDelay = 0.2, -- Faster
             hitboxDuration = 0.35, -- Shorter
@@ -378,7 +378,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 2: Rapid Shot
         attack2 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://74493342749743",
             duration = 0.22, -- EXTREMELY fast
             hitboxDelay = 0.03, -- Lightning fast
             hitboxDuration = 0.12, -- Very short
@@ -390,7 +390,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 3: Storm Finisher
         attack3 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://107545823152214",
             duration = 0.28, -- EXTREMELY fast
             hitboxDelay = 0.08, -- Lightning fast
             hitboxDuration = 0.18, -- Very short
@@ -420,7 +420,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 2: Balanced follow-up
         attack2 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://131924293052517",
             duration = 0.55, -- Faster
             hitboxDelay = 0.12, -- Faster
             hitboxDuration = 0.3, -- Shorter
@@ -432,7 +432,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 3: Noble finisher
         attack3 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://98046878574797",
             duration = 0.65, -- Faster
             hitboxDelay = 0.2, -- Faster
             hitboxDuration = 0.35, -- Shorter
@@ -462,7 +462,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 2: Flowing follow-up
         attack2 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://119714592567966",
             duration = 0.45, -- Faster
             hitboxDelay = 0.06, -- Faster
             hitboxDuration = 0.25, -- Shorter
@@ -474,7 +474,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 3: Iaijutsu finisher
         attack3 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://94093991325514",
             duration = 0.6, -- Faster
             hitboxDelay = 0.25, -- Faster
             hitboxDuration = 0.28, -- Shorter
@@ -504,7 +504,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 2: Arena follow-up
         attack2 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://74493342749743",
             duration = 0.55, -- Faster
             hitboxDelay = 0.12, -- Faster
             hitboxDuration = 0.3, -- Shorter
@@ -516,7 +516,7 @@ local COMBO_CONFIGS = {
         
         -- Attack 3: Arena champion finisher
         attack3 = {
-            animationId = "rbxassetid://567479941",
+            animationId = "rbxassetid://107545823152214",
             duration = 0.7, -- Faster
             hitboxDelay = 0.25, -- Faster
             hitboxDuration = 0.35, -- Shorter
