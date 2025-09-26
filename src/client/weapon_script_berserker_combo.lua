@@ -2,6 +2,7 @@
 -- This module provides a clean, organized combo system with configurable timing, damage, and hitboxes
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local HitRequest = ReplicatedStorage:WaitForChild("HitRequest")
 
 -- Import hitbox configuration
@@ -82,11 +83,11 @@ end
 -- Generate hitbox for combo attack using the global combo hitbox system
 local function generateComboHitbox(attackConfig, state)
     
-    -- Find the equipped berserker weapon tool
+    -- Find the equipped berserker weapon tool using CollectionService tags
     local equippedTool = nil
     if state.character then
         for _, child in pairs(state.character:GetChildren()) do
-            if child:IsA("Tool") and child.Name:find("Berserker") then
+            if child:IsA("Tool") and CollectionService:HasTag(child, "berserker_weapon") then
                 equippedTool = child
                 break
             end
@@ -256,7 +257,6 @@ function BerserkerCombo.executeComboAttack(state)
         return
     end
     
-    
     local config = getComboConfig()
     local currentTime = tick()
     
@@ -273,7 +273,6 @@ function BerserkerCombo.executeComboAttack(state)
     
     -- Check if we're already attacking (respect WeaponUtils state)
     if comboState.isAttacking or state.attackPlaying then
-        
         -- Animation in progress, wait for completion
         
         -- Note: Tool activation is already blocked for berserker weapons

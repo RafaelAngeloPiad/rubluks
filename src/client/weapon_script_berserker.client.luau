@@ -78,7 +78,6 @@ local function playInstantAnimation(state)
 end
 
 local function playAttack(state)
-	
 	-- Use combo system if available, otherwise fall back to standard attack
 	if BerserkerCombo then
 		BerserkerCombo.executeComboAttack(state)
