@@ -9,7 +9,7 @@ local WeaponUtils = require(script.Parent.weapon_utils)
 -- Load HitboxConfig for crosshair positioning
 local HitboxConfig
 local configLoadSuccess, configError = pcall(function()
-    HitboxConfig = require(script.Parent.Parent.shared.HitboxConfig)
+    HitboxConfig = require(script.Parent.Parent.Parent.shared.HitboxConfig)
 end)
 if not configLoadSuccess then
     warn("[ARCHER WEAPON] Failed to load HitboxConfig from shared folder:", configError)

@@ -264,6 +264,7 @@ function DynamicHitboxClient.generateWeaponHitbox(tool)
     -- Align the generated hitbox with the player's facing direction
     local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
+    print("[CLIENT DEBUG] Sending weapon hitbox request - damage:", weaponDamage)
     remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
 
     -- Create visual hitbox
@@ -412,8 +413,9 @@ function DynamicHitboxClient.generateSkillHitbox(skillKey)
                 
                 DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damage, hitboxDuration, damageInterval, "skill")
             else
-                -- Single-hit hitbox (traditional)
-                remote:FireServer(hitboxCFrame, size, damage)
+            -- Single-hit hitbox (traditional)
+            print("[CLIENT DEBUG] Sending skill hitbox request - damage:", damage)
+            remote:FireServer(hitboxCFrame, size, damage)
             end
 
             -- Create visual hitbox with custom duration
@@ -650,6 +652,7 @@ function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset,
             DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, hitboxSize, weaponDamage, hitboxDuration, damageInterval, "weapon")
         else
             -- Single-hit hitbox (traditional)
+            print("[CLIENT DEBUG] Sending combo hitbox request - damage:", weaponDamage)
             remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
         end
 

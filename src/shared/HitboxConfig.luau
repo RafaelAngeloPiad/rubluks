@@ -107,7 +107,7 @@ local PROJECTILE_CONFIGS = {
 local DEFAULT_CONFIG = {
     size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
     offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward
-    baseDamage = 2, -- default damage
+    baseDamage = 1000, -- default damage - significantly increased
 }
 
 -- Weapon-specific hitbox configurations
@@ -119,7 +119,7 @@ local WEAPON_CONFIGS = {
     ["berserker_weapon"] = {
         size = Vector3.new(5, 5, 3), -- 5 wide, 5 tall, 3 deep (very short reach)
         offset = Vector3.new(0, 0, 1.5), -- centered, 1.5 studs forward (ultra close)
-        baseDamage = 12, -- High damage for high-risk close combat
+        baseDamage = 1000, -- High damage for high-risk close combat
     },
     
     -- Archer: Short reach - backup melee weapon
@@ -127,7 +127,7 @@ local WEAPON_CONFIGS = {
     ["archer_weapon"] = {
         size = Vector3.new(5, 5, 6), -- 5 wide, 5 tall, 6 deep (precise hitbox)
         offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (short reach)
-        baseDamage = 5, -- Low damage, backup weapon
+        baseDamage = 1000, -- High damage for testing
     },
     
     -- Knight: Mid reach - sword and shield, balanced combat
@@ -135,7 +135,7 @@ local WEAPON_CONFIGS = {
     ["knight_weapon"] = {
         size = Vector3.new(6, 6, 7), -- 6 wide, 6 tall, 7 deep (balanced)
         offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward (medium reach)
-        baseDamage = 7, -- Balanced damage
+        baseDamage = 1000, -- High damage for testing
     },
     
     -- Samurai: Long reach - katana with extended blade
@@ -143,7 +143,7 @@ local WEAPON_CONFIGS = {
     ["samurai_weapon"] = {
         size = Vector3.new(6, 6, 9), -- 6 wide, 6 tall, 9 deep (long katana)
         offset = Vector3.new(0, 0, 5.5), -- centered, 5.5 studs forward (long reach)
-        baseDamage = 9, -- High damage, skilled warrior
+        baseDamage = 1000, -- High damage for testing
     },
     
     -- Gladiator: Longest reach - spears, tridents, long weapons
@@ -151,7 +151,7 @@ local WEAPON_CONFIGS = {
     ["gladiator_weapon"] = {
         size = Vector3.new(7, 6, 11), -- 7 wide, 6 tall, 11 deep (maximum reach)
         offset = Vector3.new(0, 0, 6.5), -- centered, 6.5 studs forward (longest reach)
-        baseDamage = 10, -- Moderate damage, reach advantage
+        baseDamage = 1000, -- High damage for testing
     },
 }
 
@@ -207,7 +207,7 @@ local SKILL_CONFIGS = {
         -- Whirlwind attack: wide area, short reach
         size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (wide area)
         offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (medium reach)
-        baseDamage = 12, -- High damage whirlwind
+            baseDamage = 1000, -- High damage whirlwind
         animationId = "rbxassetid://567479941", -- Whirlwind animation
         name = "Whirlwind",
         keyCode = Enum.KeyCode.L,
@@ -223,7 +223,7 @@ local SKILL_CONFIGS = {
         -- Spear thrust: maximum reach attack
         size = Vector3.new(4, 6, 15), -- 4 wide, 6 tall, 15 deep (precise long thrust)
         offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (maximum reach)
-        baseDamage = 12, -- High damage precise thrust
+            baseDamage = 1000, -- High damage precise thrust
         animationId = "rbxassetid://567479941", -- Spear Thrust animation
         name = "Spear Thrust",
         keyCode = Enum.KeyCode.K,
@@ -302,7 +302,7 @@ local SKILL_CONFIGS = {
         -- Storm Strike: Large area hitbox - LIGHTNING FAST
         size = Vector3.new(15, 8, 12), -- 15 wide, 8 tall, 12 deep (large area)
         offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (long range)
-        baseDamage = 12, -- High damage area attack
+            baseDamage = 1000, -- High damage area attack
         animationId = "rbxassetid://567479941", -- Aerial Strike animation
         name = "Storm Strike",
         keyCode = Enum.KeyCode.L,
@@ -330,7 +330,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.25, -- How long hitbox stays active (shorter)
             size = Vector3.new(5, 5, 3), -- Hitbox size
             offset = Vector3.new(0, 0, 1.5), -- Hitbox offset
-            baseDamage = 8, -- Damage for this attack
+            baseDamage = 1000, -- High damage for testing
             name = "Berserker Strike",
         },
         
@@ -342,7 +342,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.3, -- Shorter
             size = Vector3.new(6, 5, 4),
             offset = Vector3.new(0, 0, 2),
-            baseDamage = 10,
+            baseDamage = 1000, -- High damage for testing
             name = "Berserker Strike",
         },
         
@@ -354,7 +354,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.35, -- Shorter
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
-            baseDamage = 15,
+            baseDamage = 1000, -- High damage for testing
             name = "Berserker Finisher",
         },
     },
@@ -372,7 +372,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.15, -- Very short
             size = Vector3.new(4, 5, 5), -- Narrower, more precise
             offset = Vector3.new(0, 0, 2.5), -- Slightly longer than berserker
-            baseDamage = 6,
+            baseDamage = 1000, -- High damage for testing
             name = "Lightning Strike",
         },
         
@@ -384,7 +384,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.12, -- Very short
             size = Vector3.new(5, 5, 6), -- Same as weapon config
             offset = Vector3.new(0, 0, 3),
-            baseDamage = 7,
+            baseDamage = 1000, -- High damage for testing
             name = "Rapid Shot",
         },
         
@@ -396,7 +396,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.18, -- Very short
             size = Vector3.new(6, 6, 7), -- Wider final strike
             offset = Vector3.new(0, 0, 3.5),
-            baseDamage = 12,
+            baseDamage = 1000, -- High damage for testing
             name = "Storm Finisher",
         },
     },
@@ -414,7 +414,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.25, -- Shorter
             size = Vector3.new(6, 6, 6), -- Balanced size
             offset = Vector3.new(0, 0, 3.5),
-            baseDamage = 7,
+            baseDamage = 1000,
             name = "Holy Strike",
         },
         
@@ -426,7 +426,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.3, -- Shorter
             size = Vector3.new(6, 6, 7), -- Same as weapon config
             offset = Vector3.new(0, 0, 4),
-            baseDamage = 8,
+            baseDamage = 1000,
             name = "Shield Strike",
         },
         
@@ -438,7 +438,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.35, -- Shorter
             size = Vector3.new(7, 6, 8), -- Slightly larger final strike
             offset = Vector3.new(0, 0, 4.5),
-            baseDamage = 14,
+            baseDamage = 1000,
             name = "Noble Strike",
         },
     },
@@ -456,7 +456,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.2, -- Shorter
             size = Vector3.new(5, 6, 8), -- Narrow, precise
             offset = Vector3.new(0, 0, 4.5),
-            baseDamage = 8,
+            baseDamage = 1000,
             name = "Katana Slash",
         },
         
@@ -468,7 +468,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.25, -- Shorter
             size = Vector3.new(6, 6, 9), -- Same as weapon config
             offset = Vector3.new(0, 0, 5.5),
-            baseDamage = 9,
+            baseDamage = 1000,
             name = "Katana Slash",
         },
         
@@ -480,7 +480,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.28, -- Shorter
             size = Vector3.new(7, 6, 10), -- Longest reach finisher
             offset = Vector3.new(0, 0, 6),
-            baseDamage = 16,
+            baseDamage = 1000,
             name = "Iaijutsu Strike",
         },
     },
@@ -498,7 +498,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.25, -- Shorter
             size = Vector3.new(6, 6, 10), -- Long reach
             offset = Vector3.new(0, 0, 5.5),
-            baseDamage = 9,
+            baseDamage = 1000,
             name = "Spear Thrust",
         },
         
@@ -510,7 +510,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.3, -- Shorter
             size = Vector3.new(7, 6, 11), -- Same as weapon config
             offset = Vector3.new(0, 0, 6.5),
-            baseDamage = 10,
+            baseDamage = 1000,
             name = "Spear Thrust",
         },
         
@@ -522,7 +522,7 @@ local COMBO_CONFIGS = {
             hitboxDuration = 0.35, -- Shorter
             size = Vector3.new(8, 6, 12), -- Widest and longest finisher
             offset = Vector3.new(0, 0, 7),
-            baseDamage = 18,
+            baseDamage = 1000,
             name = "Arena Strike",
         },
     },
@@ -580,7 +580,7 @@ function HitboxConfig.getComboConfig(weaponTag)
             hitboxDuration = 0.3,
             size = Vector3.new(5, 5, 3),
             offset = Vector3.new(0, 0, 1.5),
-            baseDamage = 8,
+            baseDamage = 1000,
             name = "Default Strike",
         },
         attack2 = {
@@ -590,7 +590,7 @@ function HitboxConfig.getComboConfig(weaponTag)
             hitboxDuration = 0.4,
             size = Vector3.new(6, 5, 4),
             offset = Vector3.new(0, 0, 2),
-            baseDamage = 10,
+            baseDamage = 1000,
             name = "Default Strike",
         },
         attack3 = {
@@ -600,7 +600,7 @@ function HitboxConfig.getComboConfig(weaponTag)
             hitboxDuration = 0.5,
             size = Vector3.new(7, 6, 5),
             offset = Vector3.new(0, 0, 2.5),
-            baseDamage = 15,
+            baseDamage = 1000,
             name = "Default Finisher",
         },
     }
