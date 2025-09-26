@@ -92,60 +92,22 @@ end
 
 -- Show shot feedback (always shows attack name - like skill name)
 local function showShotFeedback(shotName)
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    
-    if player.Character and player.Character:FindFirstChild("Head") then
-        local gui = Instance.new("BillboardGui")
-        gui.Size = UDim2.new(0, 100, 0, 50) -- Same as skill name text
-        gui.StudsOffset = Vector3.new(0, 3, 0) -- Same as skill name text (lower position)
-        gui.Parent = player.Character.Head
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.Text = shotName
-        label.TextColor3 = Color3.new(0, 1, 1) -- Cyan for archer
-        label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
-        label.Parent = gui
-        
-        -- Remove after 1 second
-        task.delay(1, function()
-            if gui then gui:Destroy() end
-        end)
+    -- Use centralized announcement system
+    if _G.showSkill then
+        _G.showSkill(shotName, "archer")
     end
 end
 
 -- Show cooldown feedback (can be toggled - like skill cooldown)
-local function showCooldownFeedback(shotName)
+local function showCooldownFeedback(remainingTime)
     -- Don't show cooldown text if disabled
     if not shotState.showCooldownText then
         return
     end
     
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    
-    if player.Character and player.Character:FindFirstChild("Head") then
-        local gui = Instance.new("BillboardGui")
-        gui.Size = UDim2.new(0, 120, 0, 40) -- Same as skill cooldown text
-        gui.StudsOffset = Vector3.new(0, 4, 0) -- Same as skill cooldown text (higher position)
-        gui.Parent = player.Character.Head
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.Text = shotName
-        label.TextColor3 = Color3.new(0.8, 0.8, 0.8) -- Gray for cooldown
-        label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
-        label.Parent = gui
-        
-        -- Remove after 1 second
-        task.delay(1, function()
-            if gui then gui:Destroy() end
-        end)
+    -- Use centralized announcement system
+    if _G.showCooldown then
+        _G.showCooldown(remainingTime)
     end
 end
 
@@ -273,7 +235,7 @@ function ArcherShot.executeShot(state)
                 -- Show cooldown feedback
                 local remainingCooldown = getRemainingCooldown()
                 if remainingCooldown > 0 then
-                    showCooldownFeedback(string.format("COOLDOWN %.1fs", remainingCooldown))
+                    showCooldownFeedback(remainingCooldown)
                 end
             end
         end
@@ -283,7 +245,7 @@ function ArcherShot.executeShot(state)
     -- Check if shot is on cooldown
     if isShotOnCooldown() then
         local remaining = getRemainingCooldown()
-        showCooldownFeedback(string.format("COOLDOWN %.1fs", remaining))
+        showCooldownFeedback(remaining)
         return
     end
     

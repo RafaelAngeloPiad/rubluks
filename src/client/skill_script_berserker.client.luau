@@ -163,25 +163,9 @@ local function playSkillAnimation(skillKey)
     end)
     
     -- Add a brief feedback to show the skill activated
-    if currentCharacter and currentCharacter:FindFirstChild("Head") then
-        local gui = Instance.new("BillboardGui")
-        gui.Size = UDim2.new(0, 100, 0, 50)
-        gui.StudsOffset = Vector3.new(0, 3, 0)
-        gui.Parent = currentCharacter.Head
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.Text = BERSERKER_SKILLS[Enum.KeyCode.K].skillKey == skillKey and "BERSERKER RAGE!" or "WHIRLWIND!"
-        label.TextColor3 = Color3.new(1, 0, 0)
-        label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
-        label.Parent = gui
-        
-        -- Remove after 1 second
-        task.delay(1, function()
-            if gui then gui:Destroy() end
-        end)
+    if _G.showSkill then
+        local skillName = BERSERKER_SKILLS[Enum.KeyCode.K].skillKey == skillKey and "BERSERKER RAGE" or "WHIRLWIND"
+        _G.showSkill(skillName, "berserker")
     end
     
     return track
@@ -207,25 +191,8 @@ local function onInputBegan(input, gameProcessed)
             local remaining = _G.getSkillCooldown(skill.skillKey, cooldownTime)
             
             -- Show cooldown feedback
-            if currentCharacter and currentCharacter:FindFirstChild("Head") then
-                local gui = Instance.new("BillboardGui")
-                gui.Size = UDim2.new(0, 120, 0, 40)
-                gui.StudsOffset = Vector3.new(0, 4, 0)
-                gui.Parent = currentCharacter.Head
-                
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.Text = string.format("COOLDOWN %.1fs", remaining)
-                label.TextColor3 = Color3.new(0.8, 0.8, 0.8) -- Gray for cooldown
-                label.TextScaled = true
-                label.Font = Enum.Font.SourceSansBold
-                label.Parent = gui
-                
-                -- Remove after 1 second
-                task.delay(1, function()
-                    if gui then gui:Destroy() end
-                end)
+            if _G.showCooldown then
+                _G.showCooldown(remaining)
             end
             return
         end

@@ -103,28 +103,9 @@ end
 
 -- Show combo feedback
 local function showComboFeedback(attackNumber, attackName)
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    
-    if player.Character and player.Character:FindFirstChild("Head") then
-        local gui = Instance.new("BillboardGui")
-        gui.Size = UDim2.new(0, 120, 0, 60)
-        gui.StudsOffset = Vector3.new(0, 3, 0)
-        gui.Parent = player.Character.Head
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.Text = string.format("COMBO %d!\n%s", attackNumber, attackName)
-        label.TextColor3 = Color3.new(1, 0, 0) -- Red for berserker
-        label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
-        label.Parent = gui
-        
-        -- Remove after 1 second
-        task.delay(1, function()
-            if gui then gui:Destroy() end
-        end)
+    -- Use centralized announcement system
+    if _G.showComboAttack then
+        _G.showComboAttack(attackNumber, attackName, "berserker")
     end
 end
 

@@ -32,6 +32,130 @@ local DEFAULT_DAMAGE = 25
 local SHOW_HITBOX_VISUALS = false -- Set to false to disable hitbox previews
 
 -- =====================================================================================
+-- CENTRALIZED ANNOUNCEMENT SYSTEM
+-- =====================================================================================
+
+-- Announcement system to prevent overlapping attack/skill name displays
+local AnnouncementSystem = {}
+
+-- Track current announcement to prevent overlaps
+local currentAnnouncement = nil
+local announcementQueue = {}
+
+-- Show announcement with overlap prevention
+function AnnouncementSystem.showAnnouncement(text, color, duration, priority)
+    duration = duration or 1.0
+    priority = priority or 1 -- Higher number = higher priority
+    
+    -- If there's already an announcement and this one has lower priority, queue it
+    if currentAnnouncement and priority < currentAnnouncement.priority then
+        table.insert(announcementQueue, {
+            text = text,
+            color = color,
+            duration = duration,
+            priority = priority
+        })
+        return
+    end
+    
+    -- If there's a current announcement, remove it
+    if currentAnnouncement and currentAnnouncement.gui then
+        currentAnnouncement.gui:Destroy()
+    end
+    
+    -- Create new announcement
+    local character = player.Character
+    if not character or not character:FindFirstChild("Head") then
+        return
+    end
+    
+    local gui = Instance.new("BillboardGui")
+    gui.Size = UDim2.new(0, 120, 0, 60)
+    gui.StudsOffset = Vector3.new(0, 3, 0)
+    gui.Parent = character.Head
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = color or Color3.new(1, 1, 1)
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansBold
+    label.Parent = gui
+    
+    -- Store current announcement
+    currentAnnouncement = {
+        gui = gui,
+        priority = priority,
+        startTime = tick()
+    }
+    
+    -- Remove after duration
+    task.delay(duration, function()
+        if currentAnnouncement and currentAnnouncement.gui == gui then
+            gui:Destroy()
+            currentAnnouncement = nil
+            
+            -- Process next announcement in queue
+            if #announcementQueue > 0 then
+                local nextAnnouncement = table.remove(announcementQueue, 1)
+                AnnouncementSystem.showAnnouncement(
+                    nextAnnouncement.text,
+                    nextAnnouncement.color,
+                    nextAnnouncement.duration,
+                    nextAnnouncement.priority
+                )
+            end
+        end
+    end)
+end
+
+-- Convenience functions for different announcement types
+function AnnouncementSystem.showComboAttack(attackNumber, attackName, weaponType)
+    local colors = {
+        berserker = Color3.new(1, 0, 0), -- Red
+        archer = Color3.new(0, 1, 1),   -- Cyan
+        knight = Color3.new(0, 1, 0),   -- Green
+        samurai = Color3.new(0, 0, 1),  -- Blue
+        gladiator = Color3.new(1, 1, 0) -- Yellow
+    }
+    
+    local color = colors[weaponType] or Color3.new(1, 1, 1)
+    local text = string.format("COMBO %d!\n%s", attackNumber, attackName)
+    
+    AnnouncementSystem.showAnnouncement(text, color, 1.0, 2) -- Priority 2 for combos
+end
+
+function AnnouncementSystem.showSkill(skillName, weaponType)
+    local colors = {
+        berserker = Color3.new(1, 0, 0), -- Red
+        archer = Color3.new(0, 1, 1),   -- Cyan
+        knight = Color3.new(0, 1, 0),   -- Green
+        samurai = Color3.new(0, 0, 1),  -- Blue
+        gladiator = Color3.new(1, 1, 0) -- Yellow
+    }
+    
+    local color = colors[weaponType] or Color3.new(1, 1, 1)
+    local text = string.format("%s!", skillName:upper())
+    
+    AnnouncementSystem.showAnnouncement(text, color, 1.0, 3) -- Priority 3 for skills
+end
+
+function AnnouncementSystem.showCooldown(remainingTime)
+    local text = string.format("COOLDOWN %.1fs", remainingTime)
+    AnnouncementSystem.showAnnouncement(text, Color3.new(0.8, 0.8, 0.8), 1.0, 1) -- Priority 1 for cooldowns
+end
+
+-- Clear all announcements (useful for testing)
+function AnnouncementSystem.clearAll()
+    if currentAnnouncement and currentAnnouncement.gui then
+        currentAnnouncement.gui:Destroy()
+        currentAnnouncement = nil
+    end
+    announcementQueue = {}
+end
+
+-- =====================================================================================
 -- UNIFIED HITBOX GENERATION SYSTEM
 -- =====================================================================================
 
@@ -882,6 +1006,16 @@ _G.toggleHitboxVisuals = function()
     print("[HITBOX VISUALS] Visual previews", SHOW_HITBOX_VISUALS and "ENABLED" or "DISABLED")
     return SHOW_HITBOX_VISUALS
 end
+
+-- =====================================================================================
+-- ANNOUNCEMENT SYSTEM EXPORTS
+-- =====================================================================================
+
+-- Expose announcement system globally for use by other scripts
+_G.showComboAttack = AnnouncementSystem.showComboAttack
+_G.showSkill = AnnouncementSystem.showSkill
+_G.showCooldown = AnnouncementSystem.showCooldown
+_G.clearAllAnnouncements = AnnouncementSystem.clearAll
 
 -- =====================================================================================
 -- EXPORT MODULE
