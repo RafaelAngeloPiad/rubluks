@@ -1,930 +1,1027 @@
--- HitboxConfig: Configuration for weapon and skill hitbox sizes, offsets, and damage
--- This module manages hitbox properties for different weapon types and skills
+-- DynamicHitboxClient: Unified hitbox system for weapons and skills
+-- Handles hitbox generation for any equipped Tool with "has_damage" tag and skill requests
 
---[[
-HITBOX COORDINATE SYSTEM GUIDE:
-===============================
+local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local remote = ReplicatedStorage:WaitForChild("HitRequest")
+local player = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
 
-SIZE Vector3(X, Y, Z):
-- X = WIDTH (left/right) - How wide the hitbox extends sideways
-- Y = HEIGHT (up/down) - How tall the hitbox extends vertically  
-- Z = DEPTH/REACH (forward/back) - How far the hitbox extends forward from player
+-- Import hitbox configuration (with safe fallback)
+local HitboxConfig
+local configLoadSuccess, configError = pcall(function()
+    HitboxConfig = require(script.Parent.Parent.shared.HitboxConfig)
+end)
+if not configLoadSuccess then
+    -- Try alternative path
+    local success2, error2 = pcall(function()
+        HitboxConfig = require(game.ReplicatedStorage:WaitForChild("HitboxConfig"))
+    end)
+    if not success2 then
+        HitboxConfig = nil
+    end
+end
 
-OFFSET Vector3(X, Y, Z):
-- X = SIDEWAYS OFFSET (+ = right, - = left) - Usually 0 for centered attacks
-- Y = VERTICAL OFFSET (+ = up, - = down) - Usually 0 for player height attacks
-- Z = FORWARD DISTANCE (+ = forward) - How far in front of player the hitbox appears
+-- Default hitbox values (fallback if config system fails)
+local HITBOX_SIZE = Vector3.new(6, 6, 6) -- width, height, depth of the hitbox
+local HITBOX_OFFSET = Vector3.new(0, 0, 4) -- (x, y, z) offset from HumanoidRootPart; z is forward
+local DEFAULT_DAMAGE = 25
 
-EXAMPLES:
-- Vector3.new(8, 6, 10) = 8 studs wide, 6 studs tall, 10 studs deep
-- offset Vector3.new(0, 0, 5) = 5 studs in front of player, centered
-- offset Vector3.new(2, 1, 3) = 2 studs right, 1 stud up, 3 studs forward
-]]
+-- Visual hitbox preview toggle
+local SHOW_HITBOX_VISUALS = false -- Set to false to disable hitbox previews
 
-local HitboxConfig = {}
+-- =====================================================================================
+-- CENTRALIZED ANNOUNCEMENT SYSTEM
+-- =====================================================================================
 
--- Global hitbox damage interval configuration
-local DAMAGE_INTERVAL_CONFIG = {
-    hitboxDamageInterval = 0.5, -- Damage is applied every 0.5 seconds for sustained hitboxes
-    immunityBuffer = 0.1, -- Small buffer to prevent double-hits due to timing
-}
+-- Announcement system to prevent overlapping attack/skill name displays
+local AnnouncementSystem = {}
 
--- Archer-specific configuration for easy tweaking
-local ARCHER_CONFIG = {
-    -- Basic shot configuration
-    shotCooldown = 0.1, -- Cooldown between individual shots (seconds)
-    shotAnimationDuration = 0.3, -- Duration of shot animation
-    shotHitboxDelay = 0.1, -- When hitbox appears in shot animation
-    shotHitboxDuration = 0.2, -- How long shot hitbox stays active
+-- Track current announcement to prevent overlaps
+local currentAnnouncement = nil
+local announcementQueue = {}
+
+-- Show announcement with overlap prevention
+function AnnouncementSystem.showAnnouncement(text, color, duration, priority)
+    duration = duration or 1.0
+    priority = priority or 1 -- Higher number = higher priority
     
-    -- Combo configuration
-    comboWindow = 1.0, -- Time window to continue combo (seconds)
-    comboResetTime = 1.0, -- Time before combo resets if no input (seconds)
-    
-    -- Global cooldown override (affects all weapons)
-    globalCooldownOverride = 0.1, -- Override global cooldown for rapid fire (seconds)
-    
-    -- Skill configuration
-    skill1Cooldown = 1.0, -- Rapid Burst cooldown
-    skill1CastTime = 0.4, -- Rapid Burst cast time
-    skill1HitboxDelay = 0.08, -- Rapid Burst hitbox delay
-    skill1HitboxDuration = 0.3, -- Rapid Burst hitbox duration
-    
-    skill2Cooldown = 1.5, -- Storm Strike cooldown
-    skill2CastTime = 0.5, -- Storm Strike cast time
-    skill2HitboxDelay = 0.2, -- Storm Strike hitbox delay
-    skill2HitboxDuration = 0.2, -- Storm Strike hitbox duration
-    
-    -- Burst shot specific
-    projectileCount = 7, -- Number of arrows in burst shot
-    spreadAngle = 40, -- Total spread angle in degrees
-    fireDelay = 0.05, -- Delay between each arrow in burst shot
-}
-
--- Projectile configuration for different weapon types
-local PROJECTILE_CONFIGS = {
-    -- Archer projectiles: Fast, precise arrows
-    ["archer_weapon"] = {
-        projectileType = "arrow",
-        speed = 200, -- studs per second
-        range = 800, -- maximum range in studs
-        size = Vector3.new(0.5, 0.5, 3), -- thin, long arrow shape
-        color = Color3.new(1, 1, 0), -- yellow arrow
-        transparency = 0.3,
-        material = Enum.Material.Neon,
-        hitboxSize = Vector3.new(2, 2, 2), -- small hitbox at impact
-        hitboxDuration = 0.2, -- how long impact hitbox lasts
-        trailEffect = true, -- whether to show trail effect
-        trailLength = 5, -- trail length in studs
-        trailTransparency = 0.7, -- trail transparency
-        
-        -- ========================================
-        -- ARCHER PROJECTILE POSITIONING
-        -- ========================================
-        
-        -- Arrow spawn position (relative to player)
-        spawnOffset = Vector3.new(1, 0, 1), -- (X, Y, Z) offset from player position
-        -- X = left/right (+ = right, - = left)
-        -- Y = height (+ = up, - = down) 
-        -- Z = forward/back (+ = forward, - = back)
-        
-        -- Arrow aim angle offset (horizontal/vertical angle adjustment)
-        -- aimAngleOffset = Vector3.new(-3, -2.5, 0), -- (X, Y, Z) angle offset in degrees
-        aimAngleOffset = Vector3.new(0, 0, 0), -- (X, Y, Z) angle offset in degrees - DISABLED
-        -- X = pitch (up/down angle)
-        -- Y = yaw (left/right angle) 
-        -- Z = roll (tilt angle)
-        
-        -- Crosshair offset (where crosshair appears on screen)
-        crosshairOffset = Vector3.new(-12, 17, 0), -- (X, Y, Z) screen offset - matches spawn offset
-        -- X = left/right screen offset
-        -- Y = up/down screen offset
-        -- Z = not used (depth)
-    }
-}
-
--- Default hitbox configuration (fallback)
-local DEFAULT_CONFIG = {
-    size = Vector3.new(6, 6, 6), -- 6 wide, 6 tall, 6 deep
-    offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward
-    baseDamage = 1000, -- default damage - significantly increased
-}
-
--- Weapon-specific hitbox configurations
--- Each weapon tag gets its own hitbox size and offset
--- Reach order: Gladiator (longest) > Samurai (long) > Knight (mid) > Archer (short) > Berserker (shortest)
-local WEAPON_CONFIGS = {
-    -- Berserker: Significantly shortest reach - claw weapons, ultra close combat
-    -- High damage to compensate for ultra short range
-    ["berserker_weapon"] = {
-        size = Vector3.new(5, 5, 3), -- 5 wide, 5 tall, 3 deep (very short reach)
-        offset = Vector3.new(0, 0, 1.5), -- centered, 1.5 studs forward (ultra close)
-        baseDamage = 1000, -- High damage for high-risk close combat
-    },
-    
-    -- Archer: Short reach - backup melee weapon
-    -- Low damage as it's secondary to ranged attacks
-    ["archer_weapon"] = {
-        size = Vector3.new(5, 5, 6), -- 5 wide, 5 tall, 6 deep (precise hitbox)
-        offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (short reach)
-        baseDamage = 1000, -- High damage for testing
-    },
-    
-    -- Knight: Mid reach - sword and shield, balanced combat
-    -- Balanced damage for versatile fighter
-    ["knight_weapon"] = {
-        size = Vector3.new(6, 6, 7), -- 6 wide, 6 tall, 7 deep (balanced)
-        offset = Vector3.new(0, 0, 4), -- centered, 4 studs forward (medium reach)
-        baseDamage = 1000, -- High damage for testing
-    },
-    
-    -- Samurai: Long reach - katana with extended blade
-    -- Good damage with precision strikes
-    ["samurai_weapon"] = {
-        size = Vector3.new(6, 6, 9), -- 6 wide, 6 tall, 9 deep (long katana)
-        offset = Vector3.new(0, 0, 5.5), -- centered, 5.5 studs forward (long reach)
-        baseDamage = 1000, -- High damage for testing
-    },
-    
-    -- Gladiator: Longest reach - spears, tridents, long weapons
-    -- Moderate damage balanced by superior reach
-    ["gladiator_weapon"] = {
-        size = Vector3.new(7, 6, 11), -- 7 wide, 6 tall, 11 deep (maximum reach)
-        offset = Vector3.new(0, 0, 6.5), -- centered, 6.5 studs forward (longest reach)
-        baseDamage = 1000, -- High damage for testing
-    },
-}
-
--- Skills can have their own configurations for each weapon type
-local SKILL_CONFIGS = {
-
-    -- Samurai-specific skills
-    ["samurai_skill_1"] = {
-        -- Forward dash slash: long reach, medium width
-        size = Vector3.new(6, 6, 12), -- 6 wide, 6 tall, 12 deep (long dash)
-        offset = Vector3.new(0, 0, 6), -- centered, 6 studs forward (extended reach)
-        baseDamage = 10, -- High skill damage
-        animationId = "rbxassetid://131924293052517", -- Dash Slash animation
-        name = "Dash Slash",
-        keyCode = Enum.KeyCode.K,
-        -- Timing configuration
-        cooldownTime = 1.5, -- 1.5 second cooldown between uses
-        castTime = 0.5, -- 0.5 second cast/animation duration
-        hitboxDelay = 0.15, -- Hitbox appears 0.15s into animation (fast dash)
-        hitboxDuration = 0.3, -- Hitbox lasts 0.3s (quick dash strike)
-    },
-    ["samurai_skill_2"] = {
-        -- Wide sweeping arc: shorter reach, wider area
-        size = Vector3.new(10, 6, 8), -- 10 wide, 6 tall, 8 deep (wide sweep)
-        offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
-        baseDamage = 10, -- Higher skill damage
-        animationId = "rbxassetid://98046878574797", -- Wide Arc animation
-        name = "Wide Arc",
-        keyCode = Enum.KeyCode.L,
-        -- Timing configuration
-        cooldownTime = 2.0, -- 2.0 second cooldown between uses
-        castTime = 0.6, -- 0.6 second cast/animation duration
-        hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (wide sweep)
-        hitboxDuration = 0.4, -- Hitbox lasts 0.4s (extended sweep)
-    },
-
-    -- Berserker-specific skills
-    ["berserker_skill_1"] = {
-        -- Berserker rage: short range but high damage burst
-        size = Vector3.new(6, 6, 5), -- 6 wide, 6 tall, 5 deep (close combat)
-        offset = Vector3.new(0, 0, 2.5), -- centered, 2.5 studs forward (close range)
-        baseDamage = 15, -- Very high damage for berserker rage
-        animationId = "rbxassetid://119714592567966", -- Berserker Rage animation
-        name = "Berserker Rage",
-        keyCode = Enum.KeyCode.K,
-        -- Timing configuration
-        cooldownTime = 2.0, -- 2.0 second cooldown between uses
-        castTime = 0.6, -- 0.6 second cast/animation duration
-        hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation
-        hitboxDuration = 0.4, -- Hitbox lasts 0.4s (berserker rage burst)
-    },
-    ["berserker_skill_2"] = {
-        -- Whirlwind attack: wide area, short reach
-        size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (wide area)
-        offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (medium reach)
-            baseDamage = 1000, -- High damage whirlwind
-        animationId = "rbxassetid://94093991325514", -- Whirlwind animation
-        name = "Whirlwind",
-        keyCode = Enum.KeyCode.L,
-        -- Timing configuration
-        cooldownTime = 2.5, -- 2.5 second cooldown between uses
-        castTime = 0.7, -- 0.7 second cast/animation duration
-        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation
-        hitboxDuration = 0.6, -- Hitbox lasts 0.6s (extended whirlwind)
-    },
-
-    -- Gladiator-specific skills
-    ["gladiator_skill_1"] = {
-        -- Spear thrust: maximum reach attack
-        size = Vector3.new(4, 6, 15), -- 4 wide, 6 tall, 15 deep (precise long thrust)
-        offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (maximum reach)
-            baseDamage = 1000, -- High damage precise thrust
-        animationId = "rbxassetid://74493342749743", -- Spear Thrust animation
-        name = "Spear Thrust",
-        keyCode = Enum.KeyCode.K,
-        -- Timing configuration
-        cooldownTime = 2.0, -- 2.0 second cooldown between uses
-        castTime = 0.6, -- 0.6 second cast/animation duration
-        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (precise thrust timing)
-        hitboxDuration = 0.25, -- Hitbox lasts 0.25s (quick precise thrust)
-    },
-    ["gladiator_skill_2"] = {
-        -- Arena sweep: wide but shorter reach
-        size = Vector3.new(12, 6, 8), -- 12 wide, 6 tall, 8 deep (wide arena sweep)
-        offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (medium reach)
-        baseDamage = 10, -- Moderate damage sweep
-        animationId = "rbxassetid://107545823152214", -- Arena Sweep animation
-        name = "Arena Sweep",
-        keyCode = Enum.KeyCode.L,
-        -- Timing configuration
-        cooldownTime = 2.5, -- 2.5 second cooldown between uses
-        castTime = 0.8, -- 0.8 second cast/animation duration
-        hitboxDelay = 0.3, -- Hitbox appears 0.3s into animation (wide sweep buildup)
-        hitboxDuration = 0.5, -- Hitbox lasts 0.5s (long arena sweep)
-    },
-
-    -- Knight-specific skills
-    ["knight_skill_1"] = {
-        -- Shield bash: forward shield attack
-        size = Vector3.new(6, 6, 8), -- 6 wide, 6 tall, 8 deep (shield bash)
-        offset = Vector3.new(0, 0, 4.5), -- centered, 4.5 studs forward (medium reach)
-        baseDamage = 8, -- Moderate damage shield bash
-        animationId = "rbxassetid://131924293052517", -- Shield Bash animation
-        name = "Shield Bash",
-        keyCode = Enum.KeyCode.K,
-        -- Timing configuration
-        cooldownTime = 1.5, -- 1.5 second cooldown between uses
-        castTime = 0.4, -- 0.4 second cast/animation duration
-        hitboxDelay = 0.15, -- Hitbox appears 0.15s into animation (quick bash)
-        hitboxDuration = 0.25, -- Hitbox lasts 0.25s (quick shield bash)
-    },
-    ["knight_skill_2"] = {
-        -- Defensive stance: protective area around knight
-        size = Vector3.new(8, 6, 6), -- 8 wide, 6 tall, 6 deep (defensive area)
-        offset = Vector3.new(0, 0, 3), -- centered, 3 studs forward (close protection)
-        baseDamage = 6, -- Lower damage, defensive skill
-        animationId = "rbxassetid://98046878574797", -- Defensive Stance animation
-        name = "Defensive Stance",
-        keyCode = Enum.KeyCode.L,
-        -- Timing configuration
-        cooldownTime = 3.0, -- 3.0 second cooldown between uses (defensive skill)
-        castTime = 0.6, -- 0.6 second cast/animation duration
-        hitboxDelay = 0.2, -- Hitbox appears 0.2s into animation (defensive setup)
-        hitboxDuration = 0.8, -- Hitbox lasts 0.8s (extended defensive area)
-    },
-
-    -- Archer-specific skills - RAPID FIRE VERSION (uses unified config)
-    ["archer_skill_1"] = {
-        -- Rapid Burst: Multiple arrows with spread - LIGHTNING FAST
-        size = Vector3.new(4, 6, 8), -- 4 wide, 6 tall, 8 deep (per arrow)
-        offset = Vector3.new(0, 0, 5), -- centered, 5 studs forward (ranged)
-        baseDamage = 5, -- Lower damage per arrow (multiple arrows)
-        animationId = "rbxassetid://119714592567966", -- Burst Shot animation
-        name = "Rapid Burst",
-        keyCode = Enum.KeyCode.K,
-        -- Timing configuration - uses unified ARCHER_CONFIG
-        cooldownTime = ARCHER_CONFIG.skill1Cooldown,
-        castTime = ARCHER_CONFIG.skill1CastTime,
-        hitboxDelay = ARCHER_CONFIG.skill1HitboxDelay,
-        hitboxDuration = ARCHER_CONFIG.skill1HitboxDuration,
-        
-        -- Burst Shot specific configuration - uses unified ARCHER_CONFIG
-        projectileCount = ARCHER_CONFIG.projectileCount,
-        spreadAngle = ARCHER_CONFIG.spreadAngle,
-        fireDelay = ARCHER_CONFIG.fireDelay,
-    },
-    ["archer_skill_2"] = {
-        -- Storm Strike: Large area hitbox - LIGHTNING FAST
-        size = Vector3.new(15, 8, 12), -- 15 wide, 8 tall, 12 deep (large area)
-        offset = Vector3.new(0, 0, 8), -- centered, 8 studs forward (long range)
-            baseDamage = 1000, -- High damage area attack
-        animationId = "rbxassetid://94093991325514", -- Aerial Strike animation
-        name = "Storm Strike",
-        keyCode = Enum.KeyCode.L,
-        -- Timing configuration - uses unified ARCHER_CONFIG
-        cooldownTime = ARCHER_CONFIG.skill2Cooldown,
-        castTime = ARCHER_CONFIG.skill2CastTime,
-        hitboxDelay = ARCHER_CONFIG.skill2HitboxDelay,
-        hitboxDuration = ARCHER_CONFIG.skill2HitboxDuration,
-    },
-}
-
--- Combo attack configurations for each weapon type
--- Each combo has 3 attacks with individual timing, damage, and hitbox settings
-local COMBO_CONFIGS = {
-    -- Berserker combo: Fast, aggressive 3-hit combo with shortest reach
-    ["berserker_weapon_combo"] = {
-        comboWindow = 2.0, -- Time window to continue combo (seconds)
-        resetTime = 3.0, -- Time before combo resets if no input (seconds)
-        
-        -- Attack 1: Quick opener
-        attack1 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.4, -- Animation duration (faster for demo)
-            hitboxDelay = 0.1, -- When hitbox appears in animation (faster)
-            hitboxDuration = 0.25, -- How long hitbox stays active (shorter)
-            size = Vector3.new(5, 5, 3), -- Hitbox size
-            offset = Vector3.new(0, 0, 1.5), -- Hitbox offset
-            baseDamage = 1000, -- High damage for testing
-            name = "Berserker Strike",
-        },
-        
-        -- Attack 2: Medium follow-up
-        attack2 = {
-            animationId = "rbxassetid://119714592567966",
-            duration = 0.45, -- Faster
-            hitboxDelay = 0.08, -- Faster
-            hitboxDuration = 0.3, -- Shorter
-            size = Vector3.new(6, 5, 4),
-            offset = Vector3.new(0, 0, 2),
-            baseDamage = 1000, -- High damage for testing
-            name = "Berserker Strike",
-        },
-        
-        -- Attack 3: Powerful finisher
-        attack3 = {
-            animationId = "rbxassetid://94093991325514",
-            duration = 0.6, -- Faster
-            hitboxDelay = 0.2, -- Faster
-            hitboxDuration = 0.35, -- Shorter
-            size = Vector3.new(7, 6, 5),
-            offset = Vector3.new(0, 0, 2.5),
-            baseDamage = 1000, -- High damage for testing
-            name = "Berserker Finisher",
-        },
-    },
-
-    -- Archer combo: RAPID FIRE - Lightning fast 3-hit combo for high-level archer
-    ["archer_weapon_combo"] = {
-        comboWindow = ARCHER_CONFIG.comboWindow,
-        resetTime = ARCHER_CONFIG.comboResetTime,
-        
-        -- Attack 1: Lightning Strike
-        attack1 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.2, -- EXTREMELY fast - rapid fire
-            hitboxDelay = 0.04, -- Lightning fast hitbox
-            hitboxDuration = 0.15, -- Very short
-            size = Vector3.new(4, 5, 5), -- Narrower, more precise
-            offset = Vector3.new(0, 0, 2.5), -- Slightly longer than berserker
-            baseDamage = 1000, -- High damage for testing
-            name = "Lightning Strike",
-        },
-        
-        -- Attack 2: Rapid Shot
-        attack2 = {
-            animationId = "rbxassetid://74493342749743",
-            duration = 0.22, -- EXTREMELY fast
-            hitboxDelay = 0.03, -- Lightning fast
-            hitboxDuration = 0.12, -- Very short
-            size = Vector3.new(5, 5, 6), -- Same as weapon config
-            offset = Vector3.new(0, 0, 3),
-            baseDamage = 1000, -- High damage for testing
-            name = "Rapid Shot",
-        },
-        
-        -- Attack 3: Storm Finisher
-        attack3 = {
-            animationId = "rbxassetid://107545823152214",
-            duration = 0.28, -- EXTREMELY fast
-            hitboxDelay = 0.08, -- Lightning fast
-            hitboxDuration = 0.18, -- Very short
-            size = Vector3.new(6, 6, 7), -- Wider final strike
-            offset = Vector3.new(0, 0, 3.5),
-            baseDamage = 1000, -- High damage for testing
-            name = "Storm Finisher",
-        },
-    },
-
-    -- Knight combo: Balanced, defensive 3-hit combo with medium reach
-    ["knight_weapon_combo"] = {
-        comboWindow = 2.0,
-        resetTime = 3.0,
-        
-        -- Attack 1: Defensive opener
-        attack1 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.5, -- Faster for demo
-            hitboxDelay = 0.12, -- Faster
-            hitboxDuration = 0.25, -- Shorter
-            size = Vector3.new(6, 6, 6), -- Balanced size
-            offset = Vector3.new(0, 0, 3.5),
-            baseDamage = 1000,
-            name = "Holy Strike",
-        },
-        
-        -- Attack 2: Balanced follow-up
-        attack2 = {
-            animationId = "rbxassetid://131924293052517",
-            duration = 0.55, -- Faster
-            hitboxDelay = 0.12, -- Faster
-            hitboxDuration = 0.3, -- Shorter
-            size = Vector3.new(6, 6, 7), -- Same as weapon config
-            offset = Vector3.new(0, 0, 4),
-            baseDamage = 1000,
-            name = "Shield Strike",
-        },
-        
-        -- Attack 3: Noble finisher
-        attack3 = {
-            animationId = "rbxassetid://98046878574797",
-            duration = 0.65, -- Faster
-            hitboxDelay = 0.2, -- Faster
-            hitboxDuration = 0.35, -- Shorter
-            size = Vector3.new(7, 6, 8), -- Slightly larger final strike
-            offset = Vector3.new(0, 0, 4.5),
-            baseDamage = 1000,
-            name = "Noble Strike",
-        },
-    },
-
-    -- Samurai combo: Precise, elegant 3-hit combo with long reach
-    ["samurai_weapon_combo"] = {
-        comboWindow = 2.0,
-        resetTime = 3.0,
-        
-        -- Attack 1: Elegant opener
-        attack1 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.4, -- Faster for demo
-            hitboxDelay = 0.08, -- Faster
-            hitboxDuration = 0.2, -- Shorter
-            size = Vector3.new(5, 6, 8), -- Narrow, precise
-            offset = Vector3.new(0, 0, 4.5),
-            baseDamage = 1000,
-            name = "Katana Slash",
-        },
-        
-        -- Attack 2: Flowing follow-up
-        attack2 = {
-            animationId = "rbxassetid://119714592567966",
-            duration = 0.45, -- Faster
-            hitboxDelay = 0.06, -- Faster
-            hitboxDuration = 0.25, -- Shorter
-            size = Vector3.new(6, 6, 9), -- Same as weapon config
-            offset = Vector3.new(0, 0, 5.5),
-            baseDamage = 1000,
-            name = "Katana Slash",
-        },
-        
-        -- Attack 3: Iaijutsu finisher
-        attack3 = {
-            animationId = "rbxassetid://94093991325514",
-            duration = 0.6, -- Faster
-            hitboxDelay = 0.25, -- Faster
-            hitboxDuration = 0.28, -- Shorter
-            size = Vector3.new(7, 6, 10), -- Longest reach finisher
-            offset = Vector3.new(0, 0, 6),
-            baseDamage = 1000,
-            name = "Iaijutsu Strike",
-        },
-    },
-
-    -- Gladiator combo: Powerful, arena-style 3-hit combo with longest reach
-    ["gladiator_weapon_combo"] = {
-        comboWindow = 2.0,
-        resetTime = 3.0,
-        
-        -- Attack 1: Arena opener
-        attack1 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.5, -- Faster for demo
-            hitboxDelay = 0.12, -- Faster
-            hitboxDuration = 0.25, -- Shorter
-            size = Vector3.new(6, 6, 10), -- Long reach
-            offset = Vector3.new(0, 0, 5.5),
-            baseDamage = 1000,
-            name = "Spear Thrust",
-        },
-        
-        -- Attack 2: Arena follow-up
-        attack2 = {
-            animationId = "rbxassetid://74493342749743",
-            duration = 0.55, -- Faster
-            hitboxDelay = 0.12, -- Faster
-            hitboxDuration = 0.3, -- Shorter
-            size = Vector3.new(7, 6, 11), -- Same as weapon config
-            offset = Vector3.new(0, 0, 6.5),
-            baseDamage = 1000,
-            name = "Spear Thrust",
-        },
-        
-        -- Attack 3: Arena champion finisher
-        attack3 = {
-            animationId = "rbxassetid://107545823152214",
-            duration = 0.7, -- Faster
-            hitboxDelay = 0.25, -- Faster
-            hitboxDuration = 0.35, -- Shorter
-            size = Vector3.new(8, 6, 12), -- Widest and longest finisher
-            offset = Vector3.new(0, 0, 7),
-            baseDamage = 1000,
-            name = "Arena Strike",
-        },
-    },
-}
-
--- Get combo configuration for a specific weapon tag
-function HitboxConfig.getComboConfig(weaponTag)
-    local comboKey = weaponTag .. "_combo"
-    local config = COMBO_CONFIGS[comboKey]
-    if config then
-        return {
-            comboWindow = config.comboWindow,
-            resetTime = config.resetTime,
-            attack1 = {
-                animationId = config.attack1.animationId,
-                duration = config.attack1.duration,
-                hitboxDelay = config.attack1.hitboxDelay,
-                hitboxDuration = config.attack1.hitboxDuration,
-                size = config.attack1.size,
-                offset = config.attack1.offset,
-                baseDamage = config.attack1.baseDamage,
-                name = config.attack1.name,
-            },
-            attack2 = {
-                animationId = config.attack2.animationId,
-                duration = config.attack2.duration,
-                hitboxDelay = config.attack2.hitboxDelay,
-                hitboxDuration = config.attack2.hitboxDuration,
-                size = config.attack2.size,
-                offset = config.attack2.offset,
-                baseDamage = config.attack2.baseDamage,
-                name = config.attack2.name,
-            },
-            attack3 = {
-                animationId = config.attack3.animationId,
-                duration = config.attack3.duration,
-                hitboxDelay = config.attack3.hitboxDelay,
-                hitboxDuration = config.attack3.hitboxDuration,
-                size = config.attack3.size,
-                offset = config.attack3.offset,
-                baseDamage = config.attack3.baseDamage,
-                name = config.attack3.name,
-            },
-        }
+    -- If there's already an announcement and this one has lower priority, queue it
+    if currentAnnouncement and priority < currentAnnouncement.priority then
+        table.insert(announcementQueue, {
+            text = text,
+            color = color,
+            duration = duration,
+            priority = priority
+        })
+        return
     end
     
-    -- Return default combo if weapon tag not found
-    return {
-        comboWindow = 2.0,
-        resetTime = 3.0,
-        attack1 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.6,
-            hitboxDelay = 0.2,
-            hitboxDuration = 0.3,
-            size = Vector3.new(5, 5, 3),
-            offset = Vector3.new(0, 0, 1.5),
-            baseDamage = 1000,
-            name = "Default Strike",
-        },
-        attack2 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.7,
-            hitboxDelay = 0.15,
-            hitboxDuration = 0.4,
-            size = Vector3.new(6, 5, 4),
-            offset = Vector3.new(0, 0, 2),
-            baseDamage = 1000,
-            name = "Default Strike",
-        },
-        attack3 = {
-            animationId = "rbxassetid://567479941",
-            duration = 0.9,
+    -- If there's a current announcement, remove it
+    if currentAnnouncement and currentAnnouncement.gui then
+        currentAnnouncement.gui:Destroy()
+    end
+    
+    -- Create new announcement
+    local character = player.Character
+    if not character or not character:FindFirstChild("Head") then
+        return
+    end
+    
+    local gui = Instance.new("BillboardGui")
+    gui.Size = UDim2.new(0, 120, 0, 60)
+    gui.StudsOffset = Vector3.new(0, 3, 0)
+    gui.Parent = character.Head
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = color or Color3.new(1, 1, 1)
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansBold
+    label.Parent = gui
+    
+    -- Store current announcement
+    currentAnnouncement = {
+        gui = gui,
+        priority = priority,
+        startTime = tick()
+    }
+    
+    -- Remove after duration
+    task.delay(duration, function()
+        if currentAnnouncement and currentAnnouncement.gui == gui then
+            gui:Destroy()
+            currentAnnouncement = nil
+            
+            -- Process next announcement in queue
+            if #announcementQueue > 0 then
+                local nextAnnouncement = table.remove(announcementQueue, 1)
+                AnnouncementSystem.showAnnouncement(
+                    nextAnnouncement.text,
+                    nextAnnouncement.color,
+                    nextAnnouncement.duration,
+                    nextAnnouncement.priority
+                )
+            end
+        end
+    end)
+end
+
+-- Convenience functions for different announcement types
+function AnnouncementSystem.showComboAttack(attackNumber, attackName, weaponType)
+    local colors = {
+        berserker = Color3.new(1, 0, 0), -- Red
+        archer = Color3.new(0, 1, 1),   -- Cyan
+        knight = Color3.new(0, 1, 0),   -- Green
+        samurai = Color3.new(0, 0, 1),  -- Blue
+        gladiator = Color3.new(1, 1, 0) -- Yellow
+    }
+    
+    local color = colors[weaponType] or Color3.new(1, 1, 1)
+    local text = string.format("COMBO %d!\n%s", attackNumber, attackName)
+    
+    AnnouncementSystem.showAnnouncement(text, color, 1.0, 2) -- Priority 2 for combos
+end
+
+function AnnouncementSystem.showSkill(skillName, weaponType)
+    local colors = {
+        berserker = Color3.new(1, 0, 0), -- Red
+        archer = Color3.new(0, 1, 1),   -- Cyan
+        knight = Color3.new(0, 1, 0),   -- Green
+        samurai = Color3.new(0, 0, 1),  -- Blue
+        gladiator = Color3.new(1, 1, 0) -- Yellow
+    }
+    
+    local color = colors[weaponType] or Color3.new(1, 1, 1)
+    local text = string.format("%s!", skillName:upper())
+    
+    AnnouncementSystem.showAnnouncement(text, color, 1.0, 3) -- Priority 3 for skills
+end
+
+function AnnouncementSystem.showCooldown(remainingTime)
+    local text = string.format("COOLDOWN %.1fs", remainingTime)
+    AnnouncementSystem.showAnnouncement(text, Color3.new(0.8, 0.8, 0.8), 1.0, 1) -- Priority 1 for cooldowns
+end
+
+-- Clear all announcements (useful for testing)
+function AnnouncementSystem.clearAll()
+    if currentAnnouncement and currentAnnouncement.gui then
+        currentAnnouncement.gui:Destroy()
+        currentAnnouncement = nil
+    end
+    announcementQueue = {}
+end
+
+-- =====================================================================================
+-- UNIFIED HITBOX GENERATION SYSTEM
+-- =====================================================================================
+
+local DynamicHitboxClient = {}
+
+-- Helper function to get weapon hitbox configuration for a tool
+local function getHitboxConfig(tool)
+    -- If config system is not available, use defaults
+    if not HitboxConfig then
+        return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE
+    end
+    
+    -- Check for weapon-specific tags
+    local weaponTags = HitboxConfig.getAllWeaponTags()
+    for _, weaponTag in ipairs(weaponTags) do
+        if CollectionService:HasTag(tool, weaponTag) then
+            local config = HitboxConfig.getWeaponConfig(weaponTag)
+            return config.size, config.offset, config.baseDamage
+        end
+    end
+    
+    -- No specific weapon tag found, use defaults
+    return HITBOX_SIZE, HITBOX_OFFSET, DEFAULT_DAMAGE
+end
+
+-- Helper function to get skill hitbox configuration
+local function getSkillHitboxConfig(skillKey)
+    if HitboxConfig then
+        local config = HitboxConfig.getSkillConfig(skillKey)
+        return config -- Return full config object with timing info
+    else
+        -- Fallback values if config system isn't available
+        return {
+            size = Vector3.new(8, 6, 8),
+            offset = Vector3.new(0, 0, 5),
+            baseDamage = 40,
+            name = "Unknown Skill",
+            cooldownTime = 2.0,
+            castTime = 0.8,
             hitboxDelay = 0.3,
-            hitboxDuration = 0.5,
-            size = Vector3.new(7, 6, 5),
-            offset = Vector3.new(0, 0, 2.5),
-            baseDamage = 1000,
-            name = "Default Finisher",
-        },
-    }
-end
-
--- Get hitbox configuration for a specific weapon tag
-function HitboxConfig.getWeaponConfig(weaponTag)
-    local config = WEAPON_CONFIGS[weaponTag]
-    if config then
-        return {
-            size = config.size,
-            offset = config.offset,
-            baseDamage = config.baseDamage,
         }
     end
-    
-    -- Return default if weapon tag not found
-    return {
-        size = DEFAULT_CONFIG.size,
-        offset = DEFAULT_CONFIG.offset,
-        baseDamage = DEFAULT_CONFIG.baseDamage,
-    }
 end
 
--- Get hitbox configuration for a specific skill tag
-function HitboxConfig.getSkillConfig(skillTag)
-    local config = SKILL_CONFIGS[skillTag]
-    if config then
-        return {
-            size = config.size,
-            offset = config.offset,
-            baseDamage = config.baseDamage,
-            animationId = config.animationId,
-            name = config.name,
-            keyCode = config.keyCode,
-            -- Timing configuration
-            cooldownTime = config.cooldownTime or 2.0, -- Default 2s cooldown
-            castTime = config.castTime or 0.8, -- Default 0.8s cast time
-            hitboxDelay = config.hitboxDelay or 0.3, -- Default 0.3s hitbox delay
-            hitboxDuration = config.hitboxDuration or 0.5, -- Default 0.5s hitbox duration
-        }
+-- Create visual hitbox (unified for weapons and skills with custom duration)
+local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration)
+    -- Check if visual hitboxes are enabled
+    if not SHOW_HITBOX_VISUALS then
+        return -- Skip creating visual if disabled
     end
     
-    -- Return default if skill tag not found
-    return {
-        size = DEFAULT_CONFIG.size,
-        offset = DEFAULT_CONFIG.offset,
-        baseDamage = DEFAULT_CONFIG.baseDamage,
-        animationId = "rbxassetid://567479941",
-        name = "Unknown Skill",
-        keyCode = Enum.KeyCode.Unknown,
-        -- Default timing configuration
-        cooldownTime = 2.0,
-        castTime = 0.8,
-        hitboxDelay = 0.3,
-        hitboxDuration = 0.5,
-    }
-end
-
--- Get all available weapon tags
-function HitboxConfig.getAllWeaponTags()
-    local tags = {}
-    for tag, _ in pairs(WEAPON_CONFIGS) do
-        table.insert(tags, tag)
-    end
-    return tags
-end
-
--- Get all available skill tags
-function HitboxConfig.getAllSkillTags()
-    local tags = {}
-    for tag, _ in pairs(SKILL_CONFIGS) do
-        table.insert(tags, tag)
-    end
-    return tags
-end
-
--- Check if a weapon tag has a custom configuration
-function HitboxConfig.hasWeaponConfig(weaponTag)
-    return WEAPON_CONFIGS[weaponTag] ~= nil
-end
-
--- Check if a skill tag has a custom configuration
-function HitboxConfig.hasSkillConfig(skillTag)
-    return SKILL_CONFIGS[skillTag] ~= nil
-end
-
--- Get default configuration
-function HitboxConfig.getDefaultConfig()
-    return {
-        size = DEFAULT_CONFIG.size,
-        offset = DEFAULT_CONFIG.offset,
-        baseDamage = DEFAULT_CONFIG.baseDamage,
-    }
-end
-
--- Get damage interval configuration
-function HitboxConfig.getDamageIntervalConfig()
-    return {
-        hitboxDamageInterval = DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval,
-        immunityBuffer = DAMAGE_INTERVAL_CONFIG.immunityBuffer,
-    }
-end
-
--- Get damage interval value (convenience function)
-function HitboxConfig.getDamageInterval()
-    return DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
-end
-
--- Get projectile configuration for a specific weapon tag
-function HitboxConfig.getProjectileConfig(weaponTag)
-    local config = PROJECTILE_CONFIGS[weaponTag]
-    if config then
-        return {
-            projectileType = config.projectileType,
-            speed = config.speed,
-            range = config.range,
-            size = config.size,
-            color = config.color,
-            transparency = config.transparency,
-            material = config.material,
-            hitboxSize = config.hitboxSize,
-            hitboxDuration = config.hitboxDuration,
-            trailEffect = config.trailEffect,
-            trailLength = config.trailLength,
-            trailTransparency = config.trailTransparency,
-            -- Add the missing positioning properties
-            spawnOffset = config.spawnOffset,
-            aimAngleOffset = config.aimAngleOffset,
-            crosshairOffset = config.crosshairOffset,
-        }
+    local hitboxPart = Instance.new("Part")
+    hitboxPart.Size = size
+    hitboxPart.CFrame = hitboxCFrame
+    hitboxPart.Anchored = true
+    hitboxPart.CanCollide = false
+    hitboxPart.CanQuery = false
+    hitboxPart.CanTouch = false
+    hitboxPart.Material = Enum.Material.Neon
+    hitboxPart.Parent = Workspace
+    
+    -- Determine duration and visual properties
+    local duration, color, name
+    if hitboxType == "weapon" then
+        duration = customDuration or 0.3 -- Use custom duration or default 0.3s
+        color = Color3.new(1, 0, 0) -- Red for weapons
+        name = "WeaponHitboxVisual"
+    elseif hitboxType == "skill" then
+        duration = customDuration or 0.5 -- Use custom duration or default 0.5s
+        color = Color3.new(0, 0, 1) -- Blue for skills
+        name = "SkillHitboxVisual"
+    else
+        duration = customDuration or 0.3
+        color = Color3.new(1, 1, 1) -- White for unknown
+        name = "HitboxVisual"
     end
     
-    -- Return default projectile config if weapon tag not found
-    return {
-        projectileType = "arrow",
-        speed = 200,
-        range = 100,
-        size = Vector3.new(0.5, 0.5, 3),
-        color = Color3.new(1, 1, 1),
-        transparency = 0.5,
-        material = Enum.Material.Neon,
-        hitboxSize = Vector3.new(2, 2, 2),
-        hitboxDuration = 0.2,
-        trailEffect = false,
-        trailLength = 3,
-        trailTransparency = 0.8,
-    }
+        hitboxPart.Transparency = 0.7
+    hitboxPart.Color = color
+    hitboxPart.Name = name
+    
+    -- Remove after specified duration
+    task.delay(duration, function()
+            if hitboxPart then
+                hitboxPart:Destroy()
+            end
+        end)
 end
 
--- Get all available projectile weapon tags
-function HitboxConfig.getAllProjectileWeaponTags()
-    local tags = {}
-    for tag, _ in pairs(PROJECTILE_CONFIGS) do
-        table.insert(tags, tag)
-    end
-    return tags
-end
+-- Generate hitbox for weapon attacks
+function DynamicHitboxClient.generateWeaponHitbox(tool)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
 
--- Check if a weapon tag has projectile configuration
-function HitboxConfig.hasProjectileConfig(weaponTag)
-    return PROJECTILE_CONFIGS[weaponTag] ~= nil
-end
+    -- Get weapon-specific hitbox configuration
+    local hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
 
--- Get default projectile configuration
-function HitboxConfig.getDefaultProjectileConfig()
-    return {
-        projectileType = "arrow",
-        speed = 200,
-        range = 100,
-        size = Vector3.new(0.5, 0.5, 3),
-        color = Color3.new(1, 1, 1),
-        transparency = 0.5,
-        material = Enum.Material.Neon,
-        hitboxSize = Vector3.new(2, 2, 2),
-        hitboxDuration = 0.2,
-        trailEffect = false,
-        trailLength = 3,
-        trailTransparency = 0.8,
-    }
+    -- Generate hitbox position in front of the player using LookVector
+    local rootCFrame = humanoidRootPart.CFrame
+    local forwardOffset = rootCFrame.LookVector * hitboxOffset.Z
+    local rightOffset = rootCFrame.RightVector * hitboxOffset.X
+    local upOffset = rootCFrame.UpVector * hitboxOffset.Y
+    local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+
+    -- Align the generated hitbox with the player's facing direction
+    local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+
+    print("[CLIENT DEBUG] Sending weapon hitbox request - damage:", weaponDamage)
+    remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
+
+    -- Create visual hitbox
+    createVisualHitbox(hitboxCFrame, hitboxSize, "weapon")
 end
 
 -- =====================================================================================
--- ARCHER PROJECTILE POSITIONING FUNCTIONS
+-- GLOBAL ATTACK COOLDOWN SYSTEM
 -- =====================================================================================
 
--- Get archer spawn offset (where arrow comes from)
-function HitboxConfig.getArcherSpawnOffset()
-    local config = HitboxConfig.getProjectileConfig("archer_weapon")
-    return config.spawnOffset or Vector3.new(0, 2, 1)
+-- Global cooldown to prevent rapid weapon switching exploits
+local GlobalAttackCooldown = {}
+
+-- Global cooldown settings
+-- Global cooldown will be set dynamically based on archer config
+local GLOBAL_COOLDOWN_TIME = 0.1 -- Default fallback
+
+-- Initialize global cooldown in _G to persist across weapon switches
+if not _G.lastGlobalAttackEndTime then
+    _G.lastGlobalAttackEndTime = 0
 end
 
--- Get archer aim angle offset (horizontal/vertical angle adjustment)
-function HitboxConfig.getArcherAimAngleOffset()
-    local config = HitboxConfig.getProjectileConfig("archer_weapon")
-    return config.aimAngleOffset or Vector3.new(0, 0, 0)
-end
-
--- Get archer crosshair offset (where crosshair appears on screen)
-function HitboxConfig.getArcherCrosshairOffset()
-    local config = HitboxConfig.getProjectileConfig("archer_weapon")
-    local offset = config.crosshairOffset or Vector3.new(0, 0, 0)
-    return offset
-end
-
--- Get unified archer configuration
-function HitboxConfig.getArcherConfig()
-    return ARCHER_CONFIG
-end
-
--- Get specific archer setting
-function HitboxConfig.getArcherSetting(settingName)
-    return ARCHER_CONFIG[settingName]
-end
-
--- Set specific archer setting (for runtime tweaking)
-function HitboxConfig.setArcherSetting(settingName, value)
-    if ARCHER_CONFIG[settingName] ~= nil then
-        ARCHER_CONFIG[settingName] = value
-        return true
-    end
-    return false
-end
-
--- Convenience functions for common archer tweaks
-function HitboxConfig.setArcherShotSpeed(cooldown, animationDuration, hitboxDelay, hitboxDuration)
-    ARCHER_CONFIG.shotCooldown = cooldown
-    ARCHER_CONFIG.shotAnimationDuration = animationDuration
-    ARCHER_CONFIG.shotHitboxDelay = hitboxDelay
-    ARCHER_CONFIG.shotHitboxDuration = hitboxDuration
-end
-
-function HitboxConfig.setArcherComboSpeed(comboWindow, resetTime)
-    ARCHER_CONFIG.comboWindow = comboWindow
-    ARCHER_CONFIG.comboResetTime = resetTime
-end
-
-function HitboxConfig.setArcherGlobalCooldown(cooldownTime)
-    ARCHER_CONFIG.globalCooldownOverride = cooldownTime
-end
-
-function HitboxConfig.setArcherSkillSpeed(skill1Cooldown, skill1CastTime, skill2Cooldown, skill2CastTime)
-    ARCHER_CONFIG.skill1Cooldown = skill1Cooldown
-    ARCHER_CONFIG.skill1CastTime = skill1CastTime
-    ARCHER_CONFIG.skill2Cooldown = skill2Cooldown
-    ARCHER_CONFIG.skill2CastTime = skill2CastTime
-end
-
--- Quick adjustment functions
-function HitboxConfig.setArcherSpawnOffset(x, y, z)
-    local config = PROJECTILE_CONFIGS["archer_weapon"]
-    if config then
-        config.spawnOffset = Vector3.new(x, y, z)
-        return true
-    end
-    return false
-end
-
-function HitboxConfig.setArcherAimAngleOffset(x, y, z)
-    local config = PROJECTILE_CONFIGS["archer_weapon"]
-    if config then
-        config.aimAngleOffset = Vector3.new(x, y, z)
-        return true
-    end
-    return false
-end
-
-function HitboxConfig.setArcherCrosshairOffset(x, y, z)
-    local config = PROJECTILE_CONFIGS["archer_weapon"]
-    if config then
-        config.crosshairOffset = Vector3.new(x, y, z)
-        return true
-    end
-    return false
-end
-
--- Calculate DOT info for sustained hitboxes (simple: full damage every interval)
-function HitboxConfig.calculateDamagePerTick(baseDamage, hitboxDuration)
-    local interval = DAMAGE_INTERVAL_CONFIG.hitboxDamageInterval
-    local maxTicks = math.floor(hitboxDuration / interval) + 1 -- +1 for immediate first tick
+function GlobalAttackCooldown.isOnGlobalCooldown()
+    local timeSinceLastAttack = tick() - _G.lastGlobalAttackEndTime
     
+    -- Use archer config if available, otherwise use default
+    local cooldownTime = GLOBAL_COOLDOWN_TIME
+    if HitboxConfig and HitboxConfig.getArcherSetting then
+        cooldownTime = HitboxConfig.getArcherSetting("globalCooldownOverride") or GLOBAL_COOLDOWN_TIME
+    end
     
-    return {
-        damagePerTick = baseDamage, -- Full base damage every tick
-        maxTicks = maxTicks,
+    return timeSinceLastAttack < cooldownTime
+end
+
+function GlobalAttackCooldown.getGlobalCooldownRemaining()
+    local timeSinceLastAttack = tick() - _G.lastGlobalAttackEndTime
+    
+    -- Use archer config if available, otherwise use default
+    local cooldownTime = GLOBAL_COOLDOWN_TIME
+    if HitboxConfig and HitboxConfig.getArcherSetting then
+        cooldownTime = HitboxConfig.getArcherSetting("globalCooldownOverride") or GLOBAL_COOLDOWN_TIME
+    end
+    
+    return math.max(0, cooldownTime - timeSinceLastAttack)
+end
+
+function GlobalAttackCooldown.setGlobalCooldown()
+    _G.lastGlobalAttackEndTime = tick()
+end
+
+function GlobalAttackCooldown.canStartNewAttack()
+    if GlobalAttackCooldown.isOnGlobalCooldown() then
+        local remaining = GlobalAttackCooldown.getGlobalCooldownRemaining()
+        return false, remaining
+    end
+    return true, 0
+end
+
+-- =====================================================================================
+-- SKILL COOLDOWN SYSTEM
+-- =====================================================================================
+
+-- Skill cooldown management functions
+local SkillCooldownSystem = {}
+
+function SkillCooldownSystem.isSkillOnCooldown(skillKey, cooldownTime)
+    local lastUseTime = _G.skillCooldowns[skillKey] or 0
+    local timeSinceLastUse = tick() - lastUseTime
+    return timeSinceLastUse < cooldownTime
+end
+
+function SkillCooldownSystem.isSkillCasting(skillKey)
+    return _G.skillCasting[skillKey] == true
+end
+
+function SkillCooldownSystem.setSkillCooldown(skillKey)
+    _G.skillCooldowns[skillKey] = tick()
+end
+
+function SkillCooldownSystem.setSkillCasting(skillKey, isCasting)
+    _G.skillCasting[skillKey] = isCasting
+    
+    -- Set global cooldown when skill casting ends
+    if not isCasting then
+        GlobalAttackCooldown.setGlobalCooldown()
+    end
+end
+
+function SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime)
+    local lastUseTime = _G.skillCooldowns[skillKey] or 0
+    local timeSinceLastUse = tick() - lastUseTime
+    return math.max(0, cooldownTime - timeSinceLastUse)
+end
+
+-- Generate hitbox for skill attacks (with cooldown and casting management)
+function DynamicHitboxClient.generateSkillHitbox(skillKey)
+    if not player.Character then return end
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    -- Get skill-specific configuration including timing
+    local skillConfig = getSkillHitboxConfig(skillKey)
+    local size, offset, damage = skillConfig.size, skillConfig.offset, skillConfig.baseDamage
+    local cooldownTime = skillConfig.cooldownTime or 2.0
+    local castTime = skillConfig.castTime or 0.8
+    local hitboxDelay = skillConfig.hitboxDelay or 0.3
+    local hitboxDuration = skillConfig.hitboxDuration or 0.5
+
+    -- Check if skill is on cooldown
+    if SkillCooldownSystem.isSkillOnCooldown(skillKey, cooldownTime) then
+        local remainingTime = SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime)
+        return
+    end
+
+    -- Check if skill is already casting
+    if SkillCooldownSystem.isSkillCasting(skillKey) then
+        return
+    end
+
+
+    -- Start casting
+    SkillCooldownSystem.setSkillCasting(skillKey, true)
+    SkillCooldownSystem.setSkillCooldown(skillKey) -- Set cooldown immediately when cast starts
+
+    -- Schedule hitbox generation after delay
+    task.delay(hitboxDelay, function()
+        if SkillCooldownSystem.isSkillCasting(skillKey) then -- Only generate if still casting
+    -- Calculate hitbox position
+    local rootCFrame = humanoidRootPart.CFrame
+    local forwardOffset = rootCFrame.LookVector * offset.Z
+    local rightOffset = rootCFrame.RightVector * offset.X
+    local upOffset = rootCFrame.UpVector * offset.Y
+    local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+    local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+
+            -- Get damage interval configuration
+            local damageIntervalConfig = HitboxConfig.getDamageIntervalConfig()
+            local damageInterval = damageIntervalConfig.hitboxDamageInterval
+            
+            -- Check if this should be a DOT hitbox (duration > damage interval)
+            if hitboxDuration > damageInterval then
+                -- Create DOT hitbox
+                local damageInfo = HitboxConfig.calculateDamagePerTick(damage, hitboxDuration)
+                local hitboxId = DOTSystem.generateUniqueHitboxId(skillKey, "skill")
+                
+                
+                DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damage, hitboxDuration, damageInterval, "skill")
+            else
+            -- Single-hit hitbox (traditional)
+            print("[CLIENT DEBUG] Sending skill hitbox request - damage:", damage)
+            remote:FireServer(hitboxCFrame, size, damage)
+            end
+
+            -- Create visual hitbox with custom duration
+            createVisualHitbox(hitboxCFrame, size, "skill", hitboxDuration)
+            
+        end
+    end)
+
+    -- End casting after cast time
+    task.delay(castTime, function()
+        SkillCooldownSystem.setSkillCasting(skillKey, false)
+    end)
+end
+
+-- Generate arrow projectile hitbox (raycast-based for precise arrow hits)
+function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOffset, customDamage, customDelay, customDuration, customAimAngleOffset)
+    if not player.Character then return end
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    -- Use custom values if provided, otherwise get weapon config
+    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay, hitboxDuration
+    if customSize and customOffset and customDamage then
+        hitboxSize = customSize
+        hitboxOffset = customOffset
+        weaponDamage = customDamage
+        hitboxDelay = customDelay or 0.0
+        hitboxDuration = customDuration or 0.3
+    else
+        hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
+        hitboxDelay = 0.0
+        hitboxDuration = 0.3
+    end
+
+    -- Get projectile configuration for this weapon type
+    local projectileConfig = nil
+    if HitboxConfig then
+        -- Find the weapon tag for this tool
+        local weaponTags = HitboxConfig.getAllProjectileWeaponTags()
+        for _, weaponTag in ipairs(weaponTags) do
+            if CollectionService:HasTag(tool, weaponTag) then
+                projectileConfig = HitboxConfig.getProjectileConfig(weaponTag)
+                break
+            end
+        end
+    end
+    
+    -- Use default projectile config if none found
+    if not projectileConfig then
+        projectileConfig = HitboxConfig and HitboxConfig.getDefaultProjectileConfig() or {
+            projectileType = "arrow",
+            speed = 200,
+            range = 100,
+            size = Vector3.new(0.5, 0.5, 3),
+            color = Color3.new(1, 1, 0),
+            transparency = 0.3,
+            material = Enum.Material.Neon,
+            hitboxSize = Vector3.new(2, 2, 2),
+            hitboxDuration = 0.2,
+            trailEffect = false,
+            trailLength = 3,
+            trailTransparency = 0.8,
+        }
+    end
+
+    -- Apply hitbox delay
+    local function fireProjectile()
+        -- Get starting position from player's hand/bow position
+        local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+        
+        -- Get configuration settings
+        local spawnOffset = HitboxConfig and HitboxConfig.getArcherSpawnOffset() or Vector3.new(0, 2, 1)
+        local aimAngleOffset = customAimAngleOffset or (HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0))
+        
+        
+        -- Start projectile from player's position with configurable offset
+        local playerPosition = humanoidRootPart.Position
+        local playerCFrame = humanoidRootPart.CFrame
+        
+        -- Apply spawn offset to player position
+        local startPosition = playerPosition + (playerCFrame.RightVector * spawnOffset.X) + 
+                             (playerCFrame.UpVector * spawnOffset.Y) + 
+                             (playerCFrame.LookVector * spawnOffset.Z)
+        
+        -- Get camera's aim direction
+        local camera = workspace.CurrentCamera
+        local cameraDirection = camera.CFrame.LookVector
+        
+        -- Apply aim angle offset to camera direction
+        local angleOffsetCFrame = CFrame.Angles(
+            math.rad(aimAngleOffset.X), -- pitch
+            math.rad(aimAngleOffset.Y), -- yaw
+            math.rad(aimAngleOffset.Z)  -- roll
+        )
+        local adjustedDirection = angleOffsetCFrame * cameraDirection
+        
+        -- Calculate target position with adjusted direction
+        local targetPosition = startPosition + (adjustedDirection * projectileConfig.range)
+        local direction = adjustedDirection
+        local endPosition = targetPosition
+        
+        -- Perform raycast for hit detection
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+        raycastParams.FilterDescendantsInstances = {player.Character} -- Don't hit self
+        
+        
+        local raycastResult = workspace:Raycast(startPosition, direction * projectileConfig.range, raycastParams)
+        
+        -- Calculate hit position
+        local hitPosition = raycastResult and raycastResult.Position or endPosition
+        local actualRange = (hitPosition - startPosition).Magnitude
+        
+        
+        -- Create projectile visual
+        local projectile = Instance.new("Part")
+        projectile.Name = projectileConfig.projectileType:gsub("^%l", string.upper) .. "Projectile"
+        projectile.Size = projectileConfig.size
+        projectile.Material = projectileConfig.material
+        projectile.Color = projectileConfig.color
+        projectile.Transparency = projectileConfig.transparency
+        projectile.CanCollide = false
+        projectile.Anchored = true
+        projectile.Parent = workspace
+        
+        -- Position projectile at start
+        local projectileCFrame = CFrame.lookAt(startPosition, hitPosition)
+        projectile.CFrame = projectileCFrame
+        
+        -- Calculate travel time
+        local travelTime = actualRange / projectileConfig.speed
+        
+        -- Animate projectile movement
+        local startTime = tick()
+        local connection
+        connection = game:GetService("RunService").Heartbeat:Connect(function()
+            local elapsed = tick() - startTime
+            local progress = math.min(elapsed / travelTime, 1)
+            
+                    if progress >= 1 then
+                        -- Projectile reached target
+                        connection:Disconnect()
+                        projectile:Destroy()
+                        
+                        -- Simple damage logic: if raycast hits a humanoid within range, damage them
+                        if raycastResult then
+                            local hitInstance = raycastResult.Instance
+                            local hitCharacter = hitInstance.Parent
+                            
+                            -- Check if we hit a humanoid
+                            if hitCharacter and hitCharacter:FindFirstChild("Humanoid") then
+                                -- Calculate distance from player to hit target
+                                local distanceToTarget = (hitPosition - startPosition).Magnitude
+                                
+                                -- Only damage if within range
+                                if distanceToTarget <= projectileConfig.range then
+                                    -- Create damage hitbox at the hit position
+                                    local hitCFrame = CFrame.new(hitPosition, hitPosition + direction)
+                                    remote:FireServer(hitCFrame, projectileConfig.hitboxSize, weaponDamage)
+                                    
+                                    -- Create visual hit effect
+                                    createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration)
+                                end
+                            end
+                        end
+            else
+                -- Move projectile along path
+                local currentPosition = startPosition + (direction * actualRange * progress)
+                projectile.CFrame = CFrame.lookAt(currentPosition, hitPosition)
+            end
+        end)
+        
+        -- Safety cleanup after maximum time
+        task.delay(travelTime + 1, function()
+            if projectile and projectile.Parent then
+                projectile:Destroy()
+            end
+            if connection then
+                connection:Disconnect()
+            end
+        end)
+    end
+
+    -- Fire projectile immediately or after delay
+    if hitboxDelay > 0 then
+        task.delay(hitboxDelay, fireProjectile)
+    else
+        fireProjectile()
+    end
+end
+
+-- Generate hitbox for combo attacks (uses weapon config but allows custom override with optional delay and duration)
+function DynamicHitboxClient.generateComboHitbox(tool, customSize, customOffset, customDamage, customDelay, customDuration)
+    if not player.Character then return end
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    -- Use custom values if provided, otherwise get weapon config
+    local hitboxSize, hitboxOffset, weaponDamage, hitboxDelay, hitboxDuration
+    if customSize and customOffset and customDamage then
+        hitboxSize = customSize
+        hitboxOffset = customOffset
+        weaponDamage = customDamage
+        hitboxDelay = customDelay or 0.0 -- Default to immediate if no delay specified
+        hitboxDuration = customDuration or 0.3 -- Default to 0.3s if no duration specified
+    else
+        hitboxSize, hitboxOffset, weaponDamage = getHitboxConfig(tool)
+        hitboxDelay = 0.0 -- Default weapon hitboxes have no delay
+        hitboxDuration = 0.3 -- Default weapon hitboxes last 0.3s
+    end
+
+    -- Apply hitbox delay (like skills)
+    local function generateActualHitbox()
+        -- Calculate hitbox position
+        local rootCFrame = humanoidRootPart.CFrame
+        local forwardOffset = rootCFrame.LookVector * hitboxOffset.Z
+        local rightOffset = rootCFrame.RightVector * hitboxOffset.X
+        local upOffset = rootCFrame.UpVector * hitboxOffset.Y
+        local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
+        local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
+
+        -- Get damage interval configuration
+        local damageIntervalConfig = HitboxConfig.getDamageIntervalConfig()
+        local damageInterval = damageIntervalConfig.hitboxDamageInterval
+        
+        -- Check if this should be a DOT hitbox (duration > damage interval)
+        if hitboxDuration > damageInterval then
+            -- Create DOT hitbox
+            local damageInfo = HitboxConfig.calculateDamagePerTick(weaponDamage, hitboxDuration)
+            local hitboxId = DOTSystem.generateUniqueHitboxId("combo", "attack")
+            
+            
+            DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, hitboxSize, weaponDamage, hitboxDuration, damageInterval, "weapon")
+        else
+            -- Single-hit hitbox (traditional)
+            print("[CLIENT DEBUG] Sending combo hitbox request - damage:", weaponDamage)
+            remote:FireServer(hitboxCFrame, hitboxSize, weaponDamage)
+        end
+
+        -- Create visual hitbox (red like weapon attacks) with custom duration
+        createVisualHitbox(hitboxCFrame, hitboxSize, "weapon", hitboxDuration)
+        
+    end
+
+    -- Generate hitbox immediately or after delay
+    if hitboxDelay > 0 then
+        task.delay(hitboxDelay, generateActualHitbox)
+    else
+        generateActualHitbox()
+    end
+end
+
+-- =====================================================================================
+-- COMBO STATE TRACKING (to disable tool activation during combos)
+-- =====================================================================================
+
+-- Global combo state tracking
+_G.comboSystemActive = false -- Set to true when any combo system is running
+_G.lastComboTime = 0 -- Track when last combo attack happened
+
+-- Global skill cooldown tracking
+_G.skillCooldowns = {} -- Track last use time for each skill
+_G.skillCasting = {} -- Track if skills are currently casting
+
+-- Global damage over time tracking
+_G.activeDOTHitboxes = {} -- Track active DOT hitboxes
+_G.playerDamageImmunity = {} -- Track player immunity to specific hitboxes
+
+-- DOT Hitbox Management System
+DOTSystem = {}
+
+function DOTSystem.createDOTHitbox(hitboxId, hitboxCFrame, size, damagePerTick, duration, interval, hitboxType)
+    local dotHitbox = {
+        id = hitboxId,
+        cframe = hitboxCFrame,
+        size = size,
+        damagePerTick = damagePerTick, -- Full base damage every tick
+        duration = duration,
         interval = interval,
-        duration = hitboxDuration
+        startTime = tick(),
+        hitboxType = hitboxType,
+        nextTickTime = tick() + interval, -- When next damage tick should happen
+        isActive = true
     }
+    
+    _G.activeDOTHitboxes[hitboxId] = dotHitbox
+    
+    
+    -- Apply first damage immediately
+    remote:FireServer(hitboxCFrame, size, damagePerTick, hitboxId, 1)
+    
+    -- Start the DOT damage loop for subsequent ticks
+    DOTSystem.startDamageLoop(hitboxId)
+    
+    -- Auto-cleanup after duration
+    task.delay(duration, function()
+        DOTSystem.removeDOTHitbox(hitboxId)
+    end)
+    
+    return dotHitbox
 end
 
--- Test function to verify DOT calculations
-function HitboxConfig.testDOTCalculations()
+function DOTSystem.startDamageLoop(hitboxId)
+    local dotHitbox = _G.activeDOTHitboxes[hitboxId]
+    if not dotHitbox then return end
     
-    -- Test berserker combo attacks
-    local combo = HitboxConfig.getComboConfig("berserker_weapon")
-    if combo then
+    local tickNumber = 1 -- First tick already applied
+    
+    local function applyNextTick()
+        dotHitbox = _G.activeDOTHitboxes[hitboxId] -- Refresh reference
+        if not dotHitbox or not dotHitbox.isActive then return end -- Hitbox was removed or expired
         
-        local result1 = HitboxConfig.calculateDamagePerTick(combo.attack1.baseDamage, combo.attack1.hitboxDuration)
+        local currentTime = tick()
+        local elapsedTime = currentTime - dotHitbox.startTime
         
-        local result2 = HitboxConfig.calculateDamagePerTick(combo.attack2.baseDamage, combo.attack2.hitboxDuration)
+        -- Check if hitbox duration has expired
+        if elapsedTime >= dotHitbox.duration then
+            DOTSystem.removeDOTHitbox(hitboxId)
+            return
+        end
         
-        local result3 = HitboxConfig.calculateDamagePerTick(combo.attack3.baseDamage, combo.attack3.hitboxDuration)
+        -- Apply damage for this tick
+        tickNumber = tickNumber + 1
+        
+        -- Send damage to server
+        remote:FireServer(dotHitbox.cframe, dotHitbox.size, dotHitbox.damagePerTick, hitboxId, tickNumber)
+        
+        -- Schedule next tick if there's still time
+        local timeUntilExpiry = dotHitbox.duration - elapsedTime
+        if timeUntilExpiry > dotHitbox.interval then
+            task.delay(dotHitbox.interval, applyNextTick)
+        else
+        end
     end
     
-    -- Test berserker skills
-    local skill1 = HitboxConfig.getSkillConfig("berserker_skill_1")
-    if skill1 then
-        HitboxConfig.calculateDamagePerTick(skill1.baseDamage, skill1.hitboxDuration)
-    end
-    
-    local skill2 = HitboxConfig.getSkillConfig("berserker_skill_2")
-    if skill2 then
-        HitboxConfig.calculateDamagePerTick(skill2.baseDamage, skill2.hitboxDuration)
+    -- Schedule first interval tick
+    task.delay(dotHitbox.interval, applyNextTick)
+end
+
+function DOTSystem.removeDOTHitbox(hitboxId)
+    if _G.activeDOTHitboxes[hitboxId] then
+        _G.activeDOTHitboxes[hitboxId] = nil
     end
 end
 
--- Debug function to print all configurations (for development use)
-function HitboxConfig.printAllConfigs()
+function DOTSystem.generateUniqueHitboxId(skillKey, attackType)
+    local timestamp = tostring(tick()):gsub("%.", "_")
+    return string.format("%s_%s_%s_%s", player.Name, skillKey or "weapon", attackType or "attack", timestamp)
+end
+
+-- Function to check if we should allow tool activation
+local function shouldAllowToolActivation(tool)
+    -- Check if this is a weapon with combo system
+    local weaponTags = {"berserker_weapon", "archer_weapon", "gladiator_weapon", "knight_weapon", "samurai_weapon"}
     
-    for tag, config in pairs(WEAPON_CONFIGS) do
+    for _, weaponTag in ipairs(weaponTags) do
+        if CollectionService:HasTag(tool, weaponTag) then
+            -- For all class weapons, ALWAYS block tool activation
+            -- The combo system should handle ALL weapon attacks
+            return false
+        end
     end
     
-    for tag, config in pairs(SKILL_CONFIGS) do
+    return true
+end
+
+-- =====================================================================================
+-- WEAPON TOOL INTEGRATION (existing functionality)
+-- =====================================================================================
+
+local function setupHitboxGeneration(tool)
+    if not tool:IsA("Tool") then return end
+    if not CollectionService:HasTag(tool, "has_damage") then return end
+
+    local function generateHitbox()
+        -- Check if we should allow tool activation
+        if not shouldAllowToolActivation(tool) then
+            return
+        end
+        
+        DynamicHitboxClient.generateWeaponHitbox(tool)
+    end
+
+    tool.Activated:Connect(generateHitbox)
+end
+
+-- Listen for tools equipped by the player
+local function onCharacterAdded(character)
+    character.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") and CollectionService:HasTag(child, "has_damage") then
+            setupHitboxGeneration(child)
+        end
+    end)
+    -- Setup hitbox generation for already equipped tools
+    for i, child in character:GetChildren() do
+        if child:IsA("Tool") and CollectionService:HasTag(child, "has_damage") then
+            setupHitboxGeneration(child)
+        end
     end
 end
 
-return HitboxConfig
+player.CharacterAdded:Connect(onCharacterAdded)
+if player.Character then
+    onCharacterAdded(player.Character)
+end
+
+-- =====================================================================================
+-- GLOBAL ACCESS (so other scripts can use skill and combo hitbox generation)
+-- =====================================================================================
+
+-- Make skill hitbox generation available globally
+_G.generateSkillHitbox = DynamicHitboxClient.generateSkillHitbox
+
+-- Make combo hitbox generation available globally
+_G.generateComboHitbox = DynamicHitboxClient.generateComboHitbox
+
+-- Make arrow projectile generation available globally
+_G.generateArrowProjectile = DynamicHitboxClient.generateArrowProjectile
+
+-- Generate burst shot (multiple arrows with spread)
+function DynamicHitboxClient.generateBurstShot(weapon, skillConfig)
+    if not weapon or not skillConfig then return end
+    
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Get projectile configuration
+    local projectileConfig = HitboxConfig and HitboxConfig.getProjectileConfig("archer_weapon") or {}
+    local weaponConfig = HitboxConfig and HitboxConfig.getWeaponConfig("archer_weapon") or {}
+    local weaponDamage = weaponConfig.baseDamage or 5
+    
+    -- Get burst shot configuration
+    local projectileCount = skillConfig.projectileCount or 5
+    local spreadAngle = skillConfig.spreadAngle or 30
+    local fireDelay = skillConfig.fireDelay or 0.1
+    
+    print("[ARCHER BURST SHOT] Firing", projectileCount, "arrows with", spreadAngle, "degree spread")
+    
+    -- Get spawn offset and aim angle offset
+    local spawnOffset = HitboxConfig and HitboxConfig.getArcherSpawnOffset() or Vector3.new(0, 0, 1)
+    local baseAimAngleOffset = HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0)
+    
+    -- Calculate spread angles
+    local angleStep = spreadAngle / (projectileCount - 1)
+    local startAngle = -spreadAngle / 2
+    
+    -- Fire arrows with delay
+    for i = 1, projectileCount do
+        task.delay((i - 1) * fireDelay, function()
+            -- Calculate this arrow's angle offset
+            local currentAngle = startAngle + (i - 1) * angleStep
+            local aimAngleOffset = Vector3.new(
+                baseAimAngleOffset.X,
+                baseAimAngleOffset.Y + currentAngle, -- Add spread to yaw
+                baseAimAngleOffset.Z
+            )
+            
+            -- Generate single arrow with custom aim offset
+            DynamicHitboxClient.generateArrowProjectile(weapon, projectileConfig.size, spawnOffset, weaponDamage, 0, projectileConfig.hitboxDuration, aimAngleOffset)
+        end)
+    end
+end
+
+-- Make burst shot generation available globally
+_G.generateBurstShot = DynamicHitboxClient.generateBurstShot
+
+-- Force reload HitboxConfig (for testing configuration changes)
+_G.reloadHitboxConfig = function()
+    local success, newConfig = pcall(function()
+        return require(script.Parent.Parent.shared.HitboxConfig)
+    end)
+    if success then
+        HitboxConfig = newConfig
+        print("[ARCHER PROJECTILE] HitboxConfig reloaded successfully")
+        return true
+    else
+        print("[ARCHER PROJECTILE] Failed to reload HitboxConfig:", newConfig)
+        return false
+    end
+end
+
+-- Quick configuration test functions
+_G.testArcherConfig = function()
+    if HitboxConfig then
+        local config = HitboxConfig.getProjectileConfig("archer_weapon")
+        print("[ARCHER PROJECTILE] Current spawnOffset:", config.spawnOffset)
+        print("[ARCHER PROJECTILE] Current aimAngleOffset:", config.aimAngleOffset)
+        print("[ARCHER PROJECTILE] Current crosshairOffset:", config.crosshairOffset)
+    else
+        print("[ARCHER PROJECTILE] HitboxConfig not available")
+    end
+end
+
+_G.setArcherSpawnOffset = function(x, y, z)
+    if HitboxConfig and HitboxConfig.setArcherSpawnOffset then
+        return HitboxConfig.setArcherSpawnOffset(x, y, z)
+    else
+        print("[ARCHER PROJECTILE] HitboxConfig not available or function not found")
+        return false
+    end
+end
+
+_G.setArcherAimAngleOffset = function(x, y, z)
+    if HitboxConfig and HitboxConfig.setArcherAimAngleOffset then
+        return HitboxConfig.setArcherAimAngleOffset(x, y, z)
+    else
+        print("[ARCHER PROJECTILE] HitboxConfig not available or function not found")
+        return false
+    end
+end
+
+-- Make skill cooldown functions available globally for debugging
+_G.getSkillCooldown = function(skillKey, cooldownTime)
+    return SkillCooldownSystem.getSkillCooldownRemaining(skillKey, cooldownTime or 2.0)
+end
+
+_G.resetSkillCooldown = function(skillKey)
+    _G.skillCooldowns[skillKey] = 0
+    _G.skillCasting[skillKey] = false
+end
+
+_G.resetAllSkillCooldowns = function()
+    _G.skillCooldowns = {}
+    _G.skillCasting = {}
+end
+
+-- Expose global cooldown system
+_G.canStartNewAttack = GlobalAttackCooldown.canStartNewAttack
+_G.setGlobalCooldown = GlobalAttackCooldown.setGlobalCooldown
+_G.getGlobalCooldownRemaining = GlobalAttackCooldown.getGlobalCooldownRemaining
+
+_G.debugSkillCooldowns = function()
+    for skillKey, lastUse in pairs(_G.skillCooldowns) do
+        local isCasting = _G.skillCasting[skillKey] or false
+        local timeSinceUse = tick() - lastUse
+    end
+end
+
+-- Make DOT system functions available globally for debugging
+_G.debugDOTHitboxes = function()
+    for hitboxId, dotHitbox in pairs(_G.activeDOTHitboxes) do
+        local elapsed = tick() - dotHitbox.startTime
+    end
+end
+
+_G.clearAllDOTHitboxes = function()
+    local count = 0
+    for hitboxId, _ in pairs(_G.activeDOTHitboxes) do
+        _G.activeDOTHitboxes[hitboxId] = nil
+        count = count + 1
+    end
+end
+
+_G.getDamageInterval = function()
+    if HitboxConfig then
+        return HitboxConfig.getDamageInterval()
+    end
+    return 0.5
+end
+
+_G.testDOTCalculations = function()
+    if HitboxConfig then
+        return HitboxConfig.testDOTCalculations()
+    else
+    end
+end
+
+-- =====================================================================================
+-- HITBOX VISUAL CONTROL FUNCTIONS
+-- =====================================================================================
+
+-- Toggle hitbox visual previews on/off
+_G.setHitboxVisualsEnabled = function(enabled)
+    SHOW_HITBOX_VISUALS = enabled
+    print("[HITBOX VISUALS] Visual previews", enabled and "ENABLED" or "DISABLED")
+end
+
+-- Get current hitbox visual state
+_G.getHitboxVisualsEnabled = function()
+    return SHOW_HITBOX_VISUALS
+end
+
+-- Toggle hitbox visuals on/off
+_G.toggleHitboxVisuals = function()
+    SHOW_HITBOX_VISUALS = not SHOW_HITBOX_VISUALS
+    print("[HITBOX VISUALS] Visual previews", SHOW_HITBOX_VISUALS and "ENABLED" or "DISABLED")
+    return SHOW_HITBOX_VISUALS
+end
+
+-- =====================================================================================
+-- ANNOUNCEMENT SYSTEM EXPORTS
+-- =====================================================================================
+
+-- Expose announcement system globally for use by other scripts
+_G.showComboAttack = AnnouncementSystem.showComboAttack
+_G.showSkill = AnnouncementSystem.showSkill
+_G.showCooldown = AnnouncementSystem.showCooldown
+_G.clearAllAnnouncements = AnnouncementSystem.clearAll
+
+-- =====================================================================================
+-- EXPORT MODULE
+-- =====================================================================================
+
+return DynamicHitboxClient
