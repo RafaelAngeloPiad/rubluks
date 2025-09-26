@@ -28,6 +28,9 @@ local HITBOX_SIZE = Vector3.new(6, 6, 6) -- width, height, depth of the hitbox
 local HITBOX_OFFSET = Vector3.new(0, 0, 4) -- (x, y, z) offset from HumanoidRootPart; z is forward
 local DEFAULT_DAMAGE = 25
 
+-- Visual hitbox preview toggle
+local SHOW_HITBOX_VISUALS = false -- Set to false to disable hitbox previews
+
 -- =====================================================================================
 -- UNIFIED HITBOX GENERATION SYSTEM
 -- =====================================================================================
@@ -75,6 +78,11 @@ end
 
 -- Create visual hitbox (unified for weapons and skills with custom duration)
 local function createVisualHitbox(hitboxCFrame, size, hitboxType, customDuration)
+    -- Check if visual hitboxes are enabled
+    if not SHOW_HITBOX_VISUALS then
+        return -- Skip creating visual if disabled
+    end
+    
     local hitboxPart = Instance.new("Part")
     hitboxPart.Size = size
     hitboxPart.CFrame = hitboxCFrame
@@ -851,6 +859,28 @@ _G.testDOTCalculations = function()
         return HitboxConfig.testDOTCalculations()
     else
     end
+end
+
+-- =====================================================================================
+-- HITBOX VISUAL CONTROL FUNCTIONS
+-- =====================================================================================
+
+-- Toggle hitbox visual previews on/off
+_G.setHitboxVisualsEnabled = function(enabled)
+    SHOW_HITBOX_VISUALS = enabled
+    print("[HITBOX VISUALS] Visual previews", enabled and "ENABLED" or "DISABLED")
+end
+
+-- Get current hitbox visual state
+_G.getHitboxVisualsEnabled = function()
+    return SHOW_HITBOX_VISUALS
+end
+
+-- Toggle hitbox visuals on/off
+_G.toggleHitboxVisuals = function()
+    SHOW_HITBOX_VISUALS = not SHOW_HITBOX_VISUALS
+    print("[HITBOX VISUALS] Visual previews", SHOW_HITBOX_VISUALS and "ENABLED" or "DISABLED")
+    return SHOW_HITBOX_VISUALS
 end
 
 -- =====================================================================================
