@@ -342,24 +342,6 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
         local spawnOffset = HitboxConfig and HitboxConfig.getArcherSpawnOffset() or Vector3.new(0, 2, 1)
         local aimAngleOffset = customAimAngleOffset or (HitboxConfig and HitboxConfig.getArcherAimAngleOffset() or Vector3.new(0, 0, 0))
         
-        -- Debug: Print configuration loading
-        print("[ARCHER PROJECTILE] HitboxConfig available:", HitboxConfig ~= nil)
-        if HitboxConfig then
-            local config = HitboxConfig.getProjectileConfig("archer_weapon")
-            print("[ARCHER PROJECTILE] Config found:", config ~= nil)
-            if config then
-                local keys = {}
-                for k, v in pairs(config) do
-                    table.insert(keys, tostring(k))
-                end
-                print("[ARCHER PROJECTILE] Config keys:", table.concat(keys, ", "))
-                print("[ARCHER PROJECTILE] Raw config spawnOffset:", config.spawnOffset)
-                print("[ARCHER PROJECTILE] Raw config aimAngleOffset:", config.aimAngleOffset)
-                print("[ARCHER PROJECTILE] Raw config crosshairOffset:", config.crosshairOffset)
-            else
-                print("[ARCHER PROJECTILE] getProjectileConfig returned nil!")
-            end
-        end
         
         -- Start projectile from player's position with configurable offset
         local playerPosition = humanoidRootPart.Position
@@ -392,13 +374,6 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
         raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
         raycastParams.FilterDescendantsInstances = {player.Character} -- Don't hit self
         
-        -- Debug: Print raycast parameters
-        print("[ARCHER PROJECTILE] Player position:", playerPosition)
-        print("[ARCHER PROJECTILE] Spawn offset:", spawnOffset)
-        print("[ARCHER PROJECTILE] Start position:", startPosition)
-        print("[ARCHER PROJECTILE] Aim angle offset:", aimAngleOffset)
-        print("[ARCHER PROJECTILE] Direction:", direction)
-        print("[ARCHER PROJECTILE] Target position:", targetPosition)
         
         local raycastResult = workspace:Raycast(startPosition, direction * projectileConfig.range, raycastParams)
         
@@ -406,16 +381,6 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
         local hitPosition = raycastResult and raycastResult.Position or endPosition
         local actualRange = (hitPosition - startPosition).Magnitude
         
-        -- Debug: Print raycast results
-        print("[ARCHER PROJECTILE] Raycast hit:", raycastResult ~= nil)
-        if raycastResult then
-            print("[ARCHER PROJECTILE] Hit object:", raycastResult.Instance.Name)
-            print("[ARCHER PROJECTILE] Hit parent:", raycastResult.Instance.Parent.Name)
-        end
-        print("[ARCHER PROJECTILE] Hit position:", hitPosition)
-        print("[ARCHER PROJECTILE] End position:", endPosition)
-        print("[ARCHER PROJECTILE] Actual range:", actualRange)
-        print("[ARCHER PROJECTILE] Config range:", projectileConfig.range)
         
         -- Create projectile visual
         local projectile = Instance.new("Part")
@@ -457,28 +422,16 @@ function DynamicHitboxClient.generateArrowProjectile(tool, customSize, customOff
                                 -- Calculate distance from player to hit target
                                 local distanceToTarget = (hitPosition - startPosition).Magnitude
                                 
-                                print("[ARCHER PROJECTILE] Hit humanoid:", hitCharacter.Name)
-                                print("[ARCHER PROJECTILE] Distance to target:", distanceToTarget)
-                                print("[ARCHER PROJECTILE] Max range:", projectileConfig.range)
-                                
                                 -- Only damage if within range
                                 if distanceToTarget <= projectileConfig.range then
-                                    print("[ARCHER PROJECTILE] Target within range - applying damage!")
-                                    
                                     -- Create damage hitbox at the hit position
                                     local hitCFrame = CFrame.new(hitPosition, hitPosition + direction)
                                     remote:FireServer(hitCFrame, projectileConfig.hitboxSize, weaponDamage)
                                     
                                     -- Create visual hit effect
                                     createVisualHitbox(hitCFrame, projectileConfig.hitboxSize, "weapon", projectileConfig.hitboxDuration)
-                                else
-                                    print("[ARCHER PROJECTILE] Target out of range - no damage")
                                 end
-                            else
-                                print("[ARCHER PROJECTILE] Hit non-humanoid object:", hitInstance.Name)
                             end
-                        else
-                            print("[ARCHER PROJECTILE] No hit detected")
                         end
             else
                 -- Move projectile along path

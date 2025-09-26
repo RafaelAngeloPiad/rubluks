@@ -6,6 +6,25 @@ local player = Players.LocalPlayer
 local WeaponScanner = require(script.Parent.weapon_scan_for_weapon_tag)
 local WeaponUtils = require(script.Parent.weapon_utils)
 
+-- Load HitboxConfig for crosshair positioning
+local HitboxConfig
+local configLoadSuccess, configError = pcall(function()
+    HitboxConfig = require(script.Parent.Parent.shared.HitboxConfig)
+end)
+if not configLoadSuccess then
+    warn("[ARCHER WEAPON] Failed to load HitboxConfig from shared folder:", configError)
+    -- Try alternative path (same as DynamicHitboxClient)
+    local success2, error2 = pcall(function()
+        HitboxConfig = require(game.ReplicatedStorage:WaitForChild("HitboxConfig"))
+    end)
+    if not success2 then
+        warn("[ARCHER WEAPON] Failed to load HitboxConfig from ReplicatedStorage:", error2)
+        HitboxConfig = nil
+    -- HitboxConfig loaded successfully from ReplicatedStorage
+    end
+    -- HitboxConfig loaded successfully
+end
+
 -- Try to load shot module with error handling
 local ArcherShot = nil
 local shotLoadSuccess, shotError = pcall(function()
@@ -161,8 +180,11 @@ local function createCrosshair()
             
             -- Get crosshair offset from configuration
             local crosshairOffset = Vector3.new(0, 0, 0)
+            
+            
             if HitboxConfig and HitboxConfig.getArcherCrosshairOffset then
                 crosshairOffset = HitboxConfig.getArcherCrosshairOffset()
+            else
             end
             
             -- Get camera's center view direction (same as projectile)
@@ -180,9 +202,13 @@ local function createCrosshair()
                 local xPos = screenPoint.X - 4 + crosshairOffset.X
                 local yPos = screenPoint.Y - 4 + crosshairOffset.Y
                 crosshairFrame.Position = UDim2.new(0, xPos, 0, yPos)
+                
             else
                 -- If off-screen, keep it centered with offset
-                crosshairFrame.Position = UDim2.new(0.5, -4 + crosshairOffset.X, 0.5, -4 + crosshairOffset.Y)
+                local centerX = -4 + crosshairOffset.X
+                local centerY = -4 + crosshairOffset.Y
+                crosshairFrame.Position = UDim2.new(0.5, centerX, 0.5, centerY)
+                
             end
         end
 	
