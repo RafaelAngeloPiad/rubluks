@@ -37,10 +37,16 @@ local function SavePlayerInventory(player)
 			end
 		end
 
-		print("[InventoryManager] Saving inventory for", player.Name, "Inventory:", inventory, "Equipped:", equipped)
+		
+		-- If both are empty, try to load from DataStore first to preserve existing data
 		if #inventory == 0 and #equipped == 0 then
-			print("[InventoryManager] WARNING: Inventory and equipped are empty when saving for", player.Name)
+			local existingData = MainDataStore.LoadInventory(player.UserId)
+			if existingData and (existingData.inventory and #existingData.inventory > 0 or existingData.equipped and #existingData.equipped > 0) then
+				inventory = existingData.inventory or {}
+				equipped = existingData.equipped or {}
+			end
 		end
+		
 		MainDataStore.SaveInventory(player.UserId, {inventory = inventory, equipped = equipped})
 		inventorySaveDebounce[userId].lastSave = os.clock()
 		inventorySaveDebounce[userId].pending = false
@@ -82,7 +88,6 @@ local function LoadPlayerInventory(player)
 	local inventoryData = MainDataStore.LoadInventory(player.UserId)
 	local inventory = inventoryData.inventory or {}
 	local equipped = inventoryData.equipped or {}
-	print("[InventoryManager] Loading inventory for", player.Name, "Inventory:", inventory, "Equipped:", equipped)
 	local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
 	if not assetsFolder then
 		warn("[InventoryManager] Assets folder not found in ReplicatedStorage for", player.Name)
@@ -94,9 +99,7 @@ local function LoadPlayerInventory(player)
 		local asset = assetsFolder:FindFirstChild(toolName)
 		if asset and asset:IsA("Tool") then
 			asset:Clone().Parent = backpack
-			print("[InventoryManager] Cloned tool to Backpack from ReplicatedStorage.assets:", toolName)
 		else
-			print("[InventoryManager] Tool asset not found in ReplicatedStorage.assets for Backpack:", toolName)
 		end
 	end
 
@@ -107,10 +110,8 @@ local function LoadPlayerInventory(player)
 			if asset and asset:IsA("Tool") then
 				if not character:FindFirstChild(toolName) then
 					asset:Clone().Parent = character
-					print("[InventoryManager] Cloned tool to Character from ReplicatedStorage.assets:", toolName)
 				end
 			else
-				print("[InventoryManager] Tool asset not found in ReplicatedStorage.assets for Equipped:", toolName)
 			end
 		end
 	end
@@ -121,13 +122,11 @@ local function BindInventoryEvents(player)
 	local backpack = player:WaitForChild("Backpack")
 	backpack.ChildAdded:Connect(function(child)
 		if child:IsA("Tool") then
-			print("[InventoryManager] Backpack ChildAdded:", child.Name)
 			SavePlayerInventory(player)
 		end
 	end)
 	backpack.ChildRemoved:Connect(function(child)
 		if child:IsA("Tool") then
-			print("[InventoryManager] Backpack ChildRemoved:", child.Name)
 			SavePlayerInventory(player)
 		end
 	end)
@@ -135,13 +134,11 @@ local function BindInventoryEvents(player)
 	local function bindCharacter(character)
 		character.ChildAdded:Connect(function(child)
 			if child:IsA("Tool") then
-				print("[InventoryManager] Character ChildAdded (Equipped):", child.Name)
 				SavePlayerInventory(player)
 			end
 		end)
 		character.ChildRemoved:Connect(function(child)
 			if child:IsA("Tool") then
-				print("[InventoryManager] Character ChildRemoved (Unequipped):", child.Name)
 				SavePlayerInventory(player)
 			end
 		end)
@@ -157,12 +154,25 @@ end
 local function OnCharacterAdded(character, player)
 	-- Wait for Backpack to exist before loading inventory
 	local backpack = player:WaitForChild("Backpack")
+	
+	-- Add delay after respawn to prevent inventory loss (like rejoining server)
+	task.wait(3)
+	
 	LoadPlayerInventory(player)
 	BindInventoryEvents(player)
+	
+	-- Simple death detection - save inventory when player dies
+	local humanoid = character:WaitForChild("Humanoid")
+	humanoid.HealthChanged:Connect(function(health)
+		if health <= 0 then
+			-- Add small delay to ensure equipped tools are still there
+			task.wait(0.1)
+			SavePlayerInventory(player)
+		end
+	end)
 end
 
 local function OnPlayerAdded(player)
-	print("[InventoryManager] Player added:", player.Name)
 	player.CharacterAdded:Connect(function(character)
 		OnCharacterAdded(character, player)
 	end)
