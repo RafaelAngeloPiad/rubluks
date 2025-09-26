@@ -77,7 +77,7 @@ local function generateSkillHitbox(skillKey)
         local equippedTool = nil
         if currentCharacter then
             for _, child in pairs(currentCharacter:GetChildren()) do
-                if child:IsA("Tool") and child.Name:find("Archer") then
+                if child:IsA("Tool") and CollectionService:HasTag(child, "archer_weapon") then
                     equippedTool = child
                     break
                 end

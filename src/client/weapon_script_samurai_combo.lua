@@ -2,6 +2,7 @@
 -- This module provides a clean, organized combo system with configurable timing, damage, and hitboxes
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local HitRequest = ReplicatedStorage:WaitForChild("HitRequest")
 
 -- Import hitbox configuration
@@ -86,7 +87,7 @@ local function generateComboHitbox(attackConfig, state)
     local equippedTool = nil
     if state.character then
         for _, child in pairs(state.character:GetChildren()) do
-            if child:IsA("Tool") and child.Name:find("Samurai") then
+            if child:IsA("Tool") and CollectionService:HasTag(child, "samurai_weapon") then
                 equippedTool = child
                 break
             end
