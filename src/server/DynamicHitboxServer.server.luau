@@ -57,7 +57,7 @@ local function validateGeneratedHitbox(player, equippedTool, hitboxCFrame)
     
     -- Check if this is an archer weapon (allow long range for projectiles)
     local isArcherWeapon = false
-    if equippedTool.Name:lower():find("archer") then
+    if CollectionService:HasTag(equippedTool, "archer_weapon") then
         isArcherWeapon = true
     end
     
