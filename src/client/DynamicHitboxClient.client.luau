@@ -29,7 +29,7 @@ local HITBOX_OFFSET = Vector3.new(0, 0, 4) -- (x, y, z) offset from HumanoidRoot
 local DEFAULT_DAMAGE = 25
 
 -- Visual hitbox preview toggle
-local SHOW_HITBOX_VISUALS = false -- Set to false to disable hitbox previews
+local SHOW_HITBOX_VISUALS = true -- Set to false to disable hitbox previews
 
 -- =====================================================================================
 -- CENTRALIZED ANNOUNCEMENT SYSTEM
