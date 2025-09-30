@@ -158,13 +158,14 @@ end
 -- INITIALIZATION
 -- ========================================
 
--- Find the Wakizashi skill event in samurai/events folder
-local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
-local eventsFolder = samuraiFolder:WaitForChild("events")
-remote = eventsFolder:WaitForChild("WakizashiSkillEvent")
+-- Use unified AttackEvent
+remote = ReplicatedStorage:WaitForChild("AttackEvent")
 
--- Connect to remote event
-remote.OnServerEvent:Connect(function(player)
-    handleSkillRequest(player)
+-- Connect to remote event with skill type parameter
+remote.OnServerEvent:Connect(function(player, skillType)
+    -- Only handle wakizashi skill requests
+    if skillType == "wakizashi" then
+        handleSkillRequest(player)
+    end
 end)
-print("WakizashiSkill: Server initialized with WakizashiSkillEvent")
+print("WakizashiSkill: Server initialized with unified AttackEvent for wakizashi skill")

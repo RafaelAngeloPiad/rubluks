@@ -45,13 +45,11 @@ local function useSkill()
     
     print("[WAKIZASHI] Using skill:", HITBOX_CONFIG.name)
     
-    -- Find the Wakizashi skill event in samurai/events folder
-    local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
-    local eventsFolder = samuraiFolder:WaitForChild("events")
-    local remote = eventsFolder:WaitForChild("WakizashiSkillEvent")
+    -- Use unified AttackEvent with skill type parameter
+    local remote = ReplicatedStorage:WaitForChild("AttackEvent")
     
-    remote:FireServer()
-    print("[WAKIZASHI] VFX event fired")
+    remote:FireServer("wakizashi")
+    print("[WAKIZASHI] VFX event fired with skill type: wakizashi")
     
     -- Generate hitbox for damage using global access
     if _G.dynamicHitboxV2Generate then

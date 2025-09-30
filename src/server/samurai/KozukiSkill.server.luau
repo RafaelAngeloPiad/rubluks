@@ -187,13 +187,14 @@ end
 -- INITIALIZATION
 -- ========================================
 
--- Find the Kozuki skill event in samurai/events folder
-local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
-local eventsFolder = samuraiFolder:WaitForChild("events")
-remote = eventsFolder:WaitForChild("KozukiSkillEvent")
+-- Use unified AttackEvent
+remote = ReplicatedStorage:WaitForChild("AttackEvent")
 
--- Connect to remote event
-remote.OnServerEvent:Connect(function(player)
-    handleSkillRequest(player)
+-- Connect to remote event with skill type parameter
+remote.OnServerEvent:Connect(function(player, skillType)
+    -- Only handle kozuki skill requests
+    if skillType == "kozuki" then
+        handleSkillRequest(player)
+    end
 end)
-print("KozukiSkill: Server initialized with KozukiSkillEvent")
+print("KozukiSkill: Server initialized with unified AttackEvent for kozuki skill")

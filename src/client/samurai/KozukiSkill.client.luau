@@ -44,13 +44,11 @@ local function useSkill()
     
     print("[KOZUKI] Using skill:", HITBOX_CONFIG.name)
     
-    -- Find the Kozuki skill event in samurai/events folder
-    local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
-    local eventsFolder = samuraiFolder:WaitForChild("events")
-    local remote = eventsFolder:WaitForChild("KozukiSkillEvent")
+    -- Use unified AttackEvent with skill type parameter
+    local remote = ReplicatedStorage:WaitForChild("AttackEvent")
     
-    remote:FireServer()
-    print("[KOZUKI] VFX event fired")
+    remote:FireServer("kozuki")
+    print("[KOZUKI] VFX event fired with skill type: kozuki")
     
     -- Generate hitbox for damage using global access
     if _G.dynamicHitboxV2Generate then
