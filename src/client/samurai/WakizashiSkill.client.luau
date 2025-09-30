@@ -19,17 +19,19 @@ local CONFIG = {
     weaponTag = "samurai_wpn",
 }
 
--- Hitbox configuration
+-- Hitbox configuration for traveling hitbox
 local HITBOX_CONFIG = {
+    type = "traveling", -- Use traveling hitbox type
     name = "Wakizashi",
-    size = Vector3.new(12, 12, 50), -- 4 wide, 5 tall, 6 deep
-    offset = Vector3.new(0, 0, 20), -- 3 studs in front
-    damage = 15,
-    delay = 2, -- Hitbox appears 0.2s after key press
-    duration = 3, -- Hitbox lasts 0.3 seconds
-    tickInterval = 1, -- Damage repeats every 0.1 seconds
+    size = Vector3.new(20, 8, 8), -- Hitbox size as it travels (width, height, depth)
+    offset = Vector3.new(0, 0, 5), -- Start position offset
+    damage = 25, -- Damage per hit
+    delay = 2, -- Delay before hitbox starts moving
+    duration = 2.5, -- How long the hitbox travels
+    speed = 40, -- Speed of the traveling hitbox
+    maxDistance = 100, -- Maximum distance it can travel
     color = Color3.new(0, 0, 1), -- Blue
-    transparency = 0.7,
+    transparency = 0.6,
 }
 
 -- Functions
