@@ -22,11 +22,12 @@ local CONFIG = {
 -- Hitbox configuration
 local HITBOX_CONFIG = {
     name = "Wakizashi",
-    size = Vector3.new(4, 5, 6), -- 4 wide, 5 tall, 6 deep
-    offset = Vector3.new(0, 0, 3), -- 3 studs in front
+    size = Vector3.new(12, 12, 50), -- 4 wide, 5 tall, 6 deep
+    offset = Vector3.new(0, 0, 20), -- 3 studs in front
     damage = 15,
-    delay = 0.2, -- Hitbox appears 0.2s after key press
-    duration = 0.3, -- Hitbox lasts 0.3 seconds
+    delay = 2, -- Hitbox appears 0.2s after key press
+    duration = 3, -- Hitbox lasts 0.3 seconds
+    tickInterval = 1, -- Damage repeats every 0.1 seconds
     color = Color3.new(0, 0, 1), -- Blue
     transparency = 0.7,
 }

@@ -43,7 +43,7 @@ local function createVisualHitbox(hitboxCFrame, size, color, transparency, durat
     end)
 end
 
--- Generate hitbox for any skill/combo (simple version)
+-- Generate hitbox for any skill/combo (with DPS support)
 function DynamicHitboxV2.generateHitbox(hitboxConfig)
     if not player.Character then return end
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
@@ -55,6 +55,7 @@ function DynamicHitboxV2.generateHitbox(hitboxConfig)
     local damage = hitboxConfig.damage
     local delay = hitboxConfig.delay
     local duration = hitboxConfig.duration
+    local tickInterval = hitboxConfig.tickInterval
     local color = hitboxConfig.color
     local transparency = hitboxConfig.transparency
 
@@ -68,9 +69,40 @@ function DynamicHitboxV2.generateHitbox(hitboxConfig)
         local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
         local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-        -- Send hitbox to unified V2 server
-        local hitRequest = ReplicatedStorage:WaitForChild("DynamicHitboxV2Request")
-        hitRequest:FireServer(hitboxCFrame, size, damage, hitboxConfig.name or "Unknown")
+        -- Check if this should be DPS (duration > tickInterval)
+        if tickInterval and duration > tickInterval then
+            -- DPS hitbox - damage over time
+            local startTime = tick()
+            local tickNumber = 0
+            
+            local function applyDamageTick()
+                local elapsed = tick() - startTime
+                
+                -- Stop if duration expired
+                if elapsed >= duration then
+                    return
+                end
+                
+                tickNumber = tickNumber + 1
+                
+                -- Send damage tick to server
+                local hitRequest = ReplicatedStorage:WaitForChild("DynamicHitboxV2Request")
+                hitRequest:FireServer(hitboxCFrame, size, damage, hitboxConfig.name or "Unknown", tickNumber)
+                
+                -- Schedule next tick if there's still time
+                local timeRemaining = duration - elapsed
+                if timeRemaining > tickInterval then
+                    task.delay(tickInterval, applyDamageTick)
+                end
+            end
+            
+            -- Start first tick immediately
+            applyDamageTick()
+        else
+            -- Single hit - damage once
+            local hitRequest = ReplicatedStorage:WaitForChild("DynamicHitboxV2Request")
+            hitRequest:FireServer(hitboxCFrame, size, damage, hitboxConfig.name or "Unknown", 1)
+        end
 
         -- Create visual hitbox
         createVisualHitbox(hitboxCFrame, size, color, transparency, duration)

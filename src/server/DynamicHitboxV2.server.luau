@@ -40,21 +40,23 @@ local function validateV2Hitbox(player, hitboxCFrame)
         return false 
     end
     
-    -- Check distance (max 20 studs for V2 hitboxes)
-    local maxDistance = 20
+    -- Check distance (max studs for V2 hitboxes)
+    local maxDistance = 1000
     local distance = (humanoidRootPart.Position - hitboxCFrame.Position).Magnitude
     
     if distance > maxDistance then
-        print("[DYNAMIC HITBOX V2 SERVER] Hitbox too far from player:", distance, "studs")
+        print("[DYNAMIC HITBOX V2 SERVER] Hitbox too far from player:", distance, "studs (max:", maxDistance, ")")
         return false
     end
+    
+    print("[DYNAMIC HITBOX V2 SERVER] Hitbox distance:", distance, "studs (within limit)")
     
     return true
 end
 
 -- Process V2 hitbox
-v2Remote.OnServerEvent:Connect(function(player, hitboxCFrame, hitboxSize, damage, skillName)
-    print("[DYNAMIC HITBOX V2 SERVER] Received hitbox from", player.Name, "for skill:", skillName)
+v2Remote.OnServerEvent:Connect(function(player, hitboxCFrame, hitboxSize, damage, skillName, tickNumber)
+    print("[DYNAMIC HITBOX V2 SERVER] Received hitbox from", player.Name, "for skill:", skillName, "tick:", tickNumber or 1)
     
     local character = player.Character
     if not character then 
