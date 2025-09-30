@@ -158,17 +158,13 @@ end
 -- INITIALIZATION
 -- ========================================
 
--- Set up remote event (use existing AttackEvent)
-remote = ReplicatedStorage:FindFirstChild("AttackEvent")
-if not remote then
-    remote = Instance.new("RemoteEvent")
-    remote.Name = "AttackEvent"
-    remote.Parent = ReplicatedStorage
-end
+-- Find the Wakizashi skill event in samurai/events folder
+local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
+local eventsFolder = samuraiFolder:WaitForChild("events")
+remote = eventsFolder:WaitForChild("WakizashiSkillEvent")
 
 -- Connect to remote event
 remote.OnServerEvent:Connect(function(player)
     handleSkillRequest(player)
 end)
-
-print("WakizashiSkill: Server initialized")
+print("WakizashiSkill: Server initialized with WakizashiSkillEvent")

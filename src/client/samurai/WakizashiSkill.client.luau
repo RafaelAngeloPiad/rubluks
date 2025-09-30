@@ -1,6 +1,5 @@
 -- ========================================
 -- WAKIZASHI SKILL CLIENT
--- Ultra-simple Wakizashi skill implementation
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,90 +8,57 @@ local UserInputService = game:GetService("UserInputService")
 local CollectionService = game:GetService("CollectionService")
 
 local player = Players.LocalPlayer
+local tool = nil
+local inputConnection = nil
 
--- ========================================
--- WAKIZASHI SKILL CONFIGURATION
--- ========================================
-
-local WAKIZASHI_CONFIG = {
-    name = "Wakizashi",
+-- Configuration
+local CONFIG = {
     keyCode = Enum.KeyCode.Q,
     weaponTag = "samurai_wpn",
 }
 
--- ========================================
--- WAKIZASHI SKILL VARIABLES
--- ========================================
-
-local tool = nil
-local inputConnection = nil
-
--- ========================================
--- WAKIZASHI SKILL FUNCTIONS
--- ========================================
-
+-- Functions
 local function useSkill()
-    -- Check if tool is equipped
-    if not tool or not tool.Parent or tool.Parent ~= player.Character then
-        print("WakizashiSkill: Tool not equipped")
+    if not tool or tool.Parent ~= player.Character then
         return
     end
     
-    print("WakizashiSkill: Using skill via KEYBIND (not tool.Activated)")
-    
-    -- Fire server event (use existing AttackEvent)
-    local remote = ReplicatedStorage:FindFirstChild("AttackEvent")
-    if not remote then
-        warn("WakizashiSkill: AttackEvent not found")
-        return
-    end
+    -- Find the Wakizashi skill event in samurai/events folder
+    local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
+    local eventsFolder = samuraiFolder:WaitForChild("events")
+    local remote = eventsFolder:WaitForChild("WakizashiSkillEvent")
     
     remote:FireServer()
 end
 
 local function onWeaponFound(weaponTool)
-    if tool then return end -- Already have a weapon
+    if tool then return end
     
     tool = weaponTool
-    print("WakizashiSkill: Weapon found -", weaponTool.Name)
-    
-    -- Set up input handling
     inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
-        if isProcessed then return end
-        
-        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == WAKIZASHI_CONFIG.keyCode then
+        if not isProcessed and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keyCode then
             useSkill()
         end
     end)
 end
 
 local function onCharacterAdded(character)
-    -- Scan for samurai weapon
     for _, weaponTool in character:GetChildren() do
-        if weaponTool:IsA("Tool") and CollectionService:HasTag(weaponTool, WAKIZASHI_CONFIG.weaponTag) then
+        if weaponTool:IsA("Tool") and CollectionService:HasTag(weaponTool, CONFIG.weaponTag) then
             onWeaponFound(weaponTool)
         end
     end
     
-    -- Listen for new tools
     character.DescendantAdded:Connect(function(desc)
-        if desc:IsA("Tool") and CollectionService:HasTag(desc, WAKIZASHI_CONFIG.weaponTag) then
+        if desc:IsA("Tool") and CollectionService:HasTag(desc, CONFIG.weaponTag) then
             onWeaponFound(desc)
         end
     end)
 end
 
--- ========================================
--- INITIALIZATION
--- ========================================
-
--- Wait for character
+-- Initialize
 if player.Character then
     onCharacterAdded(player.Character)
 else
-    player.CharacterAdded:Connect(function(char)
-        onCharacterAdded(char)
-    end)
+    player.CharacterAdded:Connect(onCharacterAdded)
 end
-
-print("WakizashiSkill: Client initialized")
