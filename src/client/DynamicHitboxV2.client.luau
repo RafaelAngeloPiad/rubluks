@@ -21,6 +21,89 @@ local HITBOX_TYPES = {
     PROJECTILE = "projectile"    -- Single hit at target location (V1 style)
 }
 
+-- =====================================================================================
+-- HITBOX PARAMETER DOCUMENTATION
+-- =====================================================================================
+
+--[[
+    HITBOX CONFIGURATION PARAMETERS
+    ================================
+    
+    REQUIRED PARAMETERS (for all types):
+    - type: string - "static", "traveling", or "projectile"
+    - size: Vector3 - Hitbox dimensions (width, height, depth)
+    - offset: Vector3 - Position offset from player (x, y, z)
+    - damage: number - Damage amount per hit
+    
+    OPTIONAL PARAMETERS (for all types):
+    - delay: number - Delay before hitbox activates (default: 0)
+    - color: Color3 - Visual hitbox color (default: blue)
+    - transparency: number - Visual transparency 0-1 (default: 0.7)
+    - name: string - Debug name for console output (default: "Unknown")
+    
+    STATIC HITBOX PARAMETERS:
+    - duration: number - How long hitbox stays active (default: 0.3)
+    - tickInterval: number - Damage interval for DPS (optional)
+    
+    Example Static Hitbox:
+    local config = {
+        type = "static",
+        size = Vector3.new(8, 8, 8),
+        offset = Vector3.new(0, 0, 5),
+        damage = 30,
+        duration = 2,
+        tickInterval = 0.5,  -- Damage every 0.5 seconds
+        color = Color3.new(1, 0, 0),
+        name = "Fire AOE"
+    }
+    
+    TRAVELING HITBOX PARAMETERS:
+    - duration: number - How long hitbox travels (default: 0.3)
+    - speed: number - Movement speed in studs/second (default: 50)
+    - maxDistance: number - Maximum travel distance (default: speed * duration)
+    
+    Example Traveling Hitbox:
+    local config = {
+        type = "traveling",
+        size = Vector3.new(6, 6, 6),
+        offset = Vector3.new(0, 0, 3),
+        damage = 25,
+        duration = 2.5,
+        speed = 40,
+        maxDistance = 100,
+        color = Color3.new(0, 1, 0),
+        name = "Dash Attack"
+    }
+    
+    PROJECTILE HITBOX PARAMETERS:
+    - speed: number - Projectile speed in studs/second (default: 200)
+    - maxDistance: number - Maximum range (default: 100)
+    - projectileSize: Vector3 - Visual projectile size (default: Vector3.new(0.5, 0.5, 3))
+    
+    Example Projectile Hitbox:
+    local config = {
+        type = "projectile",
+        size = Vector3.new(6, 6, 6),
+        offset = Vector3.new(0, 0, 2),
+        damage = 50,
+        speed = 150,
+        maxDistance = 100,
+        projectileSize = Vector3.new(0.5, 0.5, 3),
+        color = Color3.new(1, 1, 0),
+        name = "Magic Missile"
+    }
+    
+    USAGE:
+    _G.dynamicHitboxV2Generate(config)
+    
+    OR use helper function:
+    local config = _G.createHitboxConfig("traveling", Vector3.new(8, 8, 8), Vector3.new(0, 0, 5), 25, {
+        duration = 3,
+        speed = 50,
+        color = Color3.new(0, 0, 1)
+    })
+--]]
+
 -- Visual hitbox preview toggle
 local SHOW_HITBOX_VISUALS = true
 
