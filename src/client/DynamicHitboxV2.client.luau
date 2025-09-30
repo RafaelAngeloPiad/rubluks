@@ -1,20 +1,31 @@
 -- DynamicHitboxV2: Advanced hitbox generation system with multiple types
 -- Supports: Static hitboxes, Traveling hitboxes, and Projectile hitboxes
+--
+-- MANDATORY IMPLEMENTATION REQUIREMENTS:
+-- 1. All hitbox configs MUST include: type, size, offset, damage
+-- 2. Static hitboxes MUST include: duration (tickInterval for DOT)
+-- 3. Traveling hitboxes MUST include: duration, speed, maxDistance
+-- 4. Projectile hitboxes MUST include: speed, maxDistance, projectileSize
+-- 5. Server MUST have DynamicHitboxV2.server.luau running
+-- 6. RemoteEvent "DynamicHitboxV2Request" MUST exist in ReplicatedStorage
 
+-- MANDATORY: Required services for hitbox system
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
+-- MANDATORY: Local player reference for hitbox generation
 local player = Players.LocalPlayer
 
 -- =====================================================================================
 -- DYNAMIC HITBOX V2 SYSTEM
 -- =====================================================================================
 
+-- MANDATORY: Main module table for hitbox system
 local DynamicHitboxV2 = {}
 
--- Hitbox types
+-- MANDATORY: Hitbox type constants - must match server expectations
 local HITBOX_TYPES = {
     STATIC = "static",           -- Fixed position, optional intervals
     TRAVELING = "traveling",     -- Moves and damages anything it touches
@@ -29,11 +40,11 @@ local HITBOX_TYPES = {
     HITBOX CONFIGURATION PARAMETERS
     ================================
     
-    REQUIRED PARAMETERS (for all types):
-    - type: string - "static", "traveling", or "projectile"
-    - size: Vector3 - Hitbox dimensions (width, height, depth)
-    - offset: Vector3 - Position offset from player (x, y, z)
-    - damage: number - Damage amount per hit
+    MANDATORY REQUIRED PARAMETERS (for all types):
+    - type: string - "static", "traveling", or "projectile" (MUST be valid type)
+    - size: Vector3 - Hitbox dimensions (width, height, depth) (MUST be positive)
+    - offset: Vector3 - Position offset from player (x, y, z) (MANDATORY for positioning)
+    - damage: number - Damage amount per hit (MUST be positive number)
     
     OPTIONAL PARAMETERS (for all types):
     - delay: number - Delay before hitbox activates (default: 0)
@@ -42,8 +53,8 @@ local HITBOX_TYPES = {
     - name: string - Debug name for console output (default: "Unknown")
     
     STATIC HITBOX PARAMETERS:
-    - duration: number - How long hitbox stays active (default: 0.3)
-    - tickInterval: number - Damage interval for DPS (optional)
+    - duration: number - How long hitbox stays active (MANDATORY for static, default: 0.3)
+    - tickInterval: number - Damage interval for DPS (MANDATORY for DOT, must be < duration)
     
     Example Static Hitbox:
     local config = {
@@ -58,9 +69,9 @@ local HITBOX_TYPES = {
     }
     
     TRAVELING HITBOX PARAMETERS:
-    - duration: number - How long hitbox travels (default: 0.3)
-    - speed: number - Movement speed in studs/second (default: 50)
-    - maxDistance: number - Maximum travel distance (default: speed * duration)
+    - duration: number - How long hitbox travels (MANDATORY for traveling, default: 0.3)
+    - speed: number - Movement speed in studs/second (MANDATORY for traveling, default: 50)
+    - maxDistance: number - Maximum travel distance (MANDATORY for traveling, default: speed * duration)
     
     Example Traveling Hitbox:
     local config = {
@@ -76,9 +87,9 @@ local HITBOX_TYPES = {
     }
     
     PROJECTILE HITBOX PARAMETERS:
-    - speed: number - Projectile speed in studs/second (default: 200)
-    - maxDistance: number - Maximum range (default: 100)
-    - projectileSize: Vector3 - Visual projectile size (default: Vector3.new(0.5, 0.5, 3))
+    - speed: number - Projectile speed in studs/second (MANDATORY for projectile, default: 200)
+    - maxDistance: number - Maximum range (MANDATORY for projectile, default: 100)
+    - projectileSize: Vector3 - Visual projectile size (MANDATORY for projectile, default: Vector3.new(0.5, 0.5, 3))
     
     Example Projectile Hitbox:
     local config = {
@@ -104,7 +115,7 @@ local HITBOX_TYPES = {
     })
 --]]
 
--- Visual hitbox preview toggle
+-- MANDATORY: Visual hitbox preview toggle (set to false for production)
 local SHOW_HITBOX_VISUALS = true
 
 -- Create visual hitbox (simple square)
@@ -134,13 +145,14 @@ local function createVisualHitbox(hitboxCFrame, size, color, transparency, durat
     end)
 end
 
--- Generate hitbox for any skill/combo (supports multiple types)
+-- MANDATORY: Main hitbox generation function (supports multiple types)
 function DynamicHitboxV2.generateHitbox(hitboxConfig)
+    -- MANDATORY: Validate player and character exist
     if not player.Character then return end
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not humanoidRootPart then return end
 
-    -- Extract config values
+    -- MANDATORY: Extract config values (all required parameters must be present)
     local size = hitboxConfig.size
     local offset = hitboxConfig.offset
     local damage = hitboxConfig.damage
@@ -149,11 +161,11 @@ function DynamicHitboxV2.generateHitbox(hitboxConfig)
     local tickInterval = hitboxConfig.tickInterval
     local color = hitboxConfig.color
     local transparency = hitboxConfig.transparency
-    local hitboxType = hitboxConfig.type or HITBOX_TYPES.STATIC -- Default to static
+    local hitboxType = hitboxConfig.type or HITBOX_TYPES.STATIC -- MANDATORY: Default to static
 
-    -- Schedule hitbox generation after delay
+    -- MANDATORY: Schedule hitbox generation after delay
     task.delay(delay, function()
-        -- Calculate initial hitbox position
+        -- MANDATORY: Calculate initial hitbox position using player's CFrame
         local rootCFrame = humanoidRootPart.CFrame
         local forwardOffset = rootCFrame.LookVector * offset.Z
         local rightOffset = rootCFrame.RightVector * offset.X
@@ -161,7 +173,7 @@ function DynamicHitboxV2.generateHitbox(hitboxConfig)
         local hitboxPosition = rootCFrame.Position + forwardOffset + rightOffset + upOffset
         local hitboxCFrame = CFrame.new(hitboxPosition, hitboxPosition + rootCFrame.LookVector)
 
-        -- Route to appropriate hitbox type
+        -- MANDATORY: Route to appropriate hitbox type based on configuration
         if hitboxType == HITBOX_TYPES.STATIC then
             DynamicHitboxV2.generateStaticHitbox(hitboxCFrame, size, damage, duration, tickInterval, hitboxConfig)
         elseif hitboxType == HITBOX_TYPES.TRAVELING then
@@ -174,44 +186,45 @@ function DynamicHitboxV2.generateHitbox(hitboxConfig)
     end)
 end
 
--- Generate static hitbox (original V2 behavior)
+-- MANDATORY: Generate static hitbox (supports both single hit and DOT)
 function DynamicHitboxV2.generateStaticHitbox(hitboxCFrame, size, damage, duration, tickInterval, hitboxConfig)
-    -- Check if this should be DPS (duration > tickInterval)
+    -- MANDATORY: Check if this should be DPS (duration > tickInterval) for DOT functionality
     if tickInterval and duration > tickInterval then
-        -- DPS hitbox - damage over time
+        -- MANDATORY: DPS hitbox - damage over time (DOT system)
         local startTime = tick()
         local tickNumber = 0
         
+        -- MANDATORY: DOT tick function - handles damage over time
         local function applyDamageTick()
             local elapsed = tick() - startTime
             
-            -- Stop if duration expired
+            -- MANDATORY: Stop if duration expired
             if elapsed >= duration then
                 return
             end
             
             tickNumber = tickNumber + 1
             
-            -- Send damage tick to server
+            -- MANDATORY: Send damage tick to server with tick number
             local hitRequest = ReplicatedStorage:WaitForChild("DynamicHitboxV2Request")
             hitRequest:FireServer(hitboxCFrame, size, damage, hitboxConfig.name or "Unknown", tickNumber)
             
-            -- Schedule next tick if there's still time
+            -- MANDATORY: Schedule next tick if there's still time
             local timeRemaining = duration - elapsed
             if timeRemaining > tickInterval then
                 task.delay(tickInterval, applyDamageTick)
             end
         end
         
-        -- Start first tick immediately
+        -- MANDATORY: Start first tick immediately for DOT
         applyDamageTick()
     else
-        -- Single hit - damage once
+        -- MANDATORY: Single hit - damage once (no DOT)
         local hitRequest = ReplicatedStorage:WaitForChild("DynamicHitboxV2Request")
         hitRequest:FireServer(hitboxCFrame, size, damage, hitboxConfig.name or "Unknown", 1)
     end
 
-    -- Create visual hitbox
+    -- MANDATORY: Create visual hitbox for debugging
     createVisualHitbox(hitboxCFrame, size, hitboxConfig.color, hitboxConfig.transparency, duration)
     
     print("[DYNAMIC HITBOX V2] Generated static hitbox for", hitboxConfig.name or "Unknown")
@@ -380,16 +393,16 @@ function DynamicHitboxV2.generateProjectileHitbox(hitboxCFrame, size, damage, hi
 end
 
 -- =====================================================================================
--- GLOBAL ACCESS AND DEBUG FUNCTIONS
+-- MANDATORY GLOBAL ACCESS AND DEBUG FUNCTIONS
 -- =====================================================================================
 
--- Make functions available globally
+-- MANDATORY: Make functions available globally for other scripts
 _G.dynamicHitboxV2Generate = DynamicHitboxV2.generateHitbox
 _G.dynamicHitboxV2GenerateStatic = DynamicHitboxV2.generateStaticHitbox
 _G.dynamicHitboxV2GenerateTraveling = DynamicHitboxV2.generateTravelingHitbox
 _G.dynamicHitboxV2GenerateProjectile = DynamicHitboxV2.generateProjectileHitbox
 
--- Hitbox type constants
+-- MANDATORY: Hitbox type constants for external use
 _G.HITBOX_TYPES = HITBOX_TYPES
 
 -- Debug functions
@@ -398,7 +411,7 @@ _G.dynamicHitboxV2ToggleVisuals = function()
     print("[DYNAMIC HITBOX V2] Visuals", SHOW_HITBOX_VISUALS and "ENABLED" or "DISABLED")
 end
 
--- Helper function to create hitbox configs easily
+-- MANDATORY: Helper function to create hitbox configs easily
 _G.createHitboxConfig = function(type, size, offset, damage, options)
     local config = {
         type = type or HITBOX_TYPES.STATIC,
@@ -407,13 +420,13 @@ _G.createHitboxConfig = function(type, size, offset, damage, options)
         damage = damage or 25,
         delay = options and options.delay or 0,
         duration = options and options.duration or 0.3,
-        tickInterval = options and options.tickInterval,
+        tickInterval = options and options.tickInterval, -- MANDATORY for DOT
         color = options and options.color or Color3.new(0, 0, 1),
         transparency = options and options.transparency or 0.7,
         name = options and options.name or "Unknown",
-        speed = options and options.speed,
-        maxDistance = options and options.maxDistance,
-        projectileSize = options and options.projectileSize
+        speed = options and options.speed, -- MANDATORY for traveling/projectile
+        maxDistance = options and options.maxDistance, -- MANDATORY for traveling/projectile
+        projectileSize = options and options.projectileSize -- MANDATORY for projectile
     }
     return config
 end

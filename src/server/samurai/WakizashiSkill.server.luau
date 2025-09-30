@@ -29,7 +29,7 @@ local function createLightningAura(character)
     local vfxLeft = ReplicatedStorage.WakizashiAura:WaitForChild("lightningLeft"):Clone()
     vfxLeft.Parent = workspace
 
-    local offsetLeft = CFrame.new(-3, 0, 0)-- X = left/right, Y = harap/likod, Z = taas/baba
+    local offsetLeft = CFrame.new(-3, 0, 0)-- X = left/right, Y = taas/baba, Z = harap/likod
     vfxLeft:PivotTo(leftHand.CFrame * offsetLeft)
 
     for _, part in ipairs(vfxLeft:GetDescendants()) do
@@ -46,7 +46,7 @@ local function createLightningAura(character)
     local vfxRight = ReplicatedStorage.WakizashiAura:WaitForChild("lightningRight"):Clone()
     vfxRight.Parent = workspace
 
-    local offsetRight = CFrame.new(3, 0, 0)-- X = left/right, Y = harap/likod, Z = taas/baba
+    local offsetRight = CFrame.new(3, 0, 0)-- X = left/right, Y = taas/baba, Z = harap/likod
     vfxRight:PivotTo(rightHand.CFrame * offsetRight)
 
     for _, part in ipairs(vfxRight:GetDescendants()) do

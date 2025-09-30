@@ -19,15 +19,16 @@ local CONFIG = {
     weaponTag = "samurai_wpn",
 }
 
--- Hitbox configuration for static hitbox (as requested)
+-- Hitbox configuration for static hitbox with DOT (as requested)
 local HITBOX_CONFIG = {
     type = "static", -- Use static hitbox type
     name = "Kozuki",
-    size = Vector3.new(12, 8, 12), -- Hitbox size (width, height, depth)
-    offset = Vector3.new(0, 0, 0), -- Center on player position
-    damage = 30, -- Damage per hit
-    delay = 0.5, -- Delay before hitbox activates (after dash)
-    duration = 1.5, -- How long the hitbox stays active
+    size = Vector3.new(12, 8, 55), -- Hitbox size (width, height, depth)
+    offset = Vector3.new(0, 0, -30), --from Player Offset X = left/right, Y = top/down, Z = forward/back
+    damage = 15, -- Damage per tick (reduced since it's DOT)
+    delay = 2.3, -- Delay before hitbox activates (after dash)
+    duration = 3, -- How long the hitbox stays active (increased for DOT)
+    tickInterval = 0.5, -- Damage every 0.5 seconds (DOT)
     color = Color3.new(1, 0, 0), -- Red
     transparency = 0.6,
 }
