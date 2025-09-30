@@ -11,17 +11,36 @@ local player = Players.LocalPlayer
 local tool = nil
 local inputConnection = nil
 
+-- DynamicHitboxV2 will be available globally after it loads
+
 -- Configuration
 local CONFIG = {
     keyCode = Enum.KeyCode.Q,
     weaponTag = "samurai_wpn",
 }
 
+-- Hitbox configuration
+local HITBOX_CONFIG = {
+    name = "Wakizashi",
+    size = Vector3.new(4, 5, 6), -- 4 wide, 5 tall, 6 deep
+    offset = Vector3.new(0, 0, 3), -- 3 studs in front
+    damage = 15,
+    delay = 0.2, -- Hitbox appears 0.2s after key press
+    duration = 0.3, -- Hitbox lasts 0.3 seconds
+    color = Color3.new(0, 0, 1), -- Blue
+    transparency = 0.7,
+}
+
 -- Functions
 local function useSkill()
+    print("[WAKIZASHI] useSkill() called")
+    
     if not tool or tool.Parent ~= player.Character then
+        print("[WAKIZASHI] No tool or tool not equipped")
         return
     end
+    
+    print("[WAKIZASHI] Using skill:", HITBOX_CONFIG.name)
     
     -- Find the Wakizashi skill event in samurai/events folder
     local samuraiFolder = ReplicatedStorage:WaitForChild("samurai")
@@ -29,29 +48,53 @@ local function useSkill()
     local remote = eventsFolder:WaitForChild("WakizashiSkillEvent")
     
     remote:FireServer()
+    print("[WAKIZASHI] VFX event fired")
+    
+    -- Generate hitbox for damage using global access
+    if _G.dynamicHitboxV2Generate then
+        _G.dynamicHitboxV2Generate(HITBOX_CONFIG)
+        print("[WAKIZASHI] Hitbox generation called")
+    else
+        print("[WAKIZASHI] DynamicHitboxV2 not loaded yet!")
+    end
 end
 
 local function onWeaponFound(weaponTool)
-    if tool then return end
-    
     tool = weaponTool
+    
+    -- Disconnect existing connection if any
+    if inputConnection then
+        inputConnection:Disconnect()
+    end
+    
     inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
         if not isProcessed and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keyCode then
+            print("[WAKIZASHI] Q key pressed!")
             useSkill()
         end
     end)
+    
+    print("[WAKIZASHI] Input connection set up for", weaponTool.Name)
 end
 
 local function onCharacterAdded(character)
+    print("[WAKIZASHI] Character added:", character.Name)
+    
     for _, weaponTool in character:GetChildren() do
+        print("[WAKIZASHI] Checking tool:", weaponTool.Name, "Tags:", CollectionService:GetTags(weaponTool))
         if weaponTool:IsA("Tool") and CollectionService:HasTag(weaponTool, CONFIG.weaponTag) then
+            print("[WAKIZASHI] Found weapon with tag:", CONFIG.weaponTag)
             onWeaponFound(weaponTool)
         end
     end
     
     character.DescendantAdded:Connect(function(desc)
-        if desc:IsA("Tool") and CollectionService:HasTag(desc, CONFIG.weaponTag) then
-            onWeaponFound(desc)
+        if desc:IsA("Tool") then
+            print("[WAKIZASHI] New tool added:", desc.Name, "Tags:", CollectionService:GetTags(desc))
+            if CollectionService:HasTag(desc, CONFIG.weaponTag) then
+                print("[WAKIZASHI] Found new weapon with tag:", CONFIG.weaponTag)
+                onWeaponFound(desc)
+            end
         end
     end)
 end
