@@ -26,7 +26,7 @@ local HITBOX_CONFIG = {
     size = Vector3.new(12, 8, 55), -- Hitbox size (width, height, depth)
     offset = Vector3.new(0, 0, -30), --from Player Offset X = left/right, Y = top/down, Z = forward/back
     damage = 15, -- Damage per tick (reduced since it's DOT)
-    delay = 2.3, -- Delay before hitbox activates (after dash)
+    delay = 2.1, -- Delay before hitbox activates (after dash)
     duration = 3, -- How long the hitbox stays active (increased for DOT)
     tickInterval = 0.5, -- Damage every 0.5 seconds (DOT)
     color = Color3.new(1, 0, 0), -- Red
