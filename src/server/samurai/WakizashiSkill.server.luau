@@ -25,11 +25,11 @@ local function createLightningAura(character)
     local leftHand = character:FindFirstChild("LeftHand") or root
     local rightHand = character:FindFirstChild("RightHand") or root
 
-    -- Create left hand lightning
+    -- left hand lightning
     local vfxLeft = ReplicatedStorage.WakizashiAura:WaitForChild("lightningLeft"):Clone()
     vfxLeft.Parent = workspace
 
-    local offsetLeft = CFrame.new(-3, 0, 0) -- X = left/right, Y = harap/likod, Z = taas/baba
+    local offsetLeft = CFrame.new(-3, 0, 0)-- X = left/right, Y = harap/likod, Z = taas/baba
     vfxLeft:PivotTo(leftHand.CFrame * offsetLeft)
 
     for _, part in ipairs(vfxLeft:GetDescendants()) do
@@ -42,11 +42,11 @@ local function createLightningAura(character)
         end
     end
 
-    -- Create right hand lightning
+    -- right hand lightning
     local vfxRight = ReplicatedStorage.WakizashiAura:WaitForChild("lightningRight"):Clone()
     vfxRight.Parent = workspace
 
-    local offsetRight = CFrame.new(3, 0, 0) -- X = left/right, Y = harap/likod, Z = taas/baba
+    local offsetRight = CFrame.new(3, 0, 0)-- X = left/right, Y = harap/likod, Z = taas/baba
     vfxRight:PivotTo(rightHand.CFrame * offsetRight)
 
     for _, part in ipairs(vfxRight:GetDescendants()) do
@@ -115,7 +115,7 @@ local function executeWakizashiSkill(player)
     local root = character:WaitForChild("HumanoidRootPart")
     local animator = humanoid:WaitForChild("Animator")
 
-    -- Load and play animation
+    -- preload anim (server handles)
     local slashAnim = Instance.new("Animation")
     slashAnim.AnimationId = "rbxassetid://121133581854383"
     local animTrack = animator:LoadAnimation(slashAnim)
@@ -123,13 +123,13 @@ local function executeWakizashiSkill(player)
     
     print("WakizashiSkill: Animation loaded and playing")
 
-    -- Handle ElectricAura marker
+    -- ? DASH marker
     animTrack:GetMarkerReachedSignal("ElectricAura"):Connect(function()
         print("WakizashiSkill: ElectricAura marker reached")
         createLightningAura(character)
     end)
 
-    -- Handle SonicBlade marker
+    -- ? AURA marker
     animTrack:GetMarkerReachedSignal("SonicBlade"):Connect(function()
         print("WakizashiSkill: SonicBlade marker reached")
         createBladeSlash(character)
