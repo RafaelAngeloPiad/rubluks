@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- ========================================
 
 local HITBOX_CONFIG = {
-	transparency = 0.9, -- Global transparency for all hitbox visuals
+	transparency = 0.95, -- Global transparency for all hitbox visuals
 }
 
 -- ========================================
