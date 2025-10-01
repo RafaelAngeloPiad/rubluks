@@ -20,7 +20,7 @@ local inputConnection = nil
 -- Configuration
 local CONFIG = {
 	weaponTag = "samurai_wpn",
-	skills = {
+	actions = {
 		[Enum.KeyCode.E] = "kozuki",
 		[Enum.KeyCode.Q] = "wakizashi",
 		[Enum.KeyCode.R] = "banzai",
@@ -132,7 +132,7 @@ local function onWeaponFound(weaponTool)
 			return
 		end
 		
-		local actionName = CONFIG.skills[input.KeyCode]
+		local actionName = CONFIG.actions[input.KeyCode]
 		if actionName then
 			useAction(actionName)
 		end
