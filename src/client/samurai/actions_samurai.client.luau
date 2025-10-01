@@ -10,8 +10,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local CollectionService = game:GetService("CollectionService")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 local tool = nil
 local inputConnection = nil
 
@@ -27,48 +29,125 @@ local CONFIG = {
 	}
 }
 
--- Functions
-local function useAction(actionName)
-	print("[Actions] Attempting to use action:", actionName)
+-- ========================================
+-- CAMERA SYSTEM
+-- Handles cinematic camera movements for skills/buffs/ultimates
+-- ========================================
+
+-- Smoothly moves camera to a position over time
+local function tweenCameraTo(targetCFrame, tweenDuration)
+	local tweenInfo = TweenInfo.new(tweenDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
+	tween:Play()
+	tween.Completed:Wait()
+end
+
+-- Plays a cinematic camera sequence
+local function playCameraSequence(sequence)
+	-- Save original camera settings
+	local originalCFrame = camera.CFrame
+	local originalType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local root = char:WaitForChild("HumanoidRootPart")
+
+	-- Play each step in the sequence
+	for _, step in ipairs(sequence) do
+		local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+		tweenCameraTo(targetCFrame, step.tweenTime)
+		task.wait(step.holdTime)
+	end
+
+	-- Restore original camera
+	tweenCameraTo(originalCFrame, 1)
+	task.wait(0.5)
+	camera.CameraType = originalType
+end
+
+-- ========================================
+-- CAMERA SEQUENCES
+-- Define cinematic sequences for each action
+-- Format: {offset = CFrame.new(x, y, z), rotX/Y/Z = angle, tweenTime = seconds, holdTime = seconds}
+-- Offset: X = left(-)/right(+), Y = down(-)/up(+), Z = forward(-)/back(+) relative to player
+-- ========================================
+
+local CAMERA_SEQUENCES = {
+	bushido = {
+		{offset = CFrame.new(-5, 1.5, -1.5), rotY = math.rad(-80), tweenTime = 1, holdTime = 2.5},
+		{offset = CFrame.new(0, 2, -3.5), rotY = math.rad(-180), tweenTime = 0, holdTime = 1.5},
+	},
 	
+	zantetsuken = {
+		{offset = CFrame.new(0, 2, 4), rotY = math.rad(0), tweenTime = 0, holdTime = 1},        -- Front view
+		{offset = CFrame.new(-5, -0.5, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2}, -- Left side
+		{offset = CFrame.new(8, -0.5, -1.5), rotY = math.rad(90), tweenTime = 0, holdTime = 1},   -- Right side
+		{offset = CFrame.new(0, -0.5, 8), rotY = math.rad(0), tweenTime = 0, holdTime = 1},       -- Back view
+		{offset = CFrame.new(0, -0.5, -8), rotY = math.rad(-180), tweenTime = 0, holdTime = 1},   -- Behind player
+		{offset = CFrame.new(0, 8, 8), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 1}, -- Aerial view
+	}
+}
+
+-- ========================================
+-- ACTION HANDLER
+-- ========================================
+
+local function useAction(actionName)
+	-- Validate tool is equipped
 	if not tool or tool.Parent ~= player.Character then
-		print("[Actions] Failed - tool not equipped. Tool:", tool, "Parent:", tool and tool.Parent)
+		print("[Actions] Failed - tool not equipped")
 		return
 	end
 	
-	print("[Actions] Firing server with action:", actionName)
-	-- Fire server - server handles EVERYTHING (VFX + Hitbox for skills, VFX only for buffs)
+	print("[Actions] Using action:", actionName)
+	
+	-- Tell server to handle VFX and hitboxes
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	remote:FireServer(actionName)
+	
+	-- Play camera sequence if this action has one
+	if CAMERA_SEQUENCES[actionName] then
+		task.spawn(function()
+			playCameraSequence(CAMERA_SEQUENCES[actionName])
+		end)
+	end
 end
+
+-- ========================================
+-- WEAPON DETECTION & INPUT HANDLING
+-- ========================================
 
 local function onWeaponFound(weaponTool)
 	tool = weaponTool
-	print("[Actions] Weapon found and equipped:", weaponTool.Name)
+	print("[Actions] Weapon equipped:", weaponTool.Name)
 	
-	-- Disconnect existing connection if any
+	-- Clean up old input connection
 	if inputConnection then
 		inputConnection:Disconnect()
 	end
 	
+	-- Listen for key presses (E, Q, R, F, Z)
 	inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
-		if not isProcessed and input.UserInputType == Enum.UserInputType.Keyboard then
-			local actionName = CONFIG.skills[input.KeyCode]
-			if actionName then
-				print("[Actions] Key pressed, mapped to:", actionName)
-				useAction(actionName)
-			end
+		if isProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then
+			return
+		end
+		
+		local actionName = CONFIG.skills[input.KeyCode]
+		if actionName then
+			useAction(actionName)
 		end
 	end)
 end
 
 local function onCharacterAdded(character)
+	-- Check if weapon is already equipped
 	for _, weaponTool in character:GetChildren() do
 		if weaponTool:IsA("Tool") and CollectionService:HasTag(weaponTool, CONFIG.weaponTag) then
 			onWeaponFound(weaponTool)
 		end
 	end
 	
+	-- Listen for weapon being equipped
 	character.DescendantAdded:Connect(function(desc)
 		if desc:IsA("Tool") and CollectionService:HasTag(desc, CONFIG.weaponTag) then
 			onWeaponFound(desc)
@@ -76,10 +155,13 @@ local function onCharacterAdded(character)
 	end)
 end
 
--- Initialize
+-- ========================================
+-- INITIALIZE
+-- ========================================
+
 if player.Character then
 	onCharacterAdded(player.Character)
-else
-	player.CharacterAdded:Connect(onCharacterAdded)
 end
+
+player.CharacterAdded:Connect(onCharacterAdded)
 
