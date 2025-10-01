@@ -57,6 +57,19 @@ local function setupAttackAnimations(player)
 	local rightClickIdleTrack = animator:LoadAnimation(rightClickIdleAnim)
 	rightClickIdleTrack.Priority = Enum.AnimationPriority.Action
 
+	-- Movement Animations
+	local idleAnim = Instance.new("Animation")
+	idleAnim.AnimationId = "rbxassetid://132322083369838"
+	local idleTrack = animator:LoadAnimation(idleAnim)
+	idleTrack.Looped = true
+	idleTrack.Priority = Enum.AnimationPriority.Idle
+
+	local runAnim = Instance.new("Animation")
+	runAnim.AnimationId = "rbxassetid://112708480600525"
+	local runTrack = animator:LoadAnimation(runAnim)
+	runTrack.Looped = true
+	runTrack.Priority = Enum.AnimationPriority.Movement
+
 	-- Store player data
 	playerAttackData[player] = {
 		animTrack1 = animTrack1,
@@ -65,6 +78,8 @@ local function setupAttackAnimations(player)
 		jumpTrack = jumpTrack,
 		moveSlashTrack = moveSlashTrack,
 		rightClickIdleTrack = rightClickIdleTrack,
+		idleTrack = idleTrack,
+		runTrack = runTrack,
 		clickCount = 0,
 		isAttacking = false,
 		isRightClicking = false,
@@ -72,6 +87,23 @@ local function setupAttackAnimations(player)
 		holdingRightClick = false,
 		originalWalkSpeed = hum.WalkSpeed
 	}
+	
+	-- Start with idle animation
+	idleTrack:Play()
+	
+	-- Movement animation handling
+	hum.Running:Connect(function(speed)
+		local data = playerAttackData[player]
+		if not data then return end
+		
+		if speed > 1 then -- threshold for running
+			if data.idleTrack.IsPlaying then data.idleTrack:Stop() end
+			if not data.runTrack.IsPlaying then data.runTrack:Play() end
+		else
+			if data.runTrack.IsPlaying then data.runTrack:Stop() end
+			if not data.idleTrack.IsPlaying then data.idleTrack:Play() end
+		end
+	end)
 	
 	-- Detect Jump state
 	hum.StateChanged:Connect(function(_, newState)
@@ -114,6 +146,8 @@ local function cleanupAttackAnimations(player)
 	if data.jumpTrack then data.jumpTrack:Stop() end
 	if data.moveSlashTrack then data.moveSlashTrack:Stop() end
 	if data.rightClickIdleTrack then data.rightClickIdleTrack:Stop() end
+	if data.idleTrack then data.idleTrack:Stop() end
+	if data.runTrack then data.runTrack:Stop() end
 	
 	-- Reset walk speed
 	local char = player.Character

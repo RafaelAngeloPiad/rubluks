@@ -18,9 +18,6 @@ local tool = nil
 local inputConnection = nil
 local attackConnection = nil
 
--- Movement animation variables
-local idleTrack, runTrack
-
 -- Configuration
 local CONFIG = {
 	weaponTag = "samurai_wpn",
@@ -125,44 +122,7 @@ local function onWeaponFound(weaponTool)
 	tool = weaponTool
 	print("[Actions] Weapon equipped:", weaponTool.Name)
 	
-	local char = player.Character
-	if not char then return end
-	
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	local animator = hum and hum:FindFirstChildOfClass("Animator")
-	
-	-- Setup movement animations (idle/run)
-	if animator then
-		-- Idle Animation
-		local idleAnim = Instance.new("Animation")
-		idleAnim.AnimationId = "rbxassetid://132322083369838"
-		idleTrack = animator:LoadAnimation(idleAnim)
-		idleTrack.Looped = true
-		idleTrack.Priority = Enum.AnimationPriority.Idle
-
-		-- Run Animation
-		local runAnim = Instance.new("Animation")
-		runAnim.AnimationId = "rbxassetid://112708480600525"
-		runTrack = animator:LoadAnimation(runAnim)
-		runTrack.Looped = true
-		runTrack.Priority = Enum.AnimationPriority.Movement
-
-		-- Start with idle animation
-		idleTrack:Play()
-
-		-- Switch run/idle based on movement speed
-		hum.Running:Connect(function(speed)
-			if speed > 1 then -- threshold for running
-				if idleTrack.IsPlaying then idleTrack:Stop() end
-				if not runTrack.IsPlaying then runTrack:Play() end
-			else
-				if runTrack.IsPlaying then runTrack:Stop() end
-				if not idleTrack.IsPlaying then idleTrack:Play() end
-			end
-		end)
-	end
-	
-	-- Tell server to setup attack animations
+	-- Tell server to setup all animations (attack + movement)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	remote:FireServer("normal_attack_setup")
 	
@@ -214,19 +174,9 @@ local function onWeaponLost()
 	if tool then
 		print("[Actions] Weapon unequipped:", tool.Name)
 		
-		-- Tell server to cleanup attack animations
+		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 		remote:FireServer("normal_attack_cleanup")
-		
-		-- Cleanup movement animations
-		if idleTrack then 
-			idleTrack:Stop() 
-			idleTrack = nil 
-		end
-		if runTrack then 
-			runTrack:Stop() 
-			runTrack = nil 
-		end
 		
 		tool = nil
 	end
