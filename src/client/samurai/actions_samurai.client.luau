@@ -40,7 +40,7 @@ local CONFIG = {
 		attack = Enum.UserInputType.MouseButton1, -- Left click
 		block = Enum.KeyCode.LeftShift, -- Ctrl key
 		jump = Enum.KeyCode.Space, -- Spacebar
-		wave = Enum.KeyCode.P, -- P key for wave emote
+		wave = Enum.KeyCode.T, -- T key for wave emote
 	}
 }
 
