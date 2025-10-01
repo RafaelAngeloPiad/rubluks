@@ -245,6 +245,9 @@ local function handleNormalAttack(player)
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then return end
 	
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	
 	local isMoving = hum.MoveDirection.Magnitude > 0
 	local isJumping = data.isJumping
 	
@@ -259,6 +262,20 @@ local function handleNormalAttack(player)
 			data.comboTimer = nil
 		end
 		data.jumpTrack:Play()
+		
+		-- Jump attack hitbox
+		_G.createStaticHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, -2, -4),
+			size = Vector3.new(8, 6, 8),
+			damage = 30,
+			character = char,
+			name = "JumpAttack",
+			showVisual = true,
+			visualColor = Color3.new(0, 1, 0),
+			delay = 0.3
+		})
+		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
@@ -272,6 +289,20 @@ local function handleNormalAttack(player)
 			data.comboTimer = nil
 		end
 		data.moveSlashTrack:Play()
+		
+		-- Move attack hitbox
+		_G.createStaticHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, 0, -10), -- x left / right, y up / down, z forward / backward
+			size = Vector3.new(12, 12, 12),
+			damage = 40,
+			character = char,
+			name = "MoveAttack",
+			showVisual = true,
+			visualColor = Color3.new(0, 0.8, 1),
+			delay = 0.4
+		})
+		
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
@@ -288,6 +319,20 @@ local function handleNormalAttack(player)
 		
 		if data.clickCount == 1 then
 			data.animTrack1:Play()
+			
+			-- Combo 1 hitbox
+			_G.createStaticHitbox({
+				attachTo = root,
+				offset = CFrame.new(0, 0, -3),
+				size = Vector3.new(8, 8, 6),
+				damage = 25,
+				character = char,
+				name = "Combo1",
+				showVisual = true,
+				visualColor = Color3.new(1, 0.8, 0),
+				delay = 0.2
+			})
+			
 			data.animTrack1.Stopped:Once(function() 
 				data.isAttacking = false 
 				-- Start combo timer after first attack
@@ -295,6 +340,20 @@ local function handleNormalAttack(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
+			
+			-- Combo 2 hitbox
+			_G.createStaticHitbox({
+				attachTo = root,
+				offset = CFrame.new(0, 0, -4),
+				size = Vector3.new(10, 10, 8),
+				damage = 35,
+				character = char,
+				name = "Combo2",
+				showVisual = true,
+				visualColor = Color3.new(0.8, 0.2, 1),
+				delay = 0.3
+			})
+			
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
 				-- Start combo timer after second attack
@@ -306,6 +365,20 @@ local function handleNormalAttack(player)
 				-- Reset to combo 1 and play it
 				data.clickCount = 1
 				data.animTrack1:Play()
+				
+				-- Combo 1 hitbox (fallback from combo 3 cooldown)
+				_G.createStaticHitbox({
+					attachTo = root,
+					offset = CFrame.new(0, 0, -3),
+					size = Vector3.new(8, 8, 6),
+					damage = 25,
+					character = char,
+					name = "Combo1_Fallback",
+					showVisual = true,
+					visualColor = Color3.new(1, 0.8, 0),
+					delay = 0.2
+				})
+				
 				data.animTrack1.Stopped:Once(function() 
 					data.isAttacking = false 
 					resetComboTimer(player)
@@ -313,6 +386,20 @@ local function handleNormalAttack(player)
 			else
 				-- Perform combo 3 and start cooldown
 				data.animTrack3:Play()
+				
+				-- Combo 3 hitbox (most powerful)
+				_G.createStaticHitbox({
+					attachTo = root,
+					offset = CFrame.new(0, 0, -5),
+					size = Vector3.new(12, 12, 10),
+					damage = 50,
+					character = char,
+					name = "Combo3",
+					showVisual = true,
+					visualColor = Color3.new(1, 0, 0),
+					delay = 0.4
+				})
+				
 				data.animTrack3.Stopped:Once(function() 
 					data.isAttacking = false 
 					data.clickCount = 0 -- reset combo
