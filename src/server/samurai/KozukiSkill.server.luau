@@ -167,6 +167,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			end
 		end
 
+		-- HITBOX V3: Static hitbox at root position (after dash)
+		_G.createStaticHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, 0, 0),
+			size = Vector3.new(5, 5, 5),
+			damage = 1,
+			duration = 1,
+			character = character,
+			name = "Kozuki",
+			showVisual = true,
+			visualColor = Color3.new(1, 0, 0) -- Red
+		})
+
 		-- Auto cleanup
 		Debris:AddItem(vfx, 1)
 		

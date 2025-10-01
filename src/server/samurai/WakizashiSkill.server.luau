@@ -108,6 +108,18 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = bladePart
 
+		-- HITBOX V3: Attach traveling hitbox to blade
+		_G.createTravelingHitbox({
+			attachTo = bladePart,
+			size = Vector3.new(20, 8, 8),
+			damage = 25,
+			duration = 2,
+			character = character,
+			name = "Wakizashi",
+			showVisual = true,
+			visualColor = Color3.new(0, 0.5, 1) -- Light blue
+		})
+
 		-- Auto cleanup
 		game:GetService("Debris"):AddItem(vfx, 2)
 		game:GetService("Debris"):AddItem(bodyVelocity, 2)
