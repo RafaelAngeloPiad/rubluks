@@ -1,8 +1,9 @@
 -- ========================================
 -- SAMURAI ACTIONS CLIENT (UNIFIED)
--- Handles skills and buffs for Samurai class
+-- Handles skills, buffs, and ultimate for Samurai class
 -- Skills: Kozuki (E), Wakizashi (Q)
 -- Buffs: Banzai (R), Bushido (F)
+-- Ultimate: Zantetsuken (Z)
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +23,7 @@ local CONFIG = {
 		[Enum.KeyCode.Q] = "wakizashi",
 		[Enum.KeyCode.R] = "banzai",
 		[Enum.KeyCode.F] = "bushido",
+		[Enum.KeyCode.Z] = "zantetsuken",
 	}
 }
 
