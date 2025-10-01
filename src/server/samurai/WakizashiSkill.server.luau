@@ -111,9 +111,11 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- HITBOX V3: Attach traveling hitbox to blade
 		_G.createTravelingHitbox({
 			attachTo = bladePart,
-			size = Vector3.new(20, 8, 8),
+			offset = CFrame.new(-30, 0, 0), -- tagilid kasi yung blade so x - up down  y - left / right  z - up down
+			size = Vector3.new(8, 30, 8), -- width, height, depth
 			damage = 25,
 			duration = 2,
+			delay = 0.2, -- delay before hitbox appears (in seconds)
 			character = character,
 			name = "Wakizashi",
 			showVisual = true,

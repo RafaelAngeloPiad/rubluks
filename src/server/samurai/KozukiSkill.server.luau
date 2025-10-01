@@ -174,6 +174,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			size = Vector3.new(5, 5, 5),
 			damage = 1,
 			duration = 1,
+			delay = 0, -- delay before hitbox appears (in seconds)
 			character = character,
 			name = "Kozuki",
 			showVisual = true,
