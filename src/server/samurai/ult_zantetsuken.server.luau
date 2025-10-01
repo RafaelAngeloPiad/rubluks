@@ -86,13 +86,16 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
+	_G.applySamuraiAnimationSpeed(animTrack)
 	
 	-- Lock input when ultimate starts
 	remote:FireClient(player, "lock_input")
+	_G.setSamuraiWalkingSpeed(player, "blocking") -- Stop movement during ultimate
 	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")
+		_G.setSamuraiWalkingSpeed(player, "normal") -- Restore normal movement
 	end)
 	
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()

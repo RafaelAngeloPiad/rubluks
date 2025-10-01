@@ -57,13 +57,16 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
+	_G.applySamuraiAnimationSpeed(animTrack)
 	
 	-- Lock movement only when skill starts (allows camera/aiming)
 	remote:FireClient(player, "lock_movement")
+	_G.setSamuraiWalkingSpeed(player, "slow") -- Set slow walking speed
 	
 	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_movement")
+		_G.setSamuraiWalkingSpeed(player, "normal") -- Restore normal walking speed
 	end)
 
 	animTrack:GetMarkerReachedSignal("DashAttack"):Connect(function()

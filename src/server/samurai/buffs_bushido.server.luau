@@ -28,13 +28,16 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(auraAnim)
 	animTrack:Play()
+	_G.applySamuraiAnimationSpeed(animTrack)
 	
 	-- Lock input when buff starts
 	remote:FireClient(player, "lock_input")
+	_G.setSamuraiWalkingSpeed(player, "blocking") -- Stop movement during buff
 	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")
+		_G.setSamuraiWalkingSpeed(player, "normal") -- Restore normal movement
 	end)
 
 	-- ⚡ AURA marker (one-time connection lang)

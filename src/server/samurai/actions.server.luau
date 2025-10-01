@@ -13,6 +13,44 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 -- Store player attack data
 local playerAttackData = {}
 
+-- ========================================
+-- GLOBAL ANIMATION SPEED CONFIGURATION
+-- ========================================
+
+-- Global animation speed multiplier for all samurai animations
+-- Adjust this single value to change speed of ALL samurai animations
+_G.SAMURAI_ANIMATION_SPEED = 1.0 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
+
+-- Function to apply speed to any animation track
+function _G.applySamuraiAnimationSpeed(animTrack)
+	if animTrack and _G.SAMURAI_ANIMATION_SPEED then
+		animTrack:AdjustSpeed(_G.SAMURAI_ANIMATION_SPEED)
+	end
+end
+
+-- ========================================
+-- GLOBAL WALKING SPEED CONFIGURATION
+-- ========================================
+
+-- Global walking speed settings for all samurai actions
+_G.SAMURAI_WALKING_SPEED = {
+	normal = 400,    -- Normal walking speed
+	slow = 3,       -- Speed during skills (wakizashi/kozuki)
+	blocking = 0    -- Speed while blocking
+}
+
+-- Function to set player walking speed
+function _G.setSamuraiWalkingSpeed(player, speedType)
+	local character = player.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	
+	local speed = _G.SAMURAI_WALKING_SPEED[speedType] or _G.SAMURAI_WALKING_SPEED.normal
+	humanoid.WalkSpeed = speed
+end
+
 -- Combo system configuration
 local COMBO_CONFIG = {
 	comboTimeout = 1, -- 1 second timeout for combo reset
@@ -106,7 +144,8 @@ local function setupAttackAnimations(player)
 	}
 	
 	-- Start with idle animation
-	idleTrack:Play()
+		idleTrack:Play()
+		_G.applySamuraiAnimationSpeed(idleTrack)
 	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
@@ -115,10 +154,16 @@ local function setupAttackAnimations(player)
 		
 		if speed > 1 then -- threshold for running
 			if data.idleTrack.IsPlaying then data.idleTrack:Stop() end
-			if not data.runTrack.IsPlaying then data.runTrack:Play() end
+			if not data.runTrack.IsPlaying then 
+				data.runTrack:Play()
+				_G.applySamuraiAnimationSpeed(data.runTrack)
+			end
 		else
 			if data.runTrack.IsPlaying then data.runTrack:Stop() end
-			if not data.idleTrack.IsPlaying then data.idleTrack:Play() end
+			if not data.idleTrack.IsPlaying then 
+				data.idleTrack:Play()
+				_G.applySamuraiAnimationSpeed(data.idleTrack)
+			end
 		end
 	end)
 	
@@ -262,6 +307,7 @@ local function handleNormalAttack(player)
 			data.comboTimer = nil
 		end
 		data.jumpTrack:Play()
+		_G.applySamuraiAnimationSpeed(data.jumpTrack)
 		
 		-- Jump attack hitbox
 		_G.createStaticHitbox({
@@ -289,6 +335,7 @@ local function handleNormalAttack(player)
 			data.comboTimer = nil
 		end
 		data.moveSlashTrack:Play()
+		_G.applySamuraiAnimationSpeed(data.moveSlashTrack)
 		
 		-- Move attack hitbox
 		_G.createStaticHitbox({
@@ -319,6 +366,7 @@ local function handleNormalAttack(player)
 		
 		if data.clickCount == 1 then
 			data.animTrack1:Play()
+			_G.applySamuraiAnimationSpeed(data.animTrack1)
 			
 			-- Combo 1 hitbox
 			_G.createStaticHitbox({
@@ -340,6 +388,7 @@ local function handleNormalAttack(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
+			_G.applySamuraiAnimationSpeed(data.animTrack2)
 			
 			-- Combo 2 hitbox
 			_G.createStaticHitbox({
@@ -365,6 +414,7 @@ local function handleNormalAttack(player)
 				-- Reset to combo 1 and play it
 				data.clickCount = 1
 				data.animTrack1:Play()
+			_G.applySamuraiAnimationSpeed(data.animTrack1)
 				
 				-- Combo 1 hitbox (fallback from combo 3 cooldown)
 				_G.createStaticHitbox({
@@ -386,6 +436,7 @@ local function handleNormalAttack(player)
 			else
 				-- Perform combo 3 and start cooldown
 				data.animTrack3:Play()
+				_G.applySamuraiAnimationSpeed(data.animTrack3)
 				
 				-- Combo 3 hitbox (most powerful)
 				_G.createStaticHitbox({
@@ -420,6 +471,7 @@ local function handleWave(player)
 	
 	-- Play wave animation
 	data.waveTrack:Play()
+	_G.applySamuraiAnimationSpeed(data.waveTrack)
 end
 
 local function handleBlock(player, isBlocking)
@@ -436,12 +488,13 @@ local function handleBlock(player, isBlocking)
 		-- Start blocking
 		data.isBlocking = true
 		data.blockTrack:Play()
-		hum.WalkSpeed = 0 -- Stop movement while blocking
+		_G.applySamuraiAnimationSpeed(data.blockTrack)
+		_G.setSamuraiWalkingSpeed(player, "blocking") -- Stop movement while blocking
 	else
 		-- Stop blocking
 		data.isBlocking = false
 		data.blockTrack:Stop()
-		hum.WalkSpeed = data.originalWalkSpeed -- Restore movement
+		_G.setSamuraiWalkingSpeed(player, "normal") -- Restore normal movement
 	end
 end
 
@@ -468,6 +521,7 @@ local function handleJumpAttack(player)
 	
 	-- Play jump attack animation
 	data.jumpTrack:Play()
+	_G.applySamuraiAnimationSpeed(data.jumpTrack)
 	data.jumpTrack.Stopped:Once(function()
 		data.isAttacking = false
 	end)

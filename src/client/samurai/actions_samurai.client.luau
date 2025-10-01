@@ -25,9 +25,7 @@ local humanoid = nil
 -- Configuration
 local CONFIG = {
 	weaponTag = "samurai_wpn",
-	-- Movement speeds
-	slowWalkSpeed = 1, -- Speed during wakizashi/kozuki skills
-	defaultWalkSpeed = 16, -- Normal movement speed
+	-- Walking speed is now controlled by server
 	actions = {
 		[Enum.KeyCode.E] = "kozuki",
 		[Enum.KeyCode.Q] = "wakizashi",
@@ -143,7 +141,7 @@ local function lockMovementOnly()
 	end
 	
 	movementLocked = true
-	humanoid.WalkSpeed = CONFIG.slowWalkSpeed
+	-- Walking speed is now controlled by server
 end
 
 local function unlockMovementOnly()
@@ -152,7 +150,7 @@ local function unlockMovementOnly()
 	end
 	
 	movementLocked = false
-	humanoid.WalkSpeed = CONFIG.defaultWalkSpeed
+	-- Walking speed is now controlled by server
 end
 
 -- ========================================
