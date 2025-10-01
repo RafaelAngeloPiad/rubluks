@@ -17,12 +17,17 @@ local camera = workspace.CurrentCamera
 local tool = nil
 local inputConnection = nil
 local inputLocked = false -- Flag to control input registration
+local movementLocked = false -- Flag to control movement only (for skills like wakizashi/kozuki)
 local playerModule = nil
 local controls = nil
+local humanoid = nil
 
 -- Configuration
 local CONFIG = {
 	weaponTag = "samurai_wpn",
+	-- Movement speeds
+	slowWalkSpeed = 1, -- Speed during wakizashi/kozuki skills
+	defaultWalkSpeed = 16, -- Normal movement speed
 	actions = {
 		[Enum.KeyCode.E] = "kozuki",
 		[Enum.KeyCode.Q] = "wakizashi",
@@ -106,6 +111,12 @@ local function initializePlayerModule()
 	-- Get PlayerModule and Controls
 	playerModule = require(player.PlayerScripts:WaitForChild("PlayerModule"))
 	controls = playerModule:GetControls()
+	
+	-- Get humanoid for movement control
+	local character = player.Character
+	if character then
+		humanoid = character:FindFirstChildOfClass("Humanoid")
+	end
 end
 
 local function lockInput()
@@ -126,13 +137,36 @@ local function unlockInput()
 	controls:Enable()
 end
 
+local function lockMovementOnly()
+	if not humanoid then
+		return
+	end
+	
+	movementLocked = true
+	humanoid.WalkSpeed = CONFIG.slowWalkSpeed
+end
+
+local function unlockMovementOnly()
+	if not humanoid then
+		return
+	end
+	
+	movementLocked = false
+	humanoid.WalkSpeed = CONFIG.defaultWalkSpeed
+end
+
 -- ========================================
 -- ACTION HANDLER
 -- ========================================
 
 local function useAction(actionName)
-	-- Check if input is locked
+	-- Check if input is locked (but allow movement-only locked actions)
 	if inputLocked then
+		return
+	end
+	
+	-- Check if movement is locked for non-skill actions
+	if movementLocked and actionName ~= "wakizashi" and actionName ~= "kozuki" then
 		return
 	end
 	
@@ -171,6 +205,10 @@ local function onWeaponFound(weaponTool)
 			lockInput()
 		elseif message == "unlock_input" then
 			unlockInput()
+		elseif message == "lock_movement" then
+			lockMovementOnly()
+		elseif message == "unlock_movement" then
+			unlockMovementOnly()
 		end
 	end)
 	
@@ -191,6 +229,11 @@ local function onWeaponFound(weaponTool)
 			return
 		end
 		
+		-- Allow camera movement (mouse movement) even when movement is locked
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			return -- Allow camera movement
+		end
+		
 		-- Handle skills (E, Q, R, F, Z)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			local actionName = CONFIG.actions[input.KeyCode]
@@ -199,27 +242,27 @@ local function onWeaponFound(weaponTool)
 				return
 			end
 			
-			-- Handle block (Ctrl)
-			if input.KeyCode == CONFIG.keybinds.block then
+			-- Handle block (Ctrl) - but not when movement is locked
+			if input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 				remote:FireServer("block_start")
 				return
 			end
 			
-			-- Handle jump (Spacebar)
-			if input.KeyCode == CONFIG.keybinds.jump then
+			-- Handle jump (Spacebar) - but not when movement is locked
+			if input.KeyCode == CONFIG.keybinds.jump and not movementLocked then
 				remote:FireServer("jump_attack")
 				return
 			end
 			
-			-- Handle wave (P key)
-			if input.KeyCode == CONFIG.keybinds.wave then
+			-- Handle wave (P key) - but not when movement is locked
+			if input.KeyCode == CONFIG.keybinds.wave and not movementLocked then
 				remote:FireServer("wave")
 				return
 			end
 		end
 		
-		-- Handle mouse clicks
-		if input.UserInputType == CONFIG.keybinds.attack then
+		-- Handle mouse clicks - but not when movement is locked
+		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
 			-- Left click attack
 			remote:FireServer("left_click_attack")
 		end
@@ -234,7 +277,7 @@ local function onWeaponFound(weaponTool)
 			return
 		end
 		
-		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block then
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 			-- Block release
 			remote:FireServer("block_end")
 		end
@@ -253,6 +296,7 @@ local function onWeaponLost()
 	
 	-- Unlock input when weapon is lost
 	unlockInput()
+	unlockMovementOnly()
 	
 	-- Clean up input connections
 	if inputConnection then
@@ -262,6 +306,9 @@ local function onWeaponLost()
 end
 
 local function onCharacterAdded(character)
+	-- Update humanoid reference
+	humanoid = character:FindFirstChildOfClass("Humanoid")
+	
 	-- Check if weapon is already equipped
 	for _, weaponTool in character:GetChildren() do
 		if weaponTool:IsA("Tool") and CollectionService:HasTag(weaponTool, CONFIG.weaponTag) then

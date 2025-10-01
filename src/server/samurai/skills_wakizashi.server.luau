@@ -28,12 +28,12 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
 	
-	-- Lock input when skill starts
-	remote:FireClient(player, "lock_input")
+	-- Lock movement only when skill starts (allows camera/aiming)
+	remote:FireClient(player, "lock_movement")
 	
-	-- Unlock input when animation ends
+	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
+		remote:FireClient(player, "unlock_movement")
 	end)
 
 	-- ? DASH marker
