@@ -63,13 +63,15 @@ function _G.createStaticHitbox(config)
 		
 		-- Check for hits once
 		local regionParts = workspace:GetPartBoundsInBox(cframe, size)
+		local hitTargets = {}
 		
 		for _, part in regionParts do
 			local model = part:FindFirstAncestorOfClass("Model")
 			if model and model ~= character then
 				local humanoid = model:FindFirstChild("Humanoid")
 				
-				if humanoid then
+				if humanoid and not hitTargets[humanoid] then
+					hitTargets[humanoid] = true
 					humanoid:TakeDamage(damage)
 					
 					-- Flash visual
