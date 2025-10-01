@@ -52,6 +52,20 @@ local function createSlash(character, angle)
 	bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 	bodyVelocity.Parent = bladePart
 
+	-- HITBOX V3: Attach traveling hitbox to blade
+	_G.createTravelingHitbox({
+		attachTo = bladePart,
+		offset = CFrame.new(-30, 0, 0), -- tagilid kasi yung blade so x - up down  y - left / right  z - up down
+		size = Vector3.new(8, 30, 8), -- width, height, depth
+		damage = 30,
+		-- duration removed - will last as long as bladePart exists (2 seconds via Debris)
+		delay = 0, -- delay before hitbox appears (in seconds)
+		character = character,
+		name = "Zantetsuken",
+		showVisual = true,
+		visualColor = Color3.new(1, 0, 1) -- Purple
+	})
+
 	-- Cleanup
 	Debris:AddItem(vfx, 2)
 	Debris:AddItem(bodyVelocity, 2)
