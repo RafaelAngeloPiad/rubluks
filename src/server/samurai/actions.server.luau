@@ -13,6 +13,12 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 -- Store player attack data
 local playerAttackData = {}
 
+-- Combo system configuration
+local COMBO_CONFIG = {
+	comboTimeout = 1, -- 1 second timeout for combo reset
+	combo3Cooldown = 20, -- 3 second cooldown for 3rd attack
+}
+
 -- ========================================
 -- ATTACK ANIMATION SETUP
 -- ========================================
@@ -92,7 +98,11 @@ local function setupAttackAnimations(player)
 		isAttacking = false,
 		isJumping = false,
 		isBlocking = false,
-		originalWalkSpeed = hum.WalkSpeed
+		originalWalkSpeed = hum.WalkSpeed,
+		-- Combo system variables
+		comboTimer = nil,
+		combo3CooldownEnd = 0,
+		canUseCombo3 = true
 	}
 	
 	-- Start with idle animation
@@ -119,10 +129,8 @@ local function setupAttackAnimations(player)
 		
 		if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
 			data.isJumping = true
-			print("[Actions] Player", player.Name, "jump state changed to:", newState, "- isJumping set to true")
 		elseif newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then
 			data.isJumping = false
-			print("[Actions] Player", player.Name, "jump state changed to:", newState, "- isJumping set to false")
 			if data.jumpTrack.IsPlaying then
 				data.jumpTrack:Stop()
 			end
@@ -157,6 +165,12 @@ local function cleanupAttackAnimations(player)
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
 	
+	-- Clear combo timer
+	if data.comboTimer then
+		task.cancel(data.comboTimer)
+		data.comboTimer = nil
+	end
+	
 	-- Reset walk speed
 	local char = player.Character
 	if char then
@@ -170,6 +184,49 @@ local function cleanupAttackAnimations(player)
 end
 
 -- ========================================
+-- COMBO SYSTEM HELPERS
+-- ========================================
+
+local function resetComboTimer(player)
+	local data = playerAttackData[player]
+	if not data then return end
+	
+	-- Clear existing timer
+	if data.comboTimer then
+		task.cancel(data.comboTimer)
+		data.comboTimer = nil
+	end
+	
+	-- Set new timer
+	data.comboTimer = task.delay(COMBO_CONFIG.comboTimeout, function()
+		data.clickCount = 0
+		data.isAttacking = false -- Reset attacking flag when combo times out
+	end)
+end
+
+local function canPerformCombo3(player)
+	local data = playerAttackData[player]
+	if not data then return false end
+	
+	-- Check if cooldown has passed
+	local currentTime = tick()
+	if currentTime >= data.combo3CooldownEnd then
+		data.canUseCombo3 = true
+		return true
+	end
+	
+	return false
+end
+
+local function startCombo3Cooldown(player)
+	local data = playerAttackData[player]
+	if not data then return end
+	
+	data.canUseCombo3 = false
+	data.combo3CooldownEnd = tick() + COMBO_CONFIG.combo3Cooldown
+end
+
+-- ========================================
 -- ATTACK HANDLERS
 -- ========================================
 
@@ -177,8 +234,8 @@ local function handleNormalAttack(player)
 	local data = playerAttackData[player]
 	if not data then return end
 	
+	-- Prevent spam - only allow attack if not currently attacking
 	if data.isAttacking or data.isBlocking then 
-		print("[Actions] Attack blocked - already performing action")
 		return 
 	end
 	
@@ -196,6 +253,11 @@ local function handleNormalAttack(player)
 	if isJumping then
 		-- Jump attack - separate attack that resets combo (priority over movement)
 		data.clickCount = 0 -- Reset combo when doing jump attack
+		-- Clear combo timer
+		if data.comboTimer then
+			data.comboTimer:Cancel()
+			data.comboTimer = nil
+		end
 		data.jumpTrack:Play()
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
@@ -204,6 +266,11 @@ local function handleNormalAttack(player)
 	elseif isMoving then
 		-- Move attack - separate attack that resets combo (only when on ground)
 		data.clickCount = 0 -- Reset combo when doing move attack
+		-- Clear combo timer
+		if data.comboTimer then
+			data.comboTimer:Cancel()
+			data.comboTimer = nil
+		end
 		data.moveSlashTrack:Play()
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
@@ -211,24 +278,47 @@ local function handleNormalAttack(player)
 		
 	else
 		-- Normal ground combo (standing still)
+		-- Clear existing combo timer
+		if data.comboTimer then
+			task.cancel(data.comboTimer)
+			data.comboTimer = nil
+		end
+		
 		data.clickCount += 1
 		
 		if data.clickCount == 1 then
 			data.animTrack1:Play()
 			data.animTrack1.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Start combo timer after first attack
+				resetComboTimer(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Start combo timer after second attack
+				resetComboTimer(player)
 			end)
 		elseif data.clickCount == 3 then
-			data.animTrack3:Play()
-			data.animTrack3.Stopped:Once(function() 
-				data.isAttacking = false 
-				data.clickCount = 0 -- reset combo
-			end)
+			-- Check if combo 3 is available
+			if not canPerformCombo3(player) then
+				-- Reset to combo 1 and play it
+				data.clickCount = 1
+				data.animTrack1:Play()
+				data.animTrack1.Stopped:Once(function() 
+					data.isAttacking = false 
+					resetComboTimer(player)
+				end)
+			else
+				-- Perform combo 3 and start cooldown
+				data.animTrack3:Play()
+				data.animTrack3.Stopped:Once(function() 
+					data.isAttacking = false 
+					data.clickCount = 0 -- reset combo
+					startCombo3Cooldown(player)
+				end)
+			end
 		end
 	end
 end
@@ -238,11 +328,8 @@ local function handleWave(player)
 	if not data then return end
 	
 	if data.isAttacking or data.isBlocking then 
-		print("[Actions] Wave blocked - already performing action")
 		return 
 	end
-	
-	print("[Actions] Player", player.Name, "performing wave emote")
 	
 	-- Play wave animation
 	data.waveTrack:Play()
@@ -263,13 +350,11 @@ local function handleBlock(player, isBlocking)
 		data.isBlocking = true
 		data.blockTrack:Play()
 		hum.WalkSpeed = 0 -- Stop movement while blocking
-		print("[Actions] Player", player.Name, "started blocking")
 	else
 		-- Stop blocking
 		data.isBlocking = false
 		data.blockTrack:Stop()
 		hum.WalkSpeed = data.originalWalkSpeed -- Restore movement
-		print("[Actions] Player", player.Name, "stopped blocking")
 	end
 end
 
@@ -278,7 +363,6 @@ local function handleJumpAttack(player)
 	if not data then return end
 	
 	if data.isAttacking or data.isBlocking then 
-		print("[Actions] Jump attack blocked - already performing action")
 		return 
 	end
 	
@@ -290,12 +374,10 @@ local function handleJumpAttack(player)
 	
 	-- Check if player is actually jumping using our tracking flag
 	if not data.isJumping then
-		print("[Actions] Jump attack blocked - not jumping (isJumping:", data.isJumping, "humState:", hum:GetState(), ")")
 		return
 	end
 	
 	data.isAttacking = true
-	print("[Actions] Player", player.Name, "performing jump attack")
 	
 	-- Play jump attack animation
 	data.jumpTrack:Play()
@@ -309,7 +391,6 @@ end
 -- ========================================
 
 remote.OnServerEvent:Connect(function(player, actionName)
-	print("[Actions] Server received:", actionName, "from", player.Name)
 	
 	-- Handle attack actions
 	if actionName == "normal_attack_setup" then

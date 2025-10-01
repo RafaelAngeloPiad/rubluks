@@ -106,29 +106,24 @@ local function initializePlayerModule()
 	-- Get PlayerModule and Controls
 	playerModule = require(player.PlayerScripts:WaitForChild("PlayerModule"))
 	controls = playerModule:GetControls()
-	--print("[InputLock] PlayerModule initialized")
 end
 
 local function lockInput()
 	if not controls then
-		--print("[InputLock] Error - Controls not initialized")
 		return
 	end
 	
 	inputLocked = true
 	controls:Disable()
-	--print("[InputLock] Input locked - all movement and input disabled")
 end
 
 local function unlockInput()
 	if not controls then
-		--print("[InputLock] Error - Controls not initialized")
 		return
 	end
 	
 	inputLocked = false
 	controls:Enable()
-	--print("[InputLock] Input unlocked - movement and input restored")
 end
 
 -- ========================================
@@ -138,17 +133,14 @@ end
 local function useAction(actionName)
 	-- Check if input is locked
 	if inputLocked then
-		--print("[Actions] Failed - input locked")
 		return
 	end
 	
 	-- Validate tool is equipped
 	if not tool or tool.Parent ~= player.Character then
-		--print("[Actions] Failed - tool not equipped")
 		return
 	end
 	
-	--print("[Actions] Using action:", actionName)
 	
 	-- Tell server to handle VFX and hitboxes
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
@@ -168,7 +160,6 @@ end
 
 local function onWeaponFound(weaponTool)
 	tool = weaponTool
-	--print("[Actions] Weapon equipped:", weaponTool.Name)
 	
 	-- Initialize PlayerModule
 	initializePlayerModule()
@@ -197,7 +188,6 @@ local function onWeaponFound(weaponTool)
 		
 		-- Check if input is locked
 		if inputLocked then
-			--print("[Actions] Input blocked - input locked")
 			return
 		end
 		
@@ -253,7 +243,6 @@ end
 
 local function onWeaponLost()
 	if tool then
-		--print("[Actions] Weapon unequipped:", tool.Name)
 		
 		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")

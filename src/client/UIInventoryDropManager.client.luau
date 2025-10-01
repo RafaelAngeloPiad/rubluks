@@ -128,7 +128,7 @@ local function createDropUI()
 	dropButton.Activated:Connect(function()
 		if selectedTool then
 			dropItemRemote:FireServer(selectedTool.Name)
-			print("[InventoryDropManager] Requested drop for:", selectedTool.Name)
+			--print("[InventoryDropManager] Requested drop for:", selectedTool.Name)
 		end
 		hideDropUI()
 	end)
@@ -173,21 +173,21 @@ end
 
 -- Handle desktop input (keyboard/mouse)
 local function handleDesktopInput()
-	print("[InventoryDropManager] Setting up desktop input handlers")
+	--print("[InventoryDropManager] Setting up desktop input handlers")
 
 	-- Hotkey drop (G key)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 
 		if input.KeyCode == DROP_CONFIG.HOTKEY then
-			print("[InventoryDropManager] G key pressed, looking for tool to drop")
+			--print("[InventoryDropManager] G key pressed, looking for tool to drop")
 
 			-- Try to drop currently equipped tool first
 			local character = player.Character
 			if character then
 				local equippedTool = character:FindFirstChildOfClass("Tool")
 				if equippedTool then
-					print("[InventoryDropManager] Found equipped tool:", equippedTool.Name)
+					--print("[InventoryDropManager] Found equipped tool:", equippedTool.Name)
 					if DROP_CONFIG.SHOW_DROP_CONFIRMATION then
 						showDropUI(equippedTool)
 					else
@@ -202,27 +202,27 @@ local function handleDesktopInput()
 			if backpack then
 				local firstTool = backpack:FindFirstChildOfClass("Tool")
 				if firstTool then
-					print("[InventoryDropManager] Found backpack tool:", firstTool.Name)
+					--print("[InventoryDropManager] Found backpack tool:", firstTool.Name)
 					if DROP_CONFIG.SHOW_DROP_CONFIRMATION then
 						showDropUI(firstTool)
 					else
 						dropItemRemote:FireServer(firstTool.Name)
 					end
 				else
-					print("[InventoryDropManager] No tools found in backpack")
+					--print("[InventoryDropManager] No tools found in backpack")
 				end
 			else
-				print("[InventoryDropManager] No backpack found")
+				--print("[InventoryDropManager] No backpack found")
 			end
 		end
 	end)
 
-	print("[InventoryDropManager] Desktop input handlers set up successfully")
+	--print("[InventoryDropManager] Desktop input handlers set up successfully")
 end
 
 -- Create universal drop button (works for both mobile and desktop)
 local function createDropButton()
-	print("[InventoryDropManager] Creating drop button")
+	--print("[InventoryDropManager] Creating drop button")
 
 	local dropButtonGui = Instance.new("ScreenGui")
 	dropButtonGui.Name = "DropButtonGui"
@@ -247,7 +247,7 @@ local function createDropButton()
 	buttonCorner.Parent = button
 
 	button.Activated:Connect(function()
-		print("[InventoryDropManager] Drop button clicked")
+		--print("[InventoryDropManager] Drop button clicked")
 
 		-- Drop currently equipped tool or first backpack tool
 		local character = player.Character
@@ -256,7 +256,7 @@ local function createDropButton()
 		if character then
 			toolToDrop = character:FindFirstChildOfClass("Tool")
 			if toolToDrop then
-				print("[InventoryDropManager] Found equipped tool for button drop:", toolToDrop.Name)
+				--print("[InventoryDropManager] Found equipped tool for button drop:", toolToDrop.Name)
 			end
 		end
 
@@ -265,7 +265,7 @@ local function createDropButton()
 			if backpack then
 				toolToDrop = backpack:FindFirstChildOfClass("Tool")
 				if toolToDrop then
-					print("[InventoryDropManager] Found backpack tool for button drop:", toolToDrop.Name)
+					--print("[InventoryDropManager] Found backpack tool for button drop:", toolToDrop.Name)
 				end
 			end
 		end
@@ -273,16 +273,16 @@ local function createDropButton()
 		if toolToDrop then
 			showDropUI(toolToDrop)
 		else
-			print("[InventoryDropManager] No tools found to drop")
+			--print("[InventoryDropManager] No tools found to drop")
 		end
 	end)
 
-	print("[InventoryDropManager] Drop button created successfully")
+	--print("[InventoryDropManager] Drop button created successfully")
 end
 
 -- Initialize based on platform
 local function initialize()
-	print("[InventoryDropManager] Client initialized for", isMobile() and "mobile" or "desktop", "platform")
+	--print("[InventoryDropManager] Client initialized for", isMobile() and "mobile" or "desktop", "platform")
 
 	-- Always create the drop button (works for both platforms)
 	createDropButton()
@@ -292,7 +292,7 @@ local function initialize()
 		handleDesktopInput()
 	end
 
-	print("[InventoryDropManager] Initialization complete")
+	--print("[InventoryDropManager] Initialization complete")
 end
 
 -- Start the system
@@ -305,4 +305,4 @@ if player.Character then
 	initialize()
 end
 
-print("[InventoryDropManager] Client script loaded with configuration:", DROP_CONFIG)
+--print("[InventoryDropManager] Client script loaded with configuration:", DROP_CONFIG)
