@@ -1,35 +1,25 @@
--- ========================================
--- BANZAI BUFF SERVER
--- Raw and procedural implementation
--- ========================================
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
--- Remote setup
-local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+local tool = script.Parent
+local player = Players.LocalPlayer
+
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 
 -- preload animation
 local auraAnim = Instance.new("Animation")
 auraAnim.AnimationId = "rbxassetid://115710510666189"
 
-remote.OnServerEvent:Connect(function(player, skillType)
-	print("[Banzai] Server received request from", player.Name, "with skillType:", skillType)
-	
-	-- Only handle banzai buff requests
-	if skillType ~= "banzai" then
-		return
-	end
-	
-	print("[Banzai] Processing banzai buff for", player.Name)
+
+tool.Equipped:Connect(function()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
 	local animator = humanoid:WaitForChild("Animator")
 
 	local animTrack = animator:LoadAnimation(auraAnim)
-	animTrack:Play()
 
 	-- ⚡ AURA marker (one-time connection lang)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
@@ -47,6 +37,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
+
 		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, 0)* rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
@@ -57,7 +48,11 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			end
 		end
 
-		Debris:AddItem(vfx, 1.5)
+		game:GetService("Debris"):AddItem(vfx, 1.5)
 	end)
 
+	-- 🔹 Left click handler (ito lang uulit-ulit)
+	tool.Activated:Connect(function()
+		animTrack:Play()
+	end)
 end)

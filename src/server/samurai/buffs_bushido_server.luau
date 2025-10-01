@@ -1,35 +1,60 @@
--- ========================================
--- BUSHIDO BUFF SERVER
--- Raw and procedural implementation
--- ========================================
-
+local TweenService = game:GetService("TweenService")
+local camera = workspace.CurrentCamera
+local player = game.Players.LocalPlayer
+local tool = script.Parent
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local Debris = game:GetService("Debris")
 
--- Remote setup
-local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+-- Save original state
+local function saveOriginal()
+	return camera.CFrame, camera.CameraType
+end
 
--- preload animation
+-- Tween helper
+local function tweenTo(cf, time)
+	local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	local tween = TweenService:Create(camera, tweenInfo, {CFrame = cf})
+	tween:Play()
+	tween.Completed:Wait()
+end
+
+-- Camera Sequence System
+local function playSkillCamera()
+	local origCFrame, origType = saveOriginal()
+	camera.CameraType = Enum.CameraType.Scriptable
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local root = char:WaitForChild("HumanoidRootPart")
+
+	-- Define steps (camera position, tweenTime, holdTime)
+	local sequence = {
+		{cf = root.CFrame * CFrame.new(-5, 1.5, -1.5) * CFrame.Angles(0, math.rad(-80), 0), tweenTime = 1, holdTime = 2.5},
+		{cf = root.CFrame * CFrame.new(0, 2, -3.5) * CFrame.Angles(0, math.rad(-180), 0), tweenTime = 0, holdTime = 1.5},
+		--{cf = root.CFrame * CFrame.new(0, 10, 10) * CFrame.Angles(math.rad(-20), math.rad(180), 0), tweenTime = 1, holdTime = 2},
+	}
+
+	-- Run sequence instantly
+	for _, step in ipairs(sequence) do
+		tweenTo(step.cf, step.tweenTime)
+		task.wait(step.holdTime)
+	end
+
+	-- Return to original
+	tweenTo(origCFrame, 1)
+	task.wait(0.5)
+	camera.CameraType = origType
+end
+
 local auraAnim = Instance.new("Animation")
 auraAnim.AnimationId = "rbxassetid://111377142829522"
 
-remote.OnServerEvent:Connect(function(player, skillType)
-	print("[Bushido] Server received request from", player.Name, "with skillType:", skillType)
-	
-	-- Only handle bushido buff requests
-	if skillType ~= "bushido" then
-		return
-	end
-	
-	print("[Bushido] Processing bushido buff for", player.Name)
+
+tool.Equipped:Connect(function()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
 	local animator = humanoid:WaitForChild("Animator")
 
 	local animTrack = animator:LoadAnimation(auraAnim)
-	animTrack:Play()
 
 	-- ⚡ AURA marker (one-time connection lang)
 	animTrack:GetMarkerReachedSignal("Aura"):Connect(function()
@@ -47,6 +72,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
+
 		vfx:PivotTo(root.CFrame * CFrame.new(0, -2, 0)* rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
@@ -57,7 +83,21 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			end
 		end
 		
-		Debris:AddItem(vfx, 4.5)
+		game:GetService("Debris"):AddItem(vfx, 4.5)
 	end)
 
+	-- 🔹 Left click handler (ito lang uulit-ulit)
+	tool.Activated:Connect(function()
+		animTrack:Play()
+		playSkillCamera()
+	end)
 end)
+
+
+--[[ Example trigger (left click)
+game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		--playSkillCamera()
+	end
+end)
+]]
