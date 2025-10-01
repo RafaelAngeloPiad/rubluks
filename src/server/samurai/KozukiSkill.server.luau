@@ -171,7 +171,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(5, 5, 5),
+			size = Vector3.new(8, 8, 10), -- width, height, depth
 			damage = 1,
 			duration = 1,
 			delay = 0, -- delay before hitbox appears (in seconds)
