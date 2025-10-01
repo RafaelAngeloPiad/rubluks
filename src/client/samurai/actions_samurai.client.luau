@@ -16,6 +16,7 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local tool = nil
 local inputConnection = nil
+local attackConnection = nil
 
 -- Movement animation variables
 local idleTrack, runTrack
@@ -161,9 +162,16 @@ local function onWeaponFound(weaponTool)
 		end)
 	end
 	
-	-- Clean up old input connection
+	-- Tell server to setup attack animations
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireServer("normal_attack_setup")
+	
+	-- Clean up old connections
 	if inputConnection then
 		inputConnection:Disconnect()
+	end
+	if attackConnection then
+		attackConnection:Disconnect()
 	end
 	
 	-- Listen for key presses (E, Q, R, F, Z)
@@ -177,11 +185,38 @@ local function onWeaponFound(weaponTool)
 			useAction(actionName)
 		end
 	end)
+	
+	-- Listen for mouse clicks (normal attacks)
+	attackConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
+		if isProcessed then return end
+		
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			-- Left click attack
+			remote:FireServer("left_click_attack")
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			-- Right click hold
+			remote:FireServer("right_click_hold")
+		end
+	end)
+	
+	-- Listen for mouse release (right click release)
+	UserInputService.InputEnded:Connect(function(input, isProcessed)
+		if isProcessed then return end
+		
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			-- Right click release
+			remote:FireServer("right_click_release")
+		end
+	end)
 end
 
 local function onWeaponLost()
 	if tool then
 		print("[Actions] Weapon unequipped:", tool.Name)
+		
+		-- Tell server to cleanup attack animations
+		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+		remote:FireServer("normal_attack_cleanup")
 		
 		-- Cleanup movement animations
 		if idleTrack then 
@@ -196,10 +231,14 @@ local function onWeaponLost()
 		tool = nil
 	end
 	
-	-- Clean up input connection
+	-- Clean up input connections
 	if inputConnection then
 		inputConnection:Disconnect()
 		inputConnection = nil
+	end
+	if attackConnection then
+		attackConnection:Disconnect()
+		attackConnection = nil
 	end
 end
 
