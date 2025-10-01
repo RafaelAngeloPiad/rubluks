@@ -17,6 +17,9 @@ local camera = workspace.CurrentCamera
 local tool = nil
 local inputConnection = nil
 local attackConnection = nil
+local inputLocked = false -- Flag to control input registration
+local playerModule = nil
+local controls = nil
 
 -- Configuration
 local CONFIG = {
@@ -90,17 +93,56 @@ local CAMERA_SEQUENCES = {
 }
 
 -- ========================================
+-- INPUT LOCK SYSTEM (Using PlayerModule)
+-- ========================================
+
+local function initializePlayerModule()
+	-- Get PlayerModule and Controls
+	playerModule = require(player.PlayerScripts:WaitForChild("PlayerModule"))
+	controls = playerModule:GetControls()
+	--print("[InputLock] PlayerModule initialized")
+end
+
+local function lockInput()
+	if not controls then
+		--print("[InputLock] Error - Controls not initialized")
+		return
+	end
+	
+	inputLocked = true
+	controls:Disable()
+	--print("[InputLock] Input locked - all movement and input disabled")
+end
+
+local function unlockInput()
+	if not controls then
+		--print("[InputLock] Error - Controls not initialized")
+		return
+	end
+	
+	inputLocked = false
+	controls:Enable()
+	--print("[InputLock] Input unlocked - movement and input restored")
+end
+
+-- ========================================
 -- ACTION HANDLER
 -- ========================================
 
 local function useAction(actionName)
-	-- Validate tool is equipped
-	if not tool or tool.Parent ~= player.Character then
-		print("[Actions] Failed - tool not equipped")
+	-- Check if input is locked
+	if inputLocked then
+		--print("[Actions] Failed - input locked")
 		return
 	end
 	
-	print("[Actions] Using action:", actionName)
+	-- Validate tool is equipped
+	if not tool or tool.Parent ~= player.Character then
+		--print("[Actions] Failed - tool not equipped")
+		return
+	end
+	
+	--print("[Actions] Using action:", actionName)
 	
 	-- Tell server to handle VFX and hitboxes
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
@@ -120,10 +162,22 @@ end
 
 local function onWeaponFound(weaponTool)
 	tool = weaponTool
-	print("[Actions] Weapon equipped:", weaponTool.Name)
+	--print("[Actions] Weapon equipped:", weaponTool.Name)
+	
+	-- Initialize PlayerModule
+	initializePlayerModule()
+	
+	-- Listen for input lock/unlock messages from server
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote.OnClientEvent:Connect(function(message)
+		if message == "lock_input" then
+			lockInput()
+		elseif message == "unlock_input" then
+			unlockInput()
+		end
+	end)
 	
 	-- Tell server to setup all animations (attack + movement)
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	remote:FireServer("normal_attack_setup")
 	
 	-- Clean up old connections
@@ -150,6 +204,12 @@ local function onWeaponFound(weaponTool)
 	attackConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
+		-- Check if input is locked
+		if inputLocked then
+			--print("[Actions] Attack blocked - input locked")
+			return
+		end
+		
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			-- Left click attack
 			remote:FireServer("left_click_attack")
@@ -172,7 +232,7 @@ end
 
 local function onWeaponLost()
 	if tool then
-		print("[Actions] Weapon unequipped:", tool.Name)
+		--print("[Actions] Weapon unequipped:", tool.Name)
 		
 		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
@@ -180,6 +240,9 @@ local function onWeaponLost()
 		
 		tool = nil
 	end
+	
+	-- Unlock input when weapon is lost
+	unlockInput()
 	
 	-- Clean up input connections
 	if inputConnection then

@@ -27,6 +27,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
+	
+	-- Lock input when skill starts
+	remote:FireClient(player, "lock_input")
+	
+	-- Unlock input when animation ends
+	animTrack.Stopped:Connect(function()
+		remote:FireClient(player, "unlock_input")
+	end)
 
 	-- ? DASH marker
 	animTrack:GetMarkerReachedSignal("ElectricAura"):Connect(function()

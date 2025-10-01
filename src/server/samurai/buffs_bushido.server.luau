@@ -15,14 +15,12 @@ local auraAnim = Instance.new("Animation")
 auraAnim.AnimationId = "rbxassetid://111377142829522"
 
 remote.OnServerEvent:Connect(function(player, skillType)
-	print("[Bushido] Server received request from", player.Name, "with skillType:", skillType)
 	
 	-- Only handle bushido buff requests
 	if skillType ~= "bushido" then
 		return
 	end
 	
-	print("[Bushido] Processing bushido buff for", player.Name)
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -30,6 +28,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(auraAnim)
 	animTrack:Play()
+	
+	-- Lock input when buff starts
+	remote:FireClient(player, "lock_input")
+	
+	-- Unlock input when animation ends
+	animTrack.Stopped:Connect(function()
+		remote:FireClient(player, "unlock_input")
+	end)
 
 	-- ⚡ AURA marker (one-time connection lang)
 	animTrack:GetMarkerReachedSignal("Aura"):Connect(function()

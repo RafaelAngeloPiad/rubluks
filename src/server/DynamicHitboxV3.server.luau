@@ -511,7 +511,3 @@ function _G.createProjectileHitbox(config)
 		end)
 	end)
 end
-
-print("[HITBOX V3] Server-side hitbox system loaded")
-print("[HITBOX V3] Available functions: _G.createStaticHitbox, _G.createStaticDOTHitbox, _G.createTravelingHitbox, _G.createProjectileHitbox")
-
