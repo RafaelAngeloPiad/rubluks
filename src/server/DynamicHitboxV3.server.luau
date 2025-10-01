@@ -8,6 +8,14 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 -- ========================================
+-- CONFIGURATION
+-- ========================================
+
+local HITBOX_CONFIG = {
+	transparency = 0.9, -- Global transparency for all hitbox visuals
+}
+
+-- ========================================
 -- GLOBAL FUNCTIONS
 -- ========================================
 
@@ -73,7 +81,7 @@ function _G.createStaticHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = 0.6
+			visual.Transparency = HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "HitboxVisual"
 			visual.Parent = workspace
@@ -172,7 +180,7 @@ function _G.createStaticDOTHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = 0.6
+			visual.Transparency = HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "DOTHitboxVisual"
 			visual.Parent = workspace
@@ -313,7 +321,7 @@ function _G.createTravelingHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = 0.6
+			visual.Transparency = HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "HitboxVisual"
 			visual.Parent = workspace
@@ -436,7 +444,7 @@ function _G.createProjectileHitbox(config)
 			projectile.CanQuery = false
 			projectile.CanTouch = false
 			projectile.Material = Enum.Material.Neon
-			projectile.Transparency = 0.3
+			projectile.Transparency = HITBOX_CONFIG.transparency
 			projectile.Color = visualColor
 			projectile.Name = name .. "Projectile"
 			projectile.Parent = workspace
@@ -492,7 +500,7 @@ function _G.createProjectileHitbox(config)
 						hitVisual.Anchored = true
 						hitVisual.CanCollide = false
 						hitVisual.Material = Enum.Material.Neon
-						hitVisual.Transparency = 0.5
+						hitVisual.Transparency = HITBOX_CONFIG.transparency
 						hitVisual.Color = Color3.new(1, 0, 0)
 						hitVisual.Name = name .. "HitEffect"
 						hitVisual.Parent = workspace

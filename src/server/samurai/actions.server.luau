@@ -266,8 +266,8 @@ local function handleNormalAttack(player)
 		-- Jump attack hitbox
 		_G.createStaticHitbox({
 			attachTo = root,
-			offset = CFrame.new(0, -2, -4),
-			size = Vector3.new(8, 6, 8),
+			offset = CFrame.new(0, -5, -10),
+			size = Vector3.new(5, 17, 12),
 			damage = 30,
 			character = char,
 			name = "JumpAttack",
@@ -391,13 +391,13 @@ local function handleNormalAttack(player)
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = CFrame.new(0, 0, -5),
-					size = Vector3.new(12, 12, 10),
+					size = Vector3.new(17, 17, 17),
 					damage = 50,
 					character = char,
 					name = "Combo3",
 					showVisual = true,
 					visualColor = Color3.new(1, 0, 0),
-					delay = 0.4
+					delay = 2
 				})
 				
 				data.animTrack3.Stopped:Once(function() 
