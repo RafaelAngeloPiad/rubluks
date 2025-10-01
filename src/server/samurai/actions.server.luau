@@ -119,8 +119,10 @@ local function setupAttackAnimations(player)
 		
 		if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
 			data.isJumping = true
-		elseif newState == Enum.HumanoidStateType.Landed then
+			print("[Actions] Player", player.Name, "jump state changed to:", newState, "- isJumping set to true")
+		elseif newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then
 			data.isJumping = false
+			print("[Actions] Player", player.Name, "jump state changed to:", newState, "- isJumping set to false")
 			if data.jumpTrack.IsPlaying then
 				data.jumpTrack:Stop()
 			end
@@ -192,14 +194,16 @@ local function handleNormalAttack(player)
 	data.isAttacking = true
 	
 	if isJumping then
-		-- Jump + Left click = Jump attack anim
+		-- Jump attack - separate attack that resets combo (priority over movement)
+		data.clickCount = 0 -- Reset combo when doing jump attack
 		data.jumpTrack:Play()
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
 		
 	elseif isMoving then
-		-- Move attack kapag naglalakad
+		-- Move attack - separate attack that resets combo (only when on ground)
+		data.clickCount = 0 -- Reset combo when doing move attack
 		data.moveSlashTrack:Play()
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
@@ -284,9 +288,9 @@ local function handleJumpAttack(player)
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then return end
 	
-	-- Check if player is actually jumping
-	if hum:GetState() ~= Enum.HumanoidStateType.Jumping then
-		print("[Actions] Jump attack blocked - not jumping")
+	-- Check if player is actually jumping using our tracking flag
+	if not data.isJumping then
+		print("[Actions] Jump attack blocked - not jumping (isJumping:", data.isJumping, "humState:", hum:GetState(), ")")
 		return
 	end
 	
