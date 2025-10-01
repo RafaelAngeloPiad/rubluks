@@ -16,7 +16,6 @@ local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local tool = nil
 local inputConnection = nil
-local attackConnection = nil
 local inputLocked = false -- Flag to control input registration
 local playerModule = nil
 local controls = nil
@@ -30,6 +29,13 @@ local CONFIG = {
 		[Enum.KeyCode.R] = "banzai",
 		[Enum.KeyCode.F] = "bushido",
 		[Enum.KeyCode.Z] = "zantetsuken",
+	},
+	-- Custom keybinds for basic actions
+	keybinds = {
+		attack = Enum.UserInputType.MouseButton1, -- Left click
+		block = Enum.KeyCode.LeftControl, -- Ctrl key
+		jump = Enum.KeyCode.Space, -- Spacebar
+		wave = Enum.KeyCode.P, -- P key for wave emote
 	}
 }
 
@@ -184,48 +190,63 @@ local function onWeaponFound(weaponTool)
 	if inputConnection then
 		inputConnection:Disconnect()
 	end
-	if attackConnection then
-		attackConnection:Disconnect()
-	end
 	
-	-- Listen for key presses (E, Q, R, F, Z)
+	-- Listen for all input (skills, attacks, block, jump)
 	inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
-		if isProcessed or input.UserInputType ~= Enum.UserInputType.Keyboard then
-			return
-		end
-		
-		local actionName = CONFIG.actions[input.KeyCode]
-		if actionName then
-			useAction(actionName)
-		end
-	end)
-	
-	-- Listen for mouse clicks (normal attacks)
-	attackConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
 		-- Check if input is locked
 		if inputLocked then
-			--print("[Actions] Attack blocked - input locked")
+			--print("[Actions] Input blocked - input locked")
 			return
 		end
 		
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		-- Handle skills (E, Q, R, F, Z)
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			local actionName = CONFIG.actions[input.KeyCode]
+			if actionName then
+				useAction(actionName)
+				return
+			end
+			
+			-- Handle block (Ctrl)
+			if input.KeyCode == CONFIG.keybinds.block then
+				remote:FireServer("block_start")
+				return
+			end
+			
+			-- Handle jump (Spacebar)
+			if input.KeyCode == CONFIG.keybinds.jump then
+				remote:FireServer("jump_attack")
+				return
+			end
+			
+			-- Handle wave (P key)
+			if input.KeyCode == CONFIG.keybinds.wave then
+				remote:FireServer("wave")
+				return
+			end
+		end
+		
+		-- Handle mouse clicks
+		if input.UserInputType == CONFIG.keybinds.attack then
 			-- Left click attack
 			remote:FireServer("left_click_attack")
-		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-			-- Right click hold
-			remote:FireServer("right_click_hold")
 		end
 	end)
 	
-	-- Listen for mouse release (right click release)
+	-- Listen for input release (block)
 	UserInputService.InputEnded:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
-		if input.UserInputType == Enum.UserInputType.MouseButton2 then
-			-- Right click release
-			remote:FireServer("right_click_release")
+		-- Check if input is locked
+		if inputLocked then
+			return
+		end
+		
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block then
+			-- Block release
+			remote:FireServer("block_end")
 		end
 	end)
 end
@@ -248,10 +269,6 @@ local function onWeaponLost()
 	if inputConnection then
 		inputConnection:Disconnect()
 		inputConnection = nil
-	end
-	if attackConnection then
-		attackConnection:Disconnect()
-		attackConnection = nil
 	end
 end
 

@@ -51,11 +51,18 @@ local function setupAttackAnimations(player)
 	moveSlashAnim.AnimationId = "rbxassetid://106133804561379"
 	local moveSlashTrack = animator:LoadAnimation(moveSlashAnim)
 
-	-- Right Click Idle Animation
-	local rightClickIdleAnim = Instance.new("Animation")
-	rightClickIdleAnim.AnimationId = "rbxassetid://116101111905611"
-	local rightClickIdleTrack = animator:LoadAnimation(rightClickIdleAnim)
-	rightClickIdleTrack.Priority = Enum.AnimationPriority.Action
+	-- Block Animation
+	local blockAnim = Instance.new("Animation")
+	blockAnim.AnimationId = "rbxassetid://116101111905611"
+	local blockTrack = animator:LoadAnimation(blockAnim)
+	blockTrack.Priority = Enum.AnimationPriority.Action
+
+	-- Wave Emote Animation
+	local waveAnim = Instance.new("Animation")
+	waveAnim.AnimationId = "rbxassetid://507770239"
+	local waveTrack = animator:LoadAnimation(waveAnim)
+	waveTrack.Looped = false
+	waveTrack.Priority = Enum.AnimationPriority.Action
 
 	-- Movement Animations
 	local idleAnim = Instance.new("Animation")
@@ -77,14 +84,14 @@ local function setupAttackAnimations(player)
 		animTrack3 = animTrack3,
 		jumpTrack = jumpTrack,
 		moveSlashTrack = moveSlashTrack,
-		rightClickIdleTrack = rightClickIdleTrack,
+		blockTrack = blockTrack,
+		waveTrack = waveTrack,
 		idleTrack = idleTrack,
 		runTrack = runTrack,
 		clickCount = 0,
 		isAttacking = false,
-		isRightClicking = false,
 		isJumping = false,
-		holdingRightClick = false,
+		isBlocking = false,
 		originalWalkSpeed = hum.WalkSpeed
 	}
 	
@@ -116,7 +123,6 @@ local function setupAttackAnimations(player)
 			data.isJumping = false
 			if data.jumpTrack.IsPlaying then
 				data.jumpTrack:Stop()
-				print("[Attack] Jump attack ended for", player.Name)
 			end
 		end
 	end)
@@ -132,7 +138,6 @@ local function setupAttackAnimations(player)
 		end
 	end)
 	
-	print("[Attack] Setup attack animations for", player.Name)
 end
 
 local function cleanupAttackAnimations(player)
@@ -145,7 +150,8 @@ local function cleanupAttackAnimations(player)
 	if data.animTrack3 then data.animTrack3:Stop() end
 	if data.jumpTrack then data.jumpTrack:Stop() end
 	if data.moveSlashTrack then data.moveSlashTrack:Stop() end
-	if data.rightClickIdleTrack then data.rightClickIdleTrack:Stop() end
+	if data.blockTrack then data.blockTrack:Stop() end
+	if data.waveTrack then data.waveTrack:Stop() end
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
 	
@@ -159,7 +165,6 @@ local function cleanupAttackAnimations(player)
 	end
 	
 	playerAttackData[player] = nil
-	print("[Attack] Cleaned up attack animations for", player.Name)
 end
 
 -- ========================================
@@ -170,8 +175,8 @@ local function handleNormalAttack(player)
 	local data = playerAttackData[player]
 	if not data then return end
 	
-	if data.isAttacking or data.isRightClicking then 
-		print("[Attack] Attack blocked - already attacking")
+	if data.isAttacking or data.isBlocking then 
+		print("[Actions] Attack blocked - already performing action")
 		return 
 	end
 	
@@ -185,7 +190,6 @@ local function handleNormalAttack(player)
 	local isJumping = data.isJumping
 	
 	data.isAttacking = true
-	print("[Attack]", player.Name, "performing attack - Moving:", isMoving, "Jumping:", isJumping)
 	
 	if isJumping then
 		-- Jump + Left click = Jump attack anim
@@ -225,42 +229,75 @@ local function handleNormalAttack(player)
 	end
 end
 
-local function handleRightClickHold(player, isHolding)
+local function handleWave(player)
 	local data = playerAttackData[player]
 	if not data then return end
 	
-	if isHolding then
-		if data.isAttacking then return end
-		
-		data.holdingRightClick = true
-		data.isRightClicking = true
-		data.rightClickIdleTrack:Play()
-		
-		-- Lock movement
-		local char = player.Character
-		if char then
-			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hum then
-				hum.WalkSpeed = 0
-			end
-		end
-		
-	else
-		data.holdingRightClick = false
-		data.isRightClicking = false
-		
-		-- Reset walk speed
-		local char = player.Character
-		if char then
-			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hum then
-				hum.WalkSpeed = data.originalWalkSpeed
-			end
-		end
-		
-		-- Stop animation
-		data.rightClickIdleTrack:Stop()
+	if data.isAttacking or data.isBlocking then 
+		print("[Actions] Wave blocked - already performing action")
+		return 
 	end
+	
+	print("[Actions] Player", player.Name, "performing wave emote")
+	
+	-- Play wave animation
+	data.waveTrack:Play()
+end
+
+local function handleBlock(player, isBlocking)
+	local data = playerAttackData[player]
+	if not data then return end
+	
+	local char = player.Character
+	if not char then return end
+	
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	
+	if isBlocking then
+		-- Start blocking
+		data.isBlocking = true
+		data.blockTrack:Play()
+		hum.WalkSpeed = 0 -- Stop movement while blocking
+		print("[Actions] Player", player.Name, "started blocking")
+	else
+		-- Stop blocking
+		data.isBlocking = false
+		data.blockTrack:Stop()
+		hum.WalkSpeed = data.originalWalkSpeed -- Restore movement
+		print("[Actions] Player", player.Name, "stopped blocking")
+	end
+end
+
+local function handleJumpAttack(player)
+	local data = playerAttackData[player]
+	if not data then return end
+	
+	if data.isAttacking or data.isBlocking then 
+		print("[Actions] Jump attack blocked - already performing action")
+		return 
+	end
+	
+	local char = player.Character
+	if not char then return end
+	
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	
+	-- Check if player is actually jumping
+	if hum:GetState() ~= Enum.HumanoidStateType.Jumping then
+		print("[Actions] Jump attack blocked - not jumping")
+		return
+	end
+	
+	data.isAttacking = true
+	print("[Actions] Player", player.Name, "performing jump attack")
+	
+	-- Play jump attack animation
+	data.jumpTrack:Play()
+	data.jumpTrack.Stopped:Once(function()
+		data.isAttacking = false
+	end)
 end
 
 -- ========================================
@@ -268,7 +305,7 @@ end
 -- ========================================
 
 remote.OnServerEvent:Connect(function(player, actionName)
-	print("[Attack] Server received request from", player.Name, "with actionName:", actionName)
+	print("[Actions] Server received:", actionName, "from", player.Name)
 	
 	-- Handle attack actions
 	if actionName == "normal_attack_setup" then
@@ -277,10 +314,14 @@ remote.OnServerEvent:Connect(function(player, actionName)
 		cleanupAttackAnimations(player)
 	elseif actionName == "left_click_attack" then
 		handleNormalAttack(player)
-	elseif actionName == "right_click_hold" then
-		handleRightClickHold(player, true)
-	elseif actionName == "right_click_release" then
-		handleRightClickHold(player, false)
+	elseif actionName == "wave" then
+		handleWave(player)
+	elseif actionName == "block_start" then
+		handleBlock(player, true)
+	elseif actionName == "block_end" then
+		handleBlock(player, false)
+	elseif actionName == "jump_attack" then
+		handleJumpAttack(player)
 	end
 end)
 
