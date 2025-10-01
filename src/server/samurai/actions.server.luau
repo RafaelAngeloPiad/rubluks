@@ -255,7 +255,7 @@ local function handleNormalAttack(player)
 		data.clickCount = 0 -- Reset combo when doing jump attack
 		-- Clear combo timer
 		if data.comboTimer then
-			data.comboTimer:Cancel()
+			task.cancel(data.comboTimer)
 			data.comboTimer = nil
 		end
 		data.jumpTrack:Play()
@@ -268,7 +268,7 @@ local function handleNormalAttack(player)
 		data.clickCount = 0 -- Reset combo when doing move attack
 		-- Clear combo timer
 		if data.comboTimer then
-			data.comboTimer:Cancel()
+			task.cancel(data.comboTimer)
 			data.comboTimer = nil
 		end
 		data.moveSlashTrack:Play()
