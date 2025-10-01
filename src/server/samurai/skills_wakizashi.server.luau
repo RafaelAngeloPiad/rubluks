@@ -8,7 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 -- Remote setup
-local remote = ReplicatedStorage:WaitForChild("AttackEvent")
+local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")

@@ -1,6 +1,8 @@
 -- ========================================
--- SAMURAI SKILLS CLIENT (UNIFIED)
--- Handles both Kozuki (E) and Wakizashi (Q) skills
+-- SAMURAI ACTIONS CLIENT (UNIFIED)
+-- Handles skills and buffs for Samurai class
+-- Skills: Kozuki (E), Wakizashi (Q)
+-- Buffs: Banzai (R), Bushido (F)
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,22 +20,29 @@ local CONFIG = {
 	skills = {
 		[Enum.KeyCode.E] = "kozuki",
 		[Enum.KeyCode.Q] = "wakizashi",
+		[Enum.KeyCode.R] = "banzai",
+		[Enum.KeyCode.F] = "bushido",
 	}
 }
 
 -- Functions
-local function useSkill(skillName)
+local function useAction(actionName)
+	print("[Actions] Attempting to use action:", actionName)
+	
 	if not tool or tool.Parent ~= player.Character then
+		print("[Actions] Failed - tool not equipped. Tool:", tool, "Parent:", tool and tool.Parent)
 		return
 	end
 	
-	-- Fire server - server handles EVERYTHING (VFX + Hitbox)
-	local remote = ReplicatedStorage:WaitForChild("AttackEvent")
-	remote:FireServer(skillName)
+	print("[Actions] Firing server with action:", actionName)
+	-- Fire server - server handles EVERYTHING (VFX + Hitbox for skills, VFX only for buffs)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireServer(actionName)
 end
 
 local function onWeaponFound(weaponTool)
 	tool = weaponTool
+	print("[Actions] Weapon found and equipped:", weaponTool.Name)
 	
 	-- Disconnect existing connection if any
 	if inputConnection then
@@ -42,9 +51,10 @@ local function onWeaponFound(weaponTool)
 	
 	inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
 		if not isProcessed and input.UserInputType == Enum.UserInputType.Keyboard then
-			local skillName = CONFIG.skills[input.KeyCode]
-			if skillName then
-				useSkill(skillName)
+			local actionName = CONFIG.skills[input.KeyCode]
+			if actionName then
+				print("[Actions] Key pressed, mapped to:", actionName)
+				useAction(actionName)
 			end
 		end
 	end)
