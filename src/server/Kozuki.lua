@@ -1,19 +1,16 @@
--- ========================================
--- KOZUKI SKILL SERVER
--- Raw and procedural implementation
--- Based on original Kozuki.client.luau
--- ========================================
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
--- Remote setup
-local remote = ReplicatedStorage:WaitForChild("AttackEvent")
+local tool = script.Parent
+local player = Players.LocalPlayer
+
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 
 -- preload animation
 local slashAnim = Instance.new("Animation")
-slashAnim.AnimationId = "rbxassetid://101344605319771"
+slashAnim.AnimationId = "rbxassetid://93245265937934"
 
 local function ResizeVFX(vfx, scale)
 	for _, obj in ipairs(vfx:GetDescendants()) do
@@ -44,19 +41,15 @@ local function ResizeVFX(vfx, scale)
 	end
 end
 
-remote.OnServerEvent:Connect(function(player, skillType)
-	-- Only handle kozuki skill requests
-	if skillType ~= "kozuki" then
-		return
-	end
-	
+
+
+tool.Equipped:Connect(function()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
 	local animator = humanoid:WaitForChild("Animator")
 
 	local animTrack = animator:LoadAnimation(slashAnim)
-	animTrack:Play()
 
 	animTrack:GetMarkerReachedSignal("DashAttack"):Connect(function()
 		-- DASH forward
@@ -175,7 +168,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	-- ? AURA marker (one-time connection lang)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 		
-		local vfx = ReplicatedStorage.KozukiAura:WaitForChild("AuraStance"):Clone()
+			local vfx = ReplicatedStorage.KozukiAura:WaitForChild("AuraStance"):Clone()
 		vfx.Parent = workspace
 
 		local root = character:WaitForChild("HumanoidRootPart")
@@ -202,4 +195,8 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1.8)
 	end)
 
+	-- ?? Left click handler (ito lang uulit-ulit)
+	tool.Activated:Connect(function()
+		animTrack:Play()
+	end)
 end)

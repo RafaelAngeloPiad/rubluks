@@ -1,25 +1,21 @@
--- ========================================
--- WAKIZASHI SKILL SERVER
--- Raw and procedural implementation
--- Based on original Wakizashi.server.luau
--- ========================================
-
+-- Script (ServerScriptService)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RockModule = require(ReplicatedStorage:WaitForChild("RockModule"))
 
 -- Remote setup
-local remote = ReplicatedStorage:WaitForChild("AttackEvent")
+local remote = ReplicatedStorage:FindFirstChild("AttackEvent") 
+if not remote then
+	remote = Instance.new("RemoteEvent")
+	remote.Name = "AttackEvent"
+	remote.Parent = ReplicatedStorage
+end
 
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://121133581854383"
 
-remote.OnServerEvent:Connect(function(player, skillType)
-	-- Only handle wakizashi skill requests
-	if skillType ~= "wakizashi" then
-		return
-	end
-	
+remote.OnServerEvent:Connect(function(player)
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -36,7 +32,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		vfxLeft.Parent = workspace
 
 		local leftHand = character:FindFirstChild("LeftHand") or root
-		local offsetLeft = CFrame.new(-3, 0, 0)-- X = left/right, Y = taas/baba, Z = harap/likod
+		local offsetLeft = CFrame.new(-3, 0, 0)-- X = left/right, Y = harap/likod, Z = taas/baba
 
 		vfxLeft:PivotTo(leftHand.CFrame * offsetLeft)
 
@@ -55,7 +51,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		vfxRight.Parent = workspace
 
 		local rightHand = character:FindFirstChild("RightHand") or root
-		local offsetRight = CFrame.new(3, 0, 0)-- X = left/right, Y = taas/baba, Z = harap/likod
+		local offsetRight = CFrame.new(3, 0, 0)-- X = left/right, Y = harap/likod, Z = taas/baba
 
 		vfxRight:PivotTo(rightHand.CFrame * offsetRight)
 
@@ -89,7 +85,8 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
-		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset) * rotation)
+
+		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
@@ -108,9 +105,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = bladePart
 
+		
+
 		-- Auto cleanup
 		game:GetService("Debris"):AddItem(vfx, 2)
 		game:GetService("Debris"):AddItem(bodyVelocity, 2)
 	end)
 
+
+	
 end)
