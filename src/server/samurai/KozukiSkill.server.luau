@@ -173,7 +173,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			offset = CFrame.new(0, 0, 0),
 			size = Vector3.new(8, 8, 10), -- width, height, depth
 			damage = 1,
-			duration = 1,
+			-- duration removed - visual will last as long as VFX (1 second via Debris)
 			delay = 0, -- delay before hitbox appears (in seconds)
 			character = character,
 			name = "Kozuki",

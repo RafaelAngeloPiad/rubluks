@@ -13,20 +13,26 @@ local Players = game:GetService("Players")
 
 -- Static hitbox at a fixed position
 function _G.createStaticHitbox(config)
-	-- config: cframe OR attachTo, size, damage, duration, character, name, showVisual, visualColor, offset, delay
-	local delay = config.delay or 0
+	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, visualDuration
+	local delay = config.delay
+	if not delay then delay = 0 end
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
 		local attachTo = config.attachTo
-		local offset = config.offset or CFrame.new(0, 0, 0)
-		local size = config.size or Vector3.new(8, 8, 8)
-		local damage = config.damage or 25
-		local duration = config.duration or 0.5
+		local offset = config.offset
+		if not offset then offset = CFrame.new(0, 0, 0) end
+		
+		local size = config.size
+		local damage = config.damage
 		local character = config.character
-		local name = config.name or "Static"
-		local showVisual = config.showVisual ~= false
-		local visualColor = config.visualColor or Color3.new(1, 0, 0)
+		local name = config.name
+		local showVisual = config.showVisual
+		if showVisual == nil then showVisual = true end
+		
+		local visualColor = config.visualColor
+		local visualDuration = config.visualDuration
+		if not visualDuration then visualDuration = 0.5 end
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -52,7 +58,7 @@ function _G.createStaticHitbox(config)
 			visual.Name = name .. "HitboxVisual"
 			visual.Parent = workspace
 			
-			game:GetService("Debris"):AddItem(visual, duration)
+			game:GetService("Debris"):AddItem(visual, visualDuration)
 		end
 		
 		-- Check for hits once
@@ -83,19 +89,23 @@ end
 
 -- Traveling hitbox attached to a moving part
 function _G.createTravelingHitbox(config)
-	-- config: attachTo (BasePart), size, damage, duration, character, name, showVisual, visualColor, offset, delay
-	local delay = config.delay or 0
+	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay
+	local delay = config.delay
+	if not delay then delay = 0 end
 	
 	task.delay(delay, function()
 		local attachTo = config.attachTo
-		local offset = config.offset or CFrame.new(0, 0, 0)
-		local size = config.size or Vector3.new(8, 8, 8)
-		local damage = config.damage or 25
-		local duration = config.duration or 2
+		local offset = config.offset
+		if not offset then offset = CFrame.new(0, 0, 0) end
+		
+		local size = config.size
+		local damage = config.damage
 		local character = config.character
-		local name = config.name or "Traveling"
-		local showVisual = config.showVisual ~= false
-		local visualColor = config.visualColor or Color3.new(0, 0.5, 1)
+		local name = config.name
+		local showVisual = config.showVisual
+		if showVisual == nil then showVisual = true end
+		
+		local visualColor = config.visualColor
 		
 		if not attachTo then
 			warn("[HITBOX V3] No attachTo part provided for traveling hitbox")
@@ -103,7 +113,6 @@ function _G.createTravelingHitbox(config)
 		end
 		
 		local hitTargets = {}
-		local startTime = tick()
 		
 		-- Create visual
 		local visual = nil
@@ -121,13 +130,11 @@ function _G.createTravelingHitbox(config)
 			visual.Parent = workspace
 		end
 		
-		-- Track hitbox with part
+		-- Track hitbox with part (lasts until part is destroyed)
 		local connection
 		connection = RunService.Heartbeat:Connect(function()
-			local elapsed = tick() - startTime
-			
-			-- Stop if duration expired or part destroyed
-			if elapsed >= duration or not attachTo or not attachTo.Parent then
+			-- Stop if part destroyed
+			if not attachTo or not attachTo.Parent then
 				connection:Disconnect()
 				if visual then
 					visual:Destroy()
@@ -174,12 +181,14 @@ end
 -- Projectile hitbox that travels in a direction
 function _G.createProjectileHitbox(config)
 	-- config: startCFrame OR attachTo, size, damage, speed, maxDistance, character, name, showVisual, visualColor, projectileSize, offset, delay
-	local delay = config.delay or 0
+	local delay = config.delay
+	if not delay then delay = 0 end
 	
 	task.delay(delay, function()
 		local startCFrame = config.startCFrame
 		local attachTo = config.attachTo
-		local offset = config.offset or CFrame.new(0, 0, 0)
+		local offset = config.offset
+		if not offset then offset = CFrame.new(0, 0, 0) end
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not startCFrame then
@@ -189,15 +198,17 @@ function _G.createProjectileHitbox(config)
 			return
 		end
 		
-		local size = config.size or Vector3.new(8, 8, 8)
-		local damage = config.damage or 50
-		local speed = config.speed or 150
-		local maxDistance = config.maxDistance or 100
+		local size = config.size
+		local damage = config.damage
+		local speed = config.speed
+		local maxDistance = config.maxDistance
 		local character = config.character
-		local name = config.name or "Projectile"
-		local showVisual = config.showVisual ~= false
-		local visualColor = config.visualColor or Color3.new(1, 1, 0)
-		local projectileSize = config.projectileSize or Vector3.new(1, 1, 3)
+		local name = config.name
+		local showVisual = config.showVisual
+		if showVisual == nil then showVisual = true end
+		
+		local visualColor = config.visualColor
+		local projectileSize = config.projectileSize
 		
 		local startPos = startCFrame.Position
 		local direction = startCFrame.LookVector
