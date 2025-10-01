@@ -115,7 +115,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			size = Vector3.new(8, 30, 8), -- width, height, depth
 			damage = 25,
 			-- duration removed - will last as long as bladePart exists (2 seconds via Debris)
-			delay = 0.2, -- delay before hitbox appears (in seconds)
+			delay = 0.25, -- delay before hitbox appears (in seconds)
 			character = character,
 			name = "Wakizashi",
 			showVisual = true,
