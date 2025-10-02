@@ -120,13 +120,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		bodyVelocity.Parent = bladePart
 
 		-- HITBOX V3: Attach traveling hitbox to blade
+		-- Note: delay now automatically scales with animation speed multiplier
 		_G.createTravelingHitbox({
 			attachTo = bladePart,
 			offset = CFrame.new(-30, 0, 0), -- tagilid kasi yung blade so x - up down  y - left / right  z - up down
 			size = Vector3.new(8, 30, 8), -- width, height, depth
 			damage = 25,
 			-- duration removed - will last as long as bladePart exists (2 seconds via Debris)
-			delay = 0.25, -- delay before hitbox appears (in seconds)
+			delay = 0.25, -- Base delay (will auto-scale with animation speed: 0.25s at 1x speed, 0.125s at 2x speed)
 			character = character,
 			name = "Wakizashi",
 			showVisual = true,

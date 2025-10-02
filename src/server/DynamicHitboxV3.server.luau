@@ -12,8 +12,27 @@ local Players = game:GetService("Players")
 -- ========================================
 
 local HITBOX_CONFIG = {
-	transparency = 1, -- Global transparency for all hitbox visuals
+	transparency = 0.95, -- Global transparency for all hitbox visuals
 }
+
+-- ========================================
+-- DELAY SCALING SYSTEM
+-- ========================================
+
+-- Function to scale delays based on animation speed multiplier
+local function getScaledDelay(baseDelay)
+	if not baseDelay or baseDelay == 0 then
+		return 0
+	end
+	
+	-- Get animation speed multiplier from global (default to 1.0 if not set)
+	local animationSpeed = _G.SAMURAI_ANIMATION_SPEED or 1.0
+	
+	-- Scale delay inversely with animation speed
+	-- If animation is 2x faster, delays should be 0.5x (half the time)
+	-- If animation is 0.5x slower, delays should be 2x (double the time)
+	return baseDelay / animationSpeed
+end
 
 -- ========================================
 -- GLOBAL FUNCTIONS
@@ -42,8 +61,7 @@ local HITBOX_CONFIG = {
 ]]
 function _G.createStaticHitbox(config)
 	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, visualDuration
-	local delay = config.delay
-	if not delay then delay = 0 end
+	local delay = getScaledDelay(config.delay)
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
@@ -61,6 +79,7 @@ function _G.createStaticHitbox(config)
 		local visualColor = config.visualColor
 		local visualDuration = config.visualDuration
 		if not visualDuration then visualDuration = 0.5 end
+		visualDuration = getScaledDelay(visualDuration)
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -141,8 +160,7 @@ end
 ]]
 function _G.createStaticDOTHitbox(config)
 	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime
-	local delay = config.delay
-	if not delay then delay = 0 end
+	local delay = getScaledDelay(config.delay)
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
@@ -160,6 +178,7 @@ function _G.createStaticDOTHitbox(config)
 		local visualColor = config.visualColor
 		local damageTickTime = config.damageTickTime
 		if not damageTickTime then damageTickTime = 0.5 end
+		damageTickTime = getScaledDelay(damageTickTime)
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -287,8 +306,7 @@ end
 ]]
 function _G.createTravelingHitbox(config)
 	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay
-	local delay = config.delay
-	if not delay then delay = 0 end
+	local delay = getScaledDelay(config.delay)
 	
 	task.delay(delay, function()
 		local attachTo = config.attachTo
@@ -401,8 +419,7 @@ end
 ]]
 function _G.createProjectileHitbox(config)
 	-- config: startCFrame OR attachTo, size, damage, speed, maxDistance, character, name, showVisual, visualColor, projectileSize, offset, delay
-	local delay = config.delay
-	if not delay then delay = 0 end
+	local delay = getScaledDelay(config.delay)
 	
 	task.delay(delay, function()
 		local startCFrame = config.startCFrame

@@ -19,6 +19,8 @@ local playerAttackData = {}
 
 -- Global animation speed multiplier for all samurai animations
 -- Adjust this single value to change speed of ALL samurai animations
+-- NOTE: This also automatically scales ALL hitbox delays proportionally!
+-- Example: If you set this to 2.0 (double speed), all delays become half (0.25s becomes 0.125s)
 _G.SAMURAI_ANIMATION_SPEED = 1 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
 
 -- Function to apply speed to any animation track
@@ -350,7 +352,7 @@ local function handleNormalAttack(player)
 			name = "MoveAttack",
 			showVisual = true,
 			visualColor = Color3.new(0, 0.8, 1),
-			delay = 0.4
+			delay = 0.4 -- Base delay (auto-scales with animation speed)
 		})
 		
 		data.moveSlashTrack.Stopped:Once(function()
@@ -451,7 +453,7 @@ local function handleNormalAttack(player)
 					name = "Combo3",
 					showVisual = true,
 					visualColor = Color3.new(1, 0, 0),
-					delay = 2
+					delay = 2 -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
 				})
 				
 				data.animTrack3.Stopped:Once(function() 
