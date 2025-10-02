@@ -19,8 +19,8 @@ local playerAttackData = {}
 
 -- Global animation speed multiplier for all samurai animations
 -- Adjust this single value to change speed of ALL samurai animations
--- NOTE: This also automatically scales ALL hitbox delays proportionally!
--- Example: If you set this to 2.0 (double speed), all delays become half (0.25s becomes 0.125s)
+-- NOTE: This also automatically scales ALL hitbox delays AND walking speeds proportionally!
+-- Example: If you set this to 2.0 (double speed), all delays become half AND walking speed doubles
 _G.SAMURAI_ANIMATION_SPEED = 2 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
 
 -- Function to apply speed to any animation track
@@ -46,11 +46,20 @@ end
 -- GLOBAL WALKING SPEED CONFIGURATION
 -- ========================================
 
--- Global walking speed settings for all samurai actions
+-- Base walking speed settings (will be scaled by animation speed multiplier)
+-- These are the "base" speeds that get multiplied by _G.SAMURAI_ANIMATION_SPEED
+-- Example: If animation speed is 2.0, normal walking becomes 18 * 2 = 36
+local BASE_WALKING_SPEED = {
+	normal = 18,    -- Base normal walking speed
+	slow = 3,       -- Base speed during skills (wakizashi/kozuki)
+	blocking = 0    -- Speed while blocking (always 0, no scaling)
+}
+
+-- Global walking speed settings (automatically scaled by animation speed)
 _G.SAMURAI_WALKING_SPEED = {
-	normal = 18,    -- Normal walking speed
-	slow = 3,       -- Speed during skills (wakizashi/kozuki)
-	blocking = 0    -- Speed while blocking
+	normal = BASE_WALKING_SPEED.normal * _G.SAMURAI_ANIMATION_SPEED,
+	slow = BASE_WALKING_SPEED.slow * _G.SAMURAI_ANIMATION_SPEED,
+	blocking = BASE_WALKING_SPEED.blocking -- Always 0, no scaling
 }
 
 -- Function to set player walking speed
