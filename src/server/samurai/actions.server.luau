@@ -21,7 +21,7 @@ local playerAttackData = {}
 -- Adjust this single value to change speed of ALL samurai animations
 -- NOTE: This also automatically scales ALL hitbox delays AND walking speeds proportionally!
 -- Example: If you set this to 2.0 (double speed), all delays become half AND walking speed doubles
-_G.SAMURAI_ANIMATION_SPEED = 2 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
+_G.SAMURAI_ANIMATION_SPEED = 1 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
 
 -- Function to apply speed to any animation track
 function _G.applySamuraiAnimationSpeed(animTrack)
