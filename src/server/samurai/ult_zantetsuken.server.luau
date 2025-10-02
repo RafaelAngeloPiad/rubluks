@@ -10,6 +10,10 @@ local Debris = game:GetService("Debris")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
+-- Cooldown tracking (temporary variable system)
+local playerCooldowns = {}
+local ZANTETSUKEN_COOLDOWN = 30 -- 30 seconds cooldown (ultimate)
+
 -- preload animation
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://133910790786834"
@@ -78,6 +82,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	if skillType ~= "zantetsuken" then
 		return
 	end
+	
+	-- Check cooldown
+	local currentTime = tick()
+	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < ZANTETSUKEN_COOLDOWN then
+		return
+	end
+	
+	-- Set cooldown
+	playerCooldowns[player.UserId] = currentTime
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")

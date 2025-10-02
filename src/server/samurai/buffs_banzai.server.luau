@@ -10,6 +10,10 @@ local Debris = game:GetService("Debris")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
+-- Cooldown tracking (temporary variable system)
+local playerCooldowns = {}
+local BANZAI_COOLDOWN = 15 -- 15 seconds cooldown
+
 -- preload animation
 local auraAnim = Instance.new("Animation")
 auraAnim.AnimationId = "rbxassetid://115710510666189"
@@ -20,6 +24,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	if skillType ~= "banzai" then
 		return
 	end
+	
+	-- Check cooldown
+	local currentTime = tick()
+	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < BANZAI_COOLDOWN then
+		return
+	end
+	
+	-- Set cooldown
+	playerCooldowns[player.UserId] = currentTime
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")

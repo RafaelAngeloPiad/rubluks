@@ -10,6 +10,10 @@ local Players = game:GetService("Players")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
+-- Cooldown tracking (temporary variable system)
+local playerCooldowns = {}
+local WAKIZASHI_COOLDOWN = 8 -- 8 seconds cooldown
+
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://121133581854383"
@@ -19,6 +23,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	if skillType ~= "wakizashi" then
 		return
 	end
+	
+	-- Check cooldown
+	local currentTime = tick()
+	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < WAKIZASHI_COOLDOWN then
+		return
+	end
+	
+	-- Set cooldown
+	playerCooldowns[player.UserId] = currentTime
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
