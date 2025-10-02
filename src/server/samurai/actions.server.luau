@@ -19,7 +19,7 @@ local playerAttackData = {}
 
 -- Global animation speed multiplier for all samurai animations
 -- Adjust this single value to change speed of ALL samurai animations
-_G.SAMURAI_ANIMATION_SPEED = 1.5 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
+_G.SAMURAI_ANIMATION_SPEED = 1 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
 
 -- Function to apply speed to any animation track
 function _G.applySamuraiAnimationSpeed(animTrack)
