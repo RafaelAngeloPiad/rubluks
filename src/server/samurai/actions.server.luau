@@ -19,7 +19,7 @@ local playerAttackData = {}
 
 -- Global animation speed multiplier for all samurai animations
 -- Adjust this single value to change speed of ALL samurai animations
-_G.SAMURAI_ANIMATION_SPEED = 1.0 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
+_G.SAMURAI_ANIMATION_SPEED = 1.5 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
 
 -- Function to apply speed to any animation track
 function _G.applySamuraiAnimationSpeed(animTrack)
@@ -34,7 +34,7 @@ end
 
 -- Global walking speed settings for all samurai actions
 _G.SAMURAI_WALKING_SPEED = {
-	normal = 400,    -- Normal walking speed
+	normal = 18,    -- Normal walking speed
 	slow = 3,       -- Speed during skills (wakizashi/kozuki)
 	blocking = 0    -- Speed while blocking
 }
@@ -146,6 +146,9 @@ local function setupAttackAnimations(player)
 	-- Start with idle animation
 		idleTrack:Play()
 		_G.applySamuraiAnimationSpeed(idleTrack)
+	
+	-- Set walking speed immediately when weapon is equipped
+	_G.setSamuraiWalkingSpeed(player, "normal")
 	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
@@ -314,12 +317,12 @@ local function handleNormalAttack(player)
 			attachTo = root,
 			offset = CFrame.new(0, -5, -10),
 			size = Vector3.new(5, 17, 12),
-			damage = 30,
+			damage = 5,
 			character = char,
 			name = "JumpAttack",
 			showVisual = true,
 			visualColor = Color3.new(0, 1, 0),
-			delay = 0.3
+			delay = 0
 		})
 		
 		data.jumpTrack.Stopped:Once(function()
@@ -342,7 +345,7 @@ local function handleNormalAttack(player)
 			attachTo = root,
 			offset = CFrame.new(0, 0, -10), -- x left / right, y up / down, z forward / backward
 			size = Vector3.new(12, 12, 12),
-			damage = 40,
+			damage = 7,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
@@ -373,12 +376,12 @@ local function handleNormalAttack(player)
 				attachTo = root,
 				offset = CFrame.new(0, 0, -3),
 				size = Vector3.new(8, 8, 6),
-				damage = 25,
+				damage = 1,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
 				visualColor = Color3.new(1, 0.8, 0),
-				delay = 0.2
+				delay = 0
 			})
 			
 			data.animTrack1.Stopped:Once(function() 
@@ -395,12 +398,12 @@ local function handleNormalAttack(player)
 				attachTo = root,
 				offset = CFrame.new(0, 0, -4),
 				size = Vector3.new(10, 10, 8),
-				damage = 35,
+				damage = 1,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
 				visualColor = Color3.new(0.8, 0.2, 1),
-				delay = 0.3
+				delay = 0
 			})
 			
 			data.animTrack2.Stopped:Once(function() 
@@ -421,12 +424,12 @@ local function handleNormalAttack(player)
 					attachTo = root,
 					offset = CFrame.new(0, 0, -3),
 					size = Vector3.new(8, 8, 6),
-					damage = 25,
+					damage = 1,
 					character = char,
 					name = "Combo1_Fallback",
 					showVisual = true,
 					visualColor = Color3.new(1, 0.8, 0),
-					delay = 0.2
+					delay = 0
 				})
 				
 				data.animTrack1.Stopped:Once(function() 
@@ -443,7 +446,7 @@ local function handleNormalAttack(player)
 					attachTo = root,
 					offset = CFrame.new(0, 0, -5),
 					size = Vector3.new(17, 17, 17),
-					damage = 50,
+					damage = 4,
 					character = char,
 					name = "Combo3",
 					showVisual = true,
