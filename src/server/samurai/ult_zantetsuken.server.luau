@@ -86,11 +86,18 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	-- Check cooldown
 	local currentTime = tick()
 	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < ZANTETSUKEN_COOLDOWN then
+		local remainingTime = ZANTETSUKEN_COOLDOWN - (currentTime - playerCooldowns[player.UserId])
+		-- Send cooldown status to client
+		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+		remote:FireClient(player, "cooldown_status", "zantetsuken", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown
 	playerCooldowns[player.UserId] = currentTime
+	-- Send cooldown status to client (skill is now on cooldown)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "cooldown_status", "zantetsuken", true, ZANTETSUKEN_COOLDOWN)
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")

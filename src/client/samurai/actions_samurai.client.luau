@@ -21,6 +21,35 @@ local movementLocked = false -- Flag to control movement only (for skills like w
 local playerModule = nil
 local controls = nil
 local humanoid = nil
+local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+
+-- Global camera speed configuration (automatically synced with server)
+local CAMERA_SPEED_MULTIPLIER = 1 -- Default value, will be updated by server
+
+-- Cooldown tracking for camera sequences
+local skillCooldowns = {
+	banzai = false,
+	bushido = false,
+	wakizashi = false,
+	kozuki = false,
+	zantetsuken = false
+}
+
+-- Function to update camera speed (called automatically by server)
+local function updateCameraSpeed(newSpeed)
+	CAMERA_SPEED_MULTIPLIER = newSpeed
+	print("Camera speed updated to:", newSpeed) -- Debug message
+end
+
+-- Function to update cooldown status
+local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
+	skillCooldowns[skillName] = isOnCooldown
+	if isOnCooldown then
+		print(skillName .. " is on cooldown for " .. remainingTime .. " seconds")
+	else
+		print(skillName .. " cooldown ended")
+	end
+end
 
 -- Configuration
 local CONFIG = {
@@ -47,9 +76,11 @@ local CONFIG = {
 -- Handles cinematic camera movements for skills/buffs/ultimates
 -- ========================================
 
--- Smoothly moves camera to a position over time
+-- Smoothly moves camera to a position over time (scales with speed multiplier)
 local function tweenCameraTo(targetCFrame, tweenDuration)
-	local tweenInfo = TweenInfo.new(tweenDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	-- Scale tween duration with camera speed multiplier
+	local scaledDuration = tweenDuration / CAMERA_SPEED_MULTIPLIER
+	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
 	tween:Play()
 	tween.Completed:Wait()
@@ -69,12 +100,14 @@ local function playCameraSequence(sequence)
 	for _, step in ipairs(sequence) do
 		local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
 		tweenCameraTo(targetCFrame, step.tweenTime)
-		task.wait(step.holdTime)
+		-- Scale hold time with camera speed multiplier
+		local scaledHoldTime = step.holdTime / CAMERA_SPEED_MULTIPLIER
+		task.wait(scaledHoldTime)
 	end
 
 	-- Restore original camera
 	tweenCameraTo(originalCFrame, 1)
-	task.wait(0.5)
+	task.wait(0.5 / CAMERA_SPEED_MULTIPLIER) -- Scale restoration delay
 	camera.CameraType = originalType
 end
 
@@ -83,6 +116,8 @@ end
 -- Define cinematic sequences for each action
 -- Format: {offset = CFrame.new(x, y, z), rotX/Y/Z = angle, tweenTime = seconds, holdTime = seconds}
 -- Offset: X = left(-)/right(+), Y = down(-)/up(+), Z = forward(-)/back(+) relative to player
+-- NOTE: All timing values are automatically scaled by CAMERA_SPEED_MULTIPLIER
+-- Example: If speed multiplier is 2, a 1 second tween becomes 0.5 seconds
 -- ========================================
 
 local CAMERA_SEQUENCES = {
@@ -173,13 +208,11 @@ local function useAction(actionName)
 		return
 	end
 	
-	
 	-- Tell server to handle VFX and hitboxes
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	remote:FireServer(actionName)
 	
-	-- Play camera sequence if this action has one
-	if CAMERA_SEQUENCES[actionName] then
+	-- Play camera sequence if this action has one AND it's not on cooldown
+	if CAMERA_SEQUENCES[actionName] and not skillCooldowns[actionName] then
 		task.spawn(function()
 			playCameraSequence(CAMERA_SEQUENCES[actionName])
 		end)
@@ -196,9 +229,8 @@ local function onWeaponFound(weaponTool)
 	-- Initialize PlayerModule
 	initializePlayerModule()
 	
-	-- Listen for input lock/unlock messages from server
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote.OnClientEvent:Connect(function(message)
+	-- Listen for messages from server
+	remote.OnClientEvent:Connect(function(message, data, extraData)
 		if message == "lock_input" then
 			lockInput()
 		elseif message == "unlock_input" then
@@ -207,6 +239,10 @@ local function onWeaponFound(weaponTool)
 			lockMovementOnly()
 		elseif message == "unlock_movement" then
 			unlockMovementOnly()
+		elseif message == "update_animation_speed" then
+			updateCameraSpeed(data) -- data contains the new speed value
+		elseif message == "cooldown_status" then
+			updateCooldownStatus(data, extraData, nil) -- data = skillName, extraData = isOnCooldown, remainingTime not used
 		end
 	end)
 	

@@ -30,6 +30,18 @@ function _G.applySamuraiAnimationSpeed(animTrack)
 	end
 end
 
+-- Function to sync animation speed with client
+local function syncAnimationSpeedWithClient(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "update_animation_speed", _G.SAMURAI_ANIMATION_SPEED)
+end
+
+-- Function to send cooldown status to client
+local function sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "cooldown_status", skillName, isOnCooldown, remainingTime)
+end
+
 -- ========================================
 -- GLOBAL WALKING SPEED CONFIGURATION
 -- ========================================
@@ -151,6 +163,9 @@ local function setupAttackAnimations(player)
 	
 	-- Set walking speed immediately when weapon is equipped
 	_G.setSamuraiWalkingSpeed(player, "normal")
+	
+	-- Sync animation speed with client
+	syncAnimationSpeedWithClient(player)
 	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
