@@ -14,52 +14,103 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local playerAttackData = {}
 
 -- ========================================
--- GLOBAL ANIMATION SPEED CONFIGURATION
+-- SEPARATE ANIMATION SPEED CONFIGURATION
 -- ========================================
 
--- Global animation speed multiplier for all samurai animations
--- Adjust this single value to change speed of ALL samurai animations
--- NOTE: This also automatically scales ALL hitbox delays AND walking speeds proportionally!
--- Example: If you set this to 2.0 (double speed), all delays become half AND walking speed doubles
-_G.SAMURAI_ANIMATION_SPEED = 1 -- 1.0 = normal speed, 2.0 = double speed, 0.5 = half speed
+-- Individual animation speed multipliers for each action type
+-- Each action can now have its own speed independent of others
+-- 
+-- HOW TO USE:
+-- 1. Change values here to adjust animation speeds
+-- 2. Camera speeds will automatically sync with these values
+-- 3. Use _G.updateSamuraiAnimationSpeed(actionType, newSpeed) to update at runtime
+--
+_G.SAMURAI_ANIMATION_SPEEDS = {
+	-- Basic movements
+	idle = 1.0,
+	run = 1.0,
+	jump = 1.0,
+	
+	-- Walking speeds (fixed values, not affected by animation speed)
+	walking = {
+		normal = 18,    -- Fixed normal walking speed
+		slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
+		blocking = 0    -- Fixed speed while blocking
+	},
+	
+	-- Attack combos
+	combo1 = 1.0,
+	combo2 = 1.0,
+	combo3 = 1.0,
+	moveAttack = 1.0,
+	jumpAttack = 1.0,
+	block = 1.0,
+	wave = 1.0,
+	
+	-- Skills
+	kozuki = 1.0,
+	wakizashi = 1.0,
+	
+	-- Buffs
+	banzai = 1.0,
+	bushido = 1.0,
+	
+	-- Ultimate
+	zantetsuken = 1.0
+}
 
--- Function to apply speed to any animation track
-function _G.applySamuraiAnimationSpeed(animTrack)
-	if animTrack and _G.SAMURAI_ANIMATION_SPEED then
-		animTrack:AdjustSpeed(_G.SAMURAI_ANIMATION_SPEED)
+-- Function to apply specific speed to animation track
+function _G.applySamuraiAnimationSpeed(animTrack, actionType)
+	if not animTrack or not actionType then return end
+	
+	local speed = _G.SAMURAI_ANIMATION_SPEEDS[actionType] or 1.0
+	animTrack:AdjustSpeed(speed)
+end
+
+-- Function to sync specific animation speed with client
+local function syncAnimationSpeedWithClient(player, actionType)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local speed = _G.SAMURAI_ANIMATION_SPEEDS[actionType] or 1.0
+	remote:FireClient(player, "update_animation_speed", speed, actionType)
+end
+
+-- Function to sync all animation speeds with client
+local function syncAllAnimationSpeedsWithClient(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	for actionType, speed in pairs(_G.SAMURAI_ANIMATION_SPEEDS) do
+		remote:FireClient(player, "update_animation_speed", speed, actionType)
 	end
 end
 
--- Function to sync animation speed with client
-local function syncAnimationSpeedWithClient(player)
+-- Function to update animation speed and sync with all clients
+function _G.updateSamuraiAnimationSpeed(actionType, newSpeed)
+	if not actionType or not newSpeed then
+		warn("Invalid parameters for updateSamuraiAnimationSpeed")
+		return
+	end
+	
+	-- Update the speed
+	_G.SAMURAI_ANIMATION_SPEEDS[actionType] = newSpeed
+	
+	-- Sync with all players
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "update_animation_speed", _G.SAMURAI_ANIMATION_SPEED)
+	for _, player in pairs(Players:GetPlayers()) do
+		remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
+	end
+	
 end
 
--- Function to send cooldown status to client
-local function sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "cooldown_status", skillName, isOnCooldown, remainingTime)
-end
 
 -- ========================================
--- GLOBAL WALKING SPEED CONFIGURATION
+-- WALKING SPEED CONFIGURATION
 -- ========================================
 
--- Base walking speed settings (will be scaled by animation speed multiplier)
--- These are the "base" speeds that get multiplied by _G.SAMURAI_ANIMATION_SPEED
--- Example: If animation speed is 2.0, normal walking becomes 18 * 2 = 36
-local BASE_WALKING_SPEED = {
-	normal = 18,    -- Base normal walking speed
-	slow = 3,       -- Base speed during skills (wakizashi/kozuki)
-	blocking = 0    -- Speed while blocking (always 0, no scaling)
-}
-
--- Global walking speed settings (automatically scaled by animation speed)
+-- Fixed walking speed settings (no longer dependent on animation speed)
+-- These are the actual speeds used, not multiplied by anything
 _G.SAMURAI_WALKING_SPEED = {
-	normal = BASE_WALKING_SPEED.normal * _G.SAMURAI_ANIMATION_SPEED,
-	slow = BASE_WALKING_SPEED.slow * _G.SAMURAI_ANIMATION_SPEED,
-	blocking = BASE_WALKING_SPEED.blocking -- Always 0, no scaling
+	normal = 18,    -- Fixed normal walking speed
+	slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
+	blocking = 0    -- Fixed speed while blocking
 }
 
 -- Function to set player walking speed
@@ -79,6 +130,90 @@ local COMBO_CONFIG = {
 	comboTimeout = 1, -- 1 second timeout for combo reset
 	combo3Cooldown = 20, -- 3 second cooldown for 3rd attack
 }
+
+-- ========================================
+-- CENTRALIZED COOLDOWN CONFIGURATION
+-- ========================================
+
+-- All skill cooldowns in one place for easy management
+-- HOW TO USE:
+-- 1. Change values here to adjust cooldown times
+-- 2. All skills automatically use these values
+-- 3. No need to modify individual skill files
+--
+_G.SAMURAI_COOLDOWNS = {
+	-- Skills
+	kozuki = 10,        -- 10 seconds cooldown
+	wakizashi = 8,      -- 8 seconds cooldown
+	
+	-- Buffs
+	banzai = 15,        -- 15 seconds cooldown
+	bushido = 12,       -- 12 seconds cooldown
+	
+	-- Ultimate
+	zantetsuken = 30    -- 30 seconds cooldown (ultimate)
+}
+
+-- Centralized cooldown tracking for all players
+local playerCooldowns = {}
+
+-- Function to check if skill is on cooldown
+function _G.isSkillOnCooldown(player, skillName)
+	local currentTime = tick()
+	local cooldownTime = _G.SAMURAI_COOLDOWNS[skillName]
+	
+	if not cooldownTime then
+		return false -- Skill doesn't exist
+	end
+	
+	if not playerCooldowns[player.UserId] then
+		playerCooldowns[player.UserId] = {}
+	end
+	
+	local lastUsed = playerCooldowns[player.UserId][skillName]
+	if not lastUsed then
+		return false -- Never used before
+	end
+	
+	local timeSinceLastUse = currentTime - lastUsed
+	return timeSinceLastUse < cooldownTime
+end
+
+-- Function to get remaining cooldown time
+function _G.getRemainingCooldown(player, skillName)
+	local currentTime = tick()
+	local cooldownTime = _G.SAMURAI_COOLDOWNS[skillName]
+	
+	if not cooldownTime or not playerCooldowns[player.UserId] then
+		return 0
+	end
+	
+	local lastUsed = playerCooldowns[player.UserId][skillName]
+	if not lastUsed then
+		return 0
+	end
+	
+	local timeSinceLastUse = currentTime - lastUsed
+	local remaining = cooldownTime - timeSinceLastUse
+	return math.max(0, remaining)
+end
+
+-- Function to set skill cooldown
+function _G.setSkillCooldown(player, skillName)
+	local currentTime = tick()
+	
+	if not playerCooldowns[player.UserId] then
+		playerCooldowns[player.UserId] = {}
+	end
+	
+	playerCooldowns[player.UserId][skillName] = currentTime
+end
+
+-- Function to send cooldown status to client
+function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "cooldown_status", skillName, isOnCooldown, remainingTime)
+end
 
 -- ========================================
 -- ATTACK ANIMATION SETUP
@@ -168,13 +303,13 @@ local function setupAttackAnimations(player)
 	
 	-- Start with idle animation
 		idleTrack:Play()
-		_G.applySamuraiAnimationSpeed(idleTrack)
+		_G.applySamuraiAnimationSpeed(idleTrack, "idle")
 	
 	-- Set walking speed immediately when weapon is equipped
 	_G.setSamuraiWalkingSpeed(player, "normal")
 	
-	-- Sync animation speed with client
-	syncAnimationSpeedWithClient(player)
+	-- Sync all animation speeds with client
+	syncAllAnimationSpeedsWithClient(player)
 	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
@@ -185,13 +320,13 @@ local function setupAttackAnimations(player)
 			if data.idleTrack.IsPlaying then data.idleTrack:Stop() end
 			if not data.runTrack.IsPlaying then 
 				data.runTrack:Play()
-				_G.applySamuraiAnimationSpeed(data.runTrack)
+				_G.applySamuraiAnimationSpeed(data.runTrack, "run")
 			end
 		else
 			if data.runTrack.IsPlaying then data.runTrack:Stop() end
 			if not data.idleTrack.IsPlaying then 
 				data.idleTrack:Play()
-				_G.applySamuraiAnimationSpeed(data.idleTrack)
+				_G.applySamuraiAnimationSpeed(data.idleTrack, "idle")
 			end
 		end
 	end)
@@ -336,7 +471,7 @@ local function handleNormalAttack(player)
 			data.comboTimer = nil
 		end
 		data.jumpTrack:Play()
-		_G.applySamuraiAnimationSpeed(data.jumpTrack)
+		_G.applySamuraiAnimationSpeed(data.jumpTrack, "jumpAttack")
 		
 		-- Jump attack hitbox
 		_G.createStaticHitbox({
@@ -364,7 +499,7 @@ local function handleNormalAttack(player)
 			data.comboTimer = nil
 		end
 		data.moveSlashTrack:Play()
-		_G.applySamuraiAnimationSpeed(data.moveSlashTrack)
+		_G.applySamuraiAnimationSpeed(data.moveSlashTrack, "moveAttack")
 		
 		-- Move attack hitbox
 		_G.createStaticHitbox({
@@ -395,7 +530,7 @@ local function handleNormalAttack(player)
 		
 		if data.clickCount == 1 then
 			data.animTrack1:Play()
-			_G.applySamuraiAnimationSpeed(data.animTrack1)
+			_G.applySamuraiAnimationSpeed(data.animTrack1, "combo1")
 			
 			-- Combo 1 hitbox
 			_G.createStaticHitbox({
@@ -417,7 +552,7 @@ local function handleNormalAttack(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
-			_G.applySamuraiAnimationSpeed(data.animTrack2)
+			_G.applySamuraiAnimationSpeed(data.animTrack2, "combo2")
 			
 			-- Combo 2 hitbox
 			_G.createStaticHitbox({
@@ -443,7 +578,7 @@ local function handleNormalAttack(player)
 				-- Reset to combo 1 and play it
 				data.clickCount = 1
 				data.animTrack1:Play()
-			_G.applySamuraiAnimationSpeed(data.animTrack1)
+				_G.applySamuraiAnimationSpeed(data.animTrack1, "combo1")
 				
 				-- Combo 1 hitbox (fallback from combo 3 cooldown)
 				_G.createStaticHitbox({
@@ -465,7 +600,7 @@ local function handleNormalAttack(player)
 			else
 				-- Perform combo 3 and start cooldown
 				data.animTrack3:Play()
-				_G.applySamuraiAnimationSpeed(data.animTrack3)
+				_G.applySamuraiAnimationSpeed(data.animTrack3, "combo3")
 				
 				-- Combo 3 hitbox (most powerful)
 				_G.createStaticHitbox({
@@ -500,7 +635,7 @@ local function handleWave(player)
 	
 	-- Play wave animation
 	data.waveTrack:Play()
-	_G.applySamuraiAnimationSpeed(data.waveTrack)
+	_G.applySamuraiAnimationSpeed(data.waveTrack, "wave")
 end
 
 local function handleBlock(player, isBlocking)
@@ -517,7 +652,7 @@ local function handleBlock(player, isBlocking)
 		-- Start blocking
 		data.isBlocking = true
 		data.blockTrack:Play()
-		_G.applySamuraiAnimationSpeed(data.blockTrack)
+		_G.applySamuraiAnimationSpeed(data.blockTrack, "block")
 		_G.setSamuraiWalkingSpeed(player, "blocking") -- Stop movement while blocking
 	else
 		-- Stop blocking
@@ -550,7 +685,7 @@ local function handleJumpAttack(player)
 	
 	-- Play jump attack animation
 	data.jumpTrack:Play()
-	_G.applySamuraiAnimationSpeed(data.jumpTrack)
+	_G.applySamuraiAnimationSpeed(data.jumpTrack, "jumpAttack")
 	data.jumpTrack.Stopped:Once(function()
 		data.isAttacking = false
 	end)
@@ -577,6 +712,9 @@ remote.OnServerEvent:Connect(function(player, actionName)
 		handleBlock(player, false)
 	elseif actionName == "jump_attack" then
 		handleJumpAttack(player)
+	elseif actionName == "sync_camera_speeds" then
+		-- Sync all camera speeds with client
+		syncAllAnimationSpeedsWithClient(player)
 	end
 end)
 
@@ -584,3 +722,4 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	cleanupAttackAnimations(player)
 end)
+

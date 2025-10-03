@@ -23,8 +23,27 @@ local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
--- Global camera speed configuration (automatically synced with server)
-local CAMERA_SPEED_MULTIPLIER = 1 -- Default value, will be updated by server
+-- Camera speed configuration (separate for each action type)
+local CAMERA_SPEED_MULTIPLIERS = {
+	idle = 1.0,
+	run = 1.0,
+	jump = 1.0,
+	combo1 = 1.0,
+	combo2 = 1.0,
+	combo3 = 1.0,
+	moveAttack = 1.0,
+	jumpAttack = 1.0,
+	block = 1.0,
+	wave = 1.0,
+	kozuki = 1.0,
+	wakizashi = 1.0,
+	banzai = 1.0,
+	bushido = 1.0,
+	zantetsuken = 1.0
+}
+
+-- Current action type for camera speed reference
+local currentActionType = "idle"
 
 -- Cooldown tracking for camera sequences
 local skillCooldowns = {
@@ -35,19 +54,30 @@ local skillCooldowns = {
 	zantetsuken = false
 }
 
--- Function to update camera speed (called automatically by server)
-local function updateCameraSpeed(newSpeed)
-	CAMERA_SPEED_MULTIPLIER = newSpeed
-	print("Camera speed updated to:", newSpeed) -- Debug message
+-- Function to update camera speed for specific action (called automatically by server)
+local function updateCameraSpeed(newSpeed, actionType)
+	if actionType then
+		CAMERA_SPEED_MULTIPLIERS[actionType] = newSpeed
+		currentActionType = actionType
+	else
+		-- Fallback for old system - update all speeds
+		for action, _ in pairs(CAMERA_SPEED_MULTIPLIERS) do
+			CAMERA_SPEED_MULTIPLIERS[action] = newSpeed
+		end
+	end
+end
+
+-- Function to sync all camera speeds with server values
+local function syncAllCameraSpeeds()
+	-- Request all animation speeds from server
+	remote:FireServer("sync_camera_speeds")
 end
 
 -- Function to update cooldown status
 local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
 	if isOnCooldown then
-		print(skillName .. " is on cooldown for " .. remainingTime .. " seconds")
-	else
-		print(skillName .. " cooldown ended")
+		local timeText = remainingTime and tostring(remainingTime) or "unknown"
 	end
 end
 
@@ -76,10 +106,11 @@ local CONFIG = {
 -- Handles cinematic camera movements for skills/buffs/ultimates
 -- ========================================
 
--- Smoothly moves camera to a position over time (scales with speed multiplier)
-local function tweenCameraTo(targetCFrame, tweenDuration)
-	-- Scale tween duration with camera speed multiplier
-	local scaledDuration = tweenDuration / CAMERA_SPEED_MULTIPLIER
+-- Smoothly moves camera to a position over time (scales with action-specific speed multiplier)
+local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
+	-- Use specific action speed or fallback to current action type
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local scaledDuration = tweenDuration / speedMultiplier
 	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
 	tween:Play()
@@ -87,7 +118,7 @@ local function tweenCameraTo(targetCFrame, tweenDuration)
 end
 
 -- Plays a cinematic camera sequence
-local function playCameraSequence(sequence)
+local function playCameraSequence(sequence, actionType)
 	-- Save original camera settings
 	local originalCFrame = camera.CFrame
 	local originalType = camera.CameraType
@@ -96,18 +127,21 @@ local function playCameraSequence(sequence)
 	local char = player.Character or player.CharacterAdded:Wait()
 	local root = char:WaitForChild("HumanoidRootPart")
 
+	-- Get speed multiplier for this action
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+
 	-- Play each step in the sequence
 	for _, step in ipairs(sequence) do
 		local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
-		tweenCameraTo(targetCFrame, step.tweenTime)
-		-- Scale hold time with camera speed multiplier
-		local scaledHoldTime = step.holdTime / CAMERA_SPEED_MULTIPLIER
+		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
+		-- Scale hold time with action-specific camera speed multiplier
+		local scaledHoldTime = step.holdTime / speedMultiplier
 		task.wait(scaledHoldTime)
 	end
 
 	-- Restore original camera
-	tweenCameraTo(originalCFrame, 1)
-	task.wait(0.5 / CAMERA_SPEED_MULTIPLIER) -- Scale restoration delay
+	tweenCameraTo(originalCFrame, 1, actionType)
+	task.wait(0.5 / speedMultiplier) -- Scale restoration delay
 	camera.CameraType = originalType
 end
 
@@ -121,11 +155,12 @@ end
 -- ========================================
 
 local CAMERA_SEQUENCES = {
+	-- Buff
 	bushido = {
 		{offset = CFrame.new(-5, 1.5, -1.5), rotY = math.rad(-80), tweenTime = 1, holdTime = 2.5},
 		{offset = CFrame.new(0, 2, -3.5), rotY = math.rad(-180), tweenTime = 0, holdTime = 1.5},
 	},
-	
+	-- Ultimate
 	zantetsuken = {
 		{offset = CFrame.new(0, 2, 4), rotY = math.rad(0), tweenTime = 0, holdTime = 1},        -- Front view
 		{offset = CFrame.new(-5, -0.5, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2}, -- Left side
@@ -214,7 +249,7 @@ local function useAction(actionName)
 	-- Play camera sequence if this action has one AND it's not on cooldown
 	if CAMERA_SEQUENCES[actionName] and not skillCooldowns[actionName] then
 		task.spawn(function()
-			playCameraSequence(CAMERA_SEQUENCES[actionName])
+			playCameraSequence(CAMERA_SEQUENCES[actionName], actionName)
 		end)
 	end
 end
@@ -230,7 +265,7 @@ local function onWeaponFound(weaponTool)
 	initializePlayerModule()
 	
 	-- Listen for messages from server
-	remote.OnClientEvent:Connect(function(message, data, extraData)
+	remote.OnClientEvent:Connect(function(message, data, extraData, thirdParam)
 		if message == "lock_input" then
 			lockInput()
 		elseif message == "unlock_input" then
@@ -240,14 +275,17 @@ local function onWeaponFound(weaponTool)
 		elseif message == "unlock_movement" then
 			unlockMovementOnly()
 		elseif message == "update_animation_speed" then
-			updateCameraSpeed(data) -- data contains the new speed value
+			updateCameraSpeed(data, extraData) -- data = speed value, extraData = action type
 		elseif message == "cooldown_status" then
-			updateCooldownStatus(data, extraData, nil) -- data = skillName, extraData = isOnCooldown, remainingTime not used
+			updateCooldownStatus(data, extraData, thirdParam) -- data = skillName, extraData = isOnCooldown, thirdParam = remainingTime
 		end
 	end)
 	
 	-- Tell server to setup all animations (attack + movement)
 	remote:FireServer("normal_attack_setup")
+	
+	-- Sync all camera speeds with server values
+	syncAllCameraSpeeds()
 	
 	-- Clean up old connections
 	if inputConnection then

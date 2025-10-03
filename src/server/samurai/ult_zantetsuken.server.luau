@@ -10,9 +10,7 @@ local Debris = game:GetService("Debris")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
--- Cooldown tracking (temporary variable system)
-local playerCooldowns = {}
-local ZANTETSUKEN_COOLDOWN = 30 -- 30 seconds cooldown (ultimate)
+-- Cooldown system now centralized in actions.server.luau
 
 -- preload animation
 local slashAnim = Instance.new("Animation")
@@ -83,21 +81,17 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
-	-- Check cooldown
-	local currentTime = tick()
-	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < ZANTETSUKEN_COOLDOWN then
-		local remainingTime = ZANTETSUKEN_COOLDOWN - (currentTime - playerCooldowns[player.UserId])
-		-- Send cooldown status to client
-		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireClient(player, "cooldown_status", "zantetsuken", true, math.ceil(remainingTime))
+	-- Check cooldown using centralized system
+	if _G.isSkillOnCooldown(player, "zantetsuken") then
+		local remainingTime = _G.getRemainingCooldown(player, "zantetsuken")
+		_G.sendCooldownStatus(player, "zantetsuken", true, math.ceil(remainingTime))
 		return
 	end
 	
-	-- Set cooldown
-	playerCooldowns[player.UserId] = currentTime
-	-- Send cooldown status to client (skill is now on cooldown)
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "cooldown_status", "zantetsuken", true, ZANTETSUKEN_COOLDOWN)
+	-- Set cooldown using centralized system
+	_G.setSkillCooldown(player, "zantetsuken")
+	local cooldownTime = _G.SAMURAI_COOLDOWNS["zantetsuken"]
+	_G.sendCooldownStatus(player, "zantetsuken", true, cooldownTime)
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
@@ -106,7 +100,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
-	_G.applySamuraiAnimationSpeed(animTrack)
+	_G.applySamuraiAnimationSpeed(animTrack, "zantetsuken")
 	
 	-- Lock input when ultimate starts
 	remote:FireClient(player, "lock_input")

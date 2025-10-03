@@ -10,9 +10,7 @@ local Debris = game:GetService("Debris")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
--- Cooldown tracking (temporary variable system)
-local playerCooldowns = {}
-local BANZAI_COOLDOWN = 15 -- 15 seconds cooldown
+-- Cooldown system now centralized in actions.server.luau
 
 -- preload animation
 local auraAnim = Instance.new("Animation")
@@ -25,21 +23,17 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
-	-- Check cooldown
-	local currentTime = tick()
-	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < BANZAI_COOLDOWN then
-		local remainingTime = BANZAI_COOLDOWN - (currentTime - playerCooldowns[player.UserId])
-		-- Send cooldown status to client
-		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireClient(player, "cooldown_status", "banzai", true, math.ceil(remainingTime))
+	-- Check cooldown using centralized system
+	if _G.isSkillOnCooldown(player, "banzai") then
+		local remainingTime = _G.getRemainingCooldown(player, "banzai")
+		_G.sendCooldownStatus(player, "banzai", true, math.ceil(remainingTime))
 		return
 	end
 	
-	-- Set cooldown
-	playerCooldowns[player.UserId] = currentTime
-	-- Send cooldown status to client (skill is now on cooldown)
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "cooldown_status", "banzai", true, BANZAI_COOLDOWN)
+	-- Set cooldown using centralized system
+	_G.setSkillCooldown(player, "banzai")
+	local cooldownTime = _G.SAMURAI_COOLDOWNS["banzai"]
+	_G.sendCooldownStatus(player, "banzai", true, cooldownTime)
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
@@ -48,7 +42,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(auraAnim)
 	animTrack:Play()
-	_G.applySamuraiAnimationSpeed(animTrack)
+	_G.applySamuraiAnimationSpeed(animTrack, "banzai")
 	
 	-- Lock input when buff starts
 	remote:FireClient(player, "lock_input")

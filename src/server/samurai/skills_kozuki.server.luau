@@ -11,9 +11,7 @@ local Debris = game:GetService("Debris")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
--- Cooldown tracking (temporary variable system)
-local playerCooldowns = {}
-local KOZUKI_COOLDOWN = 10 -- 10 seconds cooldown
+-- Cooldown system now centralized in actions.server.luau
 
 -- preload animation
 local slashAnim = Instance.new("Animation")
@@ -54,21 +52,17 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
-	-- Check cooldown
-	local currentTime = tick()
-	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < KOZUKI_COOLDOWN then
-		local remainingTime = KOZUKI_COOLDOWN - (currentTime - playerCooldowns[player.UserId])
-		-- Send cooldown status to client
-		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireClient(player, "cooldown_status", "kozuki", true, math.ceil(remainingTime))
+	-- Check cooldown using centralized system
+	if _G.isSkillOnCooldown(player, "kozuki") then
+		local remainingTime = _G.getRemainingCooldown(player, "kozuki")
+		_G.sendCooldownStatus(player, "kozuki", true, math.ceil(remainingTime))
 		return
 	end
 	
-	-- Set cooldown
-	playerCooldowns[player.UserId] = currentTime
-	-- Send cooldown status to client (skill is now on cooldown)
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "cooldown_status", "kozuki", true, KOZUKI_COOLDOWN)
+	-- Set cooldown using centralized system
+	_G.setSkillCooldown(player, "kozuki")
+	local cooldownTime = _G.SAMURAI_COOLDOWNS["kozuki"]
+	_G.sendCooldownStatus(player, "kozuki", true, cooldownTime)
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
@@ -77,7 +71,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
-	_G.applySamuraiAnimationSpeed(animTrack)
+	_G.applySamuraiAnimationSpeed(animTrack, "kozuki")
 	
 	-- Lock movement only when skill starts (allows camera/aiming)
 	remote:FireClient(player, "lock_movement")

@@ -10,9 +10,7 @@ local Players = game:GetService("Players")
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
--- Cooldown tracking (temporary variable system)
-local playerCooldowns = {}
-local WAKIZASHI_COOLDOWN = 8 -- 8 seconds cooldown
+-- Cooldown system now centralized in actions.server.luau
 
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
@@ -24,21 +22,17 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
-	-- Check cooldown
-	local currentTime = tick()
-	if playerCooldowns[player.UserId] and (currentTime - playerCooldowns[player.UserId]) < WAKIZASHI_COOLDOWN then
-		local remainingTime = WAKIZASHI_COOLDOWN - (currentTime - playerCooldowns[player.UserId])
-		-- Send cooldown status to client
-		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireClient(player, "cooldown_status", "wakizashi", true, math.ceil(remainingTime))
+	-- Check cooldown using centralized system
+	if _G.isSkillOnCooldown(player, "wakizashi") then
+		local remainingTime = _G.getRemainingCooldown(player, "wakizashi")
+		_G.sendCooldownStatus(player, "wakizashi", true, math.ceil(remainingTime))
 		return
 	end
 	
-	-- Set cooldown
-	playerCooldowns[player.UserId] = currentTime
-	-- Send cooldown status to client (skill is now on cooldown)
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "cooldown_status", "wakizashi", true, WAKIZASHI_COOLDOWN)
+	-- Set cooldown using centralized system
+	_G.setSkillCooldown(player, "wakizashi")
+	local cooldownTime = _G.SAMURAI_COOLDOWNS["wakizashi"]
+	_G.sendCooldownStatus(player, "wakizashi", true, cooldownTime)
 	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
@@ -47,7 +41,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
-	_G.applySamuraiAnimationSpeed(animTrack)
+	_G.applySamuraiAnimationSpeed(animTrack, "wakizashi")
 	
 	-- Lock movement only when skill starts (allows camera/aiming)
 	remote:FireClient(player, "lock_movement")
