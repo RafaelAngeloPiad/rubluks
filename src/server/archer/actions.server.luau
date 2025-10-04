@@ -34,14 +34,12 @@ _G.ARCHER_ANIMATION_SPEEDS = {
 	-- Walking speeds (fixed values, not affected by animation speed)
 	walking = {
 		normal = 18,    -- Fixed normal walking speed
-		slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
+		slow = 3,       -- Fixed speed during skills
 		blocking = 0    -- Fixed speed while blocking
 	},
 	
-	-- Attack combos
-	combo1 = 1.0,
-	combo2 = 1.0,
-	combo3 = 1.0,
+	-- Attack animations (archer uses single attack system)
+	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
 	moveAttack = 1.0,
 	jumpAttack = 1.0,
 	block = 1.0,
@@ -125,11 +123,7 @@ function _G.setArcherWalkingSpeed(player, speedType)
 	humanoid.WalkSpeed = speed
 end
 
--- Combo system configuration
-local COMBO_CONFIG = {
-	comboTimeout = 1, -- 1 second timeout for combo reset
-	combo3Cooldown = 20, -- 3 second cooldown for 3rd attack
-}
+-- Archer uses simple single attack system (no combos)
 
 -- ========================================
 -- CENTRALIZED COOLDOWN CONFIGURATION
@@ -234,11 +228,17 @@ local function setupAttackAnimations(player)
 	anim1.AnimationId = "rbxassetid://70754044037236"
 	local animTrack1 = animator:LoadAnimation(anim1)
 
-	-- Jump Attack Animation (from original archer Attack.lua)
+	-- Jump Animation (from original archer Archer Animation Script.lua)
 	local jumpAnim = Instance.new("Animation")
-	jumpAnim.AnimationId = "rbxassetid://73381106980733"
+	jumpAnim.AnimationId = "rbxassetid://70438108632909"
 	local jumpTrack = animator:LoadAnimation(jumpAnim)
-	jumpTrack.Priority = Enum.AnimationPriority.Action
+	jumpTrack.Priority = Enum.AnimationPriority.Movement
+
+	-- Jump Attack Animation (from original archer Attack.lua)
+	local jumpAttackAnim = Instance.new("Animation")
+	jumpAttackAnim.AnimationId = "rbxassetid://73381106980733"
+	local jumpAttackTrack = animator:LoadAnimation(jumpAttackAnim)
+	jumpAttackTrack.Priority = Enum.AnimationPriority.Action
 
 	-- Move Attack Animation (from original archer Attack.lua)
 	local moveSlashAnim = Instance.new("Animation")
@@ -275,18 +275,16 @@ local function setupAttackAnimations(player)
 	playerAttackData[player] = {
 		animTrack1 = animTrack1,
 		jumpTrack = jumpTrack,
+		jumpAttackTrack = jumpAttackTrack,
 		moveSlashTrack = moveSlashTrack,
 		blockTrack = blockTrack,
 		waveTrack = waveTrack,
 		idleTrack = idleTrack,
 		runTrack = runTrack,
-		clickCount = 0,
 		isAttacking = false,
 		isJumping = false,
 		isBlocking = false,
-		originalWalkSpeed = hum.WalkSpeed,
-		-- Combo system variables
-		comboTimer = nil
+		originalWalkSpeed = hum.WalkSpeed
 	}
 	
 	-- Start with idle animation
@@ -326,6 +324,11 @@ local function setupAttackAnimations(player)
 		
 		if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
 			data.isJumping = true
+			-- Play regular jump animation for movement
+			if not data.isAttacking then -- Only play if not attacking
+				data.jumpTrack:Play()
+				_G.applyArcherAnimationSpeed(data.jumpTrack, "jump")
+			end
 		elseif newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then
 			data.isJumping = false
 			if data.jumpTrack.IsPlaying then
@@ -354,17 +357,12 @@ local function cleanupAttackAnimations(player)
 	-- Stop all animations
 	if data.animTrack1 then data.animTrack1:Stop() end
 	if data.jumpTrack then data.jumpTrack:Stop() end
+	if data.jumpAttackTrack then data.jumpAttackTrack:Stop() end
 	if data.moveSlashTrack then data.moveSlashTrack:Stop() end
 	if data.blockTrack then data.blockTrack:Stop() end
 	if data.waveTrack then data.waveTrack:Stop() end
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
-	
-	-- Clear combo timer
-	if data.comboTimer then
-		task.cancel(data.comboTimer)
-		data.comboTimer = nil
-	end
 	
 	-- Reset walk speed
 	local char = player.Character
@@ -379,25 +377,8 @@ local function cleanupAttackAnimations(player)
 end
 
 -- ========================================
--- COMBO SYSTEM HELPERS (Simplified for Archer)
+-- ARCHER USES SIMPLE SINGLE ATTACK SYSTEM
 -- ========================================
-
-local function resetComboTimer(player)
-	local data = playerAttackData[player]
-	if not data then return end
-	
-	-- Clear existing timer
-	if data.comboTimer then
-		task.cancel(data.comboTimer)
-		data.comboTimer = nil
-	end
-	
-	-- Set new timer
-	data.comboTimer = task.delay(COMBO_CONFIG.comboTimeout, function()
-		data.clickCount = 0
-		data.isAttacking = false -- Reset attacking flag when combo times out
-	end)
-end
 
 -- ========================================
 -- ATTACK HANDLERS
@@ -421,24 +402,20 @@ local function handleNormalAttack(player)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	if not root then return end
 	
-	local isMoving = hum.MoveDirection.Magnitude > 0
+	local speed = hum.MoveDirection.Magnitude
 	local isJumping = data.isJumping
 	
 	data.isAttacking = true
 	
 	if isJumping then
-		-- Jump attack - separate attack that resets combo (priority over movement)
-		data.clickCount = 0 -- Reset combo when doing jump attack
-		-- Clear combo timer
-		if data.comboTimer then
-			task.cancel(data.comboTimer)
-			data.comboTimer = nil
-		end
-		data.jumpTrack:Play()
-		_G.applyArcherAnimationSpeed(data.jumpTrack, "jumpAttack")
+		-- Jump attack (from original archer Attack.lua)
+		-- Stop regular jump animation and play jump attack animation
+		if data.jumpTrack.IsPlaying then data.jumpTrack:Stop() end
+		data.jumpAttackTrack:Play()
+		_G.applyArcherAnimationSpeed(data.jumpAttackTrack, "jumpAttack")
 		
 		-- Jump attack projectile (from original archer Attack.lua)
-		data.jumpTrack:GetMarkerReachedSignal("Arrow"):Once(function()
+		data.jumpAttackTrack:GetMarkerReachedSignal("Arrow"):Once(function()
 			local vfx = ReplicatedStorage.ArcherArrow:WaitForChild("Arrow"):Clone()
 			vfx.Parent = workspace
 
@@ -489,18 +466,12 @@ local function handleNormalAttack(player)
 			game:GetService("Debris"):AddItem(bodyVelocity, 2)
 		end)
 		
-		data.jumpTrack.Stopped:Once(function()
+		data.jumpAttackTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
 		
-	elseif isMoving then
-		-- Move attack - separate attack that resets combo (only when on ground)
-		data.clickCount = 0 -- Reset combo when doing move attack
-		-- Clear combo timer
-		if data.comboTimer then
-			task.cancel(data.comboTimer)
-			data.comboTimer = nil
-		end
+	elseif speed > 0 then
+		-- Move attack (from original archer Attack.lua)
 		data.moveSlashTrack:Play()
 		_G.applyArcherAnimationSpeed(data.moveSlashTrack, "moveAttack")
 		
@@ -568,18 +539,9 @@ local function handleNormalAttack(player)
 		end)
 		
 	else
-		-- Normal ground combo (standing still)
-		-- Clear existing combo timer
-		if data.comboTimer then
-			task.cancel(data.comboTimer)
-			data.comboTimer = nil
-		end
-		
-		data.clickCount += 1
-		
-		-- Always use the same attack animation for archer (from original archer Attack.lua)
+		-- Normal attack (from original archer Attack.lua) - single attack, no combo
 		data.animTrack1:Play()
-		_G.applyArcherAnimationSpeed(data.animTrack1, "combo1")
+		_G.applyArcherAnimationSpeed(data.animTrack1, "normalAttack")
 		
 		-- Normal attack projectile (from original archer Attack.lua)
 		data.animTrack1:GetMarkerReachedSignal("Arrow"):Once(function()
@@ -635,8 +597,6 @@ local function handleNormalAttack(player)
 		
 		data.animTrack1.Stopped:Once(function() 
 			data.isAttacking = false 
-			-- Start combo timer after attack
-			resetComboTimer(player)
 		end)
 	end
 end
@@ -700,9 +660,9 @@ local function handleJumpAttack(player)
 	data.isAttacking = true
 	
 	-- Play jump attack animation
-	data.jumpTrack:Play()
-	_G.applyArcherAnimationSpeed(data.jumpTrack, "jumpAttack")
-	data.jumpTrack.Stopped:Once(function()
+	data.jumpAttackTrack:Play()
+	_G.applyArcherAnimationSpeed(data.jumpAttackTrack, "jumpAttack")
+	data.jumpAttackTrack.Stopped:Once(function()
 		data.isAttacking = false
 	end)
 end
@@ -713,20 +673,20 @@ end
 
 remote.OnServerEvent:Connect(function(player, actionName)
 	
-	-- Handle attack actions
-	if actionName == "normal_attack_setup" then
+	-- Handle archer-specific attack actions (prefixed with "archer_")
+	if actionName == "archer_attack_setup" then
 		setupAttackAnimations(player)
-	elseif actionName == "normal_attack_cleanup" then
+	elseif actionName == "archer_attack_cleanup" then
 		cleanupAttackAnimations(player)
-	elseif actionName == "left_click_attack" then
+	elseif actionName == "archer_left_click_attack" then
 		handleNormalAttack(player)
-	elseif actionName == "wave" then
+	elseif actionName == "archer_wave" then
 		handleWave(player)
-	elseif actionName == "block_start" then
+	elseif actionName == "archer_block_start" then
 		handleBlock(player, true)
-	elseif actionName == "block_end" then
+	elseif actionName == "archer_block_end" then
 		handleBlock(player, false)
-	elseif actionName == "jump_attack" then
+	elseif actionName == "archer_jump_attack" then
 		handleJumpAttack(player)
 	elseif actionName == "sync_camera_speeds" then
 		-- Sync all camera speeds with client

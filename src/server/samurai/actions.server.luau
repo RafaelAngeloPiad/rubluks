@@ -697,20 +697,20 @@ end
 
 remote.OnServerEvent:Connect(function(player, actionName)
 	
-	-- Handle attack actions
-	if actionName == "normal_attack_setup" then
+	-- Handle samurai-specific attack actions (prefixed with "samurai_")
+	if actionName == "samurai_attack_setup" then
 		setupAttackAnimations(player)
-	elseif actionName == "normal_attack_cleanup" then
+	elseif actionName == "samurai_attack_cleanup" then
 		cleanupAttackAnimations(player)
-	elseif actionName == "left_click_attack" then
+	elseif actionName == "samurai_left_click_attack" then
 		handleNormalAttack(player)
-	elseif actionName == "wave" then
+	elseif actionName == "samurai_wave" then
 		handleWave(player)
-	elseif actionName == "block_start" then
+	elseif actionName == "samurai_block_start" then
 		handleBlock(player, true)
-	elseif actionName == "block_end" then
+	elseif actionName == "samurai_block_end" then
 		handleBlock(player, false)
-	elseif actionName == "jump_attack" then
+	elseif actionName == "samurai_jump_attack" then
 		handleJumpAttack(player)
 	elseif actionName == "sync_camera_speeds" then
 		-- Sync all camera speeds with client

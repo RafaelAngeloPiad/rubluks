@@ -28,9 +28,7 @@ local CAMERA_SPEED_MULTIPLIERS = {
 	idle = 1.0,
 	run = 1.0,
 	jump = 1.0,
-	combo1 = 1.0,
-	combo2 = 1.0,
-	combo3 = 1.0,
+	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
 	moveAttack = 1.0,
 	jumpAttack = 1.0,
 	block = 1.0,
@@ -291,7 +289,7 @@ local function onWeaponFound(weaponTool)
 	end)
 	
 	-- Tell server to setup all animations (attack + movement)
-	remote:FireServer("normal_attack_setup")
+	remote:FireServer("archer_attack_setup")
 	
 	-- Sync all camera speeds with server values
 	syncAllCameraSpeeds()
@@ -325,19 +323,19 @@ local function onWeaponFound(weaponTool)
 			
 			-- Handle block (Ctrl) - but not when movement is locked
 			if input.KeyCode == CONFIG.keybinds.block and not movementLocked then
-				remote:FireServer("block_start")
+				remote:FireServer("archer_block_start")
 				return
 			end
 			
 			-- Handle jump (Spacebar) - but not when movement is locked
 			if input.KeyCode == CONFIG.keybinds.jump and not movementLocked then
-				remote:FireServer("jump_attack")
+				remote:FireServer("archer_jump_attack")
 				return
 			end
 			
 			-- Handle wave (P key) - but not when movement is locked
 			if input.KeyCode == CONFIG.keybinds.wave and not movementLocked then
-				remote:FireServer("wave")
+				remote:FireServer("archer_wave")
 				return
 			end
 		end
@@ -345,7 +343,7 @@ local function onWeaponFound(weaponTool)
 		-- Handle mouse clicks - but not when movement is locked
 		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
 			-- Left click attack
-			remote:FireServer("left_click_attack")
+			remote:FireServer("archer_left_click_attack")
 		end
 	end)
 	
@@ -360,7 +358,7 @@ local function onWeaponFound(weaponTool)
 		
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 			-- Block release
-			remote:FireServer("block_end")
+			remote:FireServer("archer_block_end")
 		end
 	end)
 end
@@ -370,7 +368,7 @@ local function onWeaponLost()
 		
 		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireServer("normal_attack_cleanup")
+		remote:FireServer("archer_attack_cleanup")
 		
 		tool = nil
 	end
