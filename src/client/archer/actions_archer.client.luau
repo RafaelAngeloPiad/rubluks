@@ -424,8 +424,14 @@ local function useAction(actionName)
 		return
 	end
 	
-	-- Tell server to handle VFX and hitboxes
-	remote:FireServer(actionName)
+	-- Send camera direction for aiming skills
+	if actionName == "powerShot" or actionName == "piercingShot" then
+		local cameraDirection = camera.CFrame.LookVector
+		remote:FireServer(actionName, cameraDirection)
+	else
+		-- Tell server to handle VFX and hitboxes
+		remote:FireServer(actionName)
+	end
 	
 	-- Play camera sequence if this action has one AND it's not on cooldown
 	-- Camera sequences are now handled directly in playCameraSequence() for starfall and hunterMark

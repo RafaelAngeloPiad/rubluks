@@ -16,11 +16,15 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://104928487278221"
 
-remote.OnServerEvent:Connect(function(player, skillType)
+remote.OnServerEvent:Connect(function(player, skillType, ...)
 	-- Only handle powerShot skill requests
 	if skillType ~= "powerShot" then
 		return
 	end
+	
+	-- Get camera direction if provided
+	local args = {...}
+	local cameraDirection = args[1]
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "powerShot") then
@@ -110,9 +114,12 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
+		-- Use camera direction if provided, otherwise fallback to character direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
+
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.Velocity = root.CFrame.LookVector * 550 -- adjust speed
+		bodyVelocity.Velocity = shootDirection * 550 -- adjust speed
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = arrowPart
 
@@ -141,7 +148,10 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Position sa harap ng player (independent, no weld)
+		-- Use camera direction if provided, otherwise fallback to character direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
+
+		-- Position sa harap ng player (independent, no weld) - follow camera direction
 		local forwardOffset = 85 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
@@ -149,7 +159,8 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
-		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
+		-- Position trail effect in camera direction
+		vfx:PivotTo(root.CFrame * CFrame.new(shootDirection.X * forwardOffset, 0, shootDirection.Z * forwardOffset) * rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
