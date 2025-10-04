@@ -1,0 +1,85 @@
+-- ========================================
+-- HUNTER INSTINCT BUFF SERVER
+-- Raw and procedural implementation
+-- Based on original HunterInstinct.lua
+-- ========================================
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local Debris = game:GetService("Debris")
+
+-- Remote setup
+local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+
+-- Cooldown system now centralized in actions.server.luau
+
+-- preload animation (from original HunterInstinct.lua)
+local auraAnim = Instance.new("Animation")
+auraAnim.AnimationId = "rbxassetid://113203591254331"
+
+remote.OnServerEvent:Connect(function(player, skillType)
+	
+	-- Only handle hunterInstinct buff requests
+	if skillType ~= "hunterInstinct" then
+		return
+	end
+	
+	-- Check cooldown using centralized system
+	if _G.isSkillOnCooldown(player, "hunterInstinct") then
+		local remainingTime = _G.getRemainingCooldown(player, "hunterInstinct")
+		_G.sendCooldownStatus(player, "hunterInstinct", true, math.ceil(remainingTime))
+		return
+	end
+	
+	-- Set cooldown using centralized system
+	_G.setSkillCooldown(player, "hunterInstinct")
+	local cooldownTime = _G.ARCHER_COOLDOWNS["hunterInstinct"]
+	_G.sendCooldownStatus(player, "hunterInstinct", true, cooldownTime)
+	
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:WaitForChild("Humanoid")
+	local root = character:WaitForChild("HumanoidRootPart")
+	local animator = humanoid:WaitForChild("Animator")
+
+	local animTrack = animator:LoadAnimation(auraAnim)
+	animTrack:Play()
+	_G.applyArcherAnimationSpeed(animTrack, "hunterInstinct")
+	
+	-- Lock input when buff starts
+	remote:FireClient(player, "lock_input")
+	_G.setArcherWalkingSpeed(player, "blocking") -- Stop movement during buff
+	
+	-- Unlock input when animation ends
+	animTrack.Stopped:Connect(function()
+		remote:FireClient(player, "unlock_input")
+		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal movement
+	end)
+
+	-- AuraStart marker (from original HunterInstinct.lua)
+	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
+		local vfx = ReplicatedStorage.Banzai:WaitForChild("Aura"):Clone()
+		vfx.Parent = workspace
+
+		local root = character:WaitForChild("HumanoidRootPart")
+
+		-- Position sa harap ng player (independent, no weld)
+		local rotationX = 0 -- ikot pataas/pababa
+		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
+		local rotationZ = math.rad(0) -- ikot paikot
+
+		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
+
+		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, 0)* rotation)
+
+		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
+		for _, part in ipairs(vfx:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = false
+			end
+		end
+
+		game:GetService("Debris"):AddItem(vfx, 1.5)
+	end)
+
+end)
