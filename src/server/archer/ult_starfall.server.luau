@@ -73,6 +73,30 @@ local function createExplosionNear(character, angle)
 		end
 	end
 
+	-- Attach static hitbox to explosion position
+	_G.createStaticHitbox({
+		cframe = spawnCF,
+		size = Vector3.new(15, 15, 15), -- Large explosion radius
+		damage = 25,
+		character = character,
+		name = "Starfall Explosion Near",
+		showVisual = true,
+		visualColor = Color3.new(1, 0.5, 0), -- Orange
+		delay = 0.1, -- Slight delay before hitbox appears
+	})
+	
+	-- Attach static hitbox to player center
+	_G.createStaticHitbox({
+		cframe = root.CFrame,
+		size = Vector3.new(15, 15, 15), -- Same size as explosion
+		damage = 25,
+		character = character,
+		name = "Starfall Center Near",
+		showVisual = true,
+		visualColor = Color3.new(0, 1, 0), -- Green for center hitbox
+		delay = 0.1, -- Slight delay before hitbox appears
+	})
+
 	Debris:AddItem(vfx, 1.2)
 end
 
@@ -99,6 +123,30 @@ local function createExplosionFar(character, angle)
 			part.CanCollide = false
 		end
 	end
+
+	-- Attach static hitbox to explosion position
+	_G.createStaticHitbox({
+		cframe = spawnCF,
+		size = Vector3.new(20, 20, 20), -- Larger explosion radius for far explosions
+		damage = 30,
+		character = character,
+		name = "Starfall Explosion Far",
+		showVisual = true,
+		visualColor = Color3.new(1, 0.3, 0), -- Darker orange for far explosions
+		delay = 0.1, -- Slight delay before hitbox appears
+	})
+	
+	-- Attach static hitbox to player center
+	_G.createStaticHitbox({
+		cframe = root.CFrame,
+		size = Vector3.new(20, 20, 20), -- Same size as explosion
+		damage = 30,
+		character = character,
+		name = "Starfall Center Far",
+		showVisual = true,
+		visualColor = Color3.new(0, 0.5, 1), -- Blue for center hitbox
+		delay = 0.1, -- Slight delay before hitbox appears
+	})
 
 	Debris:AddItem(vfx, 1.2)
 end
@@ -191,6 +239,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		for angle = 0, 315, 45 do -- 8 directions
 			createExplosionFar(character, angle)
 		end
+		
+		-- Create massive center hitbox to cover all blind spots
+		local root = character:WaitForChild("HumanoidRootPart")
+		_G.createStaticHitbox({
+			cframe = root.CFrame,
+			size = Vector3.new(200, 50, 200), -- Massive hitbox covering entire area
+			damage = 40, -- High damage for center area
+			character = character,
+			name = "Starfall Center Massive",
+			showVisual = true,
+			visualColor = Color3.new(1, 0, 0), -- Red for center area
+			delay = 0.2 -- Slight delay after explosions
+		})
 	end)
 
 end)
