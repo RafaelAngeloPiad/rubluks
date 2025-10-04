@@ -148,10 +148,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Use camera direction if provided, otherwise fallback to character direction
-		local shootDirection = cameraDirection or root.CFrame.LookVector
-
-		-- Position sa harap ng player (independent, no weld) - follow camera direction
+		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 85 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
@@ -159,8 +156,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
-		-- Position trail effect in camera direction
-		vfx:PivotTo(root.CFrame * CFrame.new(shootDirection.X * forwardOffset, 0, shootDirection.Z * forwardOffset) * rotation)
+		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
