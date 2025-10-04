@@ -424,15 +424,15 @@ local function handleNormalAttack(player, cameraDirection)
 
 			local root = char:WaitForChild("HumanoidRootPart")
 
-			-- Position sa harap ng player (independent, no weld)
-			local forwardOffset = 4 -- gaano kalayo sa harap magsimula
+			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
+			local spawnOffset = Vector3.new(1, 0, 1) -- v1 spawn offset from HitboxConfig
 			local rotationX = 0 -- ikot pataas/pababa
 			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
 			local rotationZ = 0 -- ikot paikot
 
 			local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
-			vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -forwardOffset)* rotation)
+			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
 
 			-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 			for _, part in ipairs(vfx:GetDescendants()) do
@@ -485,15 +485,15 @@ local function handleNormalAttack(player, cameraDirection)
 
 			local root = char:WaitForChild("HumanoidRootPart")
 
-			-- Position sa harap ng player (independent, no weld)
-			local forwardOffset = 4 -- gaano kalayo sa harap magsimula
+			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
+			local spawnOffset = Vector3.new(1, 0, 1) -- v1 spawn offset from HitboxConfig
 			local rotationX = 0 -- ikot pataas/pababa
 			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
 			local rotationZ = 0 -- ikot paikot
 
 			local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
-			vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -forwardOffset)* rotation)
+			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
 
 			-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 			for _, part in ipairs(vfx:GetDescendants()) do
@@ -553,15 +553,15 @@ local function handleNormalAttack(player, cameraDirection)
 
 			local root = char:WaitForChild("HumanoidRootPart")
 
-			-- Position sa harap ng player (independent, no weld)
-			local forwardOffset = 4 -- gaano kalayo sa harap magsimula
+			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
+			local spawnOffset = Vector3.new(1, 0, 1) -- v1 spawn offset from HitboxConfig
 			local rotationX = 0 -- ikot pataas/pababa
 			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
 			local rotationZ = 0 -- ikot paikot
 
 			local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
-			vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -forwardOffset)* rotation)
+			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
 
 			-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 			for _, part in ipairs(vfx:GetDescendants()) do

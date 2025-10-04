@@ -139,8 +139,8 @@ local function createCrosshair()
 		local camera = workspace.CurrentCamera
 		if not camera then return end
 		
-		-- Get crosshair offset (built-in, no config needed)
-		local crosshairOffset = Vector3.new(0, 0, 0)
+		-- Get crosshair offset (exact v1 offset for perfect alignment)
+		local crosshairOffset = Vector3.new(-12, 17, 0)
 		
 		-- Get camera's center view direction (same as projectile)
 		local cameraDirection = camera.CFrame.LookVector
