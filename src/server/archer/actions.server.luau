@@ -384,7 +384,7 @@ end
 -- ATTACK HANDLERS
 -- ========================================
 
-local function handleNormalAttack(player)
+local function handleNormalAttack(player, cameraDirection)
 	local data = playerAttackData[player]
 	if not data then return end
 	
@@ -404,6 +404,9 @@ local function handleNormalAttack(player)
 	
 	local speed = hum.MoveDirection.Magnitude
 	local isJumping = data.isJumping
+	
+	-- Use camera direction if provided, otherwise fallback to character direction
+	local shootDirection = cameraDirection or root.CFrame.LookVector
 	
 	data.isAttacking = true
 	
@@ -442,9 +445,9 @@ local function handleNormalAttack(player)
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-			-- Gagalaw forward gamit BodyVelocity
+			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
 			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = root.CFrame.LookVector * 120 -- adjust speed
+			bodyVelocity.Velocity = shootDirection * 120 -- adjust speed
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
@@ -503,9 +506,9 @@ local function handleNormalAttack(player)
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-			-- Gagalaw forward gamit BodyVelocity
+			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
 			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = root.CFrame.LookVector * 120 -- adjust speed
+			bodyVelocity.Velocity = shootDirection * 120 -- adjust speed
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
@@ -571,9 +574,9 @@ local function handleNormalAttack(player)
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-			-- Gagalaw forward gamit BodyVelocity
+			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
 			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = root.CFrame.LookVector * 120 -- adjust speed
+			bodyVelocity.Velocity = shootDirection * 120 -- adjust speed
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
@@ -671,7 +674,8 @@ end
 -- ACTION EVENT HANDLER
 -- ========================================
 
-remote.OnServerEvent:Connect(function(player, actionName)
+remote.OnServerEvent:Connect(function(player, actionName, ...)
+	local args = {...}
 	
 	-- Handle archer-specific attack actions (prefixed with "archer_")
 	if actionName == "archer_attack_setup" then
@@ -679,7 +683,9 @@ remote.OnServerEvent:Connect(function(player, actionName)
 	elseif actionName == "archer_attack_cleanup" then
 		cleanupAttackAnimations(player)
 	elseif actionName == "archer_left_click_attack" then
-		handleNormalAttack(player)
+		-- Pass camera direction if provided
+		local cameraDirection = args[1]
+		handleNormalAttack(player, cameraDirection)
 	elseif actionName == "archer_wave" then
 		handleWave(player)
 	elseif actionName == "archer_block_start" then

@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -22,6 +23,14 @@ local playerModule = nil
 local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+
+-- V1 Camera Lock and Crosshair System
+local crosshairGui = nil
+local cameraLockEnabled = false
+local cameraLockConnection = nil
+local crosshairConnection = nil
+local cameraOffsetEnabled = false
+local originalCameraOffset = nil
 
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
@@ -98,6 +107,173 @@ local CONFIG = {
 		wave = Enum.KeyCode.T, -- T key for wave emote
 	}
 }
+
+-- ========================================
+-- V1 CAMERA LOCK AND CROSSHAIR SYSTEM
+-- Simple, clean implementation for archer aiming
+-- ========================================
+
+-- Create crosshair UI that matches camera's center view exactly (v1 implementation)
+local function createCrosshair()
+	if crosshairGui then
+		crosshairGui:Destroy()
+	end
+	
+	crosshairGui = Instance.new("ScreenGui")
+	crosshairGui.Name = "ArcherCrosshair"
+	crosshairGui.ResetOnSpawn = false
+	crosshairGui.Parent = player.PlayerGui
+	
+	-- Create simple black dot crosshair
+	local crosshairFrame = Instance.new("Frame")
+	crosshairFrame.Name = "CrosshairFrame"
+	crosshairFrame.Size = UDim2.new(0, 8, 0, 8) -- Small 8x8 pixel dot
+	crosshairFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Black dot
+	crosshairFrame.BorderSizePixel = 0
+	crosshairFrame.Parent = crosshairGui
+	
+	-- Position crosshair to match camera's center view exactly
+	local function updateCrosshairPosition()
+		if not crosshairGui or not crosshairGui.Parent then return end
+		
+		local camera = workspace.CurrentCamera
+		if not camera then return end
+		
+		-- Get crosshair offset (built-in, no config needed)
+		local crosshairOffset = Vector3.new(0, 0, 0)
+		
+		-- Get camera's center view direction (same as projectile)
+		local cameraDirection = camera.CFrame.LookVector
+		local cameraPosition = camera.CFrame.Position
+		
+		-- Calculate where camera is looking in world space (same as projectile target)
+		local lookTarget = cameraPosition + cameraDirection * 100
+		
+		-- Convert world position to screen position
+		local screenPoint, onScreen = camera:WorldToScreenPoint(lookTarget)
+		
+		if onScreen then
+			-- Position crosshair with offset
+			local xPos = screenPoint.X - 4 + crosshairOffset.X
+			local yPos = screenPoint.Y - 4 + crosshairOffset.Y
+			crosshairFrame.Position = UDim2.new(0, xPos, 0, yPos)
+			
+		else
+			-- If off-screen, keep it centered with offset
+			local centerX = -4 + crosshairOffset.X
+			local centerY = -4 + crosshairOffset.Y
+			crosshairFrame.Position = UDim2.new(0.5, centerX, 0.5, centerY)
+			
+		end
+	end
+	
+	-- Update crosshair position every frame to match camera
+	crosshairConnection = RunService.Heartbeat:Connect(function()
+		updateCrosshairPosition()
+	end)
+	
+	-- No animation - just a steady dot
+end
+
+-- Remove crosshair UI
+local function removeCrosshair()
+	if crosshairGui then
+		crosshairGui:Destroy()
+		crosshairGui = nil
+	end
+	
+	-- Disconnect crosshair position update connection
+	if crosshairConnection then
+		crosshairConnection:Disconnect()
+		crosshairConnection = nil
+	end
+end
+
+-- Enable v1 camera lock - simple character rotation to face camera
+local function enableCameraLock()
+	if cameraLockEnabled then return end
+	
+	cameraLockEnabled = true
+	
+	-- Create camera lock connection
+	cameraLockConnection = RunService.Heartbeat:Connect(function()
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			local humanoid = player.Character.Humanoid
+			local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+			
+			if rootPart then
+				-- Get camera direction
+				local cameraDirection = camera.CFrame.LookVector
+				
+				-- Make character face camera direction (only horizontal rotation)
+				local lookDirection = Vector3.new(cameraDirection.X, 0, cameraDirection.Z).Unit
+				
+				-- Rotate character to face camera direction
+				if lookDirection.Magnitude > 0 then
+					rootPart.CFrame = CFrame.new(rootPart.Position, rootPart.Position + lookDirection)
+				end
+			end
+		end
+	end)
+end
+
+-- Disable v1 camera lock
+local function disableCameraLock()
+	if not cameraLockEnabled then return end
+	
+	cameraLockEnabled = false
+	
+	-- Disconnect camera lock connection
+	if cameraLockConnection then
+		cameraLockConnection:Disconnect()
+		cameraLockConnection = nil
+	end
+end
+
+-- Enable v1 camera offset - moves player to left side of screen
+local function enableCameraOffset()
+	if cameraOffsetEnabled then return end
+	
+	if not player.Character or not player.Character:FindFirstChild("Humanoid") then return end
+	
+	local humanoid = player.Character.Humanoid
+	
+	-- Store original camera offset
+	originalCameraOffset = humanoid.CameraOffset
+	
+	-- Set camera offset to move player to the left side of screen
+	-- This moves the player but keeps the crosshair centered
+	humanoid.CameraOffset = Vector3.new(2.5, 0, 0) -- 2.5 studs to the left
+	
+	cameraOffsetEnabled = true
+end
+
+-- Disable v1 camera offset and restore original
+local function disableCameraOffset()
+	if not cameraOffsetEnabled then return end
+	
+	cameraOffsetEnabled = false
+	
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		local humanoid = player.Character.Humanoid
+		-- Restore original camera offset
+		humanoid.CameraOffset = originalCameraOffset or Vector3.new(0, 0, 0)
+	end
+end
+
+-- Setup v1 archer aiming system
+local function setupArcherAiming()
+	createCrosshair()
+	enableCameraLock()
+	enableCameraOffset()
+end
+
+-- Cleanup v1 archer aiming system
+local function cleanupArcherAiming()
+	removeCrosshair()
+	disableCameraLock()
+	disableCameraOffset()
+end
 
 -- ========================================
 -- CAMERA SYSTEM
@@ -270,6 +446,9 @@ local function onWeaponFound(weaponTool)
 	-- Initialize PlayerModule
 	initializePlayerModule()
 	
+	-- Setup v1 archer aiming system
+	setupArcherAiming()
+	
 	-- Listen for messages from server
 	remote.OnClientEvent:Connect(function(message, data, extraData, thirdParam)
 		if message == "lock_input" then
@@ -348,8 +527,9 @@ local function onWeaponFound(weaponTool)
 		
 		-- Handle mouse clicks - but not when movement is locked
 		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
-			-- Left click attack
-			remote:FireServer("archer_left_click_attack")
+			-- Left click attack - send camera direction for proper aiming
+			local cameraDirection = camera.CFrame.LookVector
+			remote:FireServer("archer_left_click_attack", cameraDirection)
 		end
 	end)
 	
@@ -378,6 +558,9 @@ local function onWeaponLost()
 		
 		tool = nil
 	end
+	
+	-- Cleanup v1 archer aiming system
+	cleanupArcherAiming()
 	
 	-- Unlock input when weapon is lost
 	unlockInput()
