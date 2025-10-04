@@ -155,19 +155,22 @@ end
 -- ========================================
 
 local CAMERA_SEQUENCES = {
+	-- Starfall camera sequence (from original Starfall.lua)
+	starfall = {
+		{offset = CFrame.new(0, 6, -10), rotY = math.rad(180), tweenTime = 0, holdTime = 1},        -- Front view, elevated
+		{offset = CFrame.new(-8, 6, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2},      -- Left side, elevated
+		{offset = CFrame.new(0, 100, 100), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 7}, -- Aerial view
+	},
+	-- HunterMark camera sequence (from original HunterMark.lua)
+	hunterMark = {
+		{offset = CFrame.new(-5, 1.5, -20), rotY = math.rad(-150), tweenTime = 0, holdTime = 1.3},  -- Far left view
+		{offset = CFrame.new(-2, 2, -3.5), rotY = math.rad(-150), tweenTime = 0.3, holdTime = 1.5}, -- Close left view
+	},
 	-- Archer camera sequences (placeholder for future archer skills)
 	-- hunterInstinct = {
 	-- 	{offset = CFrame.new(-5, 1.5, -1.5), rotY = math.rad(-80), tweenTime = 1, holdTime = 2.5},
 	-- 	{offset = CFrame.new(0, 2, -3.5), rotY = math.rad(-180), tweenTime = 0, holdTime = 1.5},
 	-- },
-	-- starfall = {
-	-- 	{offset = CFrame.new(0, 2, 4), rotY = math.rad(0), tweenTime = 0, holdTime = 1},        -- Front view
-	-- 	{offset = CFrame.new(-5, -0.5, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2}, -- Left side
-	-- 	{offset = CFrame.new(8, -0.5, -1.5), rotY = math.rad(90), tweenTime = 0, holdTime = 1},   -- Right side
-	-- 	{offset = CFrame.new(0, -0.5, 8), rotY = math.rad(0), tweenTime = 0, holdTime = 1},       -- Back view
-	-- 	{offset = CFrame.new(0, -0.5, -8), rotY = math.rad(-180), tweenTime = 0, holdTime = 1},   -- Behind player
-	-- 	{offset = CFrame.new(0, 8, 8), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 1}, -- Aerial view
-	-- }
 }
 
 -- ========================================
@@ -277,6 +280,13 @@ local function onWeaponFound(weaponTool)
 			updateCameraSpeed(data, extraData) -- data = speed value, extraData = action type
 		elseif message == "cooldown_status" then
 			updateCooldownStatus(data, extraData, thirdParam) -- data = skillName, extraData = isOnCooldown, thirdParam = remainingTime
+		elseif message == "play_camera_sequence" then
+			-- data = action name (e.g., "starfall")
+			if CAMERA_SEQUENCES[data] and not skillCooldowns[data] then
+				task.spawn(function()
+					playCameraSequence(CAMERA_SEQUENCES[data], data)
+				end)
+			end
 		end
 	end)
 	

@@ -134,6 +134,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	remote:FireClient(player, "lock_input")
 	_G.setArcherWalkingSpeed(player, "blocking") -- Stop movement during ultimate
 	
+	-- Trigger camera sequence for starfall ultimate
+	remote:FireClient(player, "play_camera_sequence", "starfall")
+	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")

@@ -49,6 +49,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	remote:FireClient(player, "lock_input")
 	_G.setArcherWalkingSpeed(player, "blocking") -- Stop movement during buff
 	
+	-- Trigger camera sequence for hunterMark buff
+	remote:FireClient(player, "play_camera_sequence", "hunterMark")
+	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")
