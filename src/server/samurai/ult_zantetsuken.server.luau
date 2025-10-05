@@ -106,6 +106,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	remote:FireClient(player, "lock_input")
 	_G.setSamuraiWalkingSpeed(player, "blocking") -- Stop movement during ultimate
 	
+	-- Camera sequence (added system)
+	remote:FireClient(player, "play_camera_sequence", "zantetsuken")
+	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")

@@ -106,19 +106,47 @@ local CONFIG = {
 -- Handles cinematic camera movements for skills/buffs/ultimates
 -- ========================================
 
+-- Current camera tween (to prevent multiple tweens running simultaneously)
+local currentCameraTween = nil
+local cameraSequenceRunning = false
+local lastCameraSequenceTime = 0
+local CAMERA_SEQUENCE_COOLDOWN = 0.1 -- 100ms cooldown between camera sequences
+
 -- Smoothly moves camera to a position over time (scales with action-specific speed multiplier)
 local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
+	-- Cancel any existing camera tween
+	if currentCameraTween then
+		currentCameraTween:Cancel()
+		currentCameraTween = nil
+	end
+	
 	-- Use specific action speed or fallback to current action type
 	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
 	local scaledDuration = tweenDuration / speedMultiplier
 	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
+	currentCameraTween = tween
 	tween:Play()
 	tween.Completed:Wait()
+	currentCameraTween = nil
 end
 
 -- Plays a cinematic camera sequence
 local function playCameraSequence(sequence, actionType)
+	-- Spam protection: check cooldown
+	local currentTime = tick()
+	if currentTime - lastCameraSequenceTime < CAMERA_SEQUENCE_COOLDOWN then
+		return
+	end
+	
+	-- Prevent multiple camera sequences from running simultaneously
+	if cameraSequenceRunning then
+		return
+	end
+	
+	cameraSequenceRunning = true
+	lastCameraSequenceTime = currentTime
+	
 	-- Save original camera settings
 	local originalCFrame = camera.CFrame
 	local originalType = camera.CameraType
@@ -139,10 +167,12 @@ local function playCameraSequence(sequence, actionType)
 		task.wait(scaledHoldTime)
 	end
 
-	-- Restore original camera
-	tweenCameraTo(originalCFrame, 1, actionType)
-	task.wait(0.5 / speedMultiplier) -- Scale restoration delay
+	-- Restore original camera instantly (no smooth transition)
+	camera.CFrame = originalCFrame
 	camera.CameraType = originalType
+	
+	-- Mark sequence as completed
+	cameraSequenceRunning = false
 end
 
 -- ========================================
@@ -278,6 +308,18 @@ local function onWeaponFound(weaponTool)
 			updateCameraSpeed(data, extraData) -- data = speed value, extraData = action type
 		elseif message == "cooldown_status" then
 			updateCooldownStatus(data, extraData, thirdParam) -- data = skillName, extraData = isOnCooldown, thirdParam = remainingTime
+		elseif message == "play_camera_sequence" then
+			-- data = action name (e.g., "bushido", "zantetsuken")
+			-- Server-triggered sequences should always run (server handles cooldown logic)
+			if data == "bushido" or data == "zantetsuken" then
+				task.spawn(function()
+					-- Use the predefined sequence from CAMERA_SEQUENCES
+					local sequence = CAMERA_SEQUENCES[data]
+					if sequence then
+						playCameraSequence(sequence, data)
+					end
+				end)
+			end
 		end
 	end)
 	
@@ -365,6 +407,9 @@ local function onWeaponLost()
 		
 		tool = nil
 	end
+	
+	-- Reset camera sequence flag
+	cameraSequenceRunning = false
 	
 	-- Unlock input when weapon is lost
 	unlockInput()

@@ -280,19 +280,47 @@ end
 -- Handles cinematic camera movements for skills/buffs/ultimates
 -- ========================================
 
+-- Current camera tween (to prevent multiple tweens running simultaneously)
+local currentCameraTween = nil
+local cameraSequenceRunning = false
+local lastCameraSequenceTime = 0
+local CAMERA_SEQUENCE_COOLDOWN = 0.1 -- 100ms cooldown between camera sequences
+
 -- Smoothly moves camera to a position over time (scales with action-specific speed multiplier)
 local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
+	-- Cancel any existing camera tween
+	if currentCameraTween then
+		currentCameraTween:Cancel()
+		currentCameraTween = nil
+	end
+	
 	-- Use specific action speed or fallback to current action type
 	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
 	local scaledDuration = tweenDuration / speedMultiplier
 	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
+	currentCameraTween = tween
 	tween:Play()
 	tween.Completed:Wait()
+	currentCameraTween = nil
 end
 
 -- Plays a cinematic camera sequence
 local function playCameraSequence(sequence, actionType)
+	-- Spam protection: check cooldown
+	local currentTime = tick()
+	if currentTime - lastCameraSequenceTime < CAMERA_SEQUENCE_COOLDOWN then
+		return
+	end
+	
+	-- Prevent multiple camera sequences from running simultaneously
+	if cameraSequenceRunning then
+		return
+	end
+	
+	cameraSequenceRunning = true
+	lastCameraSequenceTime = currentTime
+	
 	-- Save original camera settings
 	local originalCFrame = camera.CFrame
 	local originalType = camera.CameraType
@@ -304,8 +332,8 @@ local function playCameraSequence(sequence, actionType)
 	-- Get speed multiplier for this action
 	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
 
-	-- Disable archer aiming system during starfall ultimate
-	if actionType == "starfall" then
+	-- Disable archer aiming system during starfall ultimate and hunterMark buff
+	if actionType == "starfall" or actionType == "hunterMark" then
 		cleanupArcherAiming()
 	end
 	
@@ -317,15 +345,17 @@ local function playCameraSequence(sequence, actionType)
 		task.wait(scaledHoldTime)
 	end
 
-	-- Restore original camera
-	tweenCameraTo(originalCFrame, 1, actionType)
-	task.wait(0.5 / speedMultiplier) -- Scale restoration delay
+	-- Restore original camera instantly (no smooth transition)
+	camera.CFrame = originalCFrame
 	camera.CameraType = originalType
 	
-	-- Re-enable archer aiming system after starfall camera sequence ends
-	if actionType == "starfall" then
+	-- Re-enable archer aiming system after starfall or hunterMark camera sequence ends
+	if actionType == "starfall" or actionType == "hunterMark" then
 		setupArcherAiming()
 	end
+	
+	-- Mark sequence as completed
+	cameraSequenceRunning = false
 end
 
 -- ========================================
@@ -343,7 +373,7 @@ local CAMERA_SEQUENCES = {
 	},
 	-- Ultimate (exact copy from original Starfall.lua)
 	starfall = {
-		{offset = CFrame.new(0, 2, -10), rotY = math.rad(180), tweenTime = 0, holdTime = 1},
+		-- {offset = CFrame.new(0, 6, -10), rotY = math.rad(180), tweenTime = 0, holdTime = 1},
 		{offset = CFrame.new(-8, 2, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2},
 		{offset = CFrame.new(0, 100, 100), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 7}
 	}
@@ -467,9 +497,14 @@ local function onWeaponFound(weaponTool)
 			updateCooldownStatus(data, extraData, thirdParam) -- data = skillName, extraData = isOnCooldown, thirdParam = remainingTime
 		elseif message == "play_camera_sequence" then
 			-- data = action name (e.g., "starfall", "hunterMark")
-			if (data == "starfall" or data == "hunterMark") and not skillCooldowns[data] then
+			-- Server-triggered sequences should always run (server handles cooldown logic)
+			if data == "starfall" or data == "hunterMark" then
 				task.spawn(function()
-					playCameraSequence(nil, data) -- nil since sequence is handled internally
+					-- Use the predefined sequence from CAMERA_SEQUENCES
+					local sequence = CAMERA_SEQUENCES[data]
+					if sequence then
+						playCameraSequence(sequence, data)
+					end
 				end)
 			end
 		end
@@ -563,6 +598,9 @@ local function onWeaponLost()
 	
 	-- Cleanup v1 archer aiming system
 	cleanupArcherAiming()
+	
+	-- Reset camera sequence flag
+	cameraSequenceRunning = false
 	
 	-- Unlock input when weapon is lost
 	unlockInput()
