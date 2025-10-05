@@ -20,13 +20,21 @@ local HITBOX_CONFIG = {
 -- ========================================
 
 -- Function to scale delays based on animation speed multiplier
-local function getScaledDelay(baseDelay)
+local function getScaledDelay(baseDelay, actionType)
 	if not baseDelay or baseDelay == 0 then
 		return 0
 	end
 	
-	-- Get animation speed multiplier from global (default to 1.0 if not set)
-	local animationSpeed = _G.SAMURAI_ANIMATION_SPEEDS or _G.ARCHER_ANIMATION_SPEEDS or 1.0
+	-- Get specific animation speed for the action type
+	local animationSpeed = 1.0 -- Default speed
+	
+	-- Check for Archer animation speeds
+	if _G.ARCHER_ANIMATION_SPEEDS and actionType then
+		animationSpeed = _G.ARCHER_ANIMATION_SPEEDS[actionType] or 1.0
+	-- Check for Samurai animation speeds (fallback)
+	elseif _G.SAMURAI_ANIMATION_SPEEDS and actionType then
+		animationSpeed = _G.SAMURAI_ANIMATION_SPEEDS[actionType] or 1.0
+	end
 	
 	-- Scale delay inversely with animation speed
 	-- If animation is 2x faster, delays should be 0.5x (half the time)
@@ -61,7 +69,7 @@ end
 ]]
 function _G.createStaticHitbox(config)
 	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, visualDuration
-	local delay = getScaledDelay(config.delay)
+	local delay = getScaledDelay(config.delay, config.actionType)
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
@@ -79,7 +87,7 @@ function _G.createStaticHitbox(config)
 		local visualColor = config.visualColor
 		local visualDuration = config.visualDuration
 		if not visualDuration then visualDuration = 0.5 end
-		visualDuration = getScaledDelay(visualDuration)
+		visualDuration = getScaledDelay(visualDuration, config.actionType)
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -160,7 +168,7 @@ end
 ]]
 function _G.createStaticDOTHitbox(config)
 	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime
-	local delay = getScaledDelay(config.delay)
+	local delay = getScaledDelay(config.delay, config.actionType)
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
@@ -178,7 +186,7 @@ function _G.createStaticDOTHitbox(config)
 		local visualColor = config.visualColor
 		local damageTickTime = config.damageTickTime
 		if not damageTickTime then damageTickTime = 0.5 end
-		damageTickTime = getScaledDelay(damageTickTime)
+		damageTickTime = getScaledDelay(damageTickTime, config.actionType)
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -306,7 +314,7 @@ end
 ]]
 function _G.createTravelingHitbox(config)
 	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay
-	local delay = getScaledDelay(config.delay)
+	local delay = getScaledDelay(config.delay, config.actionType)
 	
 	task.delay(delay, function()
 		local attachTo = config.attachTo
@@ -556,7 +564,7 @@ end
 ]]
 function _G.createArrowHitbox(config)
 	-- config: arrowPart (BasePart), size, damage, character, name, delay
-	local delay = getScaledDelay(config.delay)
+	local delay = getScaledDelay(config.delay, config.actionType)
 	
 	task.delay(delay, function()
 		local arrowPart = config.arrowPart
