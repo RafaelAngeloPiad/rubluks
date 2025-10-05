@@ -451,16 +451,13 @@ local function handleNormalAttack(player, cameraDirection)
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
-			-- Use projectile hitbox system
-			_G.createTravelingHitbox({
-				attachTo = arrow,
-				offset = CFrame.new(0, 0, 0),
+			-- Use arrow hitbox system (stops arrow on first hit)
+			_G.createArrowHitbox({
+				arrowPart = arrow,
 				size = Vector3.new(2, 2, 2),
 				damage = 20,
 				character = char,
 				name = "JumpArrow",
-				showVisual = true,
-				visualColor = Color3.new(0, 1, 0),
 				delay = 0
 			})
 
@@ -512,16 +509,13 @@ local function handleNormalAttack(player, cameraDirection)
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
-			-- Use projectile hitbox system
-			_G.createTravelingHitbox({
-				attachTo = arrow,
-				offset = CFrame.new(0, 0, 0),
+			-- Use arrow hitbox system (stops arrow on first hit)
+			_G.createArrowHitbox({
+				arrowPart = arrow,
 				size = Vector3.new(2, 2, 2),
 				damage = 20,
 				character = char,
 				name = "MoveArrow",
-				showVisual = true,
-				visualColor = Color3.new(0, 0.8, 1),
 				delay = 0
 			})
 
@@ -580,16 +574,13 @@ local function handleNormalAttack(player, cameraDirection)
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
-			-- Use projectile hitbox system
-			_G.createTravelingHitbox({
-				attachTo = arrow,
-				offset = CFrame.new(0, 0, 0),
+			-- Use arrow hitbox system (stops arrow on first hit)
+			_G.createArrowHitbox({
+				arrowPart = arrow,
 				size = Vector3.new(2, 2, 2),
 				damage = 20,
 				character = char,
 				name = "NormalArrow",
-				showVisual = true,
-				visualColor = Color3.new(1, 0.8, 0),
 				delay = 0
 			})
 

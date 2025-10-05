@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- ========================================
 
 local HITBOX_CONFIG = {
-	transparency = 1, -- Global transparency for all hitbox visuals
+	transparency = 0.5, -- Global transparency for all hitbox visuals
 }
 
 -- ========================================
@@ -417,121 +417,279 @@ end
 		delay = 0,                          -- Delay before activation (optional, default: 0)
 	})
 ]]
-function _G.createProjectileHitbox(config)
-	-- config: startCFrame OR attachTo, size, damage, speed, maxDistance, character, name, showVisual, visualColor, projectileSize, offset, delay
+-- function _G.createProjectileHitbox(config)
+-- 	-- config: startCFrame OR attachTo, size, damage, speed, maxDistance, character, name, showVisual, visualColor, projectileSize, offset, delay
+-- 	local delay = getScaledDelay(config.delay)
+	
+-- 	task.delay(delay, function()
+-- 		local startCFrame = config.startCFrame
+-- 		local attachTo = config.attachTo
+-- 		local offset = config.offset
+-- 		if not offset then offset = CFrame.new(0, 0, 0) end
+		
+-- 		-- If attachTo is provided, use its CFrame with offset
+-- 		if attachTo and not startCFrame then
+-- 			startCFrame = attachTo.CFrame * offset
+-- 		elseif not startCFrame then
+-- 			warn("[HITBOX V3] Projectile hitbox needs either startCFrame or attachTo")
+-- 			return
+-- 		end
+		
+-- 		local size = config.size
+-- 		local damage = config.damage
+-- 		local speed = config.speed
+-- 		local maxDistance = config.maxDistance
+-- 		local character = config.character
+-- 		local name = config.name
+-- 		local showVisual = config.showVisual
+-- 		if showVisual == nil then showVisual = true end
+		
+-- 		local visualColor = config.visualColor
+-- 		local projectileSize = config.projectileSize
+		
+-- 		local startPos = startCFrame.Position
+-- 		local direction = startCFrame.LookVector
+		
+-- 		-- Create projectile visual
+-- 		local projectile = nil
+-- 		if showVisual then
+-- 			projectile = Instance.new("Part")
+-- 			projectile.Size = projectileSize
+-- 			projectile.CFrame = startCFrame
+-- 			projectile.Anchored = true
+-- 			projectile.CanCollide = false
+-- 			projectile.CanQuery = false
+-- 			projectile.CanTouch = false
+-- 			projectile.Material = Enum.Material.Neon
+-- 			projectile.Transparency = HITBOX_CONFIG.transparency
+-- 			projectile.Color = visualColor
+-- 			projectile.Name = name .. "Projectile"
+-- 			projectile.Parent = workspace
+-- 		end
+		
+-- 		local startTime = tick()
+-- 		local hit = false
+		
+-- 		-- Move projectile
+-- 		local connection
+-- 		connection = RunService.Heartbeat:Connect(function()
+-- 			if hit then
+-- 				connection:Disconnect()
+-- 				return
+-- 			end
+			
+-- 			local elapsed = tick() - startTime
+-- 			local distanceTraveled = speed * elapsed
+			
+-- 			-- Stop if max distance reached
+-- 			if distanceTraveled >= maxDistance then
+-- 				connection:Disconnect()
+-- 				if projectile then
+-- 					projectile:Destroy()
+-- 				end
+-- 				return
+-- 			end
+			
+-- 			-- Update position
+-- 			local currentPos = startPos + (direction * distanceTraveled)
+-- 			local currentCFrame = CFrame.new(currentPos, currentPos + direction)
+			
+-- 			if projectile then
+-- 				projectile.CFrame = currentCFrame
+-- 			end
+			
+-- 			-- Check for hits
+-- 			local regionParts = workspace:GetPartBoundsInBox(currentCFrame, size)
+			
+-- 			for _, part in regionParts do
+-- 				local model = part:FindFirstAncestorOfClass("Model")
+-- 				if model and model ~= character then
+-- 					local humanoid = model:FindFirstChild("Humanoid")
+					
+-- 					if humanoid then
+-- 						hit = true
+-- 						humanoid:TakeDamage(damage)
+						
+-- 						-- Create hit visual
+-- 						local hitVisual = Instance.new("Part")
+-- 						hitVisual.Size = size
+-- 						hitVisual.CFrame = currentCFrame
+-- 						hitVisual.Anchored = true
+-- 						hitVisual.CanCollide = false
+-- 						hitVisual.Material = Enum.Material.Neon
+-- 						hitVisual.Transparency = HITBOX_CONFIG.transparency
+-- 						hitVisual.Color = Color3.new(1, 0, 0)
+-- 						hitVisual.Name = name .. "HitEffect"
+-- 						hitVisual.Parent = workspace
+						
+-- 						game:GetService("Debris"):AddItem(hitVisual, 0.3)
+						
+-- 						if projectile then
+-- 							projectile:Destroy()
+-- 						end
+						
+-- 						connection:Disconnect()
+-- 						return
+-- 					end
+-- 				end
+-- 			end
+-- 		end)
+-- 	end)
+-- end
+
+--[[
+	ARROW HITBOX - Uses arrow part itself for collision detection, stops on first hit
+	
+	SPECIALTY: Arrow part IS the hitbox, stops on first collision (enemy or non-enemy)
+	USE CASE: Simple arrows that stick to first thing they hit
+	DURATION: Stops when arrow hits anything OR arrow part is destroyed
+	
+	EXAMPLE:
+	_G.createArrowHitbox({
+		arrowPart = arrowPart,              -- BasePart arrow (REQUIRED)
+		size = Vector3.new(2, 2, 2),        -- Hitbox dimensions (REQUIRED)
+		damage = 20,                        -- Damage to apply (REQUIRED)
+		character = character,              -- Player's character to exclude (REQUIRED)
+		name = "Arrow",                     -- Hitbox name for debugging (REQUIRED)
+		delay = 0,                          -- Delay before activation (optional, default: 0)
+	})
+]]
+function _G.createArrowHitbox(config)
+	-- config: arrowPart (BasePart), size, damage, character, name, delay
 	local delay = getScaledDelay(config.delay)
 	
 	task.delay(delay, function()
-		local startCFrame = config.startCFrame
-		local attachTo = config.attachTo
-		local offset = config.offset
-		if not offset then offset = CFrame.new(0, 0, 0) end
+		local arrowPart = config.arrowPart
+		local size = config.size
+		local damage = config.damage
+		local character = config.character
+		local name = config.name
 		
-		-- If attachTo is provided, use its CFrame with offset
-		if attachTo and not startCFrame then
-			startCFrame = attachTo.CFrame * offset
-		elseif not startCFrame then
-			warn("[HITBOX V3] Projectile hitbox needs either startCFrame or attachTo")
+		if not arrowPart then
+			warn("[HITBOX V3] No arrowPart provided for arrow hitbox")
 			return
 		end
 		
-		local size = config.size
-		local damage = config.damage
-		local speed = config.speed
-		local maxDistance = config.maxDistance
-		local character = config.character
-		local name = config.name
-		local showVisual = config.showVisual
-		if showVisual == nil then showVisual = true end
+		local hitTargets = {}
+		local arrowStopped = false
 		
-		local visualColor = config.visualColor
-		local projectileSize = config.projectileSize
+		-- Create visual hitbox for debugging
+		local visual = Instance.new("Part")
+		visual.Size = size
+		visual.Anchored = true
+		visual.CanCollide = false
+		visual.CanQuery = false
+		visual.CanTouch = false
+		visual.Material = Enum.Material.Neon
+		visual.Transparency = HITBOX_CONFIG.transparency
+		visual.Color = Color3.new(0, 1, 0) -- Green for arrow hitbox
+		visual.Name = name .. "ArrowHitboxVisual"
+		visual.Parent = workspace
 		
-		local startPos = startCFrame.Position
-		local direction = startCFrame.LookVector
-		
-		-- Create projectile visual
-		local projectile = nil
-		if showVisual then
-			projectile = Instance.new("Part")
-			projectile.Size = projectileSize
-			projectile.CFrame = startCFrame
-			projectile.Anchored = true
-			projectile.CanCollide = false
-			projectile.CanQuery = false
-			projectile.CanTouch = false
-			projectile.Material = Enum.Material.Neon
-			projectile.Transparency = HITBOX_CONFIG.transparency
-			projectile.Color = visualColor
-			projectile.Name = name .. "Projectile"
-			projectile.Parent = workspace
-		end
-		
-		local startTime = tick()
-		local hit = false
-		
-		-- Move projectile
+		-- Track arrow part for collisions (lasts until part is destroyed or arrow stops)
 		local connection
 		connection = RunService.Heartbeat:Connect(function()
-			if hit then
+			if arrowStopped then
 				connection:Disconnect()
-				return
-			end
-			
-			local elapsed = tick() - startTime
-			local distanceTraveled = speed * elapsed
-			
-			-- Stop if max distance reached
-			if distanceTraveled >= maxDistance then
-				connection:Disconnect()
-				if projectile then
-					projectile:Destroy()
+				if visual then
+					visual:Destroy()
 				end
 				return
 			end
 			
-			-- Update position
-			local currentPos = startPos + (direction * distanceTraveled)
-			local currentCFrame = CFrame.new(currentPos, currentPos + direction)
-			
-			if projectile then
-				projectile.CFrame = currentCFrame
+			-- Stop if part destroyed
+			if not arrowPart or not arrowPart.Parent then
+				arrowStopped = true
+				connection:Disconnect()
+				if visual then
+					visual:Destroy()
+				end
+				return
 			end
 			
-			-- Check for hits
-			local regionParts = workspace:GetPartBoundsInBox(currentCFrame, size)
+			-- Update visual position to match arrow
+			if visual then
+				visual.CFrame = arrowPart.CFrame
+			end
+			
+			-- Check for hits at arrow's current position
+			local regionParts = workspace:GetPartBoundsInBox(arrowPart.CFrame, size)
+			local hitSomething = false
+			local hitPosition = nil
 			
 			for _, part in regionParts do
-				local model = part:FindFirstAncestorOfClass("Model")
-				if model and model ~= character then
-					local humanoid = model:FindFirstChild("Humanoid")
-					
-					if humanoid then
-						hit = true
-						humanoid:TakeDamage(damage)
+				-- Skip the arrow itself and character parts
+				if part ~= arrowPart and not part:IsDescendantOf(character) then
+					local model = part:FindFirstAncestorOfClass("Model")
+					if model and model ~= character then
+						local humanoid = model:FindFirstChild("Humanoid")
 						
-						-- Create hit visual
-						local hitVisual = Instance.new("Part")
-						hitVisual.Size = size
-						hitVisual.CFrame = currentCFrame
-						hitVisual.Anchored = true
-						hitVisual.CanCollide = false
-						hitVisual.Material = Enum.Material.Neon
-						hitVisual.Transparency = HITBOX_CONFIG.transparency
-						hitVisual.Color = Color3.new(1, 0, 0)
-						hitVisual.Name = name .. "HitEffect"
-						hitVisual.Parent = workspace
-						
-						game:GetService("Debris"):AddItem(hitVisual, 0.3)
-						
-						if projectile then
-							projectile:Destroy()
+						-- Check for enemy hit
+						if humanoid and not hitTargets[humanoid] then
+							hitTargets[humanoid] = true
+							humanoid:TakeDamage(damage)
+							hitSomething = true
+							hitPosition = arrowPart.CFrame
 						end
 						
-						connection:Disconnect()
-						return
+						-- Check for non-enemy collision (walls, objects, etc.)
+						if not humanoid and not hitSomething then
+							hitSomething = true
+							hitPosition = arrowPart.CFrame
+						end
+					elseif not model then
+						-- Direct part collision (walls, terrain, etc.)
+						hitSomething = true
+						hitPosition = arrowPart.CFrame
 					end
 				end
+			end
+			
+			-- If we hit something, stop the arrow
+			if hitSomething then
+				arrowStopped = true
+				
+				-- Flash visual on hit
+				if visual then
+					visual.Color = Color3.new(1, 0, 0) -- Red flash on hit
+					task.delay(0.1, function()
+						if visual and visual.Parent then
+							visual.Color = Color3.new(0, 1, 0) -- Back to green
+						end
+					end)
+				end
+				
+				-- Stop the arrow's movement and position it at hit location
+				if arrowPart and arrowPart.Parent then
+					-- Find and destroy any BodyVelocity on the arrow part
+					local bodyVelocity = arrowPart:FindFirstChildOfClass("BodyVelocity")
+					if bodyVelocity then
+						bodyVelocity:Destroy()
+					end
+					
+					-- Also check the arrow's parent model for BodyVelocity (in case it's on the model)
+					if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
+						local parentBodyVelocity = arrowPart.Parent:FindFirstChildOfClass("BodyVelocity")
+						if parentBodyVelocity then
+							parentBodyVelocity:Destroy()
+						end
+					end
+					
+					-- Position arrow at the exact hit location and anchor it
+					if hitPosition then
+						arrowPart.CFrame = hitPosition
+					end
+					arrowPart.Anchored = true
+					
+					-- If the arrow part is inside a model, make sure the model follows it
+					if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
+						-- Use PrimaryPart to make the model follow this part
+						arrowPart.Parent.PrimaryPart = arrowPart
+					end
+				end
+				
+				connection:Disconnect()
+				return
 			end
 		end)
 	end)

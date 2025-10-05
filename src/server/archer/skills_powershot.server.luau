@@ -22,7 +22,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Get camera direction if provided
+	-- Get camera direction if provided (but use original character direction)
 	local args = {...}
 	local cameraDirection = args[1]
 	
@@ -114,8 +114,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Use camera direction if provided, otherwise fallback to character direction
-		local shootDirection = cameraDirection or root.CFrame.LookVector
+		-- Use original character direction (same as original PowerShot.lua)
+		local shootDirection = root.CFrame.LookVector
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
