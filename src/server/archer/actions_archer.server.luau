@@ -159,10 +159,10 @@ _G.ARCHER_COOLDOWNS = {
 -- 3. No need to modify individual attack calls
 --
 _G.ARCHER_ARROW_HITBOX = {
-	delay = 0.3,           -- Delay before hitbox becomes active (seconds)
+	delay = 0,           -- Delay before hitbox becomes active (seconds)
 	size = Vector3.new(2, 2, 2),  -- Hitbox size for all arrows
 	damage = 20,         -- Damage for all normal arrows
-	speed = 120          -- Arrow speed for all normal arrows
+	speed = 50          -- Arrow speed for all normal arrows
 }
 
 -- Centralized cooldown tracking for all players
