@@ -304,53 +304,50 @@ local function playCameraSequence(sequence, actionType)
 	-- Get speed multiplier for this action
 	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
 
-	-- Special handling for starfall to match original exactly
+	-- Disable archer aiming system during starfall ultimate
 	if actionType == "starfall" then
-		-- Use exact same camera sequence as original Starfall.lua
-		local starfallSequence = {
-			{cf = root.CFrame * CFrame.new(0, 6, -10) * CFrame.Angles(0, math.rad(180), 0), tweenTime = 0, holdTime = 1},
-			{cf = root.CFrame * CFrame.new(-8, 6, -1.5) * CFrame.Angles(0, math.rad(-90), 0), tweenTime = 1, holdTime = 2},
-			{cf = root.CFrame * CFrame.new(0, 100, 100) * CFrame.Angles(math.rad(-40), math.rad(0), 0), tweenTime = 0, holdTime = 7}
-		}
-		
-		for _, step in ipairs(starfallSequence) do
-			tweenCameraTo(step.cf, step.tweenTime, actionType)
-			local scaledHoldTime = step.holdTime / speedMultiplier
-			task.wait(scaledHoldTime)
-		end
-	elseif actionType == "hunterMark" then
-		-- Use exact same camera sequence as original HunterMark.lua
-		local hunterMarkSequence = {
-			{cf = root.CFrame * CFrame.new(-5, 1.5, -20) * CFrame.Angles(0, math.rad(-150), 0), tweenTime = 0, holdTime = 1.3},
-			{cf = root.CFrame * CFrame.new(-2, 2, -3.5) * CFrame.Angles(0, math.rad(-150), 0), tweenTime = 0.3, holdTime = 1.5}
-		}
-		
-		for _, step in ipairs(hunterMarkSequence) do
-			tweenCameraTo(step.cf, step.tweenTime, actionType)
-			local scaledHoldTime = step.holdTime / speedMultiplier
-			task.wait(scaledHoldTime)
-		end
-	else
-		-- Use generic camera sequence for other actions
-		for _, step in ipairs(sequence) do
-			local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
-			tweenCameraTo(targetCFrame, step.tweenTime, actionType)
-			local scaledHoldTime = step.holdTime / speedMultiplier
-			task.wait(scaledHoldTime)
-		end
+		cleanupArcherAiming()
+	end
+	
+	-- Play each step in the sequence (clean like samurai)
+	for _, step in ipairs(sequence) do
+		local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
+		local scaledHoldTime = step.holdTime / speedMultiplier
+		task.wait(scaledHoldTime)
 	end
 
 	-- Restore original camera
 	tweenCameraTo(originalCFrame, 1, actionType)
 	task.wait(0.5 / speedMultiplier) -- Scale restoration delay
 	camera.CameraType = originalType
+	
+	-- Re-enable archer aiming system after starfall camera sequence ends
+	if actionType == "starfall" then
+		setupArcherAiming()
+	end
 end
 
 -- ========================================
 -- CAMERA SEQUENCES
--- Camera sequences are now handled directly in playCameraSequence() function
--- using exact sequences from original .lua files for perfect accuracy
+-- Define cinematic sequences for each action (clean organization like samurai)
+-- Format: {offset = CFrame.new(x, y, z), rotX/Y/Z = angle, tweenTime = seconds, holdTime = seconds}
+-- Offset: X = left(-)/right(+), Y = down(-)/up(+), Z = forward(-)/back(+) relative to player
 -- ========================================
+
+local CAMERA_SEQUENCES = {
+	-- Buff
+	hunterMark = {
+		{offset = CFrame.new(-5, 1.5, -20), rotY = math.rad(-150), tweenTime = 0, holdTime = 1.3},
+		{offset = CFrame.new(-2, 2, -3.5), rotY = math.rad(-150), tweenTime = 0.3, holdTime = 1.5}
+	},
+	-- Ultimate (exact copy from original Starfall.lua)
+	starfall = {
+		{offset = CFrame.new(0, 2, -10), rotY = math.rad(180), tweenTime = 0, holdTime = 1},
+		{offset = CFrame.new(-8, 2, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2},
+		{offset = CFrame.new(0, 100, 100), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 7}
+	}
+}
 
 -- ========================================
 -- INPUT LOCK SYSTEM (Using PlayerModule)
@@ -434,10 +431,9 @@ local function useAction(actionName)
 	end
 	
 	-- Play camera sequence if this action has one AND it's not on cooldown
-	-- Camera sequences are now handled directly in playCameraSequence() for starfall and hunterMark
-	if (actionName == "starfall" or actionName == "hunterMark") and not skillCooldowns[actionName] then
+	if CAMERA_SEQUENCES[actionName] and not skillCooldowns[actionName] then
 		task.spawn(function()
-			playCameraSequence(nil, actionName) -- nil since sequence is handled internally
+			playCameraSequence(CAMERA_SEQUENCES[actionName], actionName)
 		end)
 	end
 end

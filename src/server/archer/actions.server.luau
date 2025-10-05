@@ -148,6 +148,23 @@ _G.ARCHER_COOLDOWNS = {
 	starfall = 30       -- 30 seconds cooldown (ultimate)
 }
 
+-- ========================================
+-- CENTRALIZED ARROW HITBOX CONFIGURATION
+-- ========================================
+
+-- All arrow hitbox settings in one place for easy management
+-- HOW TO USE:
+-- 1. Change values here to adjust all arrow hitboxes at once
+-- 2. All normal attacks (jump, move, normal) use these values
+-- 3. No need to modify individual attack calls
+--
+_G.ARCHER_ARROW_HITBOX = {
+	delay = 0.3,           -- Delay before hitbox becomes active (seconds)
+	size = Vector3.new(2, 2, 2),  -- Hitbox size for all arrows
+	damage = 20,         -- Damage for all normal arrows
+	speed = 120          -- Arrow speed for all normal arrows
+}
+
 -- Centralized cooldown tracking for all players
 local playerCooldowns = {}
 
@@ -447,18 +464,18 @@ local function handleNormalAttack(player, cameraDirection)
 
 			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
 			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = shootDirection * 120 -- adjust speed
+			bodyVelocity.Velocity = shootDirection * _G.ARCHER_ARROW_HITBOX.speed
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
 			-- Use arrow hitbox system (stops arrow on first hit)
 			_G.createArrowHitbox({
 				arrowPart = arrow,
-				size = Vector3.new(2, 2, 2),
-				damage = 20,
+				size = _G.ARCHER_ARROW_HITBOX.size,
+				damage = _G.ARCHER_ARROW_HITBOX.damage,
 				character = char,
 				name = "JumpArrow",
-				delay = 0
+				delay = _G.ARCHER_ARROW_HITBOX.delay
 			})
 
 			-- Auto cleanup
@@ -505,18 +522,18 @@ local function handleNormalAttack(player, cameraDirection)
 
 			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
 			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = shootDirection * 120 -- adjust speed
+			bodyVelocity.Velocity = shootDirection * _G.ARCHER_ARROW_HITBOX.speed
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
 			-- Use arrow hitbox system (stops arrow on first hit)
 			_G.createArrowHitbox({
 				arrowPart = arrow,
-				size = Vector3.new(2, 2, 2),
-				damage = 20,
+				size = _G.ARCHER_ARROW_HITBOX.size,
+				damage = _G.ARCHER_ARROW_HITBOX.damage,
 				character = char,
 				name = "MoveArrow",
-				delay = 0
+				delay = _G.ARCHER_ARROW_HITBOX.delay
 			})
 
 			-- Auto cleanup
@@ -570,18 +587,18 @@ local function handleNormalAttack(player, cameraDirection)
 
 			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
 			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = shootDirection * 120 -- adjust speed
+			bodyVelocity.Velocity = shootDirection * _G.ARCHER_ARROW_HITBOX.speed
 			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 			bodyVelocity.Parent = arrow
 
 			-- Use arrow hitbox system (stops arrow on first hit)
 			_G.createArrowHitbox({
 				arrowPart = arrow,
-				size = Vector3.new(2, 2, 2),
-				damage = 20,
+				size = _G.ARCHER_ARROW_HITBOX.size,
+				damage = _G.ARCHER_ARROW_HITBOX.damage,
 				character = char,
 				name = "NormalArrow",
-				delay = 0
+				delay = _G.ARCHER_ARROW_HITBOX.delay
 			})
 
 			-- Auto cleanup

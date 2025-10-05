@@ -1,7 +1,6 @@
 -- ========================================
 -- STARFALL ULTIMATE SERVER
--- Raw and procedural implementation
--- Based on original Starfall.lua
+-- Simple procedural implementation matching original Starfall.lua
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,8 +9,6 @@ local Debris = game:GetService("Debris")
 
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-
--- Cooldown system now centralized in actions.server.luau
 
 -- preload animation (from original Starfall.lua)
 local slashAnim = Instance.new("Animation")
@@ -73,28 +70,27 @@ local function createExplosionNear(character, angle)
 		end
 	end
 
-	-- Attach static hitbox to explosion position
+	-- Hitbox system (added to original)
 	_G.createStaticHitbox({
 		cframe = spawnCF,
-		size = Vector3.new(15, 15, 15), -- Large explosion radius
+		size = Vector3.new(15, 15, 15),
 		damage = 25,
 		character = character,
 		name = "Starfall Explosion Near",
 		showVisual = true,
-		visualColor = Color3.new(1, 0.5, 0), -- Orange
-		delay = 0.1, -- Slight delay before hitbox appears
+		visualColor = Color3.new(1, 0.5, 0),
+		delay = 0.1,
 	})
 	
-	-- Attach static hitbox to player center
 	_G.createStaticHitbox({
 		cframe = root.CFrame,
-		size = Vector3.new(15, 15, 15), -- Same size as explosion
+		size = Vector3.new(15, 15, 15),
 		damage = 25,
 		character = character,
 		name = "Starfall Center Near",
 		showVisual = true,
-		visualColor = Color3.new(0, 1, 0), -- Green for center hitbox
-		delay = 0.1, -- Slight delay before hitbox appears
+		visualColor = Color3.new(0, 1, 0),
+		delay = 0.1,
 	})
 
 	Debris:AddItem(vfx, 1.2)
@@ -124,47 +120,45 @@ local function createExplosionFar(character, angle)
 		end
 	end
 
-	-- Attach static hitbox to explosion position
+	-- Hitbox system (added to original)
 	_G.createStaticHitbox({
 		cframe = spawnCF,
-		size = Vector3.new(20, 20, 20), -- Larger explosion radius for far explosions
+		size = Vector3.new(20, 20, 20),
 		damage = 30,
 		character = character,
 		name = "Starfall Explosion Far",
 		showVisual = true,
-		visualColor = Color3.new(1, 0.3, 0), -- Darker orange for far explosions
-		delay = 0.1, -- Slight delay before hitbox appears
+		visualColor = Color3.new(1, 0.3, 0),
+		delay = 0.1,
 	})
 	
-	-- Attach static hitbox to player center
 	_G.createStaticHitbox({
 		cframe = root.CFrame,
-		size = Vector3.new(20, 20, 20), -- Same size as explosion
+		size = Vector3.new(20, 20, 20),
 		damage = 30,
 		character = character,
 		name = "Starfall Center Far",
 		showVisual = true,
-		visualColor = Color3.new(0, 0.5, 1), -- Blue for center hitbox
-		delay = 0.1, -- Slight delay before hitbox appears
+		visualColor = Color3.new(0, 0.5, 1),
+		delay = 0.1,
 	})
 
 	Debris:AddItem(vfx, 1.2)
 end
 
 remote.OnServerEvent:Connect(function(player, skillType)
-	-- Only handle starfall ultimate requests
 	if skillType ~= "starfall" then
 		return
 	end
 	
-	-- Check cooldown using centralized system
+	-- Cooldown check (added system)
 	if _G.isSkillOnCooldown(player, "starfall") then
 		local remainingTime = _G.getRemainingCooldown(player, "starfall")
 		_G.sendCooldownStatus(player, "starfall", true, math.ceil(remainingTime))
 		return
 	end
 	
-	-- Set cooldown using centralized system
+	-- Set cooldown (added system)
 	_G.setSkillCooldown(player, "starfall")
 	local cooldownTime = _G.ARCHER_COOLDOWNS["starfall"]
 	_G.sendCooldownStatus(player, "starfall", true, cooldownTime)
@@ -178,20 +172,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "starfall")
 	
-	-- Lock input when ultimate starts
+	-- Input lock (added system)
 	remote:FireClient(player, "lock_input")
-	_G.setArcherWalkingSpeed(player, "blocking") -- Stop movement during ultimate
+	_G.setArcherWalkingSpeed(player, "blocking")
 	
-	-- Trigger camera sequence for starfall ultimate
+	-- Camera sequence (added system)
 	remote:FireClient(player, "play_camera_sequence", "starfall")
 	
-	-- Unlock input when animation ends
+	-- Unlock when done (added system)
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")
-		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal movement
+		_G.setArcherWalkingSpeed(player, "normal")
 	end)
 	
-	-- AuraStart marker (from original Starfall.lua)
+	-- AuraStart marker (exact copy from original Starfall.lua)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 		local vfx = ReplicatedStorage.Starfall:WaitForChild("StarfallAura"):Clone()
 		vfx.Parent = workspace
@@ -218,7 +212,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 10)
 	end)
 	
-	-- Starfall marker (from original Starfall.lua)
+	-- Starfall marker (exact copy from original Starfall.lua)
 	animTrack:GetMarkerReachedSignal("Starfall"):Connect(function()
 		--local angles = {0, 45, 90, 135, 180, 225, 270, 315}
 		local angles = {0}
@@ -227,30 +221,30 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 	end)
 	
-	-- StarExplosionNear marker (from original Starfall.lua)
+	-- StarExplosionNear marker (exact copy from original Starfall.lua)
 	animTrack:GetMarkerReachedSignal("StarExplosionNear"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			createExplosionNear(character, angle)
 		end
 	end)
 	
-	-- StarExplosionFar marker (from original Starfall.lua)
+	-- StarExplosionFar marker (exact copy from original Starfall.lua + hitbox)
 	animTrack:GetMarkerReachedSignal("StarExplosionFar"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			createExplosionFar(character, angle)
 		end
 		
-		-- Create massive center hitbox to cover all blind spots
+		-- Massive center hitbox (added to original)
 		local root = character:WaitForChild("HumanoidRootPart")
 		_G.createStaticHitbox({
 			cframe = root.CFrame,
-			size = Vector3.new(200, 50, 200), -- Massive hitbox covering entire area
-			damage = 40, -- High damage for center area
+			size = Vector3.new(200, 50, 200),
+			damage = 40,
 			character = character,
 			name = "Starfall Center Massive",
 			showVisual = true,
-			visualColor = Color3.new(1, 0, 0), -- Red for center area
-			delay = 0.2 -- Slight delay after explosions
+			visualColor = Color3.new(1, 0, 0),
+			delay = 0.2
 		})
 	end)
 
