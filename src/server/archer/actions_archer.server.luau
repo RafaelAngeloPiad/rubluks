@@ -162,11 +162,201 @@ _G.ARCHER_ARROW_HITBOX = {
 	delay = 0,           -- Delay before hitbox becomes active (seconds)
 	size = Vector3.new(2, 2, 2),  -- Hitbox size for all arrows
 	damage = 20,         -- Damage for all normal arrows
-	speed = 50          -- Arrow speed for all normal arrows
+	visualSpeed = 100,    -- Visual arrow asset speed (how fast the arrow model moves)
+	hitboxSpeed = 50     -- Hitbox detection speed (how fast the hitbox moves for collision detection)
 }
 
 -- Centralized cooldown tracking for all players
 local playerCooldowns = {}
+
+-- ========================================
+-- SEPARATE ARROW VISUAL AND HITBOX SYSTEM
+-- ========================================
+
+-- Function to create arrow with separate visual and hitbox speeds
+function _G.createSeparateSpeedArrow(config)
+	local arrowPart = config.arrowPart
+	local size = config.size
+	local damage = config.damage
+	local character = config.character
+	local name = config.name
+	local visualSpeed = config.visualSpeed or _G.ARCHER_ARROW_HITBOX.visualSpeed
+	local hitboxSpeed = config.hitboxSpeed or _G.ARCHER_ARROW_HITBOX.hitboxSpeed
+	local direction = config.direction
+	local delay = config.delay or 0
+	
+	if not arrowPart or not direction then
+		warn("[ARCHER] Missing arrowPart or direction for separate speed arrow")
+		return
+	end
+	
+	-- Apply visual speed to the arrow part
+	local visualBodyVelocity = Instance.new("BodyVelocity")
+	visualBodyVelocity.Velocity = direction * visualSpeed
+	visualBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+	visualBodyVelocity.Parent = arrowPart
+	
+	-- Create separate invisible hitbox part that moves at hitbox speed
+	local hitboxPart = Instance.new("Part")
+	hitboxPart.Name = name .. "Hitbox"
+	hitboxPart.Size = Vector3.new(1, 1, 1) -- Small part for precise collision
+	hitboxPart.Anchored = false
+	hitboxPart.CanCollide = false
+	hitboxPart.CanQuery = false
+	hitboxPart.CanTouch = false
+	hitboxPart.Transparency = 1 -- Completely invisible
+	hitboxPart.Parent = workspace
+	
+	-- Position hitbox at same location as arrow
+	hitboxPart.CFrame = arrowPart.CFrame
+	
+	-- Apply hitbox speed to the separate hitbox part
+	local hitboxBodyVelocity = Instance.new("BodyVelocity")
+	hitboxBodyVelocity.Velocity = direction * hitboxSpeed
+	hitboxBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+	hitboxBodyVelocity.Parent = hitboxPart
+	
+	-- Create visual debug hitbox (optional, can be disabled)
+	local visual = Instance.new("Part")
+	visual.Size = size
+	visual.Anchored = true
+	visual.CanCollide = false
+	visual.CanQuery = false
+	visual.CanTouch = false
+	visual.Material = Enum.Material.Neon
+	visual.Transparency = 0.8 -- Semi-transparent for debugging
+	visual.Color = Color3.new(0, 1, 0) -- Green for arrow hitbox
+	visual.Name = name .. "ArrowHitboxVisual"
+	visual.Parent = workspace
+	
+	-- Start hitbox detection after delay
+	task.delay(delay, function()
+		local hitTargets = {}
+		local arrowStopped = false
+		
+		-- Track hitbox part for collisions
+		local connection
+		connection = game:GetService("RunService").Heartbeat:Connect(function()
+			if arrowStopped then
+				connection:Disconnect()
+				if visual then visual:Destroy() end
+				return
+			end
+			
+			-- Stop if either part is destroyed
+			if not arrowPart or not arrowPart.Parent or not hitboxPart or not hitboxPart.Parent then
+				arrowStopped = true
+				connection:Disconnect()
+				if visual then visual:Destroy() end
+				if hitboxPart then hitboxPart:Destroy() end
+				return
+			end
+			
+			-- Update visual position to match hitbox
+			if visual then
+				visual.CFrame = hitboxPart.CFrame
+			end
+			
+			-- Check for hits at hitbox's current position
+			local regionParts = workspace:GetPartBoundsInBox(hitboxPart.CFrame, size)
+			local hitSomething = false
+			
+			for _, part in regionParts do
+				-- Skip the hitbox itself, arrow part, and character parts
+				if part ~= hitboxPart and part ~= arrowPart and not part:IsDescendantOf(character) then
+					local model = part:FindFirstAncestorOfClass("Model")
+					if model and model ~= character then
+						local humanoid = model:FindFirstChild("Humanoid")
+						
+						-- Check for enemy hit
+						if humanoid and not hitTargets[humanoid] then
+							hitTargets[humanoid] = true
+							humanoid:TakeDamage(damage)
+							hitSomething = true
+						end
+						
+						-- Check for non-enemy collision (walls, objects, etc.)
+						if not humanoid and not hitSomething then
+							hitSomething = true
+						end
+					elseif not model then
+						-- Direct part collision (walls, terrain, etc.)
+						hitSomething = true
+					end
+				end
+			end
+			
+			-- If we hit something, stop the arrow and stick it
+			if hitSomething then
+				arrowStopped = true
+				
+				-- Flash visual on hit
+				if visual then
+					visual.Color = Color3.new(1, 0, 0) -- Red flash on hit
+					task.delay(0.1, function()
+						if visual and visual.Parent then
+							visual:Destroy()
+						end
+					end)
+				end
+				
+				-- Stop the arrow's movement and position it at hit location (same as createArrowHitbox)
+				if arrowPart and arrowPart.Parent then
+					-- Find and destroy any BodyVelocity on the arrow part
+					local bodyVelocity = arrowPart:FindFirstChildOfClass("BodyVelocity")
+					if bodyVelocity then
+						bodyVelocity:Destroy()
+					end
+					
+					-- Also check the arrow's parent model for BodyVelocity (in case it's on the model)
+					if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
+						local parentBodyVelocity = arrowPart.Parent:FindFirstChildOfClass("BodyVelocity")
+						if parentBodyVelocity then
+							parentBodyVelocity:Destroy()
+						end
+					end
+					
+					-- Position arrow at the exact hit location and anchor it
+					local hitPosition = hitboxPart.CFrame
+					if hitPosition then
+						arrowPart.CFrame = hitPosition
+					end
+					arrowPart.Anchored = true
+					
+					-- If the arrow part is inside a model, make sure the model follows it
+					if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
+						-- Use PrimaryPart to make the model follow this part
+						arrowPart.Parent.PrimaryPart = arrowPart
+					end
+				end
+				
+				-- Destroy the separate hitbox part since we're done with collision detection
+				if hitboxPart and hitboxPart.Parent then
+					hitboxPart:Destroy()
+				end
+				
+				connection:Disconnect()
+			end
+		end)
+		
+		-- Auto cleanup after 3 seconds
+		task.delay(3, function()
+			if not arrowStopped then
+				arrowStopped = true
+				connection:Disconnect()
+				if visual then visual:Destroy() end
+				if hitboxPart and hitboxPart.Parent then hitboxPart:Destroy() end
+			end
+		end)
+	end)
+	
+	-- Cleanup function
+	return function()
+		if arrowPart and arrowPart.Parent then arrowPart:Destroy() end
+		if hitboxPart and hitboxPart.Parent then hitboxPart:Destroy() end
+		if visual and visual.Parent then visual:Destroy() end
+	end
+end
 
 -- Function to check if skill is on cooldown
 function _G.isSkillOnCooldown(player, skillName)
@@ -462,25 +652,21 @@ local function handleNormalAttack(player, cameraDirection)
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
-			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = shootDirection * _G.ARCHER_ARROW_HITBOX.speed
-			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-			bodyVelocity.Parent = arrow
-
-			-- Use arrow hitbox system (stops arrow on first hit)
-			_G.createArrowHitbox({
+			-- Use separate speed arrow system (visual and hitbox can have different speeds)
+			_G.createSeparateSpeedArrow({
 				arrowPart = arrow,
 				size = _G.ARCHER_ARROW_HITBOX.size,
 				damage = _G.ARCHER_ARROW_HITBOX.damage,
 				character = char,
 				name = "JumpArrow",
+				direction = shootDirection,
+				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
+				hitboxSpeed = _G.ARCHER_ARROW_HITBOX.hitboxSpeed,
 				delay = _G.ARCHER_ARROW_HITBOX.delay
 			})
 
 			-- Auto cleanup
 			game:GetService("Debris"):AddItem(vfx, 3)
-			game:GetService("Debris"):AddItem(bodyVelocity, 2)
 		end)
 		
 		data.jumpAttackTrack.Stopped:Once(function()
@@ -520,25 +706,21 @@ local function handleNormalAttack(player, cameraDirection)
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
-			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = shootDirection * _G.ARCHER_ARROW_HITBOX.speed
-			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-			bodyVelocity.Parent = arrow
-
-			-- Use arrow hitbox system (stops arrow on first hit)
-			_G.createArrowHitbox({
+			-- Use separate speed arrow system (visual and hitbox can have different speeds)
+			_G.createSeparateSpeedArrow({
 				arrowPart = arrow,
 				size = _G.ARCHER_ARROW_HITBOX.size,
 				damage = _G.ARCHER_ARROW_HITBOX.damage,
 				character = char,
 				name = "MoveArrow",
+				direction = shootDirection,
+				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
+				hitboxSpeed = _G.ARCHER_ARROW_HITBOX.hitboxSpeed,
 				delay = _G.ARCHER_ARROW_HITBOX.delay
 			})
 
 			-- Auto cleanup
 			game:GetService("Debris"):AddItem(vfx, 3)
-			game:GetService("Debris"):AddItem(bodyVelocity, 2)
 			
 			-- Dash backwards like original
 			local bodyVelocity = Instance.new("BodyVelocity")
@@ -585,25 +767,21 @@ local function handleNormalAttack(player, cameraDirection)
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-			-- Gagalaw forward gamit BodyVelocity (use camera direction for proper aiming)
-			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.Velocity = shootDirection * _G.ARCHER_ARROW_HITBOX.speed
-			bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-			bodyVelocity.Parent = arrow
-
-			-- Use arrow hitbox system (stops arrow on first hit)
-			_G.createArrowHitbox({
+			-- Use separate speed arrow system (visual and hitbox can have different speeds)
+			_G.createSeparateSpeedArrow({
 				arrowPart = arrow,
 				size = _G.ARCHER_ARROW_HITBOX.size,
 				damage = _G.ARCHER_ARROW_HITBOX.damage,
 				character = char,
 				name = "NormalArrow",
+				direction = shootDirection,
+				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
+				hitboxSpeed = _G.ARCHER_ARROW_HITBOX.hitboxSpeed,
 				delay = _G.ARCHER_ARROW_HITBOX.delay
 			})
 
 			-- Auto cleanup
 			game:GetService("Debris"):AddItem(vfx, 3)
-			game:GetService("Debris"):AddItem(bodyVelocity, 2)
 		end)
 		
 		data.animTrack1.Stopped:Once(function() 
