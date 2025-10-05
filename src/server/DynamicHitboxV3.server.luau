@@ -26,7 +26,7 @@ local function getScaledDelay(baseDelay)
 	end
 	
 	-- Get animation speed multiplier from global (default to 1.0 if not set)
-	local animationSpeed = _G.SAMURAI_ANIMATION_SPEED or 1.0
+	local animationSpeed = _G.SAMURAI_ANIMATION_SPEEDS or _G.ARCHER_ANIMATION_SPEEDS or 1.0
 	
 	-- Scale delay inversely with animation speed
 	-- If animation is 2x faster, delays should be 0.5x (half the time)
