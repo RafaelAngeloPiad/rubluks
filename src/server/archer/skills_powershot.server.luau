@@ -167,7 +167,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
 		_G.createStaticDOTHitbox({
 			cframe = root.CFrame * CFrame.new(0, 0, -forwardOffset/2), -- Center of trail
-			offset = CFrame.new(50, 50, 50), -- x left / right, y up / down, z forward / backward
+			offset = CFrame.new(0, 0, 5), -- x left / right, y up / down, z forward / backward
 			size = Vector3.new(8, 8, 100), -- Long trail hitbox
 			damage = 5, -- Damage per tick
 			damageTickTime = 0.3, -- Damage every 0.3 seconds
