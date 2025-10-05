@@ -473,12 +473,12 @@ local function handleNormalAttack(player)
 		data.jumpTrack:Play()
 		_G.applySamuraiAnimationSpeed(data.jumpTrack, "jumpAttack")
 		
-		-- Jump attack hitbox
-		_G.createStaticHitbox({
-			attachTo = root,
-			offset = CFrame.new(0, -5, -10),
-			size = Vector3.new(5, 17, 12),
-			damage = 5,
+			-- Jump attack hitbox
+			_G.createStaticHitbox({
+				attachTo = root,
+				offset = CFrame.new(0, -5, -10),
+				size = Vector3.new(5, 17, 12),
+				damage = 12,
 			character = char,
 			name = "JumpAttack",
 			showVisual = true,
@@ -506,7 +506,7 @@ local function handleNormalAttack(player)
 			attachTo = root,
 			offset = CFrame.new(0, 0, -10), -- x left / right, y up / down, z forward / backward
 			size = Vector3.new(12, 12, 12),
-			damage = 7,
+			damage = 15,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
@@ -537,7 +537,7 @@ local function handleNormalAttack(player)
 				attachTo = root,
 				offset = CFrame.new(0, 0, -3),
 				size = Vector3.new(8, 8, 6),
-				damage = 1,
+				damage = 8,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
@@ -559,7 +559,7 @@ local function handleNormalAttack(player)
 				attachTo = root,
 				offset = CFrame.new(0, 0, -4),
 				size = Vector3.new(10, 10, 8),
-				damage = 1,
+				damage = 12,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
@@ -585,7 +585,7 @@ local function handleNormalAttack(player)
 					attachTo = root,
 					offset = CFrame.new(0, 0, -3),
 					size = Vector3.new(8, 8, 6),
-					damage = 1,
+					damage = 8,
 					character = char,
 					name = "Combo1_Fallback",
 					showVisual = true,
@@ -607,7 +607,7 @@ local function handleNormalAttack(player)
 					attachTo = root,
 					offset = CFrame.new(0, 0, -5),
 					size = Vector3.new(17, 17, 17),
-					damage = 4,
+					damage = 20,
 					character = char,
 					name = "Combo3",
 					showVisual = true,
