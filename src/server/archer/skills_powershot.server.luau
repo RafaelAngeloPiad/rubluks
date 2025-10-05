@@ -22,7 +22,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Get camera direction if provided (but use original character direction)
+	-- Get camera direction if provided (use camera direction for aiming)
 	local args = {...}
 	local cameraDirection = args[1]
 	
@@ -114,8 +114,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Use original character direction (same as original PowerShot.lua)
-		local shootDirection = root.CFrame.LookVector
+		-- Use camera direction if provided, otherwise fallback to character direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
@@ -127,7 +127,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(4, 4, 4),
+			size = Vector3.new(8, 8, 8), -- Increased from 4x4x4 to 8x8x8
 			damage = 35,
 			character = character,
 			name = "PowerArrow",
