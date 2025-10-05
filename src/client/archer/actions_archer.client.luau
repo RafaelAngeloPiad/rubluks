@@ -337,9 +337,17 @@ local function playCameraSequence(sequence, actionType)
 		cleanupArcherAiming()
 	end
 	
-	-- Play each step in the sequence (clean like samurai)
+	-- Play each step in the sequence (exact copy from original format)
 	for _, step in ipairs(sequence) do
-		local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+		-- Handle both old format (offset + rotX/Y/Z) and new format (cf)
+		local targetCFrame
+		if step.cf then
+			-- New format: use pre-constructed CFrame (like original files)
+			targetCFrame = root.CFrame * step.cf
+		else
+			-- Old format: construct CFrame from offset and rotations
+			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+		end
 		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
 		local scaledHoldTime = step.holdTime / speedMultiplier
 		task.wait(scaledHoldTime)
@@ -366,16 +374,16 @@ end
 -- ========================================
 
 local CAMERA_SEQUENCES = {
-	-- Buff
+	-- Buff (exact copy from original HunterMark.lua format)
 	hunterMark = {
-		{offset = CFrame.new(-5, 1.5, -20), rotY = math.rad(-150), tweenTime = 0, holdTime = 1.3},
-		{offset = CFrame.new(-2, 2, -3.5), rotY = math.rad(-150), tweenTime = 0.3, holdTime = 1.5}
+		{cf = CFrame.new(-5, 1.5, -20) * CFrame.Angles(0, math.rad(-150), 0), tweenTime = 0, holdTime = 1.3},
+		{cf = CFrame.new(-2, 2, -3.5) * CFrame.Angles(0, math.rad(-150), 0), tweenTime = 0.3, holdTime = 1.5}
 	},
-	-- Ultimate (exact copy from original Starfall.lua)
+	-- Ultimate (exact copy from original Starfall.lua format)
 	starfall = {
-		-- {offset = CFrame.new(0, 6, -10), rotY = math.rad(180), tweenTime = 0, holdTime = 1},
-		{offset = CFrame.new(-8, 2, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2},
-		{offset = CFrame.new(0, 100, 100), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 7}
+		{cf = CFrame.new(0, 2, -10) * CFrame.Angles(0, math.rad(180), 0), tweenTime = 0, holdTime = 1},
+		{cf = CFrame.new(-8, 2, -1.5) * CFrame.Angles(0, math.rad(-90), 0), tweenTime = 1, holdTime = 2},
+		{cf = CFrame.new(0, 100, 100) * CFrame.Angles(math.rad(-40), math.rad(0), 0), tweenTime = 0, holdTime = 7}
 	}
 }
 

@@ -158,9 +158,17 @@ local function playCameraSequence(sequence, actionType)
 	-- Get speed multiplier for this action
 	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
 
-	-- Play each step in the sequence
+	-- Play each step in the sequence (exact copy from original Zantetsuken.lua)
 	for _, step in ipairs(sequence) do
-		local targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+		-- Handle both old format (offset + rotX/Y/Z) and new format (cf)
+		local targetCFrame
+		if step.cf then
+			-- New format: use pre-constructed CFrame (like original Zantetsuken.lua)
+			targetCFrame = root.CFrame * step.cf
+		else
+			-- Old format: construct CFrame from offset and rotations
+			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+		end
 		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
 		-- Scale hold time with action-specific camera speed multiplier
 		local scaledHoldTime = step.holdTime / speedMultiplier
@@ -185,19 +193,19 @@ end
 -- ========================================
 
 local CAMERA_SEQUENCES = {
-	-- Buff
+	-- Buff (exact copy from original Bushido.lua format)
 	bushido = {
-		{offset = CFrame.new(-5, 1.5, -1.5), rotY = math.rad(-80), tweenTime = 1, holdTime = 2.5},
-		{offset = CFrame.new(0, 2, -3.5), rotY = math.rad(-180), tweenTime = 0, holdTime = 1.5},
+		{cf = CFrame.new(-5, 1.5, -1.5) * CFrame.Angles(0, math.rad(-80), 0), tweenTime = 1, holdTime = 2.5},
+		{cf = CFrame.new(0, 2, -3.5) * CFrame.Angles(0, math.rad(-180), 0), tweenTime = 0, holdTime = 1.5},
 	},
-	-- Ultimate
+	-- Ultimate (exact copy from original Zantetsuken.lua format)
 	zantetsuken = {
-		{offset = CFrame.new(0, 2, 4), rotY = math.rad(0), tweenTime = 0, holdTime = 1},        -- Front view
-		{offset = CFrame.new(-5, -0.5, -1.5), rotY = math.rad(-90), tweenTime = 1, holdTime = 2}, -- Left side
-		{offset = CFrame.new(8, -0.5, -1.5), rotY = math.rad(90), tweenTime = 0, holdTime = 1},   -- Right side
-		{offset = CFrame.new(0, -0.5, 8), rotY = math.rad(0), tweenTime = 0, holdTime = 1},       -- Back view
-		{offset = CFrame.new(0, -0.5, -8), rotY = math.rad(-180), tweenTime = 0, holdTime = 1},   -- Behind player
-		{offset = CFrame.new(0, 8, 8), rotX = math.rad(-40), rotY = math.rad(0), tweenTime = 0, holdTime = 1}, -- Aerial view
+		{cf = CFrame.new(0, 2, 4) * CFrame.Angles(0, math.rad(0), 0), tweenTime = 0, holdTime = 1},        -- Front view
+		{cf = CFrame.new(-5, -0.5, -1.5) * CFrame.Angles(0, math.rad(-90), 0), tweenTime = 1, holdTime = 2}, -- Left side
+		{cf = CFrame.new(8, -0.5, -1.5) * CFrame.Angles(0, math.rad(90), 0), tweenTime = 0, holdTime = 1},   -- Right side
+		{cf = CFrame.new(0, -0.5, 8) * CFrame.Angles(0, math.rad(0), 0), tweenTime = 0, holdTime = 1},       -- Back view
+		{cf = CFrame.new(0, -0.5, -8) * CFrame.Angles(0, math.rad(-180), 0), tweenTime = 0, holdTime = 1},   -- Behind player
+		{cf = CFrame.new(0, 8, 8) * CFrame.Angles(math.rad(-40), math.rad(0), 0), tweenTime = 0, holdTime = 1}, -- Aerial view
 	}
 }
 
