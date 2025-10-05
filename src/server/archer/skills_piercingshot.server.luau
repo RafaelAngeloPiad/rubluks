@@ -139,7 +139,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(6, 6, 6), -- Increased from 3x3x3 to 6x6x6
+			size = Vector3.new(20, 20, 20), -- Greatly increased from 6x6x6 to 20x20x20
 			damage = 25,
 			character = character,
 			name = "PiercingArrow",

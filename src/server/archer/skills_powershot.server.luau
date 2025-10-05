@@ -95,8 +95,11 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 5 -- gaano kalayo sa harap magsimula
-		local rotationX = 0 -- ikot pataas/pababa
-		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
+		
+		-- Calculate rotation to make arrow face the shooting direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
+		local rotationX = math.asin(-shootDirection.Y) -- Vertical rotation based on Y component
+		local rotationY = math.atan2(shootDirection.X, shootDirection.Z) -- Horizontal rotation
 		local rotationZ = 0 -- ikot paikot
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
@@ -127,7 +130,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(8, 8, 8), -- Increased from 4x4x4 to 8x8x8
+			size = Vector3.new(25, 25, 25), -- Greatly increased from 8x8x8 to 25x25x25
 			damage = 35,
 			character = character,
 			name = "PowerArrow",
@@ -165,6 +168,19 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 				part.CanCollide = false
 			end
 		end
+
+		-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
+		_G.createStaticDOTHitbox({
+			cframe = root.CFrame * CFrame.new(0, 0, -forwardOffset/2), -- Center of trail
+			size = Vector3.new(8, 8, 120), -- Long trail hitbox
+			damage = 5, -- Damage per tick
+			damageTickTime = 0.3, -- Damage every 0.3 seconds
+			character = character,
+			name = "PowerTrail",
+			showVisual = true,
+			visualColor = Color3.new(1, 0.5, 0), -- Orange for trail
+			attachTo = vfx -- Will stop when VFX is destroyed
+		})
 
 		-- Auto cleanup
 		game:GetService("Debris"):AddItem(vfx, 5)
