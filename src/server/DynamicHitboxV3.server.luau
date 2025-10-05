@@ -217,6 +217,15 @@ function _G.createStaticDOTHitbox(config)
 		local lastTickTime = tick()
 		local active = true
 		
+		-- Function to get current hitbox position with offset
+		local function getCurrentHitboxCFrame()
+			if attachTo and attachTo.Parent then
+				return attachTo.CFrame * offset
+			else
+				return cframe
+			end
+		end
+		
 		-- Initial damage tick
 		local function damageInArea()
 			if not active then return end
@@ -230,7 +239,9 @@ function _G.createStaticDOTHitbox(config)
 				return
 			end
 			
-			local regionParts = workspace:GetPartBoundsInBox(cframe, size)
+			-- Get current hitbox position with offset
+			local currentCFrame = getCurrentHitboxCFrame()
+			local regionParts = workspace:GetPartBoundsInBox(currentCFrame, size)
 			
 			for _, part in regionParts do
 				local model = part:FindFirstAncestorOfClass("Model")
@@ -265,6 +276,11 @@ function _G.createStaticDOTHitbox(config)
 					visual:Destroy()
 				end
 				return
+			end
+			
+			-- Update visual position to follow attachTo part with offset
+			if visual and attachTo and attachTo.Parent then
+				visual.CFrame = getCurrentHitboxCFrame()
 			end
 			
 			local currentTime = tick()

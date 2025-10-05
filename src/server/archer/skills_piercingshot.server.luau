@@ -47,18 +47,12 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "piercingShot")
 	
-	-- Input lock like Starfall (disables crosshair but allows movement)
-	remote:FireClient(player, "lock_input")
-	_G.setArcherWalkingSpeed(player, "blocking")
-	
-	-- Cleanup archer aiming system like Starfall (hides crosshair)
+	-- Only cleanup archer aiming system (hides crosshair) - allow free movement
 	remote:FireClient(player, "cleanup_archer_aiming")
 	
-	-- Unlock when done like Starfall
+	-- Restore archer aiming system when done (shows crosshair)
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
-		_G.setArcherWalkingSpeed(player, "normal")
-		-- Restore archer aiming system like Starfall (shows crosshair)
+		-- Restore archer aiming system (shows crosshair)
 		remote:FireClient(player, "setup_archer_aiming")
 	end)
 

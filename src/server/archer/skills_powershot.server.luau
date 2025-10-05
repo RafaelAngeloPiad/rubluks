@@ -46,18 +46,12 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "powerShot")
 	
-	-- Input lock like Starfall (disables crosshair but allows movement)
-	remote:FireClient(player, "lock_input")
-	_G.setArcherWalkingSpeed(player, "blocking")
-	
-	-- Cleanup archer aiming system like Starfall (hides crosshair)
+	-- Only cleanup archer aiming system (hides crosshair) - allow free movement
 	remote:FireClient(player, "cleanup_archer_aiming")
 	
-	-- Unlock when done like Starfall
+	-- Restore archer aiming system when done (shows crosshair)
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
-		_G.setArcherWalkingSpeed(player, "normal")
-		-- Restore archer aiming system like Starfall (shows crosshair)
+		-- Restore archer aiming system (shows crosshair)
 		remote:FireClient(player, "setup_archer_aiming")
 	end)
 
@@ -173,7 +167,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
 		_G.createStaticDOTHitbox({
 			cframe = root.CFrame * CFrame.new(0, 0, -forwardOffset/2), -- Center of trail
-			offset = CFrame.new(0, 0, 50), -- x left / right, y up / down, z forward / backward
+			offset = CFrame.new(50, 50, 50), -- x left / right, y up / down, z forward / backward
 			size = Vector3.new(8, 8, 100), -- Long trail hitbox
 			damage = 5, -- Damage per tick
 			damageTickTime = 0.3, -- Damage every 0.3 seconds
