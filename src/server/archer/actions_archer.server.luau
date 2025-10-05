@@ -158,12 +158,16 @@ _G.ARCHER_COOLDOWNS = {
 -- 2. All normal attacks (jump, move, normal) use these values
 -- 3. No need to modify individual attack calls
 --
+
+local archerArrowVisualSpeed = 100
+local archerArrowHitboxSpeed = archerArrowVisualSpeed - 20
+
 _G.ARCHER_ARROW_HITBOX = {
 	delay = 0,           -- Delay before hitbox becomes active (seconds)
 	size = Vector3.new(2, 2, 2),  -- Hitbox size for all arrows
 	damage = 20,         -- Damage for all normal arrows
-	visualSpeed = 100,    -- Visual arrow asset speed (how fast the arrow model moves)
-	hitboxSpeed = 50     -- Hitbox detection speed (how fast the hitbox moves for collision detection)
+	visualSpeed = archerArrowVisualSpeed,    -- Visual arrow asset speed (how fast the arrow model moves)
+	hitboxSpeed = archerArrowHitboxSpeed     -- Hitbox detection speed (how fast the hitbox moves for collision detection)
 }
 
 -- Centralized cooldown tracking for all players
