@@ -23,8 +23,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Remove camera direction - fire straight ahead like original
+	-- Get camera direction if provided (use camera direction for aiming)
 	local args = {...}
+	local cameraDirection = args[1]
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "piercingShot") then
@@ -47,19 +48,14 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "piercingShot")
 	
-	-- Input lock like Starfall (disables crosshair but allows movement)
-	remote:FireClient(player, "lock_input")
-	_G.setArcherWalkingSpeed(player, "blocking")
+	-- Lock movement only when skill starts (allows camera/aiming)
+	remote:FireClient(player, "lock_movement")
+	_G.setArcherWalkingSpeed(player, "slow") -- Set slow walking speed
 	
-	-- Cleanup archer aiming system like Starfall (hides crosshair)
-	remote:FireClient(player, "cleanup_archer_aiming")
-	
-	-- Unlock when done like Starfall
+	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
-		_G.setArcherWalkingSpeed(player, "normal")
-		-- Restore archer aiming system like Starfall (shows crosshair)
-		remote:FireClient(player, "setup_archer_aiming")
+		remote:FireClient(player, "unlock_movement")
+		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal walking speed
 	end)
 
 	-- BackDash marker (from original PiercingShot.lua)
@@ -80,7 +76,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Position sa harap ng player (independent, no weld) - match original
+		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 5 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(90) -- ikot pakaliwa/pakanan
@@ -109,7 +105,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Position sa harap ng player (independent, no weld) - match original
+		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 5 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
@@ -130,8 +126,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Fire straight ahead like original (no camera direction)
-		local shootDirection = root.CFrame.LookVector
+		-- Use camera direction if provided, otherwise fallback to character direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")

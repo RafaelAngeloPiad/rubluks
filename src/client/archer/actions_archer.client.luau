@@ -499,6 +499,10 @@ local function onWeaponFound(weaponTool)
 			lockMovementOnly()
 		elseif message == "unlock_movement" then
 			unlockMovementOnly()
+		elseif message == "cleanup_archer_aiming" then
+			cleanupArcherAiming()
+		elseif message == "setup_archer_aiming" then
+			setupArcherAiming()
 		elseif message == "update_animation_speed" then
 			updateCameraSpeed(data, extraData) -- data = speed value, extraData = action type
 		elseif message == "cooldown_status" then

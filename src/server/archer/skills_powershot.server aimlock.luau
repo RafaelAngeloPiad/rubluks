@@ -22,8 +22,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Remove camera direction - fire straight ahead like original
+	-- Get camera direction if provided (use camera direction for aiming)
 	local args = {...}
+	local cameraDirection = args[1]
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "powerShot") then
@@ -46,19 +47,14 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "powerShot")
 	
-	-- Input lock like Starfall (disables crosshair but allows movement)
-	remote:FireClient(player, "lock_input")
-	_G.setArcherWalkingSpeed(player, "blocking")
+	-- Lock movement only when skill starts (allows camera/aiming)
+	remote:FireClient(player, "lock_movement")
+	_G.setArcherWalkingSpeed(player, "slow") -- Set slow walking speed
 	
-	-- Cleanup archer aiming system like Starfall (hides crosshair)
-	remote:FireClient(player, "cleanup_archer_aiming")
-	
-	-- Unlock when done like Starfall
+	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
-		_G.setArcherWalkingSpeed(player, "normal")
-		-- Restore archer aiming system like Starfall (shows crosshair)
-		remote:FireClient(player, "setup_archer_aiming")
+		remote:FireClient(player, "unlock_movement")
+		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal walking speed
 	end)
 
 	-- PowerAura marker (from original PowerShot.lua)
@@ -68,7 +64,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Position sa harap ng player (independent, no weld) - match original
+		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 0 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
@@ -97,10 +93,13 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Position sa harap ng player (independent, no weld) - match original
+		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 5 -- gaano kalayo sa harap magsimula
-		local rotationX = 0 -- ikot pataas/pababa
-		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
+		
+		-- Calculate rotation to make arrow face the shooting direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
+		local rotationX = math.asin(-shootDirection.Y) -- Vertical rotation based on Y component
+		local rotationY = math.atan2(shootDirection.X, shootDirection.Z) -- Horizontal rotation
 		local rotationZ = 0 -- ikot paikot
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
@@ -118,8 +117,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Fire straight ahead like original (no camera direction)
-		local shootDirection = root.CFrame.LookVector
+		-- Use camera direction if provided, otherwise fallback to character direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
@@ -152,7 +151,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
-		-- Position sa harap ng player (independent, no weld) - match original
+		-- Position sa harap ng player (independent, no weld)
 		local forwardOffset = 85 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
@@ -173,8 +172,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
 		_G.createStaticDOTHitbox({
 			cframe = root.CFrame * CFrame.new(0, 0, -forwardOffset/2), -- Center of trail
-			offset = CFrame.new(0, 0, 50), -- x left / right, y up / down, z forward / backward
-			size = Vector3.new(8, 8, 100), -- Long trail hitbox
+			size = Vector3.new(8, 8, 120), -- Long trail hitbox
 			damage = 5, -- Damage per tick
 			damageTickTime = 0.3, -- Damage every 0.3 seconds
 			character = character,
