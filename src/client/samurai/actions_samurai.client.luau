@@ -88,9 +88,9 @@ local CONFIG = {
 	actions = {
 		[Enum.KeyCode.E] = "kozuki",
 		[Enum.KeyCode.Q] = "wakizashi",
-		[Enum.KeyCode.R] = "banzai",
-		[Enum.KeyCode.F] = "bushido",
-		[Enum.KeyCode.Z] = "zantetsuken",
+		[Enum.KeyCode.X] = "banzai",
+		[Enum.KeyCode.Z] = "bushido",
+		[Enum.KeyCode.C] = "zantetsuken",
 	},
 	-- Custom keybinds for basic actions
 	keybinds = {

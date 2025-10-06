@@ -112,8 +112,8 @@ local CONFIG = {
 	actions = {
 		[Enum.KeyCode.Q] = "piercingShot",
 		[Enum.KeyCode.E] = "powerShot",
-		[Enum.KeyCode.R] = "hunterInstinct",
-		[Enum.KeyCode.F] = "hunterMark",
+		[Enum.KeyCode.X] = "hunterInstinct", -- Moved from R to C
+		[Enum.KeyCode.C] = "hunterMark", -- Moved from F to X
 		[Enum.KeyCode.Z] = "starfall",
 	},
 	-- Custom keybinds for basic actions
@@ -121,8 +121,9 @@ local CONFIG = {
 		attack = Enum.UserInputType.MouseButton1, -- Left click
 		block = Enum.KeyCode.V,
 		jump = Enum.KeyCode.Space, -- Spacebar
-		wave = Enum.KeyCode.T, -- T key for wave emote
-		aimLockToggle = Enum.KeyCode.L, -- L key for aim lock mode toggle
+		wave = Enum.KeyCode.L, -- L key for wave emote (was T)
+		aimLockToggle = Enum.KeyCode.T, -- T key for aim lock mode toggle (was L)
+		rightClickAim = Enum.KeyCode.F, -- F key for right-click aim lock
 	}
 }
 
@@ -646,7 +647,7 @@ local function onWeaponFound(weaponTool)
 		[false] = "Never Aim Lock", 
 		["right-click"] = "Right-Click Toggle"
 	}
-	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE], "(Press " .. tostring(CONFIG.keybinds.aimLockToggle) .. " to toggle)")
+	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE], "(Press " .. tostring(CONFIG.keybinds.aimLockToggle) .. " to toggle, " .. tostring(CONFIG.keybinds.rightClickAim) .. " for hold-to-aim)")
 	
 	-- Set initial aim lock state based on mode
 	updateAimLockState()
@@ -761,8 +762,8 @@ local function onWeaponFound(weaponTool)
 			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled, isFirstPerson)
 		end
 		
-		-- Handle right click for aim lock toggle (only in right-click mode)
-		if input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked and AIM_LOCK_MODE == "right-click" then
+		-- Handle F key for aim lock toggle (only in right-click mode)
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.rightClickAim and not movementLocked and AIM_LOCK_MODE == "right-click" then
 			rightClickHeld = true
 			updateAimLockState()
 		end
@@ -780,8 +781,8 @@ local function onWeaponFound(weaponTool)
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 			-- Block release
 			remote:FireServer("archer_block_end")
-		elseif input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked and AIM_LOCK_MODE == "right-click" then
-			-- Right click release - disable aim lock (only in right-click mode)
+		elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.rightClickAim and not movementLocked and AIM_LOCK_MODE == "right-click" then
+			-- F key release - disable aim lock (only in right-click mode)
 			rightClickHeld = false
 			updateAimLockState()
 		end
