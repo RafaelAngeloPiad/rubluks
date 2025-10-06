@@ -34,14 +34,14 @@ local originalCameraOffset = nil
 
 -- Aim Lock Toggle System
 local aimLockEnabled = false
-local rightClickHeld = false
+local dynamicAimHeld = false
 
 -- Aim Lock Mode Configuration
--- Options: true (always aim lock), false (never aim lock), "right-click" (toggle with right-click)
+-- Options: true (always aim lock), false (never aim lock), "dynamic" (toggle with F key)
 local AIM_LOCK_MODE = true -- Change this to control aim lock behavior
 
 -- Aim Lock Mode Toggle System
-local aimLockModes = {true, false, "right-click"}
+local aimLockModes = {true, false, "dynamic"}
 local currentModeIndex = 1 -- Start with first mode (true)
 
 -- First-Person Detection System
@@ -123,7 +123,7 @@ local CONFIG = {
 		jump = Enum.KeyCode.Space, -- Spacebar
 		wave = Enum.KeyCode.L, -- L key for wave emote (was T)
 		aimLockToggle = Enum.KeyCode.T, -- T key for aim lock mode toggle (was L)
-		rightClickAim = Enum.KeyCode.F, -- F key for right-click aim lock
+		dynamicAim = Enum.KeyCode.F, -- F key for dynamic aim lock
 	}
 }
 
@@ -372,12 +372,12 @@ local function updateAimLockState()
 	elseif AIM_LOCK_MODE == false then
 		-- Never aim lock mode
 		aimLockEnabled = false
-	elseif AIM_LOCK_MODE == "right-click" then
-		-- Right-click toggle mode
-		aimLockEnabled = rightClickHeld
+	elseif AIM_LOCK_MODE == "dynamic" then
+		-- Dynamic toggle mode (F key)
+		aimLockEnabled = dynamicAimHeld
 	else
-		-- Default to right-click mode if invalid setting
-		aimLockEnabled = rightClickHeld
+		-- Default to dynamic mode if invalid setting
+		aimLockEnabled = dynamicAimHeld
 	end
 	
 	-- Apply camera and crosshair changes based on aim lock state
@@ -413,7 +413,7 @@ local function cycleAimLockMode()
 	local modeNames = {
 		[true] = "Always Aim Lock",
 		[false] = "Never Aim Lock", 
-		["right-click"] = "Right-Click Toggle"
+		["dynamic"] = "Dynamic Toggle"
 	}
 	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE])
 	
@@ -645,9 +645,9 @@ local function onWeaponFound(weaponTool)
 	local modeNames = {
 		[true] = "Always Aim Lock",
 		[false] = "Never Aim Lock", 
-		["right-click"] = "Right-Click Toggle"
+		["dynamic"] = "Dynamic Toggle"
 	}
-	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE], "(Press " .. tostring(CONFIG.keybinds.aimLockToggle) .. " to toggle, " .. tostring(CONFIG.keybinds.rightClickAim) .. " for hold-to-aim)")
+	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE], "(Press " .. tostring(CONFIG.keybinds.aimLockToggle) .. " to toggle, " .. tostring(CONFIG.keybinds.dynamicAim) .. " for hold-to-aim)")
 	
 	-- Set initial aim lock state based on mode
 	updateAimLockState()
@@ -762,14 +762,14 @@ local function onWeaponFound(weaponTool)
 			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled, isFirstPerson)
 		end
 		
-		-- Handle F key for aim lock toggle (only in right-click mode)
-		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.rightClickAim and not movementLocked and AIM_LOCK_MODE == "right-click" then
-			rightClickHeld = true
+		-- Handle F key for aim lock toggle (only in dynamic mode)
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.dynamicAim and not movementLocked and AIM_LOCK_MODE == "dynamic" then
+			dynamicAimHeld = true
 			updateAimLockState()
 		end
 	end)
 	
-	-- Listen for input release (block and right click)
+	-- Listen for input release (block and dynamic aim)
 	UserInputService.InputEnded:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
@@ -781,9 +781,9 @@ local function onWeaponFound(weaponTool)
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 			-- Block release
 			remote:FireServer("archer_block_end")
-		elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.rightClickAim and not movementLocked and AIM_LOCK_MODE == "right-click" then
-			-- F key release - disable aim lock (only in right-click mode)
-			rightClickHeld = false
+		elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.dynamicAim and not movementLocked and AIM_LOCK_MODE == "dynamic" then
+			-- F key release - disable aim lock (only in dynamic mode)
+			dynamicAimHeld = false
 			updateAimLockState()
 		end
 	end)
