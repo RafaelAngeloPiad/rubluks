@@ -193,7 +193,6 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Auto cleanup
 		game:GetService("Debris"):AddItem(vfx, 2)
-		game:GetService("Debris"):AddItem(bodyVelocity, 2)
 	end)
 
 end)
