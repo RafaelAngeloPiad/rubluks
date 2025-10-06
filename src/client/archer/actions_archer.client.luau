@@ -102,7 +102,7 @@ local CONFIG = {
 	-- Custom keybinds for basic actions
 	keybinds = {
 		attack = Enum.UserInputType.MouseButton1, -- Left click
-		block = Enum.KeyCode.LeftShift, -- Ctrl key
+		block = Enum.KeyCode.V,
 		jump = Enum.KeyCode.Space, -- Spacebar
 		wave = Enum.KeyCode.T, -- T key for wave emote
 	}
