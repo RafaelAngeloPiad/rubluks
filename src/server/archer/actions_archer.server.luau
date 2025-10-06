@@ -137,15 +137,15 @@ end
 --
 _G.ARCHER_COOLDOWNS = {
 	-- Skills
-	piercingShot = 50, -- 10 seconds cooldown
-	powerShot = 50,     -- 8 seconds cooldown
+	piercingShot = 5, -- 10 seconds cooldown
+	powerShot = 5,     -- 8 seconds cooldown
 	
 	-- Buffs
-	hunterInstinct = 50, -- 15 seconds cooldown
-	hunterMark = 50,     -- 12 seconds cooldown
+	hunterInstinct = 5, -- 15 seconds cooldown
+	hunterMark = 5,     -- 12 seconds cooldown
 	
 	-- Ultimate
-	starfall = 50       -- 30 seconds cooldown (ultimate)
+	starfall = 5       -- 30 seconds cooldown (ultimate)
 }
 
 -- ========================================

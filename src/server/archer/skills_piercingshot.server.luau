@@ -23,8 +23,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Remove camera direction - fire straight ahead like original
+	-- Get camera direction if provided (use camera direction for aiming)
 	local args = {...}
+	local cameraDirection = args[1]
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "piercingShot") then
@@ -47,13 +48,14 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "piercingShot")
 	
-	-- Only cleanup archer aiming system (hides crosshair) - allow free movement
-	remote:FireClient(player, "cleanup_archer_aiming")
+	-- Lock movement only when skill starts (allows camera/aiming)
+	remote:FireClient(player, "lock_movement")
+	_G.setArcherWalkingSpeed(player, "slow") -- Set slow walking speed
 	
-	-- Restore archer aiming system when done (shows crosshair)
+	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
-		-- Restore archer aiming system (shows crosshair)
-		remote:FireClient(player, "setup_archer_aiming")
+		remote:FireClient(player, "unlock_movement")
+		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal walking speed
 	end)
 
 	-- BackDash marker (from original PiercingShot.lua)
@@ -84,11 +86,15 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
 
-		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
+		-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
 		for _, part in ipairs(vfx:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Anchored = false
-				part.CanCollide = false
+				if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+					part.CanCollide = false
+					part.CanQuery = false
+					part.CanTouch = false
+				end
 			end
 		end
 
@@ -113,19 +119,23 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
 
-		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
+		-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
 		for _, part in ipairs(vfx:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Anchored = false
-				part.CanCollide = false
+				if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+					part.CanCollide = false
+					part.CanQuery = false
+					part.CanTouch = false
+				end
 			end
 		end
 
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Fire straight ahead like original (no camera direction)
-		local shootDirection = root.CFrame.LookVector
+		-- Use camera direction if provided, otherwise fallback to character direction
+		local shootDirection = cameraDirection or root.CFrame.LookVector
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
