@@ -38,7 +38,7 @@ local rightClickHeld = false
 
 -- Aim Lock Mode Configuration
 -- Options: true (always aim lock), false (never aim lock), "right-click" (toggle with right-click)
-local AIM_LOCK_MODE = "right-click" -- Change this to control aim lock behavior
+local AIM_LOCK_MODE = true -- Change this to control aim lock behavior
 
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
