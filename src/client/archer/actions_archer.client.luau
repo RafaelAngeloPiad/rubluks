@@ -36,6 +36,10 @@ local originalCameraOffset = nil
 local aimLockEnabled = false
 local rightClickHeld = false
 
+-- Aim Lock Mode Configuration
+-- Options: true (always aim lock), false (never aim lock), "right-click" (toggle with right-click)
+local AIM_LOCK_MODE = "right-click" -- Change this to control aim lock behavior
+
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
 	idle = 1.0,
@@ -268,6 +272,10 @@ end
 -- Setup v1 archer aiming system
 local function setupArcherAiming()
 	createCrosshair()
+	-- Start with crosshair hidden (only show when aiming)
+	if crosshairGui then
+		crosshairGui.Enabled = false
+	end
 	enableCameraLock()
 	enableCameraOffset()
 end
@@ -279,18 +287,40 @@ local function cleanupArcherAiming()
 	disableCameraOffset()
 end
 
--- Toggle aim lock based on right-click state
+-- Toggle aim lock based on configuration mode
 local function updateAimLockState()
-	if rightClickHeld then
+	-- Determine aim lock state based on mode
+	if AIM_LOCK_MODE == true then
+		-- Always aim lock mode
 		aimLockEnabled = true
+	elseif AIM_LOCK_MODE == false then
+		-- Never aim lock mode
+		aimLockEnabled = false
+	elseif AIM_LOCK_MODE == "right-click" then
+		-- Right-click toggle mode
+		aimLockEnabled = rightClickHeld
+	else
+		-- Default to right-click mode if invalid setting
+		aimLockEnabled = rightClickHeld
+	end
+	
+	-- Apply camera and crosshair changes based on aim lock state
+	if aimLockEnabled then
 		-- Enable camera offset and lock when aiming
 		enableCameraOffset()
 		enableCameraLock()
+		-- Show crosshair when aiming
+		if crosshairGui then
+			crosshairGui.Enabled = true
+		end
 	else
-		aimLockEnabled = false
 		-- Disable camera offset and lock when not aiming
 		disableCameraOffset()
 		disableCameraLock()
+		-- Hide crosshair when not aiming
+		if crosshairGui then
+			crosshairGui.Enabled = false
+		end
 	end
 end
 
@@ -508,6 +538,9 @@ local function onWeaponFound(weaponTool)
 	-- Setup v1 archer aiming system
 	setupArcherAiming()
 	
+	-- Set initial aim lock state based on mode
+	updateAimLockState()
+	
 	-- Listen for messages from server
 	remote.OnClientEvent:Connect(function(message, data, extraData, thirdParam)
 		if message == "lock_input" then
@@ -529,6 +562,10 @@ local function onWeaponFound(weaponTool)
 		elseif message == "sync_aim_lock_state" then
 			-- Server is syncing aim lock state to client
 			aimLockEnabled = data -- data = aim lock enabled state
+			-- Update crosshair visibility based on server state
+			if crosshairGui then
+				crosshairGui.Enabled = aimLockEnabled
+			end
 			updateAimLockState()
 		elseif message == "play_camera_sequence" then
 			-- data = action name (e.g., "starfall", "hunterMark")
@@ -604,8 +641,8 @@ local function onWeaponFound(weaponTool)
 			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled)
 		end
 		
-		-- Handle right click for aim lock toggle
-		if input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked then
+		-- Handle right click for aim lock toggle (only in right-click mode)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked and AIM_LOCK_MODE == "right-click" then
 			rightClickHeld = true
 			updateAimLockState()
 		end
@@ -623,8 +660,8 @@ local function onWeaponFound(weaponTool)
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 			-- Block release
 			remote:FireServer("archer_block_end")
-		elseif input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked then
-			-- Right click release - disable aim lock
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked and AIM_LOCK_MODE == "right-click" then
+			-- Right click release - disable aim lock (only in right-click mode)
 			rightClickHeld = false
 			updateAimLockState()
 		end
