@@ -171,7 +171,8 @@ _G.ARCHER_ARROW_HITBOX = {
 	damage = 20,         -- Damage for all normal arrows
 	visualSpeed = archerArrowVisualSpeed,    -- Visual arrow asset speed (how fast the arrow model moves)
 	hitboxSpeed = archerArrowHitboxSpeed,    -- Hitbox detection speed (how fast the hitbox moves for collision detection)
-	anchorDelay = 0.03    -- Delay before arrow gets anchored/sticks after hit detection (seconds) - tweak this for visual alignment
+	anchorDelay = 0.03,   -- Delay before arrow gets anchored/sticks after hit detection (seconds) - tweak this for visual alignment
+	preventPhysicsPush = true  -- Prevent arrows from pushing objects around (set to false if you want old behavior)
 }
 
 -- Centralized cooldown tracking for all players
@@ -196,6 +197,13 @@ function _G.createSeparateSpeedArrow(config)
 	if not arrowPart or not direction then
 		warn("[ARCHER] Missing arrowPart or direction for separate speed arrow")
 		return
+	end
+	
+	-- Make arrow part completely non-physical to prevent pushing objects (if enabled)
+	if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+		arrowPart.CanCollide = false
+		arrowPart.CanQuery = false
+		arrowPart.CanTouch = false
 	end
 	
 	-- Apply visual speed to the arrow part
@@ -332,12 +340,21 @@ function _G.createSeparateSpeedArrow(config)
 						if hitPosition then
 							arrowPart.CFrame = hitPosition
 						end
+						
+						-- Make sure arrow is completely non-physical before anchoring (if enabled)
+						if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+							arrowPart.CanCollide = false
+							arrowPart.CanQuery = false
+							arrowPart.CanTouch = false
+						end
 						arrowPart.Anchored = true
 						
 						-- If the arrow part is inside a model, make sure the model follows it
 						if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
 							-- Use PrimaryPart to make the model follow this part
 							arrowPart.Parent.PrimaryPart = arrowPart
+							-- Also make the model non-physical to prevent pushing
+							arrowPart.Parent:SetAttribute("NonPhysical", true)
 						end
 					end
 					
@@ -653,11 +670,15 @@ local function handleNormalAttack(player, cameraDirection)
 
 			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
 
-			-- Ensure lahat ng parts ay hindi naka-anchor pero stable
+			-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
 			for _, part in ipairs(vfx:GetDescendants()) do
 				if part:IsA("BasePart") then
 					part.Anchored = false
-					part.CanCollide = false
+					if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+						part.CanCollide = false
+						part.CanQuery = false
+						part.CanTouch = false
+					end
 				end
 			end
 
@@ -707,11 +728,15 @@ local function handleNormalAttack(player, cameraDirection)
 
 			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
 
-			-- Ensure lahat ng parts ay hindi naka-anchor pero stable
+			-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
 			for _, part in ipairs(vfx:GetDescendants()) do
 				if part:IsA("BasePart") then
 					part.Anchored = false
-					part.CanCollide = false
+					if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+						part.CanCollide = false
+						part.CanQuery = false
+						part.CanTouch = false
+					end
 				end
 			end
 
@@ -768,11 +793,15 @@ local function handleNormalAttack(player, cameraDirection)
 
 			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
 
-			-- Ensure lahat ng parts ay hindi naka-anchor pero stable
+			-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
 			for _, part in ipairs(vfx:GetDescendants()) do
 				if part:IsA("BasePart") then
 					part.Anchored = false
-					part.CanCollide = false
+					if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+						part.CanCollide = false
+						part.CanQuery = false
+						part.CanTouch = false
+					end
 				end
 			end
 
