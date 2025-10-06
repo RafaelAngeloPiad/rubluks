@@ -175,6 +175,27 @@ _G.ARCHER_ARROW_HITBOX = {
 	preventPhysicsPush = true  -- Prevent arrows from pushing objects around (set to false if you want old behavior)
 }
 
+-- ========================================
+-- ARROW SPAWN OFFSET CONFIGURATION
+-- ========================================
+
+-- Unified arrow spawn offsets for easy tweaking
+_G.ARCHER_ARROW_SPAWN_OFFSETS = {
+	-- First-person mode: offset from camera center
+	firstPerson = Vector3.new(0, 0, 2),    -- Forward offset from camera center (adjust Z for distance)
+	-- Third-person mode: offset from player body (current spawnOffset)
+	thirdPerson = Vector3.new(1, 0, 1),    -- Offset from player body (X=left/right, Y=up/down, Z=forward/back)
+}
+
+-- Function to get spawn offset based on first-person state
+function _G.getArrowSpawnOffset(isFirstPerson)
+	if isFirstPerson then
+		return _G.ARCHER_ARROW_SPAWN_OFFSETS.firstPerson
+	else
+		return _G.ARCHER_ARROW_SPAWN_OFFSETS.thirdPerson
+	end
+end
+
 -- Centralized cooldown tracking for all players
 local playerCooldowns = {}
 
@@ -680,7 +701,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			local root = char:WaitForChild("HumanoidRootPart")
 
 			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
-			local spawnOffset = Vector3.new(1, 0, 1) -- v1 spawn offset from HitboxConfig
+			local spawnOffset = _G.getArrowSpawnOffset(isFirstPerson) -- Configurable spawn offset based on first-person state
 			local rotationX = 0 -- ikot pataas/pababa
 			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
 			local rotationZ = 0 -- ikot paikot
@@ -738,7 +759,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			local root = char:WaitForChild("HumanoidRootPart")
 
 			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
-			local spawnOffset = Vector3.new(1, 0, 1) -- v1 spawn offset from HitboxConfig
+			local spawnOffset = _G.getArrowSpawnOffset(isFirstPerson) -- Configurable spawn offset based on first-person state
 			local rotationX = 0 -- ikot pataas/pababa
 			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
 			local rotationZ = 0 -- ikot paikot
@@ -803,7 +824,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			local root = char:WaitForChild("HumanoidRootPart")
 
 			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
-			local spawnOffset = Vector3.new(1, 0, 1) -- v1 spawn offset from HitboxConfig
+			local spawnOffset = _G.getArrowSpawnOffset(isFirstPerson) -- Configurable spawn offset based on first-person state
 			local rotationX = 0 -- ikot pataas/pababa
 			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
 			local rotationZ = 0 -- ikot paikot
