@@ -164,7 +164,7 @@ local archerArrowHitboxSpeed = archerArrowVisualSpeed - 20
 
 _G.ARCHER_ARROW_HITBOX = {
 	delay = 0,           -- Delay before hitbox becomes active (seconds)
-	size = Vector3.new(2, 2, 2),  -- Hitbox size for all arrows
+	size = Vector3.new(6, 6, 6),  -- Hitbox size for all arrows (increased from 2x2x2)
 	damage = 20,         -- Damage for all normal arrows
 	visualSpeed = archerArrowVisualSpeed,    -- Visual arrow asset speed (how fast the arrow model moves)
 	hitboxSpeed = archerArrowHitboxSpeed     -- Hitbox detection speed (how fast the hitbox moves for collision detection)

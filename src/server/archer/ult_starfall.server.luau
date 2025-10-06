@@ -73,7 +73,7 @@ local function createExplosionNear(character, angle)
 	-- Hitbox system (added to original)
 	_G.createStaticHitbox({
 		cframe = spawnCF,
-		size = Vector3.new(15, 15, 15),
+		size = Vector3.new(25, 25, 25), -- Increased from 15x15x15 to 25x25x25
 		damage = 25,
 		character = character,
 		name = "Starfall Explosion Near",
@@ -84,7 +84,7 @@ local function createExplosionNear(character, angle)
 	
 	_G.createStaticHitbox({
 		cframe = root.CFrame,
-		size = Vector3.new(15, 15, 15),
+		size = Vector3.new(25, 25, 25), -- Increased from 15x15x15 to 25x25x25
 		damage = 25,
 		character = character,
 		name = "Starfall Center Near",
@@ -123,7 +123,7 @@ local function createExplosionFar(character, angle)
 	-- Hitbox system (added to original)
 	_G.createStaticHitbox({
 		cframe = spawnCF,
-		size = Vector3.new(20, 20, 20),
+		size = Vector3.new(30, 30, 30), -- Increased from 20x20x20 to 30x30x30
 		damage = 30,
 		character = character,
 		name = "Starfall Explosion Far",
@@ -134,7 +134,7 @@ local function createExplosionFar(character, angle)
 	
 	_G.createStaticHitbox({
 		cframe = root.CFrame,
-		size = Vector3.new(20, 20, 20),
+		size = Vector3.new(30, 30, 30), -- Increased from 20x20x20 to 30x30x30
 		damage = 30,
 		character = character,
 		name = "Starfall Center Far",
@@ -238,7 +238,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		local root = character:WaitForChild("HumanoidRootPart")
 		_G.createStaticHitbox({
 			cframe = root.CFrame,
-			size = Vector3.new(200, 50, 200),
+			size = Vector3.new(250, 60, 250), -- Increased from 200x50x200 to 250x60x250
 			damage = 40,
 			character = character,
 			name = "Starfall Center Massive",

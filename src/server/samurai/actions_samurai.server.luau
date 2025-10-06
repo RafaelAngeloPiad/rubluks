@@ -473,18 +473,18 @@ local function handleNormalAttack(player)
 		data.jumpTrack:Play()
 		_G.applySamuraiAnimationSpeed(data.jumpTrack, "jumpAttack")
 		
-			-- Jump attack hitbox
-			_G.createStaticHitbox({
-				attachTo = root,
-				offset = CFrame.new(0, -5, -10),
-				size = Vector3.new(5, 17, 12),
-				damage = 12,
-			character = char,
-			name = "JumpAttack",
-			showVisual = true,
-			visualColor = Color3.new(0, 1, 0),
-			delay = 0
-		})
+		-- Jump attack hitbox
+		_G.createStaticHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, -5, -10),
+			size = Vector3.new(8, 20, 15), -- Increased from 5x17x12 to 8x20x15
+			damage = 12,
+		character = char,
+		name = "JumpAttack",
+		showVisual = true,
+		visualColor = Color3.new(0, 1, 0),
+		delay = 0
+	})
 		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
@@ -505,7 +505,7 @@ local function handleNormalAttack(player)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 0, -10), -- x left / right, y up / down, z forward / backward
-			size = Vector3.new(12, 12, 12),
+			size = Vector3.new(18, 18, 18), -- Increased from 12x12x12 to 18x18x18
 			damage = 15,
 			character = char,
 			name = "MoveAttack",
@@ -536,7 +536,7 @@ local function handleNormalAttack(player)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = CFrame.new(0, 0, -3),
-				size = Vector3.new(8, 8, 6),
+				size = Vector3.new(12, 12, 9), -- Increased from 8x8x6 to 12x12x9
 				damage = 8,
 				character = char,
 				name = "Combo1",
@@ -558,7 +558,7 @@ local function handleNormalAttack(player)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = CFrame.new(0, 0, -4),
-				size = Vector3.new(10, 10, 8),
+				size = Vector3.new(15, 15, 12), -- Increased from 10x10x8 to 15x15x12
 				damage = 12,
 				character = char,
 				name = "Combo2",
@@ -584,7 +584,7 @@ local function handleNormalAttack(player)
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = CFrame.new(0, 0, -3),
-					size = Vector3.new(8, 8, 6),
+					size = Vector3.new(12, 12, 9), -- Increased from 8x8x6 to 12x12x9
 					damage = 8,
 					character = char,
 					name = "Combo1_Fallback",
@@ -606,7 +606,7 @@ local function handleNormalAttack(player)
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = CFrame.new(0, 0, -5),
-					size = Vector3.new(17, 17, 17),
+					size = Vector3.new(25, 25, 25), -- Increased from 17x17x17 to 25x25x25
 					damage = 20,
 					character = char,
 					name = "Combo3",

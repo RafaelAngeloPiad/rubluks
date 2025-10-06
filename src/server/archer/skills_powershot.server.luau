@@ -125,7 +125,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(25, 25, 25), -- Greatly increased from 8x8x8 to 25x25x25
+			size = Vector3.new(35, 35, 35), -- Increased from 25x25x25 to 35x35x35
 			damage = 35,
 			character = character,
 			name = "PowerArrow",
@@ -168,7 +168,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		_G.createStaticDOTHitbox({
 			cframe = root.CFrame * CFrame.new(0, 0, -forwardOffset/2), -- Center of trail
 			offset = CFrame.new(0, 0, 5), -- x left / right, y up / down, z forward / backward
-			size = Vector3.new(8, 8, 100), -- Long trail hitbox
+			size = Vector3.new(12, 12, 120), -- Increased from 8x8x100 to 12x12x120
 			damage = 5, -- Damage per tick
 			damageTickTime = 0.3, -- Damage every 0.3 seconds
 			character = character,
