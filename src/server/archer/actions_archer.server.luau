@@ -228,7 +228,7 @@ function _G.createSeparateSpeedArrow(config)
 	visual.CanQuery = false
 	visual.CanTouch = false
 	visual.Material = Enum.Material.Neon
-	visual.Transparency = 0.8 -- Semi-transparent for debugging
+	visual.Transparency = 1 -- Semi-transparent for debugging
 	visual.Color = Color3.new(0, 1, 0) -- Green for arrow hitbox
 	visual.Name = name .. "ArrowHitboxVisual"
 	visual.Parent = workspace
