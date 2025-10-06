@@ -143,15 +143,15 @@ local COMBO_CONFIG = {
 --
 _G.SAMURAI_COOLDOWNS = {
 	-- Skills
-	kozuki = 5,        -- 10 seconds cooldown
-	wakizashi = 5,      -- 8 seconds cooldown
+	kozuki = 50,        -- 10 seconds cooldown
+	wakizashi = 50,      -- 8 seconds cooldown
 	
 	-- Buffs
-	banzai = 5,        -- 15 seconds cooldown
-	bushido = 5,       -- 12 seconds cooldown
+	banzai = 50,        -- 15 seconds cooldown
+	bushido = 50,       -- 12 seconds cooldown
 	
 	-- Ultimate
-	zantetsuken = 5    -- 30 seconds cooldown (ultimate)
+	zantetsuken = 50    -- 30 seconds cooldown (ultimate)
 }
 
 -- Centralized cooldown tracking for all players
