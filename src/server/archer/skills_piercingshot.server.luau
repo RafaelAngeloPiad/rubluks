@@ -172,7 +172,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		for _, part in ipairs(vfx:GetDescendants()) do
 			if part:IsA("BasePart") then
 				local bodyVelocity = Instance.new("BodyVelocity")
-				bodyVelocity.Velocity = shootDirection * 80 -- adjust speed (reduced from 160 for better visibility)
+				bodyVelocity.Velocity = shootDirection * 120 -- adjust speed (reduced from 160 for better visibility)
 				bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 				bodyVelocity.Parent = part
 			end
