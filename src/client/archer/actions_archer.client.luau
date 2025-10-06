@@ -44,6 +44,10 @@ local AIM_LOCK_MODE = true -- Change this to control aim lock behavior
 local aimLockModes = {true, false, "right-click"}
 local currentModeIndex = 1 -- Start with first mode (true)
 
+-- First-Person Detection System
+local isFirstPerson = false
+local firstPersonConnection = nil
+
 
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
@@ -150,34 +154,41 @@ local function createCrosshair()
 	local function updateCrosshairPosition()
 		if not crosshairGui or not crosshairGui.Parent then return end
 		
-		local camera = workspace.CurrentCamera
-		if not camera then return end
-		
-		-- Get crosshair offset (exact v1 offset for perfect alignment)
-		local crosshairOffset = Vector3.new(-12, 17, 0)
-		
-		-- Get camera's center view direction (same as projectile)
-		local cameraDirection = camera.CFrame.LookVector
-		local cameraPosition = camera.CFrame.Position
-		
-		-- Calculate where camera is looking in world space (same as projectile target)
-		local lookTarget = cameraPosition + cameraDirection * 100
-		
-		-- Convert world position to screen position
-		local screenPoint, onScreen = camera:WorldToScreenPoint(lookTarget)
-		
-		if onScreen then
-			-- Position crosshair with offset
-			local xPos = screenPoint.X - 4 + crosshairOffset.X
-			local yPos = screenPoint.Y - 4 + crosshairOffset.Y
-			crosshairFrame.Position = UDim2.new(0, xPos, 0, yPos)
-			
+		-- Different positioning for first-person vs third-person
+		if isFirstPerson then
+			-- In first-person: center the crosshair perfectly (no offset needed)
+			-- Use absolute positioning to ensure it stays perfectly centered
+			crosshairFrame.Position = UDim2.new(0.5, -4, 0.5, -4) -- Perfect center
 		else
-			-- If off-screen, keep it centered with offset
-			local centerX = -4 + crosshairOffset.X
-			local centerY = -4 + crosshairOffset.Y
-			crosshairFrame.Position = UDim2.new(0.5, centerX, 0.5, centerY)
+			-- In third-person: use offset to avoid body overlap
+			local camera = workspace.CurrentCamera
+			if not camera then return end
 			
+			local crosshairOffset = Vector3.new(-12, 17, 0)
+			
+			-- Get camera's center view direction (same as projectile)
+			local cameraDirection = camera.CFrame.LookVector
+			local cameraPosition = camera.CFrame.Position
+			
+			-- Calculate where camera is looking in world space (same as projectile target)
+			local lookTarget = cameraPosition + cameraDirection * 100
+			
+			-- Convert world position to screen position
+			local screenPoint, onScreen = camera:WorldToScreenPoint(lookTarget)
+			
+			if onScreen then
+				-- Position crosshair with offset
+				local xPos = screenPoint.X - 4 + crosshairOffset.X
+				local yPos = screenPoint.Y - 4 + crosshairOffset.Y
+				crosshairFrame.Position = UDim2.new(0, xPos, 0, yPos)
+				
+			else
+				-- If off-screen, keep it centered with offset
+				local centerX = -4 + crosshairOffset.X
+				local centerY = -4 + crosshairOffset.Y
+				crosshairFrame.Position = UDim2.new(0.5, centerX, 0.5, centerY)
+				
+			end
 		end
 	end
 	
@@ -275,12 +286,70 @@ local function disableCameraOffset()
 	end
 end
 
+-- ========================================
+-- FIRST-PERSON DETECTION SYSTEM
+-- Uses Roblox's built-in camera properties for accurate detection
+-- ========================================
+
+-- Function to detect if player is in first-person mode using MouseBehavior
+local function detectFirstPerson()
+	return UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter
+end
+
+-- Function to update first-person state and handle changes
+local function updateFirstPersonState()
+	local wasFirstPerson = isFirstPerson
+	isFirstPerson = detectFirstPerson()
+	
+	-- Only handle when state changes
+	if wasFirstPerson ~= isFirstPerson then
+		if isFirstPerson then
+			print("Player is now in FIRST PERSON")
+			-- Hide mouse pointer and disable camera offset in first-person
+			UserInputService.MouseIconEnabled = false
+			print("Mouse pointer hidden in first-person mode")
+			if cameraOffsetEnabled then
+				disableCameraOffset()
+				print("Camera offset disabled in first-person mode")
+			end
+		else
+			print("Player is now in THIRD PERSON")
+			-- Show mouse pointer and enable camera offset in third-person
+			UserInputService.MouseIconEnabled = true
+			print("Mouse pointer shown in third-person mode")
+			if aimLockEnabled and not cameraOffsetEnabled then
+				enableCameraOffset()
+				print("Camera offset enabled in third-person mode")
+			end
+		end
+	end
+end
+
+-- Function to start first-person detection
+local function startFirstPersonDetection()
+	if firstPersonConnection then return end
+	
+	-- Initial check
+	updateFirstPersonState()
+	
+	-- Listen for changes to MouseBehavior
+	firstPersonConnection = UserInputService:GetPropertyChangedSignal("MouseBehavior"):Connect(updateFirstPersonState)
+end
+
+-- Function to stop first-person detection
+local function stopFirstPersonDetection()
+	if firstPersonConnection then
+		firstPersonConnection:Disconnect()
+		firstPersonConnection = nil
+	end
+end
+
 -- Setup v1 archer aiming system
 local function setupArcherAiming()
 	createCrosshair()
-	-- Start with crosshair hidden (only show when aiming)
+	-- Start with crosshair visible (will be positioned based on first-person state)
 	if crosshairGui then
-		crosshairGui.Enabled = false
+		crosshairGui.Enabled = true
 	end
 	enableCameraLock()
 	enableCameraOffset()
@@ -535,10 +604,10 @@ local function useAction(actionName)
 		return
 	end
 	
-	-- Send camera direction and aim lock state for aiming skills
+	-- Send camera direction, aim lock state, and first-person state for aiming skills
 	if actionName == "powerShot" or actionName == "piercingShot" then
 		local cameraDirection = camera.CFrame.LookVector
-		remote:FireServer(actionName, cameraDirection, aimLockEnabled)
+		remote:FireServer(actionName, cameraDirection, aimLockEnabled, isFirstPerson)
 	else
 		-- Tell server to handle VFX and hitboxes
 		remote:FireServer(actionName)
@@ -564,6 +633,9 @@ local function onWeaponFound(weaponTool)
 	
 	-- Setup v1 archer aiming system
 	setupArcherAiming()
+	
+	-- Start first-person detection
+	startFirstPersonDetection()
 	
 	-- Initialize aim lock mode from current index
 	AIM_LOCK_MODE = aimLockModes[currentModeIndex]
@@ -604,7 +676,11 @@ local function onWeaponFound(weaponTool)
 			if crosshairGui then
 				crosshairGui.Enabled = aimLockEnabled
 			end
-			updateAimLockState()
+			-- Only update aim lock state if not in first-person mode
+			-- In first-person mode, camera offset should stay disabled
+			if not isFirstPerson then
+				updateAimLockState()
+			end
 		elseif message == "play_camera_sequence" then
 			-- data = action name (e.g., "starfall", "hunterMark")
 			-- Server-triggered sequences should always run (server handles cooldown logic)
@@ -680,9 +756,9 @@ local function onWeaponFound(weaponTool)
 		
 		-- Handle mouse clicks - but not when movement is locked
 		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
-			-- Left click attack - send camera direction and aim lock state
+			-- Left click attack - send camera direction, aim lock state, and first-person state
 			local cameraDirection = camera.CFrame.LookVector
-			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled)
+			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled, isFirstPerson)
 		end
 		
 		-- Handle right click for aim lock toggle (only in right-click mode)
@@ -724,6 +800,9 @@ local function onWeaponLost()
 	
 	-- Cleanup v1 archer aiming system
 	cleanupArcherAiming()
+	
+	-- Stop first-person detection
+	stopFirstPersonDetection()
 	
 	-- Reset camera sequence flag
 	cameraSequenceRunning = false

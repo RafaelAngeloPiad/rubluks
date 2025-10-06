@@ -626,7 +626,7 @@ end
 -- ATTACK HANDLERS
 -- ========================================
 
-local function handleNormalAttack(player, cameraDirection, aimLockEnabled)
+local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFirstPerson)
 	local data = playerAttackData[player]
 	if not data then return end
 	
@@ -650,11 +650,16 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled)
 	-- Sync aim lock state to client
 	_G.syncAimLockState(player, aimLockEnabled)
 	
-	-- Use camera direction if aim lock enabled, otherwise fire straight ahead
+	-- Determine shooting direction based on first-person state and aim lock
 	local shootDirection
-	if aimLockEnabled then
+	if isFirstPerson then
+		-- In first-person: always use camera direction for precise aiming
+		shootDirection = cameraDirection or root.CFrame.LookVector
+	elseif aimLockEnabled then
+		-- In third-person with aim lock: use camera direction
 		shootDirection = cameraDirection or root.CFrame.LookVector
 	else
+		-- In third-person without aim lock: use character direction
 		shootDirection = root.CFrame.LookVector
 	end
 	
@@ -924,10 +929,11 @@ remote.OnServerEvent:Connect(function(player, actionName, ...)
 	elseif actionName == "archer_attack_cleanup" then
 		cleanupAttackAnimations(player)
 	elseif actionName == "archer_left_click_attack" then
-		-- Pass camera direction and aim lock state if provided
+		-- Pass camera direction, aim lock state, and first-person state if provided
 		local cameraDirection = args[1]
 		local aimLockEnabled = args[2] or false
-		handleNormalAttack(player, cameraDirection, aimLockEnabled)
+		local isFirstPerson = args[3] or false
+		handleNormalAttack(player, cameraDirection, aimLockEnabled, isFirstPerson)
 	elseif actionName == "archer_wave" then
 		handleWave(player)
 	elseif actionName == "archer_block_start" then

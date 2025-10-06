@@ -22,10 +22,11 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Get camera direction and aim lock state if provided
+	-- Get camera direction, aim lock state, and first-person state if provided
 	local args = {...}
 	local cameraDirection = args[1]
 	local aimLockEnabled = args[2] or false
+	local isFirstPerson = args[3] or false
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "powerShot") then
@@ -138,11 +139,16 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Use camera direction if aim lock enabled, otherwise fire straight ahead
+		-- Determine shooting direction based on first-person state and aim lock
 		local shootDirection
-		if aimLockEnabled then
+		if isFirstPerson then
+			-- In first-person: always use camera direction for precise aiming
+			shootDirection = cameraDirection or root.CFrame.LookVector
+		elseif aimLockEnabled then
+			-- In third-person with aim lock: use camera direction
 			shootDirection = cameraDirection or root.CFrame.LookVector
 		else
+			-- In third-person without aim lock: use character direction
 			shootDirection = root.CFrame.LookVector
 		end
 
@@ -174,11 +180,16 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:GetMarkerReachedSignal("PowerTrail"):Connect(function()
 		local root = character:WaitForChild("HumanoidRootPart")
 		
-		-- Get shooting direction
+		-- Determine shooting direction based on first-person state and aim lock
 		local shootDirection
-		if aimLockEnabled then
+		if isFirstPerson then
+			-- In first-person: always use camera direction for precise aiming
+			shootDirection = cameraDirection or root.CFrame.LookVector
+		elseif aimLockEnabled then
+			-- In third-person with aim lock: use camera direction
 			shootDirection = cameraDirection or root.CFrame.LookVector
 		else
+			-- In third-person without aim lock: use character direction
 			shootDirection = root.CFrame.LookVector
 		end
 		

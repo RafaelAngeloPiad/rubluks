@@ -23,10 +23,11 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Get camera direction and aim lock state if provided
+	-- Get camera direction, aim lock state, and first-person state if provided
 	local args = {...}
 	local cameraDirection = args[1]
 	local aimLockEnabled = args[2] or false
+	local isFirstPerson = args[3] or false
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "piercingShot") then
@@ -128,11 +129,16 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Position sa harap ng player (independent, no weld) - match original
 		local forwardOffset = 5 -- gaano kalayo sa harap magsimula
 		
-		-- Use camera direction for positioning and rotation when aiming
+		-- Determine shooting direction based on first-person state and aim lock
 		local shootDirection
-		if aimLockEnabled then
+		if isFirstPerson then
+			-- In first-person: always use camera direction for precise aiming
+			shootDirection = cameraDirection or root.CFrame.LookVector
+		elseif aimLockEnabled then
+			-- In third-person with aim lock: use camera direction
 			shootDirection = cameraDirection or root.CFrame.LookVector
 		else
+			-- In third-person without aim lock: use character direction
 			shootDirection = root.CFrame.LookVector
 		end
 		
