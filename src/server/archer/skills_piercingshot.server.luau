@@ -127,13 +127,21 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Position sa harap ng player (independent, no weld) - match original
 		local forwardOffset = 5 -- gaano kalayo sa harap magsimula
-		local rotationX = 0 -- ikot pataas/pababa
-		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
-		local rotationZ = 0 -- ikot paikot
-
-		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
-
-		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
+		
+		-- Use camera direction for positioning and rotation when aiming
+		local shootDirection
+		if aimLockEnabled then
+			shootDirection = cameraDirection or root.CFrame.LookVector
+		else
+			shootDirection = root.CFrame.LookVector
+		end
+		
+		-- Position arrow in front of player in the shooting direction
+		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset) + shootDirection * forwardOffset)
+		
+		-- Rotate arrow to face the shooting direction
+		local arrowCFrame = CFrame.lookAt(vfx:GetPivot().Position, vfx:GetPivot().Position + shootDirection)
+		vfx:PivotTo(arrowCFrame)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
 		for _, part in ipairs(vfx:GetDescendants()) do
@@ -150,19 +158,25 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Use camera direction if aim lock enabled, otherwise fire straight ahead
-		local shootDirection
-		if aimLockEnabled then
-			shootDirection = cameraDirection or root.CFrame.LookVector
-		else
-			shootDirection = root.CFrame.LookVector
+		-- Ensure all parts in the model can move together
+		for _, part in ipairs(vfx:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = false
+				part.CanQuery = false
+				part.CanTouch = false
+			end
 		end
 
-		-- Gagalaw forward gamit BodyVelocity
-		local bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.Velocity = shootDirection * 160 -- adjust speed
-		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-		bodyVelocity.Parent = arrowPart
+		-- Apply BodyVelocity to ALL parts so they move together
+		for _, part in ipairs(vfx:GetDescendants()) do
+			if part:IsA("BasePart") then
+				local bodyVelocity = Instance.new("BodyVelocity")
+				bodyVelocity.Velocity = shootDirection * 80 -- adjust speed (reduced from 160 for better visibility)
+				bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+				bodyVelocity.Parent = part
+			end
+		end
 
 		-- Use projectile hitbox system for piercing arrow
 		_G.createTravelingHitbox({
