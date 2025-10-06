@@ -40,6 +40,11 @@ local rightClickHeld = false
 -- Options: true (always aim lock), false (never aim lock), "right-click" (toggle with right-click)
 local AIM_LOCK_MODE = true -- Change this to control aim lock behavior
 
+-- Aim Lock Mode Toggle System
+local aimLockModes = {true, false, "right-click"}
+local currentModeIndex = 1 -- Start with first mode (true)
+
+
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
 	idle = 1.0,
@@ -113,6 +118,7 @@ local CONFIG = {
 		block = Enum.KeyCode.V,
 		jump = Enum.KeyCode.Space, -- Spacebar
 		wave = Enum.KeyCode.T, -- T key for wave emote
+		aimLockToggle = Enum.KeyCode.L, -- L key for aim lock mode toggle
 	}
 }
 
@@ -322,6 +328,27 @@ local function updateAimLockState()
 			crosshairGui.Enabled = false
 		end
 	end
+end
+
+-- Function to cycle through aim lock modes
+local function cycleAimLockMode()
+	currentModeIndex = currentModeIndex + 1
+	if currentModeIndex > #aimLockModes then
+		currentModeIndex = 1
+	end
+	
+	AIM_LOCK_MODE = aimLockModes[currentModeIndex]
+	
+	-- Print current mode for feedback
+	local modeNames = {
+		[true] = "Always Aim Lock",
+		[false] = "Never Aim Lock", 
+		["right-click"] = "Right-Click Toggle"
+	}
+	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE])
+	
+	-- Update the aim lock state immediately
+	updateAimLockState()
 end
 
 -- ========================================
@@ -538,6 +565,17 @@ local function onWeaponFound(weaponTool)
 	-- Setup v1 archer aiming system
 	setupArcherAiming()
 	
+	-- Initialize aim lock mode from current index
+	AIM_LOCK_MODE = aimLockModes[currentModeIndex]
+	
+	-- Print initial mode
+	local modeNames = {
+		[true] = "Always Aim Lock",
+		[false] = "Never Aim Lock", 
+		["right-click"] = "Right-Click Toggle"
+	}
+	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE], "(Press " .. tostring(CONFIG.keybinds.aimLockToggle) .. " to toggle)")
+	
 	-- Set initial aim lock state based on mode
 	updateAimLockState()
 	
@@ -630,6 +668,12 @@ local function onWeaponFound(weaponTool)
 			-- Handle wave (P key) - but not when movement is locked
 			if input.KeyCode == CONFIG.keybinds.wave and not movementLocked then
 				remote:FireServer("archer_wave")
+				return
+			end
+			
+			-- Handle aim lock mode toggle - works even when movement is locked
+			if input.KeyCode == CONFIG.keybinds.aimLockToggle then
+				cycleAimLockMode()
 				return
 			end
 		end
