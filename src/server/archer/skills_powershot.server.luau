@@ -148,7 +148,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.Velocity = shootDirection * 120 -- adjust speed (reduced from 550 for better visibility)
+		bodyVelocity.Velocity = shootDirection * 80 -- adjust speed (reduced from 550 for better visibility)
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = arrowPart
 
@@ -172,49 +172,62 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	
 	-- PowerTrail marker (from original PowerShot.lua)
 	animTrack:GetMarkerReachedSignal("PowerTrail"):Connect(function()
-		local vfx = ReplicatedStorage.PowerShot:WaitForChild("PowerTrail"):Clone()
-		vfx.Parent = workspace
-
 		local root = character:WaitForChild("HumanoidRootPart")
+		
+		-- Get shooting direction
+		local shootDirection
+		if aimLockEnabled then
+			shootDirection = cameraDirection or root.CFrame.LookVector
+		else
+			shootDirection = root.CFrame.LookVector
+		end
+		
+		-- Configuration for 6 PowerTrails
+		local forwardOffset = 5 -- Starting distance from player
+		local gap = 15 -- Distance between each trail
+		local numTrails = 6 -- Number of trails to generate
+		
+		-- Generate 6 PowerTrails in a line
+		for i = 1, numTrails do
+			local vfx = ReplicatedStorage.PowerShot:WaitForChild("PowerTrail"):Clone()
+			vfx.Parent = workspace
 
-		-- Position sa harap ng player (independent, no weld) - match original
-		local forwardOffset = 85 -- gaano kalayo sa harap magsimula
-		local rotationX = 0 -- ikot pataas/pababa
-		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
-		local rotationZ = 0 -- ikot paikot
+			-- Calculate position for this trail (each one further forward)
+			local trailOffset = forwardOffset + (i - 1) * gap
+			local trailPosition = root.Position + shootDirection * trailOffset
+			
+			-- Position trail in the shooting direction
+			vfx:PivotTo(CFrame.lookAt(trailPosition, trailPosition + shootDirection))
 
-		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
-
-		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
-
-		-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
-		for _, part in ipairs(vfx:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.Anchored = false
-				if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
-					part.CanCollide = false
-					part.CanQuery = false
-					part.CanTouch = false
+			-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
+			for _, part in ipairs(vfx:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
+						part.CanCollide = false
+						part.CanQuery = false
+						part.CanTouch = false
+					end
 				end
 			end
+
+			-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
+			_G.createStaticDOTHitbox({
+				cframe = CFrame.lookAt(trailPosition, trailPosition + shootDirection),
+				offset = CFrame.new(0, 0, 0), -- Center of trail
+				size = Vector3.new(12, 12, 20), -- Smaller size for individual trails
+				damage = 5, -- Damage per tick
+				damageTickTime = 0.3, -- Damage every 0.3 seconds
+				character = character,
+				name = "PowerTrail" .. i,
+				showVisual = true,
+				visualColor = Color3.new(1, 0.5, 0), -- Orange for trail
+				attachTo = vfx -- Will stop when VFX is destroyed
+			})
+
+			-- Auto cleanup
+			game:GetService("Debris"):AddItem(vfx, 5)
 		end
-
-		-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
-		_G.createStaticDOTHitbox({
-			cframe = root.CFrame * CFrame.new(0, 0, -forwardOffset/2), -- Center of trail
-			offset = CFrame.new(0, 0, 5), -- x left / right, y up / down, z forward / backward
-			size = Vector3.new(12, 12, 120), -- Increased from 8x8x100 to 12x12x120
-			damage = 5, -- Damage per tick
-			damageTickTime = 0.3, -- Damage every 0.3 seconds
-			character = character,
-			name = "PowerTrail",
-			showVisual = true,
-			visualColor = Color3.new(1, 0.5, 0), -- Orange for trail
-			attachTo = vfx -- Will stop when VFX is destroyed
-		})
-
-		-- Auto cleanup
-		game:GetService("Debris"):AddItem(vfx, 5)
 	end)
 
 end)
