@@ -183,6 +183,8 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")
 		_G.setArcherWalkingSpeed(player, "normal")
+		-- Restore archer aiming system (will respect current aim lock state)
+		remote:FireClient(player, "setup_archer_aiming")
 	end)
 	
 	-- AuraStart marker (exact copy from original Starfall.lua)

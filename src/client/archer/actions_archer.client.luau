@@ -348,12 +348,15 @@ end
 -- Setup v1 archer aiming system
 local function setupArcherAiming()
 	createCrosshair()
-	-- Start with crosshair visible (will be positioned based on first-person state)
+	-- Start with crosshair visibility based on current aim lock state
 	if crosshairGui then
-		crosshairGui.Enabled = true
+		crosshairGui.Enabled = aimLockEnabled
 	end
 	enableCameraLock()
-	enableCameraOffset()
+	-- Only enable camera offset if aim lock is enabled
+	if aimLockEnabled then
+		enableCameraOffset()
+	end
 end
 
 -- Cleanup v1 archer aiming system

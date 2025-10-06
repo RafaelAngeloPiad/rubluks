@@ -56,6 +56,8 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack.Stopped:Connect(function()
 		remote:FireClient(player, "unlock_input")
 		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal movement
+		-- Restore archer aiming system (will respect current aim lock state)
+		remote:FireClient(player, "setup_archer_aiming")
 	end)
 
 	-- Aura marker (from original HunterMark.lua)

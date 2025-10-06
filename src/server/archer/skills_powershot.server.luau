@@ -62,14 +62,16 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		animTrack.Stopped:Connect(function()
 			remote:FireClient(player, "unlock_movement")
 			_G.setArcherWalkingSpeed(player, "normal") -- Restore normal walking speed
+			-- Restore archer aiming system (will respect current aim lock state)
+			remote:FireClient(player, "setup_archer_aiming")
 		end)
 	else
 		-- Only cleanup archer aiming system (hides crosshair) - allow free movement
 		remote:FireClient(player, "cleanup_archer_aiming")
 		
-		-- Restore archer aiming system when done (shows crosshair)
+		-- Restore archer aiming system when done (will respect current aim lock state)
 		animTrack.Stopped:Connect(function()
-			-- Restore archer aiming system (shows crosshair)
+			-- Restore archer aiming system (will respect current aim lock state)
 			remote:FireClient(player, "setup_archer_aiming")
 		end)
 	end
