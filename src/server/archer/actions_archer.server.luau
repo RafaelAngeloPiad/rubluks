@@ -445,6 +445,12 @@ function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 	remote:FireClient(player, "cooldown_status", skillName, isOnCooldown, remainingTime)
 end
 
+-- Function to sync aim lock state to client
+function _G.syncAimLockState(player, aimLockEnabled)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "sync_aim_lock_state", aimLockEnabled)
+end
+
 -- ========================================
 -- ATTACK ANIMATION SETUP
 -- ========================================
@@ -620,7 +626,7 @@ end
 -- ATTACK HANDLERS
 -- ========================================
 
-local function handleNormalAttack(player, cameraDirection)
+local function handleNormalAttack(player, cameraDirection, aimLockEnabled)
 	local data = playerAttackData[player]
 	if not data then return end
 	
@@ -641,8 +647,16 @@ local function handleNormalAttack(player, cameraDirection)
 	local speed = hum.MoveDirection.Magnitude
 	local isJumping = data.isJumping
 	
-	-- Use camera direction if provided, otherwise fallback to character direction
-	local shootDirection = cameraDirection or root.CFrame.LookVector
+	-- Sync aim lock state to client
+	_G.syncAimLockState(player, aimLockEnabled)
+	
+	-- Use camera direction if aim lock enabled, otherwise fire straight ahead
+	local shootDirection
+	if aimLockEnabled then
+		shootDirection = cameraDirection or root.CFrame.LookVector
+	else
+		shootDirection = root.CFrame.LookVector
+	end
 	
 	data.isAttacking = true
 	
@@ -910,9 +924,10 @@ remote.OnServerEvent:Connect(function(player, actionName, ...)
 	elseif actionName == "archer_attack_cleanup" then
 		cleanupAttackAnimations(player)
 	elseif actionName == "archer_left_click_attack" then
-		-- Pass camera direction if provided
+		-- Pass camera direction and aim lock state if provided
 		local cameraDirection = args[1]
-		handleNormalAttack(player, cameraDirection)
+		local aimLockEnabled = args[2] or false
+		handleNormalAttack(player, cameraDirection, aimLockEnabled)
 	elseif actionName == "archer_wave" then
 		handleWave(player)
 	elseif actionName == "archer_block_start" then

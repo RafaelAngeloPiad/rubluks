@@ -23,10 +23,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
-	-- Get camera direction and aim lock state if provided
+	-- Remove camera direction - fire straight ahead like original
 	local args = {...}
-	local cameraDirection = args[1]
-	local aimLockEnabled = args[2] or false
 	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "piercingShot") then
@@ -49,30 +47,14 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "piercingShot")
 	
-	-- Sync aim lock state to client
-	_G.syncAimLockState(player, aimLockEnabled)
+	-- Only cleanup archer aiming system (hides crosshair) - allow free movement
+	remote:FireClient(player, "cleanup_archer_aiming")
 	
-	-- Handle movement based on aim lock state
-	if aimLockEnabled then
-		-- Lock movement only when skill starts (allows camera/aiming)
-		remote:FireClient(player, "lock_movement")
-		_G.setArcherWalkingSpeed(player, "slow") -- Set slow walking speed
-		
-		-- Unlock movement when animation ends
-		animTrack.Stopped:Connect(function()
-			remote:FireClient(player, "unlock_movement")
-			_G.setArcherWalkingSpeed(player, "normal") -- Restore normal walking speed
-		end)
-	else
-		-- Only cleanup archer aiming system (hides crosshair) - allow free movement
-		remote:FireClient(player, "cleanup_archer_aiming")
-		
-		-- Restore archer aiming system when done (shows crosshair)
-		animTrack.Stopped:Connect(function()
-			-- Restore archer aiming system (shows crosshair)
-			remote:FireClient(player, "setup_archer_aiming")
-		end)
-	end
+	-- Restore archer aiming system when done (shows crosshair)
+	animTrack.Stopped:Connect(function()
+		-- Restore archer aiming system (shows crosshair)
+		remote:FireClient(player, "setup_archer_aiming")
+	end)
 
 	-- BackDash marker (from original PiercingShot.lua)
 	animTrack:GetMarkerReachedSignal("BackDash"):Connect(function()
@@ -102,15 +84,11 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
 
-		-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
+		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Anchored = false
-				if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
-					part.CanCollide = false
-					part.CanQuery = false
-					part.CanTouch = false
-				end
+				part.CanCollide = false
 			end
 		end
 
@@ -135,28 +113,19 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, -forwardOffset)* rotation)
 
-		-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
+		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Anchored = false
-				if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
-					part.CanCollide = false
-					part.CanQuery = false
-					part.CanTouch = false
-				end
+				part.CanCollide = false
 			end
 		end
 
 		-- Kukunin natin yung main mesh (arrow)
 		local arrowPart = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
-		-- Use camera direction if aim lock enabled, otherwise fire straight ahead
-		local shootDirection
-		if aimLockEnabled then
-			shootDirection = cameraDirection or root.CFrame.LookVector
-		else
-			shootDirection = root.CFrame.LookVector
-		end
+		-- Fire straight ahead like original (no camera direction)
+		local shootDirection = root.CFrame.LookVector
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")

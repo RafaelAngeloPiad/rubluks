@@ -32,6 +32,10 @@ local crosshairConnection = nil
 local cameraOffsetEnabled = false
 local originalCameraOffset = nil
 
+-- Aim Lock Toggle System
+local aimLockEnabled = false
+local rightClickHeld = false
+
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
 	idle = 1.0,
@@ -275,6 +279,21 @@ local function cleanupArcherAiming()
 	disableCameraOffset()
 end
 
+-- Toggle aim lock based on right-click state
+local function updateAimLockState()
+	if rightClickHeld then
+		aimLockEnabled = true
+		-- Enable camera offset and lock when aiming
+		enableCameraOffset()
+		enableCameraLock()
+	else
+		aimLockEnabled = false
+		-- Disable camera offset and lock when not aiming
+		disableCameraOffset()
+		disableCameraLock()
+	end
+end
+
 -- ========================================
 -- CAMERA SYSTEM
 -- Handles cinematic camera movements for skills/buffs/ultimates
@@ -459,10 +478,10 @@ local function useAction(actionName)
 		return
 	end
 	
-	-- Send camera direction for aiming skills
+	-- Send camera direction and aim lock state for aiming skills
 	if actionName == "powerShot" or actionName == "piercingShot" then
 		local cameraDirection = camera.CFrame.LookVector
-		remote:FireServer(actionName, cameraDirection)
+		remote:FireServer(actionName, cameraDirection, aimLockEnabled)
 	else
 		-- Tell server to handle VFX and hitboxes
 		remote:FireServer(actionName)
@@ -507,6 +526,10 @@ local function onWeaponFound(weaponTool)
 			updateCameraSpeed(data, extraData) -- data = speed value, extraData = action type
 		elseif message == "cooldown_status" then
 			updateCooldownStatus(data, extraData, thirdParam) -- data = skillName, extraData = isOnCooldown, thirdParam = remainingTime
+		elseif message == "sync_aim_lock_state" then
+			-- Server is syncing aim lock state to client
+			aimLockEnabled = data -- data = aim lock enabled state
+			updateAimLockState()
 		elseif message == "play_camera_sequence" then
 			-- data = action name (e.g., "starfall", "hunterMark")
 			-- Server-triggered sequences should always run (server handles cooldown logic)
@@ -576,13 +599,19 @@ local function onWeaponFound(weaponTool)
 		
 		-- Handle mouse clicks - but not when movement is locked
 		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
-			-- Left click attack - send camera direction for proper aiming
+			-- Left click attack - send camera direction and aim lock state
 			local cameraDirection = camera.CFrame.LookVector
-			remote:FireServer("archer_left_click_attack", cameraDirection)
+			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled)
+		end
+		
+		-- Handle right click for aim lock toggle
+		if input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked then
+			rightClickHeld = true
+			updateAimLockState()
 		end
 	end)
 	
-	-- Listen for input release (block)
+	-- Listen for input release (block and right click)
 	UserInputService.InputEnded:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
@@ -594,6 +623,10 @@ local function onWeaponFound(weaponTool)
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
 			-- Block release
 			remote:FireServer("archer_block_end")
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 and not movementLocked then
+			-- Right click release - disable aim lock
+			rightClickHeld = false
+			updateAimLockState()
 		end
 	end)
 end
