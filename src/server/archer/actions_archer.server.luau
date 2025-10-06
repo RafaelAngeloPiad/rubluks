@@ -157,6 +157,9 @@ _G.ARCHER_COOLDOWNS = {
 -- 1. Change values here to adjust all arrow hitboxes at once
 -- 2. All normal attacks (jump, move, normal) use these values
 -- 3. No need to modify individual attack calls
+-- 4. anchorDelay: Adjust this to fix visual alignment when arrows stop mid-air
+--    - Increase if arrow stops too early (before reaching target)
+--    - Decrease if arrow goes through target before stopping
 --
 
 local archerArrowVisualSpeed = 100
@@ -167,7 +170,8 @@ _G.ARCHER_ARROW_HITBOX = {
 	size = Vector3.new(6, 6, 6),  -- Hitbox size for all arrows (increased from 2x2x2)
 	damage = 20,         -- Damage for all normal arrows
 	visualSpeed = archerArrowVisualSpeed,    -- Visual arrow asset speed (how fast the arrow model moves)
-	hitboxSpeed = archerArrowHitboxSpeed     -- Hitbox detection speed (how fast the hitbox moves for collision detection)
+	hitboxSpeed = archerArrowHitboxSpeed,    -- Hitbox detection speed (how fast the hitbox moves for collision detection)
+	anchorDelay = 0.03    -- Delay before arrow gets anchored/sticks after hit detection (seconds) - tweak this for visual alignment
 }
 
 -- Centralized cooldown tracking for all players
@@ -304,40 +308,44 @@ function _G.createSeparateSpeedArrow(config)
 					end)
 				end
 				
-				-- Stop the arrow's movement and position it at hit location (same as createArrowHitbox)
-				if arrowPart and arrowPart.Parent then
-					-- Find and destroy any BodyVelocity on the arrow part
-					local bodyVelocity = arrowPart:FindFirstChildOfClass("BodyVelocity")
-					if bodyVelocity then
-						bodyVelocity:Destroy()
-					end
-					
-					-- Also check the arrow's parent model for BodyVelocity (in case it's on the model)
-					if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
-						local parentBodyVelocity = arrowPart.Parent:FindFirstChildOfClass("BodyVelocity")
-						if parentBodyVelocity then
-							parentBodyVelocity:Destroy()
+				-- Apply configurable delay before anchoring the arrow for better visual alignment
+				local anchorDelay = config.anchorDelay or _G.ARCHER_ARROW_HITBOX.anchorDelay or 0.1
+				task.delay(anchorDelay, function()
+					-- Stop the arrow's movement and position it at hit location (same as createArrowHitbox)
+					if arrowPart and arrowPart.Parent then
+						-- Find and destroy any BodyVelocity on the arrow part
+						local bodyVelocity = arrowPart:FindFirstChildOfClass("BodyVelocity")
+						if bodyVelocity then
+							bodyVelocity:Destroy()
+						end
+						
+						-- Also check the arrow's parent model for BodyVelocity (in case it's on the model)
+						if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
+							local parentBodyVelocity = arrowPart.Parent:FindFirstChildOfClass("BodyVelocity")
+							if parentBodyVelocity then
+								parentBodyVelocity:Destroy()
+							end
+						end
+						
+						-- Position arrow at the exact hit location and anchor it
+						local hitPosition = hitboxPart.CFrame
+						if hitPosition then
+							arrowPart.CFrame = hitPosition
+						end
+						arrowPart.Anchored = true
+						
+						-- If the arrow part is inside a model, make sure the model follows it
+						if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
+							-- Use PrimaryPart to make the model follow this part
+							arrowPart.Parent.PrimaryPart = arrowPart
 						end
 					end
 					
-					-- Position arrow at the exact hit location and anchor it
-					local hitPosition = hitboxPart.CFrame
-					if hitPosition then
-						arrowPart.CFrame = hitPosition
+					-- Destroy the separate hitbox part since we're done with collision detection
+					if hitboxPart and hitboxPart.Parent then
+						hitboxPart:Destroy()
 					end
-					arrowPart.Anchored = true
-					
-					-- If the arrow part is inside a model, make sure the model follows it
-					if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
-						-- Use PrimaryPart to make the model follow this part
-						arrowPart.Parent.PrimaryPart = arrowPart
-					end
-				end
-				
-				-- Destroy the separate hitbox part since we're done with collision detection
-				if hitboxPart and hitboxPart.Parent then
-					hitboxPart:Destroy()
-				end
+				end)
 				
 				connection:Disconnect()
 			end
