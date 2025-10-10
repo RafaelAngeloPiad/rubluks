@@ -13,6 +13,18 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 -- Module exports
 local SamuraiActions = {}
 
+-- ========================================
+-- SKILL ENABLE/DISABLE CONFIG
+-- Set to false to completely disable a skill (won't fire to server even if spammed)
+-- ========================================
+local SKILLS_ENABLED = {
+	kozuki = true,
+	wakizashi = true,
+	banzai = true,
+	bushido = true,
+	zantetsuken = true,
+}
+
 -- Internal state
 local tool = nil
 local inputLocked = false
@@ -128,6 +140,11 @@ function SamuraiActions.useSkill(skillName)
 	local success, reason = canPerformAction("skill")
 	if not success then
 		return false, reason
+	end
+	
+	-- Check if skill is disabled in config
+	if SKILLS_ENABLED[skillName] == false then
+		return false, "Skill is disabled"
 	end
 	
 	-- Note: We don't block based on cooldown here - let the SERVER decide
