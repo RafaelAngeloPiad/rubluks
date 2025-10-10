@@ -666,16 +666,13 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 	-- Sync aim lock state to client
 	_G.syncAimLockState(player, aimLockEnabled)
 	
-	-- Determine shooting direction based on first-person state and aim lock
+	-- Determine shooting direction based on aim lock state (not first-person state)
 	local shootDirection
-	if isFirstPerson then
-		-- In first-person: always use camera direction for precise aiming
-		shootDirection = cameraDirection or root.CFrame.LookVector
-	elseif aimLockEnabled then
-		-- In third-person with aim lock: use camera direction
+	if aimLockEnabled then
+		-- Aim lock enabled (first or third person): use full camera direction (vertical + horizontal)
 		shootDirection = cameraDirection or root.CFrame.LookVector
 	else
-		-- In third-person without aim lock: use character direction
+		-- Aim lock disabled (first or third person): use character direction (horizontal only)
 		shootDirection = root.CFrame.LookVector
 	end
 	
