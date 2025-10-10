@@ -392,8 +392,10 @@ local function updateAimLockState()
 	
 	-- Apply camera and crosshair changes based on aim lock state
 	if aimLockEnabled then
-		-- Enable camera offset and lock when aiming
-		enableCameraOffset()
+		-- Enable camera offset and lock when aiming (but NOT in first-person)
+		if not isFirstPerson then
+			enableCameraOffset()
+		end
 		enableCameraLock()
 		-- Show crosshair when aiming
 		if crosshairGui then
