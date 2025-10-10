@@ -162,11 +162,11 @@ local function createCrosshair()
 			-- Use absolute positioning to ensure it stays perfectly centered
 			crosshairFrame.Position = UDim2.new(0.5, -4, 0.5, -4) -- Perfect center
 		else
-			-- In third-person: use offset to avoid body overlap
-			local camera = workspace.CurrentCamera
-			if not camera then return end
-			
-			local crosshairOffset = Vector3.new(-12, 17, 0)
+		-- In third-person: use offset to avoid body overlap
+		local camera = workspace.CurrentCamera
+		if not camera then return end
+		
+		local crosshairOffset = Vector3.new(-17, 14, 0) -- X: left(-)/right(+), Y: down(-)/up(+)
 			
 			-- Get camera's center view direction (same as projectile)
 			local cameraDirection = camera.CFrame.LookVector
