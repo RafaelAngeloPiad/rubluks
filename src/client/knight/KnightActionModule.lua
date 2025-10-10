@@ -19,10 +19,10 @@ local KnightActions = {}
 -- ========================================
 local SKILLS_ENABLED = {
 	sworddance = true,
-	cyclone_slash = true,
-	warcry = true,
+	cyclone_slash = false,
+	warcry = false,
 	warriormight = true,
-	mightyblade = true,
+	mightyblade = false,
 }
 
 -- Internal state

@@ -147,7 +147,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Gagalaw forward gamit BodyVelocity
 		local bodyVelocity = Instance.new("BodyVelocity")
-		bodyVelocity.Velocity = shootDirection * 120 -- adjust speed (reduced from 550 for better visibility)
+		bodyVelocity.Velocity = shootDirection * 200 -- adjust speed (reduced from 550 for better visibility)
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = arrowPart
 
