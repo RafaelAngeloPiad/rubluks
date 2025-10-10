@@ -17,6 +17,13 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://96753545500324"
 
+-- SWORD DANCE HITBOX CONFIG
+local SWORDDANCE_CONFIG = {
+	swordHitboxSize = Vector3.new(12, 50, 12), -- Hitbox size (wider horizontally: width, HEIGHT, depth)
+	swordHitboxDamage = 30, -- Damage per sword hit
+	swordHitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
+}
+
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle sworddance skill requests
 	if skillType ~= "sworddance" then
@@ -115,6 +122,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				part.CanCollide = false
 			end
 		end
+		
+		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		_G.createTravelingHitbox({
+			attachTo = currentSwordVFX1,
+			offset = CFrame.new(0, 0, 0),
+			size = SWORDDANCE_CONFIG.swordHitboxSize,
+			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			character = character,
+			name = "SwordDanceSword1",
+			showVisual = true,
+			visualColor = Color3.new(1, 0.8, 0), -- Gold
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+		})
 
 		-- Cleanup after ilang segundo (just in case)
 		game:GetService("Debris"):AddItem(currentSwordVFX1, 1.5)
@@ -139,6 +159,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				part.CanCollide = false
 			end
 		end
+		
+		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		_G.createTravelingHitbox({
+			attachTo = currentSwordVFX2,
+			offset = CFrame.new(0, 0, 0),
+			size = SWORDDANCE_CONFIG.swordHitboxSize,
+			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			character = character,
+			name = "SwordDanceSword2",
+			showVisual = true,
+			visualColor = Color3.new(1, 0.8, 0), -- Gold
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+		})
 
 		-- Cleanup after ilang segundo (just in case)
 		game:GetService("Debris"):AddItem(currentSwordVFX2, 1.5)
@@ -163,6 +196,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				part.CanCollide = false
 			end
 		end
+		
+		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		_G.createTravelingHitbox({
+			attachTo = currentSwordVFX3,
+			offset = CFrame.new(0, 0, 0),
+			size = SWORDDANCE_CONFIG.swordHitboxSize,
+			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			character = character,
+			name = "SwordDanceSword3",
+			showVisual = true,
+			visualColor = Color3.new(1, 0.8, 0), -- Gold
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+		})
 
 		-- Cleanup after ilang segundo (just in case)
 		game:GetService("Debris"):AddItem(currentSwordVFX3, 1.5)
@@ -187,6 +233,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				part.CanCollide = false
 			end
 		end
+		
+		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		_G.createTravelingHitbox({
+			attachTo = currentSwordVFX4,
+			offset = CFrame.new(0, 0, 0),
+			size = SWORDDANCE_CONFIG.swordHitboxSize,
+			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			character = character,
+			name = "SwordDanceSword4",
+			showVisual = true,
+			visualColor = Color3.new(1, 0.8, 0), -- Gold
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+		})
 
 		-- Cleanup after ilang segundo (just in case)
 		game:GetService("Debris"):AddItem(currentSwordVFX4, 1.5)
