@@ -1,9 +1,9 @@
 -- ========================================
--- SAMURAI ACTIONS CLIENT (UNIFIED)
--- Handles skills, buffs, and ultimate for Samurai class
--- Skills: Kozuki (E), Wakizashi (Q)
--- Buffs: Banzai (R), Bushido (F)
--- Ultimate: Zantetsuken (Z)
+-- ARCHER ACTIONS CLIENT (UNIFIED)
+-- Handles skills, buffs, and ultimate for Archer class
+-- Skills: Piercing Shot (Q), Power Shot (E)
+-- Buffs: Hunter Instinct (X), Hunter Mark (C)
+-- Ultimate: Starfall (Z)
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,14 +15,14 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-local tool = nil
 local inputConnection = nil
-local inputLocked = false -- Flag to control input registration
-local movementLocked = false -- Flag to control movement only (for skills like wakizashi/kozuki)
 local playerModule = nil
 local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+
+-- Import the action module for shared logic
+local ArcherActions = require(script.Parent.ArcherActionModule)
 
 -- V1 Camera Lock and Crosshair System
 local crosshairGui = nil
@@ -100,6 +100,7 @@ end
 -- Function to update cooldown status
 local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
+	ArcherActions._setCooldown(skillName, isOnCooldown)
 	if isOnCooldown then
 		local timeText = remainingTime and tostring(remainingTime) or "unknown"
 	end
@@ -302,6 +303,9 @@ local function updateFirstPersonState()
 	local wasFirstPerson = isFirstPerson
 	isFirstPerson = detectFirstPerson()
 	
+	-- Sync with module
+	ArcherActions._setFirstPerson(isFirstPerson)
+	
 	-- Only handle when state changes
 	if wasFirstPerson ~= isFirstPerson then
 		if isFirstPerson then
@@ -382,6 +386,9 @@ local function updateAimLockState()
 		-- Default to dynamic mode if invalid setting
 		aimLockEnabled = dynamicAimHeld
 	end
+	
+	-- Sync with module
+	ArcherActions._setAimLockEnabled(aimLockEnabled)
 	
 	-- Apply camera and crosshair changes based on aim lock state
 	if aimLockEnabled then
@@ -557,7 +564,7 @@ local function lockInput()
 		return
 	end
 	
-	inputLocked = true
+	ArcherActions._setInputLocked(true)
 	controls:Disable()
 end
 
@@ -566,7 +573,7 @@ local function unlockInput()
 		return
 	end
 	
-	inputLocked = false
+	ArcherActions._setInputLocked(false)
 	controls:Enable()
 end
 
@@ -575,7 +582,7 @@ local function lockMovementOnly()
 		return
 	end
 	
-	movementLocked = true
+	ArcherActions._setMovementLocked(true)
 	-- Walking speed is now controlled by server
 end
 
@@ -584,7 +591,7 @@ local function unlockMovementOnly()
 		return
 	end
 	
-	movementLocked = false
+	ArcherActions._setMovementLocked(false)
 	-- Walking speed is now controlled by server
 end
 
@@ -593,28 +600,11 @@ end
 -- ========================================
 
 local function useAction(actionName)
-	-- Check if input is locked (but allow movement-only locked actions)
-	if inputLocked then
-		return
-	end
+	-- Use the module to perform the action (handles all validation)
+	local success = ArcherActions.useSkill(actionName)
 	
-	-- Check if movement is locked for non-skill actions (archer doesn't have skills yet)
-	if movementLocked then
+	if not success then
 		return
-	end
-	
-	-- Validate tool is equipped
-	if not tool or tool.Parent ~= player.Character then
-		return
-	end
-	
-	-- Send camera direction, aim lock state, and first-person state for aiming skills
-	if actionName == "powerShot" or actionName == "piercingShot" then
-		local cameraDirection = camera.CFrame.LookVector
-		remote:FireServer(actionName, cameraDirection, aimLockEnabled, isFirstPerson)
-	else
-		-- Tell server to handle VFX and hitboxes
-		remote:FireServer(actionName)
 	end
 	
 	-- Play camera sequence if this action has one AND it's not on cooldown
@@ -630,7 +620,8 @@ end
 -- ========================================
 
 local function onWeaponFound(weaponTool)
-	tool = weaponTool
+	-- Update module state
+	ArcherActions._setTool(weaponTool)
 	
 	-- Initialize PlayerModule
 	initializePlayerModule()
@@ -715,17 +706,12 @@ local function onWeaponFound(weaponTool)
 	inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
-		-- Check if input is locked
-		if inputLocked then
-			return
-		end
-		
-		-- Allow camera movement (mouse movement) even when movement is locked
+		-- Allow camera movement (mouse movement) even when input is locked
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			return -- Allow camera movement
 		end
 		
-		-- Handle skills (E, Q, R, F, Z)
+		-- Handle skills (Q, E, X, C, Z)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			local actionName = CONFIG.actions[input.KeyCode]
 			if actionName then
@@ -733,21 +719,21 @@ local function onWeaponFound(weaponTool)
 				return
 			end
 			
-			-- Handle block (Ctrl) - but not when movement is locked
-			if input.KeyCode == CONFIG.keybinds.block and not movementLocked then
-				remote:FireServer("archer_block_start")
+			-- Handle block (V key)
+			if input.KeyCode == CONFIG.keybinds.block then
+				ArcherActions.blockStart()
 				return
 			end
 			
-			-- Handle jump (Spacebar) - but not when movement is locked
-			if input.KeyCode == CONFIG.keybinds.jump and not movementLocked then
-				remote:FireServer("archer_jump_attack")
+			-- Handle jump (Spacebar)
+			if input.KeyCode == CONFIG.keybinds.jump then
+				ArcherActions.jumpAttack()
 				return
 			end
 			
-			-- Handle wave (P key) - but not when movement is locked
-			if input.KeyCode == CONFIG.keybinds.wave and not movementLocked then
-				remote:FireServer("archer_wave")
+			-- Handle wave (L key)
+			if input.KeyCode == CONFIG.keybinds.wave then
+				ArcherActions.wave()
 				return
 			end
 			
@@ -758,15 +744,13 @@ local function onWeaponFound(weaponTool)
 			end
 		end
 		
-		-- Handle mouse clicks - but not when movement is locked
-		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
-			-- Left click attack - send camera direction, aim lock state, and first-person state
-			local cameraDirection = camera.CFrame.LookVector
-			remote:FireServer("archer_left_click_attack", cameraDirection, aimLockEnabled, isFirstPerson)
+		-- Handle mouse clicks
+		if input.UserInputType == CONFIG.keybinds.attack then
+			ArcherActions.basicAttack()
 		end
 		
 		-- Handle F key for aim lock toggle (only in dynamic mode)
-		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.dynamicAim and not movementLocked and AIM_LOCK_MODE == "dynamic" then
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.dynamicAim and AIM_LOCK_MODE == "dynamic" then
 			dynamicAimHeld = true
 			updateAimLockState()
 		end
@@ -776,15 +760,10 @@ local function onWeaponFound(weaponTool)
 	UserInputService.InputEnded:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
-		-- Check if input is locked
-		if inputLocked then
-			return
-		end
-		
-		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block then
 			-- Block release
-			remote:FireServer("archer_block_end")
-		elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.dynamicAim and not movementLocked and AIM_LOCK_MODE == "dynamic" then
+			ArcherActions.blockEnd()
+		elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.dynamicAim and AIM_LOCK_MODE == "dynamic" then
 			-- F key release - disable aim lock (only in dynamic mode)
 			dynamicAimHeld = false
 			updateAimLockState()
@@ -793,13 +772,14 @@ local function onWeaponFound(weaponTool)
 end
 
 local function onWeaponLost()
-	if tool then
+	if ArcherActions._getTool() then
 		
 		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 		remote:FireServer("archer_attack_cleanup")
 		
-		tool = nil
+		-- Clear tool reference in module
+		ArcherActions._setTool(nil)
 	end
 	
 	-- Cleanup v1 archer aiming system
@@ -842,7 +822,7 @@ local function onCharacterAdded(character)
 	
 	-- Listen for weapon being unequipped
 	character.DescendantRemoving:Connect(function(desc)
-		if desc == tool then
+		if desc == ArcherActions._getTool() then
 			onWeaponLost()
 		end
 	end)
