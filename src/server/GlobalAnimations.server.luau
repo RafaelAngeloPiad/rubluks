@@ -18,8 +18,37 @@ local playerAnimationData = {}
 -- ========================================
 
 _G.GLOBAL_ANIMATION_SPEEDS = {
+	-- Walking speeds (fixed values, not affected by animation speed)
+	walking = {
+		normal = 16,    -- Fixed normal walking speed (default Roblox)
+		slow = 3,       -- Fixed speed during wave emote
+	},
+	
+	-- Global animations
 	wave = 1.0, -- Wave emote speed
 }
+
+-- ========================================
+-- WALKING SPEED CONFIGURATION
+-- ========================================
+
+-- Fixed walking speed settings for global animations
+_G.GLOBAL_WALKING_SPEED = {
+	normal = 16,    -- Fixed normal walking speed (default Roblox speed)
+	slow = 3,       -- Fixed speed during wave emote
+}
+
+-- Function to set player walking speed
+function _G.setGlobalWalkingSpeed(player, speedType)
+	local character = player.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	
+	local speed = _G.GLOBAL_WALKING_SPEED[speedType] or _G.GLOBAL_WALKING_SPEED.normal
+	humanoid.WalkSpeed = speed
+end
 
 -- Function to apply animation speed
 local function applyAnimationSpeed(animTrack, actionType)
@@ -111,6 +140,15 @@ local function handleWave(player)
 	if data.waveTrack then
 		data.waveTrack:Play()
 		applyAnimationSpeed(data.waveTrack, "wave")
+		
+		-- Set slow walking speed during wave (like samurai/archer skills)
+		_G.setGlobalWalkingSpeed(player, "slow")
+		
+		-- Restore normal walking speed when animation ends
+		data.waveTrack.Stopped:Connect(function()
+			_G.setGlobalWalkingSpeed(player, "normal")
+		end)
+		
 		print("🌊 Player waved:", player.Name)
 	end
 end
