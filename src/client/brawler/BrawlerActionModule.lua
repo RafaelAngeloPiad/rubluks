@@ -19,10 +19,10 @@ local BrawlerActions = {}
 -- ========================================
 local SKILLS_ENABLED = {
 	feralleap = true,
-	brawlersroar = true,
-	bloodthirst = true,
+	brawlersroar = false,
+	bloodthirst = false,
 	lastchance = true,
-	meteordive = true,
+	meteordive = false,
 }
 
 -- Internal state
