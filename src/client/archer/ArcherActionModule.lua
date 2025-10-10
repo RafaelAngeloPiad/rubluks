@@ -38,6 +38,7 @@ local isFirstPerson = false
 local cycleAimModeCallback = nil
 local dynamicAimStartCallback = nil
 local dynamicAimEndCallback = nil
+local getCurrentAimModeCallback = nil
 
 -- ========================================
 -- STATE MANAGEMENT (Internal)
@@ -71,10 +72,11 @@ function ArcherActions._getTool()
 	return tool
 end
 
-function ArcherActions._registerAimCallbacks(cycleMode, dynamicStart, dynamicEnd)
+function ArcherActions._registerAimCallbacks(cycleMode, dynamicStart, dynamicEnd, getCurrentMode)
 	cycleAimModeCallback = cycleMode
 	dynamicAimStartCallback = dynamicStart
 	dynamicAimEndCallback = dynamicEnd
+	getCurrentAimModeCallback = getCurrentMode
 end
 
 -- ========================================
@@ -281,6 +283,13 @@ function ArcherActions.dynamicAimEnd()
 		return true
 	end
 	return false, "Dynamic aim callback not registered"
+end
+
+function ArcherActions.getCurrentAimMode()
+	if getCurrentAimModeCallback then
+		return getCurrentAimModeCallback()
+	end
+	return "dynamic" -- Default to dynamic if callback not registered
 end
 
 return ArcherActions

@@ -6,16 +6,16 @@
 -- ========================================
 
 -- Tag	Purpose	Samurai	Archer
--- attack_trigger	Basic attack	Attack	Attack
--- skill1_trigger	First skill	Wakizashi	Piercing Shot
--- skill2_trigger	Second skill	Kozuki	Power Shot
--- buff1_trigger	First buff	Banzai	Hunter Instinct
--- buff2_trigger	Second buff	Bushido	Hunter Mark
--- ultimate_trigger	Ultimate	Zantetsuken	Starfall
--- block_trigger	Block	Block	Block
--- wave_trigger	Wave	Wave	Wave
--- aim_mode_toggle	Aim mode toggle	(none)	Toggle Aim Mode
--- dynamic_aim_trigger	Dynamic aim (hold)	(none)	Hold to Aim
+-- attack_trigger	Basic attack	[LMB] Attack	[LMB] Attack
+-- skill1_trigger	First skill	[Q] Wakizashi	[Q] Piercing Shot
+-- skill2_trigger	Second skill	[E] Kozuki	[E] Power Shot
+-- buff1_trigger	First buff	[X] Banzai	[X] Hunter Instinct
+-- buff2_trigger	Second buff	[C] Bushido	[C] Hunter Mark
+-- ultimate_trigger	Ultimate	[Z] Zantetsuken	[Z] Starfall
+-- block_trigger	Block	[V] Block	[V] Block
+-- wave_trigger	Wave	[L] Wave	[L] Wave
+-- aim_mode_toggle	Aim mode toggle	(none)	[T] Dynamic/Always On/Always Off
+-- dynamic_aim_trigger	Dynamic aim (hold)	(none)	[F] Aim
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -41,12 +41,12 @@ local UNIFIED_TAGS = {
 	attack_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.basicAttack() end,
-			name = "Attack",
+			name = "[LMB] Attack",
 			description = "Basic attack (auto-detects: normal, move, or jump attack)"
 		},
 		archer = {
 			action = function() return ArcherActions.basicAttack() end,
-			name = "Attack",
+			name = "[LMB] Attack",
 			description = "Basic attack with aim"
 		}
 	},
@@ -56,14 +56,14 @@ local UNIFIED_TAGS = {
 			start = function() return SamuraiActions.blockStart() end,
 			stop = function() return SamuraiActions.blockEnd() end,
 			isHoldButton = true,
-			name = "Block",
+			name = "[V] Block",
 			description = "Hold to block"
 		},
 		archer = {
 			start = function() return ArcherActions.blockStart() end,
 			stop = function() return ArcherActions.blockEnd() end,
 			isHoldButton = true,
-			name = "Block",
+			name = "[V] Block",
 			description = "Hold to block"
 		}
 	},
@@ -71,12 +71,12 @@ local UNIFIED_TAGS = {
 	wave_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.wave() end,
-			name = "Wave",
+			name = "[L] Wave",
 			description = "Wave emote"
 		},
 		archer = {
 			action = function() return ArcherActions.wave() end,
-			name = "Wave",
+			name = "[L] Wave",
 			description = "Wave emote"
 		}
 	},
@@ -85,12 +85,12 @@ local UNIFIED_TAGS = {
 	skill1_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.wakizashi() end,
-			name = "Wakizashi",
+			name = "[Q] Wakizashi",
 			description = "Wakizashi skill"
 		},
 		archer = {
 			action = function() return ArcherActions.piercingShot() end,
-			name = "Piercing Shot",
+			name = "[Q] Piercing Shot",
 			description = "Piercing Shot skill"
 		}
 	},
@@ -99,12 +99,12 @@ local UNIFIED_TAGS = {
 	skill2_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.kozuki() end,
-			name = "Kozuki",
+			name = "[E] Kozuki",
 			description = "Kozuki skill"
 		},
 		archer = {
 			action = function() return ArcherActions.powerShot() end,
-			name = "Power Shot",
+			name = "[E] Power Shot",
 			description = "Power Shot skill"
 		}
 	},
@@ -113,12 +113,12 @@ local UNIFIED_TAGS = {
 	buff1_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.banzai() end,
-			name = "Banzai",
+			name = "[X] Banzai",
 			description = "Banzai buff"
 		},
 		archer = {
 			action = function() return ArcherActions.hunterInstinct() end,
-			name = "Hunter Instinct",
+			name = "[X] Hunters Instinct",
 			description = "Hunter Instinct buff"
 		}
 	},
@@ -127,12 +127,12 @@ local UNIFIED_TAGS = {
 	buff2_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.bushido() end,
-			name = "Bushido",
+			name = "[C] Bushido",
 			description = "Bushido buff"
 		},
 		archer = {
 			action = function() return ArcherActions.hunterMark() end,
-			name = "Hunter Mark",
+			name = "[C] Hunters Mark",
 			description = "Hunter Mark buff"
 		}
 	},
@@ -141,12 +141,12 @@ local UNIFIED_TAGS = {
 	ultimate_trigger = {
 		samurai = {
 			action = function() return SamuraiActions.zantetsuken() end,
-			name = "Zantetsuken",
+			name = "[Z] Zantetsuken",
 			description = "Zantetsuken ultimate"
 		},
 		archer = {
 			action = function() return ArcherActions.starfall() end,
-			name = "Starfall",
+			name = "[Z] Starfall",
 			description = "Starfall ultimate"
 		}
 	},
@@ -155,8 +155,9 @@ local UNIFIED_TAGS = {
 	aim_mode_toggle = {
 		archer = {
 			action = function() return ArcherActions.cycleAimMode() end,
-			name = "Aim Mode",
-			description = "Toggle aim mode (Always/Never/Dynamic)"
+			name = "[T] Aim Mode",
+			description = "Toggle aim mode (Always/Never/Dynamic)",
+			isDynamic = true -- Flag to indicate this button needs dynamic text updates
 		}
 	},
 	
@@ -165,7 +166,7 @@ local UNIFIED_TAGS = {
 			start = function() return ArcherActions.dynamicAimStart() end,
 			stop = function() return ArcherActions.dynamicAimEnd() end,
 			isHoldButton = true,
-			name = "Aim",
+			name = "[F] Aim",
 			description = "Hold to aim (Dynamic mode only)"
 		}
 	}
@@ -249,8 +250,22 @@ local function setupUnifiedButton(button, tag)
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
-					-- Update button text to show current class's skill name
-					button.Text = classConfig.name or "???"
+					-- Special handling for dynamic aim mode toggle button
+					if classConfig.isDynamic and class == "archer" then
+						local currentMode = ArcherActions.getCurrentAimMode()
+						local modeText = ""
+						if currentMode == true then
+							modeText = "Always On"
+						elseif currentMode == false then
+							modeText = "Always Off"
+						elseif currentMode == "dynamic" then
+							modeText = "Dynamic"
+						end
+						button.Text = "[T] " .. modeText
+					else
+						-- Update button text to show current class's skill name
+						button.Text = classConfig.name or "???"
+					end
 				end
 			else
 				-- No weapon equipped - show generic name
@@ -346,7 +361,21 @@ local function setupUnifiedHoldButton(button, tag)
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
-					button.Text = classConfig.name or "???"
+					-- Special handling for dynamic aim mode toggle button
+					if classConfig.isDynamic and class == "archer" then
+						local currentMode = ArcherActions.getCurrentAimMode()
+						local modeText = ""
+						if currentMode == true then
+							modeText = "Always On"
+						elseif currentMode == false then
+							modeText = "Always Off"
+						elseif currentMode == "dynamic" then
+							modeText = "Dynamic"
+						end
+						button.Text = "[T] " .. modeText
+					else
+						button.Text = classConfig.name or "???"
+					end
 				end
 			else
 				button.Text = "---"

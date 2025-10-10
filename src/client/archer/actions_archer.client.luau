@@ -635,6 +635,10 @@ local function onWeaponFound(weaponTool)
 			-- Dynamic aim end
 			dynamicAimHeld = false
 			updateAimLockState()
+		end,
+		function()
+			-- Get current aim mode
+			return AIM_LOCK_MODE
 		end
 	)
 	
