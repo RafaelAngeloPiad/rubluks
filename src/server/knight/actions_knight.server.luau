@@ -216,12 +216,136 @@ function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 end
 
 -- ========================================
+-- SWORD & SHIELD ATTACHMENT (from Knight Animation Scripts.lua)
+-- ========================================
+
+local swordMotorName = "SwordRightHandMotor"
+local shieldMotorName = "ShieldLeftHandMotor"
+
+local function getHandOffsets(rigType)
+	-- Shield rotation: 100 degrees around Y, and move forward on Z axis
+	local shieldRotation = CFrame.Angles(0, math.rad(100), 0)
+	local shieldForwardOffset = CFrame.new(-0.5, 0, 0) -- Move shield forward by 0.5 studs
+	if rigType == Enum.HumanoidRigType.R15 then
+		-- R15 default hand offsets
+		return {
+			swordC0 = CFrame.new(0, 0, 0),
+			swordC1 = CFrame.new(0, 0, 0),
+			shieldC0 = shieldForwardOffset * shieldRotation,
+			shieldC1 = CFrame.new(0, 0, 0),
+		}
+	else
+		-- R6 default arm offsets
+		return {
+			swordC0 = CFrame.new(0, -1, 0),
+			swordC1 = CFrame.new(0, 0, 0),
+			shieldC0 = CFrame.new(0, -1, 0) * shieldForwardOffset * shieldRotation,
+			shieldC1 = CFrame.new(0, 0, 0),
+		}
+	end
+end
+
+local function attachPartToLimb(part, limbName, motorName, character, c0, c1)
+	local limb = character:FindFirstChild(limbName)
+	if not limb or not part then return end
+
+	-- Remove previous Motor6D if exists
+	for k, v in limb:GetChildren() do
+		if v:IsA("Motor6D") and v.Name == motorName then
+			v:Destroy()
+		end
+	end
+
+	local motor = Instance.new("Motor6D")
+	motor.Name = motorName
+	motor.Part0 = limb
+	motor.Part1 = part
+	motor.Parent = limb
+	motor.C0 = c0 or CFrame.new(0, 0, 0)
+	motor.C1 = c1 or CFrame.new(0, 0, 0)
+end
+
+local function attachSwordAndShield(character, tool)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	local sword = tool:FindFirstChild("Handle")
+	local shield = tool:FindFirstChild("Shield")
+
+	-- Make sure sword and shield are visible
+	if sword then sword.Transparency = 0 end
+	if shield then shield.Transparency = 0 end
+
+	local offsets = getHandOffsets(humanoid.RigType)
+
+	if humanoid.RigType == Enum.HumanoidRigType.R15 then
+		attachPartToLimb(sword, "RightHand", swordMotorName, character, offsets.swordC0, offsets.swordC1)
+		attachPartToLimb(shield, "LeftHand", shieldMotorName, character, offsets.shieldC0, offsets.shieldC1)
+	else
+		attachPartToLimb(sword, "Right Arm", swordMotorName, character, offsets.swordC0, offsets.swordC1)
+		attachPartToLimb(shield, "Left Arm", shieldMotorName, character, offsets.shieldC0, offsets.shieldC1)
+	end
+end
+
+local function removeSwordAndShield(character, tool)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	local sword = tool:FindFirstChild("Handle")
+	local shield = tool:FindFirstChild("Shield")
+
+	if humanoid.RigType == Enum.HumanoidRigType.R15 then
+		local rightHand = character:FindFirstChild("RightHand")
+		local leftHand = character:FindFirstChild("LeftHand")
+		if rightHand then
+			for k, v in rightHand:GetChildren() do
+				if v:IsA("Motor6D") and v.Name == swordMotorName then
+					v:Destroy()
+				end
+			end
+		end
+		if leftHand then
+			for k, v in leftHand:GetChildren() do
+				if v:IsA("Motor6D") and v.Name == shieldMotorName then
+					v:Destroy()
+				end
+			end
+		end
+	else
+		local rightArm = character:FindFirstChild("Right Arm")
+		local leftArm = character:FindFirstChild("Left Arm")
+		if rightArm then
+			for k, v in rightArm:GetChildren() do
+				if v:IsA("Motor6D") and v.Name == swordMotorName then
+					v:Destroy()
+				end
+			end
+		end
+		if leftArm then
+			for k, v in leftArm:GetChildren() do
+				if v:IsA("Motor6D") and v.Name == shieldMotorName then
+					v:Destroy()
+				end
+			end
+		end
+	end
+
+	if sword then sword.Transparency = 1 end
+	if shield then shield.Transparency = 1 end
+end
+
+-- ========================================
 -- ATTACK ANIMATION SETUP
 -- ========================================
 
-local function setupAttackAnimations(player)
+local function setupAttackAnimations(player, tool)
 	local character = player.Character
 	if not character then return end
+	
+	-- Attach sword and shield to player's hands (server-side for replication)
+	if tool then
+		attachSwordAndShield(character, tool)
+	end
 	
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	local animator = hum and hum:FindFirstChildOfClass("Animator")
@@ -354,9 +478,17 @@ local function setupAttackAnimations(player)
 	
 end
 
-local function cleanupAttackAnimations(player)
+local function cleanupAttackAnimations(player, tool)
 	local data = playerAttackData[player]
 	if not data then return end
+	
+	-- Remove sword and shield from player's hands
+	if tool then
+		local char = player.Character
+		if char then
+			removeSwordAndShield(char, tool)
+		end
+	end
 	
 	-- Stop all animations
 	if data.animTrack1 then data.animTrack1:Stop() end
@@ -679,13 +811,13 @@ end
 -- ACTION EVENT HANDLER
 -- ========================================
 
-remote.OnServerEvent:Connect(function(player, actionName)
+remote.OnServerEvent:Connect(function(player, actionName, tool)
 	
 	-- Handle knight-specific attack actions (prefixed with "knight_")
 	if actionName == "knight_attack_setup" then
-		setupAttackAnimations(player)
+		setupAttackAnimations(player, tool)
 	elseif actionName == "knight_attack_cleanup" then
-		cleanupAttackAnimations(player)
+		cleanupAttackAnimations(player, tool)
 	elseif actionName == "knight_left_click_attack" then
 		handleNormalAttack(player)
 	-- Note: knight_wave removed - now handled globally by GlobalAnimations.server.luau

@@ -319,8 +319,8 @@ local function onWeaponFound(weaponTool)
 		end
 	end)
 	
-	-- Tell server to setup all animations (attack + movement)
-	remote:FireServer("knight_attack_setup")
+	-- Tell server to setup all animations (attack + movement) and attach sword/shield
+	remote:FireServer("knight_attack_setup", weaponTool)
 	
 	-- Sync all camera speeds with server values
 	syncAllCameraSpeeds()
@@ -382,9 +382,10 @@ end
 local function onWeaponLost()
 	if KnightActions._getTool() then
 		
-		-- Tell server to cleanup all animations
+		-- Tell server to cleanup all animations and remove sword/shield
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireServer("knight_attack_cleanup")
+		local weaponTool = KnightActions._getTool()
+		remote:FireServer("knight_attack_cleanup", weaponTool)
 		
 		-- Clear tool reference in module
 		KnightActions._setTool(nil)
