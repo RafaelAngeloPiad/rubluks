@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- ========================================
 
 local HITBOX_CONFIG = {
-	transparency = 1, -- Global transparency for all hitbox visuals
+	transparency = 0.95, -- Global transparency for all hitbox visuals
 }
 
 -- ========================================
@@ -28,8 +28,11 @@ local function getScaledDelay(baseDelay, actionType)
 	-- Get specific animation speed for the action type
 	local animationSpeed = 1.0 -- Default speed
 	
+	-- Check for Knight animation speeds
+	if _G.KNIGHT_ANIMATION_SPEEDS and actionType then
+		animationSpeed = _G.KNIGHT_ANIMATION_SPEEDS[actionType] or 1.0
 	-- Check for Archer animation speeds
-	if _G.ARCHER_ANIMATION_SPEEDS and actionType then
+	elseif _G.ARCHER_ANIMATION_SPEEDS and actionType then
 		animationSpeed = _G.ARCHER_ANIMATION_SPEEDS[actionType] or 1.0
 	-- Check for Samurai animation speeds (fallback)
 	elseif _G.SAMURAI_ANIMATION_SPEEDS and actionType then

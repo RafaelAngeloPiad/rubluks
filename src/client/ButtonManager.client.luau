@@ -8,30 +8,15 @@
 -- See GlobalKeybindManager.client.luau for global keybind handling
 -- ========================================
 
--- Tag	Purpose	Samurai	Archer	Global?
--- attack_trigger	Basic attack	[LMB] Attack	[LMB] Attack	No
--- skill1_trigger	Skill 1	[Q] Wakizashi	[Q] Piercing Shot	No
--- skill2_trigger	Skill 2	[E] Kozuki	[E] Power Shot	No
--- buff1_trigger	Buff 1	[X] Banzai	[X] Hunter Instinct	No
--- buff2_trigger	Buff 2	[C] Bushido	[C] Hunter Mark	No
--- ultimate_trigger	Ultimate	[Z] Zantetsuken	[Z] Starfall	No
--- block_trigger	Block	[V] Block	[V] Block	No
--- wave_trigger	Wave (Global)	[L] Wave	[L] Wave	YES
--- aim_mode_toggle	Aim mode toggle	(none)	[T] Dynamic/Always On/Always Off	No
--- dynamic_aim_trigger	Dynamic aim (hold)	(none)	[F] Aim	No
-
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
 local player = Players.LocalPlayer
 
--- Require both action modules
+-- Require all action modules
 local SamuraiActions = require(player.PlayerScripts.samurai.SamuraiActionModule)
 local ArcherActions = require(player.PlayerScripts.archer.ArcherActionModule)
-
--- Track current class
-local currentClass = nil -- "samurai" or "archer"
-local classCheckConnection = nil
+local KnightActions = require(player.PlayerScripts.knight.KnightActionModule)
 
 -- ========================================
 -- UNIFIED BUTTON TAG CONFIGURATION
@@ -51,6 +36,11 @@ local UNIFIED_TAGS = {
 			action = function() return ArcherActions.basicAttack() end,
 			name = "[LMB] Attack",
 			description = "Basic attack with aim"
+		},
+		knight = {
+			action = function() return KnightActions.basicAttack() end,
+			name = "[LMB] Attack",
+			description = "Basic attack (auto-detects: normal, move, or jump attack)"
 		}
 	},
 	
@@ -68,6 +58,13 @@ local UNIFIED_TAGS = {
 			isHoldButton = true,
 			name = "[V] Block",
 			description = "Hold to block"
+		},
+		knight = {
+			start = function() return KnightActions.blockStart() end,
+			stop = function() return KnightActions.blockEnd() end,
+			isHoldButton = true,
+			name = "[V] Block",
+			description = "Hold to block with shield"
 		}
 	},
 	
@@ -93,6 +90,17 @@ local UNIFIED_TAGS = {
 			name = "[L] Wave",
 			description = "Wave emote",
 			isGlobal = true -- Doesn't require weapon
+		},
+		knight = {
+			action = function()
+				-- Global wave (works without weapon)
+				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
+				remote:FireServer("global_wave")
+				return true
+			end,
+			name = "[L] Wave",
+			description = "Wave emote",
+			isGlobal = true -- Doesn't require weapon
 		}
 	},
 	
@@ -107,6 +115,11 @@ local UNIFIED_TAGS = {
 			action = function() return ArcherActions.piercingShot() end,
 			name = "[Q] Piercing Shot",
 			description = "Piercing Shot skill"
+		},
+		knight = {
+			action = function() return KnightActions.sworddance() end,
+			name = "[Q] Sword Dance",
+			description = "Sword Dance skill"
 		}
 	},
 	
@@ -121,6 +134,11 @@ local UNIFIED_TAGS = {
 			action = function() return ArcherActions.powerShot() end,
 			name = "[E] Power Shot",
 			description = "Power Shot skill"
+		},
+		knight = {
+			action = function() return KnightActions.cyclone_slash() end,
+			name = "[E] Cyclone Slash",
+			description = "Cyclone Slash skill"
 		}
 	},
 	
@@ -135,6 +153,11 @@ local UNIFIED_TAGS = {
 			action = function() return ArcherActions.hunterInstinct() end,
 			name = "[X] Hunters Instinct",
 			description = "Hunters Instinct buff"
+		},
+		knight = {
+			action = function() return KnightActions.warcry() end,
+			name = "[X] War Cry",
+			description = "War Cry buff"
 		}
 	},
 	
@@ -149,6 +172,11 @@ local UNIFIED_TAGS = {
 			action = function() return ArcherActions.hunterMark() end,
 			name = "[C] Hunters Mark",
 			description = "Hunters Mark buff"
+		},
+		knight = {
+			action = function() return KnightActions.warriormight() end,
+			name = "[C] Warrior Might",
+			description = "Warrior Might buff"
 		}
 	},
 	
@@ -163,6 +191,11 @@ local UNIFIED_TAGS = {
 			action = function() return ArcherActions.starfall() end,
 			name = "[Z] Starfall",
 			description = "Starfall ultimate"
+		},
+		knight = {
+			action = function() return KnightActions.mightyblade() end,
+			name = "[Z] Mighty Blade",
+			description = "Mighty Blade ultimate"
 		}
 	},
 	
@@ -209,11 +242,18 @@ local function detectCurrentClass()
 		end
 	end
 	
+	-- Check for knight weapon
+	for _, item in character:GetChildren() do
+		if item:IsA("Tool") and CollectionService:HasTag(item, "knight_wpn") then
+			return "knight"
+		end
+	end
+	
 	return nil
 end
 
 local function isWeaponEquipped()
-	return SamuraiActions.isWeaponEquipped() or ArcherActions.isWeaponEquipped()
+	return SamuraiActions.isWeaponEquipped() or ArcherActions.isWeaponEquipped() or KnightActions.isWeaponEquipped()
 end
 
 -- ========================================
