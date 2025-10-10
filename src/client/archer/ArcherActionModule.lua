@@ -20,10 +20,10 @@ local ArcherActions = {}
 -- ========================================
 local SKILLS_ENABLED = {
 	piercingShot = true,
-	powerShot = true,
-	hunterInstinct = true,
+	powerShot = false,
+	hunterInstinct = false,
 	hunterMark = true,
-	starfall = true,
+	starfall = false,
 }
 
 -- Internal state

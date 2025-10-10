@@ -18,11 +18,11 @@ local SamuraiActions = {}
 -- Set to false to completely disable a skill (won't fire to server even if spammed)
 -- ========================================
 local SKILLS_ENABLED = {
-	kozuki = true,
+	kozuki = false,
 	wakizashi = true,
-	banzai = true,
+	banzai = false,
 	bushido = true,
-	zantetsuken = true,
+	zantetsuken = false,
 }
 
 -- Internal state
