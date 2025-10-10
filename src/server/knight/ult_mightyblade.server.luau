@@ -76,6 +76,18 @@ local function explosionNear(character, angle, tilt)
 		end
 	end
 
+	-- Hitbox at explosion location (similar to Starfall)
+	_G.createStaticHitbox({
+		cframe = spawnCF,
+		size = Vector3.new(25, 25, 25),
+		damage = 25,
+		character = character,
+		name = "MightyBlade Explosion Near",
+		showVisual = true,
+		visualColor = Color3.new(1, 0.5, 0),
+		delay = 0.1,
+	})
+
 	Debris:AddItem(vfx, 1)
 
 end
@@ -137,6 +149,18 @@ local function explosionFar(character, angle, tilt)
 			part.CanCollide = false
 		end
 	end
+
+	-- Hitbox at explosion location (similar to Starfall)
+	_G.createStaticHitbox({
+		cframe = spawnCF,
+		size = Vector3.new(30, 30, 30),
+		damage = 30,
+		character = character,
+		name = "MightyBlade Explosion Far",
+		showVisual = true,
+		visualColor = Color3.new(1, 0.3, 0),
+		delay = 0.1,
+	})
 
 	Debris:AddItem(vfx, 1)
 
@@ -298,13 +322,39 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			swordsNear(character, angle,  math.rad(-70))
 			explosionNear(character, angle,  math.rad(-70))
 		end
+		
+		-- MASSIVE CENTER HITBOX for SwordNear (low damage)
+		local root = character:WaitForChild("HumanoidRootPart")
+		_G.createStaticHitbox({
+			cframe = root.CFrame,
+			size = Vector3.new(250, 60, 250), -- Massive center hitbox
+			damage = 10, -- Low damage
+			character = character,
+			name = "MightyBlade Center Massive Near",
+			showVisual = true,
+			visualColor = Color3.new(0.8, 0.8, 0), -- Yellow
+			delay = 0.2
+		})
 	end)
 
-	animTrack:GetMarkerReachedSignal("SwordFar"):Connect(function()
+	animTrack:GetMarkerReachedSignal("Sword Far"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			swordsFar(character, angle,  math.rad(-70))
 			explosionFar(character, angle,  math.rad(-70))
 		end
+		
+		-- MASSIVE CENTER HITBOX for SwordFar (low damage)
+		local root = character:WaitForChild("HumanoidRootPart")
+		_G.createStaticHitbox({
+			cframe = root.CFrame,
+			size = Vector3.new(250, 60, 250), -- Massive center hitbox
+			damage = 10, -- Low damage
+			character = character,
+			name = "MightyBlade Center Massive Far",
+			showVisual = true,
+			visualColor = Color3.new(1, 0, 0), -- Red
+			delay = 0.2
+		})
 	end)
 
 end)
