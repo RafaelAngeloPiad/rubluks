@@ -10,10 +10,10 @@
 
 -- Tag	Purpose	Samurai	Archer	Global?
 -- attack_trigger	Basic attack	[LMB] Attack	[LMB] Attack	No
--- skill1_trigger	First skill	[Q] Wakizashi	[Q] Piercing Shot	No
--- skill2_trigger	Second skill	[E] Kozuki	[E] Power Shot	No
--- buff1_trigger	First buff	[X] Banzai	[X] Hunter Instinct	No
--- buff2_trigger	Second buff	[C] Bushido	[C] Hunter Mark	No
+-- skill1_trigger	Skill 1	[Q] Wakizashi	[Q] Piercing Shot	No
+-- skill2_trigger	Skill 2	[E] Kozuki	[E] Power Shot	No
+-- buff1_trigger	Buff 1	[X] Banzai	[X] Hunter Instinct	No
+-- buff2_trigger	Buff 2	[C] Bushido	[C] Hunter Mark	No
 -- ultimate_trigger	Ultimate	[Z] Zantetsuken	[Z] Starfall	No
 -- block_trigger	Block	[V] Block	[V] Block	No
 -- wave_trigger	Wave (Global)	[L] Wave	[L] Wave	YES
@@ -134,7 +134,7 @@ local UNIFIED_TAGS = {
 		archer = {
 			action = function() return ArcherActions.hunterInstinct() end,
 			name = "[X] Hunters Instinct",
-			description = "Hunter Instinct buff"
+			description = "Hunters Instinct buff"
 		}
 	},
 	
@@ -148,7 +148,7 @@ local UNIFIED_TAGS = {
 		archer = {
 			action = function() return ArcherActions.hunterMark() end,
 			name = "[C] Hunters Mark",
-			description = "Hunter Mark buff"
+			description = "Hunters Mark buff"
 		}
 	},
 	

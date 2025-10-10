@@ -36,6 +36,11 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	local cooldownTime = _G.ARCHER_COOLDOWNS["hunterMark"]
 	_G.sendCooldownStatus(player, "hunterMark", true, cooldownTime)
 	
+	-- Clear cooldown status on client after cooldown expires
+	task.delay(cooldownTime, function()
+		_G.sendCooldownStatus(player, "hunterMark", false, 0)
+	end)
+	
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")

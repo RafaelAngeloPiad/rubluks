@@ -87,11 +87,11 @@ local CONFIG = {
 	weaponTag = "samurai_wpn",
 	-- Walking speed is now controlled by server
 	actions = {
-		[Enum.KeyCode.E] = "kozuki",
-		[Enum.KeyCode.Q] = "wakizashi",
-		[Enum.KeyCode.X] = "banzai",
-		[Enum.KeyCode.Z] = "bushido",
-		[Enum.KeyCode.C] = "zantetsuken",
+		[Enum.KeyCode.Q] = "wakizashi",     -- Skill 1
+		[Enum.KeyCode.E] = "kozuki",        -- Skill 2
+		[Enum.KeyCode.X] = "banzai",        -- Buff 1
+		[Enum.KeyCode.C] = "bushido",       -- Buff 2 (changed from Z to C)
+		[Enum.KeyCode.Z] = "zantetsuken",   -- Ultimate (changed from C to Z)
 	},
 	-- Custom keybinds for basic actions
 	keybinds = {

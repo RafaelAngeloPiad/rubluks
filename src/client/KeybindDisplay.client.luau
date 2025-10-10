@@ -24,8 +24,8 @@ local WEAPON_CONFIGS = {
 		actions = {
 			[Enum.KeyCode.Q] = "Piercing Shot",
 			[Enum.KeyCode.E] = "Power Shot",
-			[Enum.KeyCode.X] = "Hunter Instinct",
-			[Enum.KeyCode.C] = "Hunter Mark",
+			[Enum.KeyCode.X] = "Hunters Instinct",
+			[Enum.KeyCode.C] = "Hunters Mark",
 			[Enum.KeyCode.Z] = "Starfall",
 		},
 		keybinds = {
@@ -40,11 +40,11 @@ local WEAPON_CONFIGS = {
 	samurai_wpn = {
 		name = "Samurai",
 		actions = {
-			[Enum.KeyCode.E] = "Kozuki",
 			[Enum.KeyCode.Q] = "Wakizashi",
+			[Enum.KeyCode.E] = "Kozuki",
 			[Enum.KeyCode.X] = "Banzai",
-			[Enum.KeyCode.Z] = "Bushido",
-			[Enum.KeyCode.C] = "Zantetsuken",
+			[Enum.KeyCode.C] = "Bushido",
+			[Enum.KeyCode.Z] = "Zantetsuken",
 		},
 		keybinds = {
 			attack = {key = "Left Click", name = "Attack"},
