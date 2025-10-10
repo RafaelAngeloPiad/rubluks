@@ -1,14 +1,16 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local RockModule = require(ReplicatedStorage.RockModule)
 
 local tool = script.Parent
 local player = Players.LocalPlayer
 
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+
 -- preload animation
-local slashAnim = Instance.new("Animation")
-slashAnim.AnimationId = "rbxassetid://124154885589921"
+local auraAnim = Instance.new("Animation")
+auraAnim.AnimationId = "rbxassetid://109703526340788"
 
 
 tool.Equipped:Connect(function()
@@ -17,43 +19,40 @@ tool.Equipped:Connect(function()
 	local root = character:WaitForChild("HumanoidRootPart")
 	local animator = humanoid:WaitForChild("Animator")
 
-	local animTrack = animator:LoadAnimation(slashAnim)
+	local animTrack = animator:LoadAnimation(auraAnim)
 
-	-- 1st explosion
-	animTrack:GetMarkerReachedSignal("ShieldBash"):Connect(function()
+	-- ? AURA marker (one-time connection lang)
+	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 
-		local vfx = ReplicatedStorage.ShieldBash:WaitForChild("ShieldBash"):Clone()
+		local vfx = ReplicatedStorage.Bloodthirst:WaitForChild("Bloodthirst"):Clone()
 		vfx.Parent = workspace
 
 		local root = character:WaitForChild("HumanoidRootPart")
 
 		-- Position sa harap ng player (independent, no weld)
-		local forwardOffset = 10 -- gaano kalayo sa harap magsimula
+		--local forwardOffset = -10 -- gaano kalayo sa harap magsimula
 		local rotationX = 0 -- ikot pataas/pababa
 		local rotationY = math.rad(0) -- ikot pakaliwa/pakanan
-		local rotationZ = 0 -- ikot paikot
+		local rotationZ = math.rad(0) -- ikot paikot
 
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
 
-		vfx:PivotTo(root.CFrame * CFrame.new(0, 5, -forwardOffset)* rotation)
+		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, 0)* rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
 			if part:IsA("BasePart") then
-				part.Anchored = true
+				part.Anchored = false
 				part.CanCollide = false
 			end
 		end
 
-		-- Auto cleanup
-		game:GetService("Debris"):AddItem(vfx, 1)
-
+		game:GetService("Debris"):AddItem(vfx, 1.5)
 	end)
-	
-	-- ?? Left click handler
+
+	-- ?? Left click handler (ito lang uulit-ulit)
 	tool.Activated:Connect(function()
 		animTrack:Play()
-
 	end)
 end)

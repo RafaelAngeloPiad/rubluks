@@ -10,7 +10,7 @@ local Debris = game:GetService("Debris")
 
 -- preload animation
 local auraAnim = Instance.new("Animation")
-auraAnim.AnimationId = "rbxassetid://130327931088371"
+auraAnim.AnimationId = "rbxassetid://132356955410856"
 
 
 tool.Equipped:Connect(function()
@@ -22,9 +22,9 @@ tool.Equipped:Connect(function()
 	local animTrack = animator:LoadAnimation(auraAnim)
 
 	-- ? AURA marker (one-time connection lang)
-	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
+	animTrack:GetMarkerReachedSignal("Roar"):Connect(function()
 
-		local vfx = ReplicatedStorage.ChampionBlood:WaitForChild("ChampionBlood"):Clone()
+		local vfx = ReplicatedStorage.BerserkerRoar:WaitForChild("Roar"):Clone()
 		vfx.Parent = workspace
 
 		local root = character:WaitForChild("HumanoidRootPart")
@@ -38,7 +38,7 @@ tool.Equipped:Connect(function()
 		local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
 
 
-		vfx:PivotTo(root.CFrame * CFrame.new(0, 0, 0)* rotation)
+		vfx:PivotTo(root.CFrame * CFrame.new(0, 10, -20)* rotation)
 
 		-- Ensure lahat ng parts ay hindi naka-anchor pero stable
 		for _, part in ipairs(vfx:GetDescendants()) do
@@ -48,7 +48,7 @@ tool.Equipped:Connect(function()
 			end
 		end
 
-		game:GetService("Debris"):AddItem(vfx, 1.5)
+		game:GetService("Debris"):AddItem(vfx, 2.5)
 	end)
 
 	-- ?? Left click handler (ito lang uulit-ulit)

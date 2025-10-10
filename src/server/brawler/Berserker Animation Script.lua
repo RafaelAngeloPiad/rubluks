@@ -7,13 +7,11 @@ local sword = tool:FindFirstChild("Handle")
 local shield = tool:FindFirstChild("Shield")
 
 -- Animation asset IDs provided by user
-
---local idleAnimId = "rbxassetid://114034160525037"
-local idleAnimId = "rbxassetid://124239767875200"
-local runAnimId = "rbxassetid://78012536571899"
-local jumpAnimId = "rbxassetid://114508265613530"
+local idleAnimId = "rbxassetid://90397105369652"
+local runAnimId = "rbxassetid://103110646897811"
+local jumpAnimId = "rbxassetid://121116321540745"
 local fallAnimId = jumpAnimId
-local climbAnimId = "rbxassetid://83874564246965"
+local climbAnimId = "rbxassetid://111950022379992"
 
 local swordMotorName = "SwordRightHandMotor"
 local shieldMotorName = "ShieldLeftHandMotor"
@@ -44,7 +42,7 @@ local movementKeys = {
 local function getHandOffsets(rigType)
 	-- Shield rotation: 100 degrees around Y, and move forward on Z axis
 	local shieldRotation = CFrame.Angles(0, math.rad(100), 0)
-	local shieldForwardOffset = CFrame.new(-0.5, 0, 0) -- Move shield forward by 0.5 studs
+	local shieldForwardOffset = CFrame.new(0, 0, 0) -- Move shield forward by 0.5 studs
 	if rigType == Enum.HumanoidRigType.R15 then
 		-- R15 default hand offsets
 		return {

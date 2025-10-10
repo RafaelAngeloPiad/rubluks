@@ -13,16 +13,18 @@ tool.Equipped:Connect(function()
 
 	-- Normal Attack Animations
 	local anim1 = Instance.new("Animation")
-	anim1.AnimationId = "rbxassetid://93306564380704"
+	anim1.AnimationId = "rbxassetid://111499133888841"
 	local animTrack1 = animator:LoadAnimation(anim1)
 
 	local anim2 = Instance.new("Animation")
-	anim2.AnimationId = "rbxassetid://85669585505960"
+	anim2.AnimationId = "rbxassetid://115155425517667"
 	local animTrack2 = animator:LoadAnimation(anim2)
 
+--[[
 	local anim3 = Instance.new("Animation")
 	anim3.AnimationId = "rbxassetid://107397939946639"
 	local animTrack3 = animator:LoadAnimation(anim3)
+]]
 
 	-- Jump Attack Animation
 	local jumpAnim = Instance.new("Animation")
@@ -32,12 +34,12 @@ tool.Equipped:Connect(function()
 
 	-- Move Attack Anim
 	local moveSlashAnim = Instance.new("Animation")
-	moveSlashAnim.AnimationId = "rbxassetid://85752352985435"
+	moveSlashAnim.AnimationId = "rbxassetid://122188868950715"
 	local moveSlashTrack = animator:LoadAnimation(moveSlashAnim)
 
 	-- RightClick Idle Anim
 	local rightClickIdleAnim = Instance.new("Animation")
-	rightClickIdleAnim.AnimationId = "rbxassetid://95754766804055"
+	rightClickIdleAnim.AnimationId = "rbxassetid://139776954960083"
 	local rightClickIdleTrack = animator:LoadAnimation(rightClickIdleAnim)
 	rightClickIdleTrack.Priority = Enum.AnimationPriority.Action
 
@@ -118,11 +120,7 @@ tool.Equipped:Connect(function()
 		elseif clickCount == 2 then
 			animTrack2:Play()
 			animTrack2.Stopped:Once(function() isAttacking = false end)
-			clickCount = 0 -- reset
-		elseif clickCount == 3 then
-			animTrack3:Play()
-			animTrack3.Stopped:Once(function() isAttacking = false end)
-			--clickCount = 0 -- reset
+			clickCount = 0 -- reset	
 		end
 	end)
 

@@ -17,6 +17,8 @@ local player = Players.LocalPlayer
 local SamuraiActions = require(player.PlayerScripts.samurai.SamuraiActionModule)
 local ArcherActions = require(player.PlayerScripts.archer.ArcherActionModule)
 local KnightActions = require(player.PlayerScripts.knight.KnightActionModule)
+local GladiatorActions = require(player.PlayerScripts.gladiator.GladiatorActionModule)
+local BrawlerActions = require(player.PlayerScripts.brawler.BrawlerActionModule)
 
 -- ========================================
 -- UNIFIED BUTTON TAG CONFIGURATION
@@ -41,6 +43,16 @@ local UNIFIED_TAGS = {
 			action = function() return KnightActions.basicAttack() end,
 			name = "[LMB] Attack",
 			description = "Basic attack (auto-detects: normal, move, or jump attack)"
+		},
+		gladiator = {
+			action = function() return GladiatorActions.basicAttack() end,
+			name = "[LMB] Attack",
+			description = "Basic attack (2-hit combo, move, or jump attack)"
+		},
+		brawler = {
+			action = function() return BrawlerActions.basicAttack() end,
+			name = "[LMB] Attack",
+			description = "Basic attack (2-hit combo, move, or jump attack)"
 		}
 	},
 	
@@ -65,6 +77,20 @@ local UNIFIED_TAGS = {
 			isHoldButton = true,
 			name = "[V] Block",
 			description = "Hold to block with shield"
+		},
+		gladiator = {
+			start = function() return GladiatorActions.blockStart() end,
+			stop = function() return GladiatorActions.blockEnd() end,
+			isHoldButton = true,
+			name = "[V] Block",
+			description = "Hold to block with shield"
+		},
+		brawler = {
+			start = function() return BrawlerActions.blockStart() end,
+			stop = function() return BrawlerActions.blockEnd() end,
+			isHoldButton = true,
+			name = "[V] Block",
+			description = "Hold to block"
 		}
 	},
 	
@@ -101,6 +127,28 @@ local UNIFIED_TAGS = {
 			name = "[L] Wave",
 			description = "Wave emote",
 			isGlobal = true -- Doesn't require weapon
+		},
+		gladiator = {
+			action = function()
+				-- Global wave (works without weapon)
+				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
+				remote:FireServer("global_wave")
+				return true
+			end,
+			name = "[L] Wave",
+			description = "Wave emote",
+			isGlobal = true -- Doesn't require weapon
+		},
+		brawler = {
+			action = function()
+				-- Global wave (works without weapon)
+				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
+				remote:FireServer("global_wave")
+				return true
+			end,
+			name = "[L] Wave",
+			description = "Wave emote",
+			isGlobal = true -- Doesn't require weapon
 		}
 	},
 	
@@ -120,6 +168,16 @@ local UNIFIED_TAGS = {
 			action = function() return KnightActions.sworddance() end,
 			name = "[Q] Sword Dance",
 			description = "Sword Dance skill"
+		},
+		gladiator = {
+			action = function() return GladiatorActions.shieldbash() end,
+			name = "[Q] Shield Bash",
+			description = "Shield Bash skill"
+		},
+		brawler = {
+			action = function() return BrawlerActions.feralleap() end,
+			name = "[Q] Feral Leap",
+			description = "Feral Leap skill"
 		}
 	},
 	
@@ -139,6 +197,16 @@ local UNIFIED_TAGS = {
 			action = function() return KnightActions.cyclone_slash() end,
 			name = "[E] Cyclone Slash",
 			description = "Cyclone Slash skill"
+		},
+		gladiator = {
+			action = function() return GladiatorActions.dragoonjump() end,
+			name = "[E] Dragoon Jump",
+			description = "Dragoon Jump skill"
+		},
+		brawler = {
+			action = function() return BrawlerActions.brawlersroar() end,
+			name = "[E] Berserker's Roar",
+			description = "Berserker's Roar skill"
 		}
 	},
 	
@@ -158,6 +226,16 @@ local UNIFIED_TAGS = {
 			action = function() return KnightActions.warcry() end,
 			name = "[X] War Cry",
 			description = "War Cry buff"
+		},
+		gladiator = {
+			action = function() return GladiatorActions.championsblood() end,
+			name = "[X] Champions Blood",
+			description = "Champions Blood buff"
+		},
+		brawler = {
+			action = function() return BrawlerActions.bloodthirst() end,
+			name = "[X] Bloodthirst",
+			description = "Bloodthirst buff"
 		}
 	},
 	
@@ -177,6 +255,16 @@ local UNIFIED_TAGS = {
 			action = function() return KnightActions.warriormight() end,
 			name = "[C] Warrior Might",
 			description = "Warrior Might buff"
+		},
+		gladiator = {
+			action = function() return GladiatorActions.championscheer() end,
+			name = "[C] Champions Cheer",
+			description = "Champions Cheer buff"
+		},
+		brawler = {
+			action = function() return BrawlerActions.lastchance() end,
+			name = "[C] Last Chance",
+			description = "Last Chance buff"
 		}
 	},
 	
@@ -196,6 +284,16 @@ local UNIFIED_TAGS = {
 			action = function() return KnightActions.mightyblade() end,
 			name = "[Z] Mighty Blade",
 			description = "Mighty Blade ultimate"
+		},
+		gladiator = {
+			action = function() return GladiatorActions.demonicvorpaldance() end,
+			name = "[Z] Demonic Vorpal Dance",
+			description = "Demonic Vorpal Dance ultimate"
+		},
+		brawler = {
+			action = function() return BrawlerActions.meteordive() end,
+			name = "[Z] Meteor Dive",
+			description = "Meteor Dive ultimate"
 		}
 	},
 	
@@ -249,11 +347,25 @@ local function detectCurrentClass()
 		end
 	end
 	
+	-- Check for gladiator weapon
+	for _, item in character:GetChildren() do
+		if item:IsA("Tool") and CollectionService:HasTag(item, "gladiator_wpn") then
+			return "gladiator"
+		end
+	end
+	
+	-- Check for brawler weapon
+	for _, item in character:GetChildren() do
+		if item:IsA("Tool") and CollectionService:HasTag(item, "brawler_wpn") then
+			return "brawler"
+		end
+	end
+	
 	return nil
 end
 
 local function isWeaponEquipped()
-	return SamuraiActions.isWeaponEquipped() or ArcherActions.isWeaponEquipped() or KnightActions.isWeaponEquipped()
+	return SamuraiActions.isWeaponEquipped() or ArcherActions.isWeaponEquipped() or KnightActions.isWeaponEquipped() or GladiatorActions.isWeaponEquipped() or BrawlerActions.isWeaponEquipped()
 end
 
 -- ========================================
