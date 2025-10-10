@@ -14,6 +14,8 @@
 -- ultimate_trigger	Ultimate	Zantetsuken	Starfall
 -- block_trigger	Block	Block	Block
 -- wave_trigger	Wave	Wave	Wave
+-- aim_mode_toggle	Aim mode toggle	(none)	Toggle Aim Mode
+-- dynamic_aim_trigger	Dynamic aim (hold)	(none)	Hold to Aim
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -147,6 +149,25 @@ local UNIFIED_TAGS = {
 			name = "Starfall",
 			description = "Starfall ultimate"
 		}
+	},
+	
+	-- Aim Controls (Archer only)
+	aim_mode_toggle = {
+		archer = {
+			action = function() return ArcherActions.cycleAimMode() end,
+			name = "Aim Mode",
+			description = "Toggle aim mode (Always/Never/Dynamic)"
+		}
+	},
+	
+	dynamic_aim_trigger = {
+		archer = {
+			start = function() return ArcherActions.dynamicAimStart() end,
+			stop = function() return ArcherActions.dynamicAimEnd() end,
+			isHoldButton = true,
+			name = "Aim",
+			description = "Hold to aim (Dynamic mode only)"
+		}
 	}
 }
 
@@ -206,7 +227,11 @@ local function setupUnifiedButton(button, tag)
 	-- Transparency updater
 	task.spawn(function()
 		while button and button.Parent do
-			if isWeaponEquipped() then
+			local class = detectCurrentClass()
+			local classConfig = tagConfig[class]
+			
+			-- Only show button if weapon is equipped AND class has config for this button
+			if isWeaponEquipped() and classConfig then
 				button.TextTransparency = 0
 				button.BackgroundTransparency = 0
 			else
@@ -297,7 +322,11 @@ local function setupUnifiedHoldButton(button, tag)
 	-- Transparency updater
 	task.spawn(function()
 		while button and button.Parent do
-			if isWeaponEquipped() then
+			local class = detectCurrentClass()
+			local classConfig = tagConfig[class]
+			
+			-- Only show button if weapon is equipped AND class has config for this button
+			if isWeaponEquipped() and classConfig then
 				button.TextTransparency = 0
 				if not isActive then
 					button.BackgroundTransparency = 0

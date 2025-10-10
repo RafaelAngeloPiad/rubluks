@@ -38,11 +38,11 @@ local dynamicAimHeld = false
 
 -- Aim Lock Mode Configuration
 -- Options: true (always aim lock), false (never aim lock), "dynamic" (toggle with F key)
-local AIM_LOCK_MODE = true -- Change this to control aim lock behavior
+local AIM_LOCK_MODE = "dynamic" -- Change this to control aim lock behavior
 
 -- Aim Lock Mode Toggle System
 local aimLockModes = {true, false, "dynamic"}
-local currentModeIndex = 1 -- Start with first mode (true)
+local currentModeIndex = 3 -- Start with third mode (dynamic)
 
 -- First-Person Detection System
 local isFirstPerson = false
@@ -622,6 +622,21 @@ end
 local function onWeaponFound(weaponTool)
 	-- Update module state
 	ArcherActions._setTool(weaponTool)
+	
+	-- Register aim control callbacks for module
+	ArcherActions._registerAimCallbacks(
+		cycleAimLockMode,
+		function()
+			-- Dynamic aim start
+			dynamicAimHeld = true
+			updateAimLockState()
+		end,
+		function()
+			-- Dynamic aim end
+			dynamicAimHeld = false
+			updateAimLockState()
+		end
+	)
 	
 	-- Initialize PlayerModule
 	initializePlayerModule()

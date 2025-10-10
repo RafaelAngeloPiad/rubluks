@@ -34,6 +34,11 @@ local onCooldown = {} -- Track which skills are on cooldown
 local aimLockEnabled = false
 local isFirstPerson = false
 
+-- Aim control callbacks (set by main client script)
+local cycleAimModeCallback = nil
+local dynamicAimStartCallback = nil
+local dynamicAimEndCallback = nil
+
 -- ========================================
 -- STATE MANAGEMENT (Internal)
 -- ========================================
@@ -64,6 +69,12 @@ end
 
 function ArcherActions._getTool()
 	return tool
+end
+
+function ArcherActions._registerAimCallbacks(cycleMode, dynamicStart, dynamicEnd)
+	cycleAimModeCallback = cycleMode
+	dynamicAimStartCallback = dynamicStart
+	dynamicAimEndCallback = dynamicEnd
 end
 
 -- ========================================
@@ -230,6 +241,46 @@ end
 
 function ArcherActions.getFirstPerson()
 	return isFirstPerson
+end
+
+-- ========================================
+-- PUBLIC API - Aim Controls (Archer Only)
+-- ========================================
+
+function ArcherActions.cycleAimMode()
+	if not tool or tool.Parent ~= player.Character then
+		return false, "Weapon not equipped"
+	end
+	
+	if cycleAimModeCallback then
+		cycleAimModeCallback()
+		return true
+	end
+	return false, "Aim mode callback not registered"
+end
+
+function ArcherActions.dynamicAimStart()
+	if not tool or tool.Parent ~= player.Character then
+		return false, "Weapon not equipped"
+	end
+	
+	if dynamicAimStartCallback then
+		dynamicAimStartCallback()
+		return true
+	end
+	return false, "Dynamic aim callback not registered"
+end
+
+function ArcherActions.dynamicAimEnd()
+	if not tool or tool.Parent ~= player.Character then
+		return false, "Weapon not equipped"
+	end
+	
+	if dynamicAimEndCallback then
+		dynamicAimEndCallback()
+		return true
+	end
+	return false, "Dynamic aim callback not registered"
 end
 
 return ArcherActions
