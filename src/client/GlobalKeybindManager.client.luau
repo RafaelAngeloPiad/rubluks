@@ -27,7 +27,6 @@ local GLOBAL_KEYBINDS = {
 local function wave()
 	-- Fire wave event to server (works without weapon)
 	remote:FireServer("global_wave")
-	print("🌊 Wave emote triggered (global)")
 end
 
 -- ========================================
@@ -52,7 +51,4 @@ end
 
 -- Listen for all inputs (global, always active)
 UserInputService.InputBegan:Connect(onInputBegan)
-
-print("🌐 Global Keybind Manager initialized!")
-print("  [L] Wave - Works globally without weapon")
 

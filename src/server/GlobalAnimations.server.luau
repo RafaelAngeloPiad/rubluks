@@ -66,7 +66,6 @@ function _G.updateGlobalAnimationSpeed(actionType, newSpeed)
 	end
 	
 	_G.GLOBAL_ANIMATION_SPEEDS[actionType] = newSpeed
-	print("🌐 Updated global animation speed:", actionType, "=", newSpeed)
 end
 
 -- ========================================
@@ -101,8 +100,6 @@ local function setupPlayerAnimations(player)
 	data.character = character
 	data.humanoid = humanoid
 	data.animator = animator
-	
-	print("🌐 Setup global animations for player:", player.Name)
 end
 
 local function cleanupPlayerAnimations(player)
@@ -115,7 +112,6 @@ local function cleanupPlayerAnimations(player)
 		end
 		
 		playerAnimationData[player.UserId] = nil
-		print("🌐 Cleaned up global animations for player:", player.Name)
 	end
 end
 
@@ -148,8 +144,6 @@ local function handleWave(player)
 		data.waveTrack.Stopped:Connect(function()
 			_G.setGlobalWalkingSpeed(player, "normal")
 		end)
-		
-		print("🌊 Player waved:", player.Name)
 	end
 end
 
@@ -203,7 +197,4 @@ end
 -- Connect to new players
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
-
-print("🌐 Global Animations Server initialized!")
-print("  Wave emote works for all players without weapon")
 

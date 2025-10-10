@@ -473,8 +473,6 @@ local function setupUnifiedButton(button, tag)
 			task.wait(0.5)
 		end
 	end)
-	
-	print("✅ Setup unified button:", button.Name, "with tag:", tag)
 end
 
 -- Setup a hold button that adapts to current class
@@ -582,8 +580,6 @@ local function setupUnifiedHoldButton(button, tag)
 			task.wait(0.5)
 		end
 	end)
-	
-	print("✅ Setup unified hold button:", button.Name, "with tag:", tag)
 end
 
 -- Setup a button based on its tag
@@ -627,9 +623,6 @@ local function initializeButtons()
 			end
 		end)
 	end
-	
-	print("🎮 Unified Button Manager initialized!")
-	print("Buttons will automatically adapt based on equipped weapon")
 end
 
 -- ========================================

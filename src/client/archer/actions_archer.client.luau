@@ -309,22 +309,16 @@ local function updateFirstPersonState()
 	-- Only handle when state changes
 	if wasFirstPerson ~= isFirstPerson then
 		if isFirstPerson then
-			print("Player is now in FIRST PERSON")
 			-- Hide mouse pointer and disable camera offset in first-person
 			UserInputService.MouseIconEnabled = false
-			print("Mouse pointer hidden in first-person mode")
 			if cameraOffsetEnabled then
 				disableCameraOffset()
-				print("Camera offset disabled in first-person mode")
 			end
 		else
-			print("Player is now in THIRD PERSON")
 			-- Show mouse pointer and enable camera offset in third-person
 			UserInputService.MouseIconEnabled = true
-			print("Mouse pointer shown in third-person mode")
 			if aimLockEnabled and not cameraOffsetEnabled then
 				enableCameraOffset()
-				print("Camera offset enabled in third-person mode")
 			end
 		end
 	end
@@ -420,14 +414,6 @@ local function cycleAimLockMode()
 	end
 	
 	AIM_LOCK_MODE = aimLockModes[currentModeIndex]
-	
-	-- Print current mode for feedback
-	local modeNames = {
-		[true] = "Always Aim Lock",
-		[false] = "Never Aim Lock", 
-		["dynamic"] = "Dynamic Toggle"
-	}
-	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE])
 	
 	-- Update the aim lock state immediately
 	updateAimLockState()
@@ -655,14 +641,6 @@ local function onWeaponFound(weaponTool)
 	
 	-- Initialize aim lock mode from current index
 	AIM_LOCK_MODE = aimLockModes[currentModeIndex]
-	
-	-- Print initial mode
-	local modeNames = {
-		[true] = "Always Aim Lock",
-		[false] = "Never Aim Lock", 
-		["dynamic"] = "Dynamic Toggle"
-	}
-	print("Aim Lock Mode:", modeNames[AIM_LOCK_MODE], "(Press " .. tostring(CONFIG.keybinds.aimLockToggle) .. " to toggle, " .. tostring(CONFIG.keybinds.dynamicAim) .. " for hold-to-aim)")
 	
 	-- Set initial aim lock state based on mode
 	updateAimLockState()
