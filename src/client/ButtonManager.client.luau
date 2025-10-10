@@ -4,18 +4,21 @@
 -- Buttons automatically switch based on equipped weapon
 -- Place this in StarterGui > ActionsGUI
 -- ========================================
+-- NOTE: Global keybinds (like Wave) work WITHOUT weapon equipped!
+-- See GlobalKeybindManager.client.luau for global keybind handling
+-- ========================================
 
--- Tag	Purpose	Samurai	Archer
--- attack_trigger	Basic attack	[LMB] Attack	[LMB] Attack
--- skill1_trigger	First skill	[Q] Wakizashi	[Q] Piercing Shot
--- skill2_trigger	Second skill	[E] Kozuki	[E] Power Shot
--- buff1_trigger	First buff	[X] Banzai	[X] Hunter Instinct
--- buff2_trigger	Second buff	[C] Bushido	[C] Hunter Mark
--- ultimate_trigger	Ultimate	[Z] Zantetsuken	[Z] Starfall
--- block_trigger	Block	[V] Block	[V] Block
--- wave_trigger	Wave	[L] Wave	[L] Wave
--- aim_mode_toggle	Aim mode toggle	(none)	[T] Dynamic/Always On/Always Off
--- dynamic_aim_trigger	Dynamic aim (hold)	(none)	[F] Aim
+-- Tag	Purpose	Samurai	Archer	Global?
+-- attack_trigger	Basic attack	[LMB] Attack	[LMB] Attack	No
+-- skill1_trigger	First skill	[Q] Wakizashi	[Q] Piercing Shot	No
+-- skill2_trigger	Second skill	[E] Kozuki	[E] Power Shot	No
+-- buff1_trigger	First buff	[X] Banzai	[X] Hunter Instinct	No
+-- buff2_trigger	Second buff	[C] Bushido	[C] Hunter Mark	No
+-- ultimate_trigger	Ultimate	[Z] Zantetsuken	[Z] Starfall	No
+-- block_trigger	Block	[V] Block	[V] Block	No
+-- wave_trigger	Wave (Global)	[L] Wave	[L] Wave	YES
+-- aim_mode_toggle	Aim mode toggle	(none)	[T] Dynamic/Always On/Always Off	No
+-- dynamic_aim_trigger	Dynamic aim (hold)	(none)	[F] Aim	No
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
@@ -70,14 +73,26 @@ local UNIFIED_TAGS = {
 	
 	wave_trigger = {
 		samurai = {
-			action = function() return SamuraiActions.wave() end,
+			action = function()
+				-- Global wave (works without weapon)
+				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
+				remote:FireServer("global_wave")
+				return true
+			end,
 			name = "[L] Wave",
-			description = "Wave emote"
+			description = "Wave emote",
+			isGlobal = true -- Doesn't require weapon
 		},
 		archer = {
-			action = function() return ArcherActions.wave() end,
+			action = function()
+				-- Global wave (works without weapon)
+				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
+				remote:FireServer("global_wave")
+				return true
+			end,
 			name = "[L] Wave",
-			description = "Wave emote"
+			description = "Wave emote",
+			isGlobal = true -- Doesn't require weapon
 		}
 	},
 	
@@ -217,7 +232,18 @@ local function setupUnifiedButton(button, tag)
 	-- Click handler
 	button.MouseButton1Click:Connect(function()
 		local class = detectCurrentClass()
-		if not class then return end
+		
+		-- For global actions, try both classes if no weapon equipped
+		if not class then
+			-- Try to find any class config that has this as a global action
+			for className, classConfig in pairs(tagConfig) do
+				if classConfig and classConfig.isGlobal and classConfig.action then
+					classConfig.action()
+					return
+				end
+			end
+			return
+		end
 		
 		local classConfig = tagConfig[class]
 		if not classConfig or not classConfig.action then return end
@@ -231,8 +257,17 @@ local function setupUnifiedButton(button, tag)
 			local class = detectCurrentClass()
 			local classConfig = tagConfig[class]
 			
-			-- Only show button if weapon is equipped AND class has config for this button
-			if isWeaponEquipped() and classConfig then
+			-- Check if this is a global action (works without weapon)
+			local isGlobalAction = false
+			for _, config in pairs(tagConfig) do
+				if config and config.isGlobal then
+					isGlobalAction = true
+					break
+				end
+			end
+			
+			-- Show button if: (weapon equipped AND has class config) OR (is global action)
+			if (isWeaponEquipped() and classConfig) or isGlobalAction then
 				button.TextTransparency = 0
 				button.BackgroundTransparency = 0
 			else
@@ -268,8 +303,20 @@ local function setupUnifiedButton(button, tag)
 					end
 				end
 			else
-				-- No weapon equipped - show generic name
-				button.Text = "---"
+				-- No weapon equipped - check if this is a global action
+				local globalConfig = nil
+				for _, config in pairs(tagConfig) do
+					if config and config.isGlobal then
+						globalConfig = config
+						break
+					end
+				end
+				
+				if globalConfig then
+					button.Text = globalConfig.name or "???"
+				else
+					button.Text = "---"
+				end
 			end
 			task.wait(0.5)
 		end

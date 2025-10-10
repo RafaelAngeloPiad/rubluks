@@ -32,7 +32,7 @@ local WEAPON_CONFIGS = {
 			attack = {key = "Left Click", name = "Attack"},
 			block = {key = "V", name = "Block"},
 			jump = {key = "Space", name = "Jump"},
-			wave = {key = "L", name = "Wave"},
+			wave = {key = "L", name = "Wave (Global)"},
 			aimLockToggle = {key = "T", name = "Aim Toggle"},
 			dynamicAim = {key = "F", name = "Aim"},
 		}
@@ -50,7 +50,7 @@ local WEAPON_CONFIGS = {
 			attack = {key = "Left Click", name = "Attack"},
 			block = {key = "V", name = "Block"},
 			jump = {key = "Space", name = "Jump"},
-			wave = {key = "T", name = "Wave"},
+			wave = {key = "L", name = "Wave (Global)"},
 		}
 	}
 }

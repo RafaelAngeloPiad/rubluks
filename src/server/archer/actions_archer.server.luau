@@ -43,7 +43,7 @@ _G.ARCHER_ANIMATION_SPEEDS = {
 	moveAttack = 1.0,
 	jumpAttack = 1.0,
 	block = 1.0,
-	wave = 1.0,
+	-- Note: Wave is now handled globally by GlobalAnimations.server.luau
 	
 	-- Skills
 	piercingShot = 1.0,
@@ -514,12 +514,7 @@ local function setupAttackAnimations(player)
 	local blockTrack = animator:LoadAnimation(blockAnim)
 	blockTrack.Priority = Enum.AnimationPriority.Action
 
-	-- Wave Emote Animation
-	local waveAnim = Instance.new("Animation")
-	waveAnim.AnimationId = "rbxassetid://507770239"
-	local waveTrack = animator:LoadAnimation(waveAnim)
-	waveTrack.Looped = false
-	waveTrack.Priority = Enum.AnimationPriority.Action
+	-- Note: Wave animation is now handled globally by GlobalAnimations.server.luau
 
 	-- Movement Animations (from original archer Archer Animation Script.lua)
 	local idleAnim = Instance.new("Animation")
@@ -541,7 +536,7 @@ local function setupAttackAnimations(player)
 		jumpAttackTrack = jumpAttackTrack,
 		moveSlashTrack = moveSlashTrack,
 		blockTrack = blockTrack,
-		waveTrack = waveTrack,
+		-- Note: waveTrack removed - now handled globally
 		idleTrack = idleTrack,
 		runTrack = runTrack,
 		isAttacking = false,
@@ -623,7 +618,7 @@ local function cleanupAttackAnimations(player)
 	if data.jumpAttackTrack then data.jumpAttackTrack:Stop() end
 	if data.moveSlashTrack then data.moveSlashTrack:Stop() end
 	if data.blockTrack then data.blockTrack:Stop() end
-	if data.waveTrack then data.waveTrack:Stop() end
+	-- Note: waveTrack removed - now handled globally
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
 	
@@ -871,18 +866,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 	end
 end
 
-local function handleWave(player)
-	local data = playerAttackData[player]
-	if not data then return end
-	
-	if data.isAttacking or data.isBlocking then 
-		return 
-	end
-	
-	-- Play wave animation
-	data.waveTrack:Play()
-	_G.applyArcherAnimationSpeed(data.waveTrack, "wave")
-end
+-- Note: handleWave removed - now handled globally by GlobalAnimations.server.luau
 
 local function handleBlock(player, isBlocking)
 	local data = playerAttackData[player]
@@ -955,8 +939,7 @@ remote.OnServerEvent:Connect(function(player, actionName, ...)
 		local aimLockEnabled = args[2] or false
 		local isFirstPerson = args[3] or false
 		handleNormalAttack(player, cameraDirection, aimLockEnabled, isFirstPerson)
-	elseif actionName == "archer_wave" then
-		handleWave(player)
+	-- Note: archer_wave removed - now handled globally by GlobalAnimations.server.luau
 	elseif actionName == "archer_block_start" then
 		handleBlock(player, true)
 	elseif actionName == "archer_block_end" then

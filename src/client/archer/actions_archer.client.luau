@@ -122,8 +122,8 @@ local CONFIG = {
 		attack = Enum.UserInputType.MouseButton1, -- Left click
 		block = Enum.KeyCode.V,
 		jump = Enum.KeyCode.Space, -- Spacebar
-		wave = Enum.KeyCode.L, -- L key for wave emote (was T)
-		aimLockToggle = Enum.KeyCode.T, -- T key for aim lock mode toggle (was L)
+		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
+		aimLockToggle = Enum.KeyCode.T, -- T key for aim lock mode toggle
 		dynamicAim = Enum.KeyCode.F, -- F key for dynamic aim lock
 	}
 }
@@ -750,11 +750,7 @@ local function onWeaponFound(weaponTool)
 				return
 			end
 			
-			-- Handle wave (L key)
-			if input.KeyCode == CONFIG.keybinds.wave then
-				ArcherActions.wave()
-				return
-			end
+			-- Note: Wave is now handled globally by GlobalKeybindManager (L key)
 			
 			-- Handle aim lock mode toggle - works even when movement is locked
 			if input.KeyCode == CONFIG.keybinds.aimLockToggle then

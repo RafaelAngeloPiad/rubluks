@@ -98,7 +98,7 @@ local CONFIG = {
 		attack = Enum.UserInputType.MouseButton1, -- Left click
 		block = Enum.KeyCode.V,
 		jump = Enum.KeyCode.Space, -- Spacebar
-		wave = Enum.KeyCode.T, -- T key for wave emote
+		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
 	}
 }
 
@@ -362,11 +362,7 @@ local function onWeaponFound(weaponTool)
 				return
 			end
 			
-			-- Handle wave (T key)
-			if input.KeyCode == CONFIG.keybinds.wave then
-				SamuraiActions.wave()
-				return
-			end
+			-- Note: Wave is now handled globally by GlobalKeybindManager (L key)
 		end
 		
 		-- Handle mouse clicks (left click attack)
