@@ -14,14 +14,14 @@ local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-local tool = nil
 local inputConnection = nil
-local inputLocked = false -- Flag to control input registration
-local movementLocked = false -- Flag to control movement only (for skills like wakizashi/kozuki)
 local playerModule = nil
 local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+
+-- Import the action module for shared logic
+local SamuraiActions = require(script.Parent.SamuraiActionModule)
 
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
@@ -76,6 +76,7 @@ end
 -- Function to update cooldown status
 local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
+	SamuraiActions._setCooldown(skillName, isOnCooldown)
 	if isOnCooldown then
 		local timeText = remainingTime and tostring(remainingTime) or "unknown"
 	end
@@ -230,7 +231,7 @@ local function lockInput()
 		return
 	end
 	
-	inputLocked = true
+	SamuraiActions._setInputLocked(true)
 	controls:Disable()
 end
 
@@ -239,7 +240,7 @@ local function unlockInput()
 		return
 	end
 	
-	inputLocked = false
+	SamuraiActions._setInputLocked(false)
 	controls:Enable()
 end
 
@@ -248,7 +249,7 @@ local function lockMovementOnly()
 		return
 	end
 	
-	movementLocked = true
+	SamuraiActions._setMovementLocked(true)
 	-- Walking speed is now controlled by server
 end
 
@@ -257,7 +258,7 @@ local function unlockMovementOnly()
 		return
 	end
 	
-	movementLocked = false
+	SamuraiActions._setMovementLocked(false)
 	-- Walking speed is now controlled by server
 end
 
@@ -266,23 +267,12 @@ end
 -- ========================================
 
 local function useAction(actionName)
-	-- Check if input is locked (but allow movement-only locked actions)
-	if inputLocked then
+	-- Use the module to perform the action (handles all validation)
+	local success = SamuraiActions.useSkill(actionName)
+	
+	if not success then
 		return
 	end
-	
-	-- Check if movement is locked for non-skill actions
-	if movementLocked and actionName ~= "wakizashi" and actionName ~= "kozuki" then
-		return
-	end
-	
-	-- Validate tool is equipped
-	if not tool or tool.Parent ~= player.Character then
-		return
-	end
-	
-	-- Tell server to handle VFX and hitboxes
-	remote:FireServer(actionName)
 	
 	-- Play camera sequence if this action has one AND it's not on cooldown
 	if CAMERA_SEQUENCES[actionName] and not skillCooldowns[actionName] then
@@ -297,7 +287,8 @@ end
 -- ========================================
 
 local function onWeaponFound(weaponTool)
-	tool = weaponTool
+	-- Update module state
+	SamuraiActions._setTool(weaponTool)
 	
 	-- Initialize PlayerModule
 	initializePlayerModule()
@@ -346,17 +337,12 @@ local function onWeaponFound(weaponTool)
 	inputConnection = UserInputService.InputBegan:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
-		-- Check if input is locked
-		if inputLocked then
-			return
-		end
-		
 		-- Allow camera movement (mouse movement) even when movement is locked
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			return -- Allow camera movement
 		end
 		
-		-- Handle skills (E, Q, R, F, Z)
+		-- Handle skills (E, Q, X, Z, C)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			local actionName = CONFIG.actions[input.KeyCode]
 			if actionName then
@@ -364,29 +350,28 @@ local function onWeaponFound(weaponTool)
 				return
 			end
 			
-			-- Handle block (Ctrl) - but not when movement is locked
-			if input.KeyCode == CONFIG.keybinds.block and not movementLocked then
-				remote:FireServer("samurai_block_start")
+			-- Handle block (V key)
+			if input.KeyCode == CONFIG.keybinds.block then
+				SamuraiActions.blockStart()
 				return
 			end
 			
-			-- Handle jump (Spacebar) - but not when movement is locked
-			if input.KeyCode == CONFIG.keybinds.jump and not movementLocked then
-				remote:FireServer("samurai_jump_attack")
+			-- Handle jump (Spacebar)
+			if input.KeyCode == CONFIG.keybinds.jump then
+				SamuraiActions.jumpAttack()
 				return
 			end
 			
-			-- Handle wave (P key) - but not when movement is locked
-			if input.KeyCode == CONFIG.keybinds.wave and not movementLocked then
-				remote:FireServer("samurai_wave")
+			-- Handle wave (T key)
+			if input.KeyCode == CONFIG.keybinds.wave then
+				SamuraiActions.wave()
 				return
 			end
 		end
 		
-		-- Handle mouse clicks - but not when movement is locked
-		if input.UserInputType == CONFIG.keybinds.attack and not movementLocked then
-			-- Left click attack
-			remote:FireServer("samurai_left_click_attack")
+		-- Handle mouse clicks (left click attack)
+		if input.UserInputType == CONFIG.keybinds.attack then
+			SamuraiActions.basicAttack()
 		end
 	end)
 	
@@ -394,26 +379,22 @@ local function onWeaponFound(weaponTool)
 	UserInputService.InputEnded:Connect(function(input, isProcessed)
 		if isProcessed then return end
 		
-		-- Check if input is locked
-		if inputLocked then
-			return
-		end
-		
-		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block and not movementLocked then
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == CONFIG.keybinds.block then
 			-- Block release
-			remote:FireServer("samurai_block_end")
+			SamuraiActions.blockEnd()
 		end
 	end)
 end
 
 local function onWeaponLost()
-	if tool then
+	if SamuraiActions._getTool() then
 		
 		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 		remote:FireServer("samurai_attack_cleanup")
 		
-		tool = nil
+		-- Clear tool reference in module
+		SamuraiActions._setTool(nil)
 	end
 	
 	-- Reset camera sequence flag
@@ -450,7 +431,7 @@ local function onCharacterAdded(character)
 	
 	-- Listen for weapon being unequipped
 	character.DescendantRemoving:Connect(function(desc)
-		if desc == tool then
+		if desc == SamuraiActions._getTool() then
 			onWeaponLost()
 		end
 	end)
