@@ -17,6 +17,11 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://129607332522508"
 
+-- CYCLONE SLASH HITBOX TIMING CONFIG
+local CYCLONE_CONFIG = {
+	smallHitboxDuration = 1.0, -- How long to use small hitbox before switching to big (in seconds)
+}
+
 local function ResizeVFX(vfx, scale)
 	for _, obj in ipairs(vfx:GetDescendants()) do
 		if obj:IsA("BasePart") then
@@ -112,21 +117,37 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		weld.Part1 = mainPart
 		weld.Parent = mainPart
 
-		-- STATIC DOT HITBOX - Very wide area around player, damages over time
+		-- PHASE 1: Small hitbox for initial duration
 		_G.createStaticDOTHitbox({
-			attachTo = mainPart, -- Follows the VFX part (welded to torso)
+			attachTo = mainPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(40, 30, 40), -- Very wide hitbox (40x30x40 studs)
-			damage = 5, -- Damage per tick
-			damageTickTime = 0.3, -- Damage every 0.3 seconds
+			size = Vector3.new(15, 15, 15), -- Small hitbox
+			damage = 3,
+			damageTickTime = 0.4,
 			character = character,
-			name = "CycloneSlashDOT",
+			name = "CycloneSlashSmall",
 			showVisual = true,
-			visualColor = Color3.new(0.5, 0, 1), -- Purple
+			visualColor = Color3.new(0.3, 0, 0.6), -- Darker purple
 			delay = 0
 		})
+		
+		-- After duration, spawn big hitbox
+		task.delay(CYCLONE_CONFIG.smallHitboxDuration, function()
+			_G.createStaticDOTHitbox({
+				attachTo = mainPart,
+				offset = CFrame.new(0, 0, 0),
+				size = Vector3.new(40, 30, 40), -- Big hitbox
+				damage = 7,
+				damageTickTime = 0.3,
+				character = character,
+				name = "CycloneSlashBig",
+				showVisual = true,
+				visualColor = Color3.new(0.8, 0, 1), -- Brighter purple
+				delay = 0
+			})
+		end)
 
-		-- Auto cleanup (VFX lasts 3.5 seconds, hitbox automatically stops when VFX is destroyed)
+		-- Auto cleanup
 		game:GetService("Debris"):AddItem(vfx, 3.5)
 
 	end)
