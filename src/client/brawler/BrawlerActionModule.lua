@@ -155,13 +155,13 @@ function BrawlerActions.useSkill(skillName)
 	return true
 end
 
--- Convenience functions for each skill (placeholder for future)
-function BrawlerActions.feralleap()
-	return BrawlerActions.useSkill("feralleap")
-end
-
+-- Convenience functions for each skill
 function BrawlerActions.brawlersroar()
 	return BrawlerActions.useSkill("brawlersroar")
+end
+
+function BrawlerActions.feralleap()
+	return BrawlerActions.useSkill("feralleap")
 end
 
 -- ========================================

@@ -1,7 +1,7 @@
 -- ========================================
 -- BRAWLER ACTIONS CLIENT (UNIFIED)
 -- Handles skills, buffs, and ultimate for Brawler class
--- Skills: Feral Leap (Q), Berserker's Roar (E)
+-- Skills: Berserker's Roar (Q), Feral Leap (E)
 -- Buffs: Bloodthirst (X), Last Chance (C)
 -- Ultimate: Meteor Dive (Z)
 -- ========================================
@@ -189,8 +189,8 @@ local CONFIG = {
 	weaponTag = "brawler_wpn",
 	-- Walking speed is now controlled by server
 	actions = {
-		[Enum.KeyCode.Q] = "feralleap",      -- Skill 1
-		[Enum.KeyCode.E] = "brawlersroar",   -- Skill 2
+		[Enum.KeyCode.Q] = "brawlersroar",   -- Skill 1
+		[Enum.KeyCode.E] = "feralleap",      -- Skill 2
 		[Enum.KeyCode.X] = "bloodthirst",    -- Buff 1
 		[Enum.KeyCode.C] = "lastchance",     -- Buff 2
 		[Enum.KeyCode.Z] = "meteordive",     -- Ultimate
@@ -441,7 +441,7 @@ local function onWeaponFound(weaponTool)
 			return -- Allow camera movement
 		end
 		
-		-- Handle skills (E, Q, X, Z, C) - currently commented out for basic refactor
+		-- Handle skills (Q, E, X, Z, C)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			local actionName = CONFIG.actions[input.KeyCode]
 			if actionName then

@@ -175,9 +175,9 @@ local UNIFIED_TAGS = {
 			description = "Shield Bash skill"
 		},
 		brawler = {
-			action = function() return BrawlerActions.feralleap() end,
-			name = "[Q] Feral Leap",
-			description = "Feral Leap skill"
+			action = function() return BrawlerActions.brawlersroar() end,
+			name = "[Q] Berserker's Roar",
+			description = "Berserker's Roar skill"
 		}
 	},
 	
@@ -204,9 +204,9 @@ local UNIFIED_TAGS = {
 			description = "Dragoon Jump skill"
 		},
 		brawler = {
-			action = function() return BrawlerActions.brawlersroar() end,
-			name = "[E] Berserker's Roar",
-			description = "Berserker's Roar skill"
+			action = function() return BrawlerActions.feralleap() end,
+			name = "[E] Feral Leap",
+			description = "Feral Leap skill"
 		}
 	},
 	
@@ -418,14 +418,26 @@ local function setupUnifiedButton(button, tag)
 				end
 			end
 			
-			-- Show button if: (weapon equipped AND has class config) OR (is global action)
-			if (isWeaponEquipped() and classConfig) or isGlobalAction then
-				button.TextTransparency = 0
-				button.BackgroundTransparency = 0
-			else
-				button.TextTransparency = 1
-				button.BackgroundTransparency = 1
+		-- Show button if: (weapon equipped AND has class config) OR (is global action)
+		if (isWeaponEquipped() and classConfig) or isGlobalAction then
+			button.TextTransparency = 0
+			button.BackgroundTransparency = 0
+			button.ImageTransparency = 0
+			-- Update TextLabel child transparency if it exists
+			local textLabel = button:FindFirstChildOfClass("TextLabel")
+			if textLabel then
+				textLabel.TextTransparency = 0
 			end
+		else
+			button.TextTransparency = 1
+			button.BackgroundTransparency = 1
+			button.ImageTransparency = 1
+			-- Update TextLabel child transparency if it exists
+			local textLabel = button:FindFirstChildOfClass("TextLabel")
+			if textLabel then
+				textLabel.TextTransparency = 1
+			end
+		end
 			task.wait(0.5)
 		end
 	end)
@@ -434,6 +446,8 @@ local function setupUnifiedButton(button, tag)
 	task.spawn(function()
 		while button and button.Parent do
 			local class = detectCurrentClass()
+			local textToSet = ""
+			
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
@@ -448,10 +462,10 @@ local function setupUnifiedButton(button, tag)
 						elseif currentMode == "dynamic" then
 							modeText = "Dynamic"
 						end
-						button.Text = "[T] " .. modeText
+						textToSet = "[T] " .. modeText
 					else
 						-- Update button text to show current class's skill name
-						button.Text = classConfig.name or "???"
+						textToSet = classConfig.name or "???"
 					end
 				end
 			else
@@ -465,11 +479,24 @@ local function setupUnifiedButton(button, tag)
 				end
 				
 				if globalConfig then
-					button.Text = globalConfig.name or "???"
+					textToSet = globalConfig.name or "???"
 				else
-					button.Text = "---"
+					textToSet = "---"
 				end
 			end
+			
+			-- Apply text to appropriate element
+			if button:IsA("ImageButton") then
+				-- For ImageButton, update TextLabel child
+				local textLabel = button:FindFirstChildOfClass("TextLabel")
+				if textLabel then
+					textLabel.Text = textToSet
+				end
+			else
+				-- For regular button, update button text directly
+				button.Text = textToSet
+			end
+			
 			task.wait(0.5)
 		end
 	end)
@@ -537,16 +564,28 @@ local function setupUnifiedHoldButton(button, tag)
 			local class = detectCurrentClass()
 			local classConfig = tagConfig[class]
 			
-			-- Only show button if weapon is equipped AND class has config for this button
-			if isWeaponEquipped() and classConfig then
-				button.TextTransparency = 0
-				if not isActive then
-					button.BackgroundTransparency = 0
-				end
-			else
-				button.TextTransparency = 1
-				button.BackgroundTransparency = 1
+		-- Only show button if weapon is equipped AND class has config for this button
+		if isWeaponEquipped() and classConfig then
+			button.TextTransparency = 0
+			if not isActive then
+				button.BackgroundTransparency = 0
 			end
+			button.ImageTransparency = 0
+			-- Update TextLabel child transparency if it exists
+			local textLabel = button:FindFirstChildOfClass("TextLabel")
+			if textLabel then
+				textLabel.TextTransparency = 0
+			end
+		else
+			button.TextTransparency = 1
+			button.BackgroundTransparency = 1
+			button.ImageTransparency = 1
+			-- Update TextLabel child transparency if it exists
+			local textLabel = button:FindFirstChildOfClass("TextLabel")
+			if textLabel then
+				textLabel.TextTransparency = 1
+			end
+		end
 			task.wait(0.5)
 		end
 	end)
@@ -555,6 +594,8 @@ local function setupUnifiedHoldButton(button, tag)
 	task.spawn(function()
 		while button and button.Parent do
 			local class = detectCurrentClass()
+			local textToSet = ""
+			
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
@@ -569,14 +610,27 @@ local function setupUnifiedHoldButton(button, tag)
 						elseif currentMode == "dynamic" then
 							modeText = "Dynamic"
 						end
-						button.Text = "[T] " .. modeText
+						textToSet = "[T] " .. modeText
 					else
-						button.Text = classConfig.name or "???"
+						textToSet = classConfig.name or "???"
 					end
 				end
 			else
-				button.Text = "---"
+				textToSet = "---"
 			end
+			
+			-- Apply text to appropriate element
+			if button:IsA("ImageButton") then
+				-- For ImageButton, update TextLabel child
+				local textLabel = button:FindFirstChildOfClass("TextLabel")
+				if textLabel then
+					textLabel.Text = textToSet
+				end
+			else
+				-- For regular button, update button text directly
+				button.Text = textToSet
+			end
+			
 			task.wait(0.5)
 		end
 	end)
@@ -631,4 +685,6 @@ end
 
 -- Initialize when script runs
 initializeButtons()
+
+
 
