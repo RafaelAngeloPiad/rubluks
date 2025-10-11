@@ -305,20 +305,13 @@ function _G.createSeparateSpeedArrow(config)
 					if model and model ~= character then
 						local humanoid = model:FindFirstChild("Humanoid")
 						
-						-- Check for enemy hit
+						-- Check for enemy hit (only collide with humanoids)
 						if humanoid and not hitTargets[humanoid] then
 							hitTargets[humanoid] = true
 							humanoid:TakeDamage(damage)
 							hitSomething = true
 						end
-						
-						-- Check for non-enemy collision (walls, objects, etc.)
-						if not humanoid and not hitSomething then
-							hitSomething = true
-						end
-					elseif not model then
-						-- Direct part collision (walls, terrain, etc.)
-						hitSomething = true
+						-- Non-humanoid objects are ignored - arrows pass through walls, terrain, etc.
 					end
 				end
 			end
