@@ -64,17 +64,17 @@ local function canPerformAction(actionType)
 	if inputLocked then
 		return false, "Input is locked"
 	end
-	
+
 	-- Check if tool is equipped
 	if not tool or tool.Parent ~= player.Character then
 		return false, "Weapon not equipped"
 	end
-	
+
 	-- For movement-dependent actions (attacks, block, jump, wave), check if movement is locked
 	if movementLocked and actionType ~= "skill" then
 		return false, "Movement is locked"
 	end
-	
+
 	return true
 end
 
@@ -87,7 +87,7 @@ function BrawlerActions.basicAttack()
 	if not success then
 		return false, reason
 	end
-	
+
 	remote:FireServer("brawler_left_click_attack")
 	return true
 end
@@ -97,7 +97,7 @@ function BrawlerActions.jumpAttack()
 	if not success then
 		return false, reason
 	end
-	
+
 	remote:FireServer("brawler_jump_attack")
 	return true
 end
@@ -107,7 +107,7 @@ function BrawlerActions.wave()
 	if not success then
 		return false, reason
 	end
-	
+
 	remote:FireServer("brawler_wave")
 	return true
 end
@@ -117,7 +117,7 @@ function BrawlerActions.blockStart()
 	if not success then
 		return false, reason
 	end
-	
+
 	remote:FireServer("brawler_block_start")
 	return true
 end
@@ -127,7 +127,7 @@ function BrawlerActions.blockEnd()
 	if not success then
 		return false, reason
 	end
-	
+
 	remote:FireServer("brawler_block_end")
 	return true
 end
@@ -141,16 +141,16 @@ function BrawlerActions.useSkill(skillName)
 	if not success then
 		return false, reason
 	end
-	
+
 	-- Check if skill is disabled in config
 	if SKILLS_ENABLED[skillName] == false then
 		return false, "Skill is disabled"
 	end
-	
+
 	-- Note: We don't block based on cooldown here - let the SERVER decide
 	-- The client-side cooldown tracking is only for UI feedback (showing "CD" text)
 	-- The server will handle actual cooldown validation and send status updates back
-	
+
 	remote:FireServer(skillName)
 	return true
 end

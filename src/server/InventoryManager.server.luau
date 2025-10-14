@@ -37,7 +37,6 @@ local function SavePlayerInventory(player)
 			end
 		end
 
-		
 		-- If both are empty, try to load from DataStore first to preserve existing data
 		if #inventory == 0 and #equipped == 0 then
 			local existingData = MainDataStore.LoadInventory(player.UserId)
@@ -46,7 +45,7 @@ local function SavePlayerInventory(player)
 				equipped = existingData.equipped or {}
 			end
 		end
-		
+
 		MainDataStore.SaveInventory(player.UserId, {inventory = inventory, equipped = equipped})
 		inventorySaveDebounce[userId].lastSave = os.clock()
 		inventorySaveDebounce[userId].pending = false
@@ -74,14 +73,14 @@ end
 local function LoadPlayerInventory(player)
 	local backpack = player:FindFirstChild("Backpack")
 	if not backpack then
-		--print("[InventoryManager] Backpack not found for", player.Name, "when loading inventory, waiting for Backpack...")
+		print("[InventoryManager] Backpack not found for", player.Name, "when loading inventory, waiting for Backpack...")
 		backpack = player:WaitForChild("Backpack")
 	end
 
 	-- Wait for character if we need to load equipped items
 	local character = player.Character
 	if not character then
-		--print("[InventoryManager] Character not found for", player.Name, "when loading inventory, waiting for Character...")
+		print("[InventoryManager] Character not found for", player.Name, "when loading inventory, waiting for Character...")
 		character = player:WaitForChild("Character")
 	end
 
@@ -151,22 +150,43 @@ local function BindInventoryEvents(player)
 	end)
 end
 
+local function MoveEquippedToBackpack(player)
+	-- Get equipped items from MainDataStore
+	local inventoryData = MainDataStore.LoadInventory(player.UserId)
+	local equipped = inventoryData.equipped or {}
+	local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+	local backpack = player:FindFirstChild("Backpack")
+	if not backpack or not assetsFolder then return end
+
+	for i, toolName in equipped do
+		-- Only move if not already in Backpack
+		if not backpack:FindFirstChild(toolName) then
+			local asset = assetsFolder:FindFirstChild(toolName)
+			if asset and asset:IsA("Tool") then
+				asset:Clone().Parent = backpack
+			end
+		end
+	end
+end
+
 local function OnCharacterAdded(character, player)
 	-- Wait for Backpack to exist before loading inventory
 	local backpack = player:WaitForChild("Backpack")
-	
+
 	-- Add delay after respawn to prevent inventory loss (like rejoining server)
 	task.wait(3)
-	
+
 	LoadPlayerInventory(player)
 	BindInventoryEvents(player)
-	
+
 	-- Simple death detection - save inventory when player dies
 	local humanoid = character:WaitForChild("Humanoid")
 	humanoid.HealthChanged:Connect(function(health)
 		if health <= 0 then
 			-- Add small delay to ensure equipped tools are still there
 			task.wait(0.1)
+			-- Move equipped items from MainDataStore to Backpack BEFORE saving inventory
+			MoveEquippedToBackpack(player)
 			SavePlayerInventory(player)
 		end
 	end)
@@ -185,4 +205,3 @@ Players.PlayerAdded:Connect(OnPlayerAdded)
 for i, player in Players:GetPlayers() do
 	OnPlayerAdded(player)
 end
-
