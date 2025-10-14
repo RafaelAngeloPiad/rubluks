@@ -55,7 +55,7 @@ local UNIFIED_TAGS = {
 			description = "Basic attack (2-hit combo, move, or jump attack)"
 		}
 	},
-	
+
 	block_trigger = {
 		samurai = {
 			start = function() return SamuraiActions.blockStart() end,
@@ -93,7 +93,7 @@ local UNIFIED_TAGS = {
 			description = "Hold to block"
 		}
 	},
-	
+
 	wave_trigger = {
 		samurai = {
 			action = function()
@@ -151,7 +151,7 @@ local UNIFIED_TAGS = {
 			isGlobal = true -- Doesn't require weapon
 		}
 	},
-	
+
 	-- Skill 1 (varies by class)
 	skill1_trigger = {
 		samurai = {
@@ -180,7 +180,7 @@ local UNIFIED_TAGS = {
 			description = "Berserker's Roar skill"
 		}
 	},
-	
+
 	-- Skill 2 (varies by class)
 	skill2_trigger = {
 		samurai = {
@@ -209,7 +209,7 @@ local UNIFIED_TAGS = {
 			description = "Feral Leap skill"
 		}
 	},
-	
+
 	-- Buff 1 (varies by class)
 	buff1_trigger = {
 		samurai = {
@@ -238,7 +238,7 @@ local UNIFIED_TAGS = {
 			description = "Bloodthirst buff"
 		}
 	},
-	
+
 	-- Buff 2 (varies by class)
 	buff2_trigger = {
 		samurai = {
@@ -267,7 +267,7 @@ local UNIFIED_TAGS = {
 			description = "Last Chance buff"
 		}
 	},
-	
+
 	-- Ultimate (varies by class)
 	ultimate_trigger = {
 		samurai = {
@@ -296,7 +296,7 @@ local UNIFIED_TAGS = {
 			description = "Meteor Dive ultimate"
 		}
 	},
-	
+
 	-- Aim Controls (Archer only)
 	aim_mode_toggle = {
 		archer = {
@@ -306,7 +306,7 @@ local UNIFIED_TAGS = {
 			isDynamic = true -- Flag to indicate this button needs dynamic text updates
 		}
 	},
-	
+
 	dynamic_aim_trigger = {
 		archer = {
 			start = function() return ArcherActions.dynamicAimStart() end,
@@ -325,42 +325,42 @@ local UNIFIED_TAGS = {
 local function detectCurrentClass()
 	local character = player.Character
 	if not character then return nil end
-	
+
 	-- Check for samurai weapon
 	for _, item in character:GetChildren() do
 		if item:IsA("Tool") and CollectionService:HasTag(item, "samurai_wpn") then
 			return "samurai"
 		end
 	end
-	
+
 	-- Check for archer weapon
 	for _, item in character:GetChildren() do
 		if item:IsA("Tool") and CollectionService:HasTag(item, "archer_wpn") then
 			return "archer"
 		end
 	end
-	
+
 	-- Check for knight weapon
 	for _, item in character:GetChildren() do
 		if item:IsA("Tool") and CollectionService:HasTag(item, "knight_wpn") then
 			return "knight"
 		end
 	end
-	
+
 	-- Check for gladiator weapon
 	for _, item in character:GetChildren() do
 		if item:IsA("Tool") and CollectionService:HasTag(item, "gladiator_wpn") then
 			return "gladiator"
 		end
 	end
-	
+
 	-- Check for brawler weapon
 	for _, item in character:GetChildren() do
 		if item:IsA("Tool") and CollectionService:HasTag(item, "brawler_wpn") then
 			return "brawler"
 		end
 	end
-	
+
 	return nil
 end
 
@@ -375,16 +375,16 @@ end
 -- Setup a regular button that adapts to current class
 local function setupUnifiedButton(button, tag)
 	local tagConfig = UNIFIED_TAGS[tag]
-	
+
 	if not tagConfig then
 		warn("Unknown unified tag:", tag)
 		return
 	end
-	
+
 	-- Click handler
 	button.MouseButton1Click:Connect(function()
 		local class = detectCurrentClass()
-		
+
 		-- For global actions, try both classes if no weapon equipped
 		if not class then
 			-- Try to find any class config that has this as a global action
@@ -396,19 +396,19 @@ local function setupUnifiedButton(button, tag)
 			end
 			return
 		end
-		
+
 		local classConfig = tagConfig[class]
 		if not classConfig or not classConfig.action then return end
-		
+
 		classConfig.action()
 	end)
-	
+
 	-- Transparency updater
 	task.spawn(function()
 		while button and button.Parent do
 			local class = detectCurrentClass()
 			local classConfig = tagConfig[class]
-			
+
 			-- Check if this is a global action (works without weapon)
 			local isGlobalAction = false
 			for _, config in pairs(tagConfig) do
@@ -417,37 +417,37 @@ local function setupUnifiedButton(button, tag)
 					break
 				end
 			end
-			
-		-- Show button if: (weapon equipped AND has class config) OR (is global action)
-		if (isWeaponEquipped() and classConfig) or isGlobalAction then
-			button.TextTransparency = 0
-			button.BackgroundTransparency = 0
-			button.ImageTransparency = 0
-			-- Update TextLabel child transparency if it exists
-			local textLabel = button:FindFirstChildOfClass("TextLabel")
-			if textLabel then
-				textLabel.TextTransparency = 0
+
+			-- Show button if: (weapon equipped AND has class config) OR (is global action)
+			if (isWeaponEquipped() and classConfig) or isGlobalAction then
+				--button.TextTransparency = 1
+				button.BackgroundTransparency = 1
+				button.ImageTransparency = 0
+				-- Update TextLabel child transparency if it exists
+				local textLabel = button:FindFirstChildOfClass("TextLabel")
+				if textLabel then
+					textLabel.TextTransparency = 0
+				end
+			else
+				--button.TextTransparency = 1
+				button.BackgroundTransparency = 1
+				button.ImageTransparency = 1
+				-- Update TextLabel child transparency if it exists
+				local textLabel = button:FindFirstChildOfClass("TextLabel")
+				if textLabel then
+					textLabel.TextTransparency = 1
+				end
 			end
-		else
-			button.TextTransparency = 1
-			button.BackgroundTransparency = 1
-			button.ImageTransparency = 1
-			-- Update TextLabel child transparency if it exists
-			local textLabel = button:FindFirstChildOfClass("TextLabel")
-			if textLabel then
-				textLabel.TextTransparency = 1
-			end
-		end
 			task.wait(0.5)
 		end
 	end)
-	
+
 	-- Text updater (updates based on equipped weapon)
 	task.spawn(function()
 		while button and button.Parent do
 			local class = detectCurrentClass()
 			local textToSet = ""
-			
+
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
@@ -477,14 +477,14 @@ local function setupUnifiedButton(button, tag)
 						break
 					end
 				end
-				
+
 				if globalConfig then
 					textToSet = globalConfig.name or "???"
 				else
 					textToSet = "---"
 				end
 			end
-			
+
 			-- Apply text to appropriate element
 			if button:IsA("ImageButton") then
 				-- For ImageButton, update TextLabel child
@@ -496,7 +496,7 @@ local function setupUnifiedButton(button, tag)
 				-- For regular button, update button text directly
 				button.Text = textToSet
 			end
-			
+
 			task.wait(0.5)
 		end
 	end)
@@ -505,44 +505,44 @@ end
 -- Setup a hold button that adapts to current class
 local function setupUnifiedHoldButton(button, tag)
 	local tagConfig = UNIFIED_TAGS[tag]
-	
+
 	if not tagConfig then
 		warn("Unknown unified tag:", tag)
 		return
 	end
-	
+
 	local isActive = false
-	
+
 	-- Press handler
 	button.MouseButton1Down:Connect(function()
 		if not isActive then
 			local class = detectCurrentClass()
 			if not class then return end
-			
+
 			local classConfig = tagConfig[class]
 			if not classConfig or not classConfig.start then return end
-			
+
 			classConfig.start()
 			isActive = true
 			button.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
 		end
 	end)
-	
+
 	-- Release handler
 	button.MouseButton1Up:Connect(function()
 		if isActive then
 			local class = detectCurrentClass()
 			if not class then return end
-			
+
 			local classConfig = tagConfig[class]
 			if not classConfig or not classConfig.stop then return end
-			
+
 			classConfig.stop()
 			isActive = false
 			button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		end
 	end)
-	
+
 	-- Handle case where mouse leaves button while holding
 	button.MouseLeave:Connect(function()
 		if isActive then
@@ -557,45 +557,45 @@ local function setupUnifiedHoldButton(button, tag)
 			button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		end
 	end)
-	
+
 	-- Transparency updater
 	task.spawn(function()
 		while button and button.Parent do
 			local class = detectCurrentClass()
 			local classConfig = tagConfig[class]
-			
-		-- Only show button if weapon is equipped AND class has config for this button
-		if isWeaponEquipped() and classConfig then
-			button.TextTransparency = 0
-			if not isActive then
-				button.BackgroundTransparency = 0
+
+			-- Only show button if weapon is equipped AND class has config for this button
+			if isWeaponEquipped() and classConfig then
+				--button.TextTransparency = 0
+				if not isActive then
+					button.BackgroundTransparency = 1
+				end
+				button.ImageTransparency = 0
+				-- Update TextLabel child transparency if it exists
+				local textLabel = button:FindFirstChildOfClass("TextLabel")
+				if textLabel then
+					textLabel.TextTransparency = 0
+				end
+			else
+				--button.TextTransparency = 1
+				button.BackgroundTransparency = 1
+				button.ImageTransparency = 1
+				-- Update TextLabel child transparency if it exists
+				local textLabel = button:FindFirstChildOfClass("TextLabel")
+				if textLabel then
+					textLabel.TextTransparency = 1
+				end
 			end
-			button.ImageTransparency = 0
-			-- Update TextLabel child transparency if it exists
-			local textLabel = button:FindFirstChildOfClass("TextLabel")
-			if textLabel then
-				textLabel.TextTransparency = 0
-			end
-		else
-			button.TextTransparency = 1
-			button.BackgroundTransparency = 1
-			button.ImageTransparency = 1
-			-- Update TextLabel child transparency if it exists
-			local textLabel = button:FindFirstChildOfClass("TextLabel")
-			if textLabel then
-				textLabel.TextTransparency = 1
-			end
-		end
 			task.wait(0.5)
 		end
 	end)
-	
+
 	-- Text updater
 	task.spawn(function()
 		while button and button.Parent do
 			local class = detectCurrentClass()
 			local textToSet = ""
-			
+
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
@@ -618,7 +618,7 @@ local function setupUnifiedHoldButton(button, tag)
 			else
 				textToSet = "---"
 			end
-			
+
 			-- Apply text to appropriate element
 			if button:IsA("ImageButton") then
 				-- For ImageButton, update TextLabel child
@@ -630,7 +630,7 @@ local function setupUnifiedHoldButton(button, tag)
 				-- For regular button, update button text directly
 				button.Text = textToSet
 			end
-			
+
 			task.wait(0.5)
 		end
 	end)
@@ -639,12 +639,12 @@ end
 -- Setup a button based on its tag
 local function setupButton(button, tag)
 	local tagConfig = UNIFIED_TAGS[tag]
-	
+
 	if not tagConfig then
 		warn("Unknown button tag:", tag)
 		return
 	end
-	
+
 	-- Check if this is a hold button by checking if first class config has start/stop
 	local firstClass = next(tagConfig)
 	if firstClass and tagConfig[firstClass].isHoldButton then
@@ -663,13 +663,13 @@ local function initializeButtons()
 	for tag, _ in pairs(UNIFIED_TAGS) do
 		-- Get all instances with this tag
 		local taggedButtons = CollectionService:GetTagged(tag)
-		
+
 		for _, button in ipairs(taggedButtons) do
 			if button:IsA("GuiButton") then
 				setupButton(button, tag)
 			end
 		end
-		
+
 		-- Listen for new buttons being added with this tag
 		CollectionService:GetInstanceAddedSignal(tag):Connect(function(button)
 			if button:IsA("GuiButton") then
