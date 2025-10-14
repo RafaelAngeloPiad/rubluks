@@ -19,10 +19,10 @@ local GladiatorActions = {}
 -- ========================================
 local SKILLS_ENABLED = {
 	shieldbash = true,
-	dragoonjump = false,
-	championsblood = false,
+	dragoonjump = true,
+	championsblood = true,
 	championscheer = true,
-	demonicvorpaldance = false,
+	demonicvorpaldance = true,
 }
 
 -- Internal state
