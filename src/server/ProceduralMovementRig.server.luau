@@ -116,7 +116,6 @@ local function FindClosestPlayer(position)
 	return nearest
 end
 
-print("[SPIDER] Starting movement coroutine...")
 coroutine.wrap(function()
 	local tickCount = 0
 	while task.wait(0.25) do
@@ -124,91 +123,43 @@ coroutine.wrap(function()
 		local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
 		local dist = (curPos - spawnPosition).Magnitude
 		local target = FindClosestPlayer(curPos)
-		
-		if tickCount % 20 == 1 then -- Log every 5 seconds
-			print("[SPIDER] Movement tick - Dist from spawn:", math.floor(dist), "Target found:", target ~= nil)
-		end
+
 		
 		if hum then
 			if dist > maxRadius then
-				print("[SPIDER] Too far from spawn! Returning to spawn point")
 				hum:MoveTo(spawnPosition)
 			elseif target then
-				if tickCount % 20 == 1 then
-					print("[SPIDER] Moving toward target")
-				end
 				hum:MoveTo(target.Position, target)
 			end
 		end
 	end
 end)()
 
--- Simple horizontal-only orientation (no vertical tilt)
-if alignOrientation then
-	RunService.Heartbeat:Connect(function()
-		local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
-		local target = FindClosestPlayer(curPos)
-		if target then
-			-- Calculate horizontal angle only - no vertical tilt
-			local dz = (target.Position.Z - root.Position.Z)
-			local dx = (target.Position.X - root.Position.X)
-			local horizontalAngle = math.atan2(dx, dz)
-			
-			-- Keep spider upright - only rotate horizontally
-			alignOrientation.CFrame = CFrame.new(root.Position) * CFrame.fromOrientation(0, horizontalAngle, 0)
-		end
-	end)
-else
-	warn("[SPIDER] No AlignOrientation found - spider won't rotate toward targets")
-end
-
--- Robust matching for RightLeg1 etc. - FIXED to handle exact matches better
-local function canonicalLegName(name)
-	-- Remove common prefixes like "IKTarget", "IkTarget", etc.
-	local s = name:gsub("^[Ii][Kk][Tt]arget[_%-]?", "")
-	-- Keep numbers and letters, normalize
-	s = s:gsub("[^%w]", "")
-	return s:lower()
-end
-
-local function findRayForLeg(legName)
-	local targetLower = legName:lower()
-	
-	-- First pass: try exact match
-	for _, c in ipairs(rayCastParts:GetChildren()) do
-		local cleanRay = c.Name:gsub("[^%w]", ""):lower()
-		if cleanRay == targetLower then
-			return c
-		end
-	end
-	
-	-- Second pass: try contains match
-	for _, c in ipairs(rayCastParts:GetChildren()) do
-		local cleanRay = c.Name:gsub("[^%w]", ""):lower()
-		if cleanRay:find(targetLower, 1, true) or targetLower:find(cleanRay, 1, true) then
-			return c
-		end
-	end
-	
-	return nil
-end
-
--- Build leg list with better debugging
+-- Simple leg matching - direct name matching
 local legs = {}
-for _, ik in ipairs(ikTargets:GetChildren()) do
-	if not ik:IsA("BasePart") then 
-		continue 
-	end
-	local legName = canonicalLegName(ik.Name)
-	local ray = findRayForLeg(legName)
-	if ray then
-		table.insert(legs, { ikTarget = ik, rayPart = ray, name = legName })
-	else
-		warn("[SPIDER] ✗ No matching ray found for leg:", ik.Name, "canonical:", legName)
+
+-- Get all ray cast parts for quick lookup
+local rayParts = {}
+for _, part in ipairs(rayCastParts:GetChildren()) do
+	if part:IsA("BasePart") then
+		rayParts[part.Name] = part
 	end
 end
 
-table.sort(legs, function(a, b) return a.name < b.name end)
+-- Match IK targets to ray cast parts by simple name matching
+for _, ik in ipairs(ikTargets:GetChildren()) do
+	if ik:IsA("BasePart") then
+		-- Convert "IkTarget_RightLeg1" to "RayCastPart_RightLeg1"
+		local rayName = ik.Name:gsub("^IkTarget", "RayCastPart")
+		local ray = rayParts[rayName]
+		
+		if ray then
+			table.insert(legs, { ikTarget = ik, rayPart = ray })
+		else
+			warn("[SPIDER] ✗ No matching ray found for leg:", ik.Name, "looking for:", rayName)
+		end
+	end
+end
 
 -- Main stepping loop - simplified like original
 while true do
