@@ -151,7 +151,7 @@ local function InitializeSpider(enemy)
 		while true do
 			-- Process all legs in sequence like the original
 			for _, leg in ipairs(legs) do
-				ProceduralModule:IkLegStep(leg.ikTarget, leg.rayPart, root, 2, 2, 1, 0.05, rayCastParams)
+				ProceduralModule:IkLegStep(leg.ikTarget, leg.rayPart, root, 2, 2, 1, 0.01, rayCastParams)
 			end
 			task.wait(0.1) -- Wait between cycles like original
 		end
