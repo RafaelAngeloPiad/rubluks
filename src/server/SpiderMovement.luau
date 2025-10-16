@@ -158,26 +158,29 @@ local function InitializeSpider(enemy)
 	end)()
 end
 
--- Find and initialize all models with the required structure
-local spiderCount = 0
-for _, model in ipairs(workspace:GetChildren()) do
-	if model:IsA("Model") then
-		-- Check if this model has the required components
-		local hasRoot = model:FindFirstChild("HumanoidRootPart")
-		local hasRayCastParts = model:FindFirstChild("RayCastParts")
-		local hasIkTargets = model:FindFirstChild("IkTargets")
-		
-		if hasRoot and hasRayCastParts and hasIkTargets then
-			spiderCount = spiderCount + 1
-			print("[SPIDER] Initializing spider", spiderCount, ":", model.Name)
-			InitializeSpider(model)
+-- Function to find the parent model that contains this script
+local function FindParentModel()
+	local current = script.Parent
+	while current do
+		if current:IsA("Model") then
+			-- Check if this model has the required components
+			local hasRoot = current:FindFirstChild("HumanoidRootPart")
+			local hasRayCastParts = current:FindFirstChild("RayCastParts")
+			local hasIkTargets = current:FindFirstChild("IkTargets")
+			
+			if hasRoot and hasRayCastParts and hasIkTargets then
+				return current
+			end
 		end
+		current = current.Parent
 	end
+	return nil
 end
 
-if spiderCount == 0 then
-	warn("[SPIDER] ✗ No models with required structure found in workspace!")
-	warn("[SPIDER] Looking for model with: HumanoidRootPart, RayCastParts, IkTargets")
-else
-	print("[SPIDER] ✓ Successfully initialized", spiderCount, "spider(s)")
+-- Wait a bit for the model to be fully loaded, then initialize
+task.wait(1) -- Small delay to ensure model is loaded
+local parentModel = FindParentModel()
+
+if parentModel then
+	InitializeSpider(parentModel)
 end
