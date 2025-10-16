@@ -50,8 +50,116 @@ end
 
 -- ========== MAIN SPIDER SCRIPT ==========
 
--- Look for a model with the required structure (HumanoidRootPart, RayCastParts, IkTargets)
-local enemy = nil
+-- Function to initialize a single spider model
+local function InitializeSpider(enemy)
+	local root = enemy:WaitForChild("HumanoidRootPart")
+	local hum = enemy:WaitForChild("Humanoid")
+	local alignOrientation = root:FindFirstChild("AlignOrientation")
+	local rayCastParts = enemy:WaitForChild("RayCastParts")
+	local ikTargets = enemy:WaitForChild("IkTargets")
+
+	-- Hide helper parts
+	for _, v in ipairs(ikTargets:GetChildren()) do
+		if v:IsA("BasePart") then v.Transparency = 1 end
+	end
+	for _, v in ipairs(rayCastParts:GetChildren()) do
+		if v:IsA("BasePart") then v.Transparency = 1 end
+	end
+
+	local rayCastParams = RaycastParams.new()
+	rayCastParams.FilterDescendantsInstances = { enemy }
+	rayCastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	local spawnPosition = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
+
+	local spottingRadius = 40
+	local maxRadius = 500
+	local excludeTags = {"massive_sand_entity", "sand_entity", "smoldering_sand_entity", "spider_enemy"}
+
+	local function HasAnyExcludedTag(model)
+		for _, tag in ipairs(excludeTags) do
+			if CollectionService:HasTag(model, tag) then return true end
+		end
+		return false
+	end
+
+	local function FindClosestPlayer(position)
+		local nearest, nearestDist = nil, spottingRadius
+		for _, candidate in ipairs(workspace:GetChildren()) do
+			if candidate:IsA("Model") and candidate ~= enemy and not HasAnyExcludedTag(candidate) then
+				local hrp = candidate:FindFirstChild("HumanoidRootPart")
+				local humCan = candidate:FindFirstChild("Humanoid")
+				if hrp and humCan and humCan.Health > 0 then
+					local d = (hrp.Position - position).Magnitude
+					if d < nearestDist then
+						nearestDist = d
+						nearest = hrp
+					end
+				end
+			end
+		end
+		return nearest
+	end
+
+	-- Movement coroutine for this spider
+	coroutine.wrap(function()
+		local tickCount = 0
+		while task.wait(0.25) do
+			tickCount += 1
+			local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
+			local dist = (curPos - spawnPosition).Magnitude
+			local target = FindClosestPlayer(curPos)
+
+			if hum then
+				if dist > maxRadius then
+					hum:MoveTo(spawnPosition)
+				elseif target then
+					hum:MoveTo(target.Position, target)
+				end
+			end
+		end
+	end)()
+
+	-- Simple leg matching - direct name matching
+	local legs = {}
+
+	-- Get all ray cast parts for quick lookup
+	local rayParts = {}
+	for _, part in ipairs(rayCastParts:GetChildren()) do
+		if part:IsA("BasePart") then
+			rayParts[part.Name] = part
+		end
+	end
+
+	-- Match IK targets to ray cast parts by simple name matching
+	for _, ik in ipairs(ikTargets:GetChildren()) do
+		if ik:IsA("BasePart") then
+			-- Convert "IkTarget_RightLeg1" to "RayCastPart_RightLeg1"
+			local rayName = ik.Name:gsub("^IkTarget", "RayCastPart")
+			local ray = rayParts[rayName]
+			
+			if ray then
+				table.insert(legs, { ikTarget = ik, rayPart = ray })
+			else
+				warn("[SPIDER] ✗ No matching ray found for leg:", ik.Name, "looking for:", rayName)
+			end
+		end
+	end
+
+	-- Main stepping loop for this spider
+	coroutine.wrap(function()
+		while true do
+			-- Process all legs in sequence like the original
+			for _, leg in ipairs(legs) do
+				ProceduralModule:IkLegStep(leg.ikTarget, leg.rayPart, root, 2, 2, 1, 0.05, rayCastParams)
+			end
+			task.wait(0.1) -- Wait between cycles like original
+		end
+	end)()
+end
+
+-- Find and initialize all models with the required structure
+local spiderCount = 0
 for _, model in ipairs(workspace:GetChildren()) do
 	if model:IsA("Model") then
 		-- Check if this model has the required components
@@ -60,117 +168,16 @@ for _, model in ipairs(workspace:GetChildren()) do
 		local hasIkTargets = model:FindFirstChild("IkTargets")
 		
 		if hasRoot and hasRayCastParts and hasIkTargets then
-			enemy = model
-			break
+			spiderCount = spiderCount + 1
+			print("[SPIDER] Initializing spider", spiderCount, ":", model.Name)
+			InitializeSpider(model)
 		end
 	end
 end
 
-if not enemy then
-	warn("[SPIDER] ✗ No model with required structure found in workspace!")
+if spiderCount == 0 then
+	warn("[SPIDER] ✗ No models with required structure found in workspace!")
 	warn("[SPIDER] Looking for model with: HumanoidRootPart, RayCastParts, IkTargets")
-	return
-end
-
-local root = enemy:WaitForChild("HumanoidRootPart")
-local hum = enemy:WaitForChild("Humanoid")
-local alignOrientation = root:FindFirstChild("AlignOrientation")
-local rayCastParts = enemy:WaitForChild("RayCastParts")
-local ikTargets = enemy:WaitForChild("IkTargets")
-
--- Hide helper parts
-for _, v in ipairs(ikTargets:GetChildren()) do
-	if v:IsA("BasePart") then v.Transparency = 1 end
-end
-for _, v in ipairs(rayCastParts:GetChildren()) do
-	if v:IsA("BasePart") then v.Transparency = 1 end
-end
-
-local rayCastParams = RaycastParams.new()
-rayCastParams.FilterDescendantsInstances = { enemy }
-rayCastParams.FilterType = Enum.RaycastFilterType.Exclude
-
-local spawnPosition = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
-
-local spottingRadius = 40
-local maxRadius = 500
-local excludeTags = {"massive_sand_entity", "sand_entity", "smoldering_sand_entity", "spider_enemy"}
-
-local function HasAnyExcludedTag(model)
-	for _, tag in ipairs(excludeTags) do
-		if CollectionService:HasTag(model, tag) then return true end
-	end
-	return false
-end
-
-local function FindClosestPlayer(position)
-	local nearest, nearestDist = nil, spottingRadius
-	for _, candidate in ipairs(workspace:GetChildren()) do
-		if candidate:IsA("Model") and candidate ~= enemy and not HasAnyExcludedTag(candidate) then
-			local hrp = candidate:FindFirstChild("HumanoidRootPart")
-			local humCan = candidate:FindFirstChild("Humanoid")
-			if hrp and humCan and humCan.Health > 0 then
-				local d = (hrp.Position - position).Magnitude
-				if d < nearestDist then
-					nearestDist = d
-					nearest = hrp
-				end
-			end
-		end
-	end
-	return nearest
-end
-
-coroutine.wrap(function()
-	local tickCount = 0
-	while task.wait(0.25) do
-		tickCount += 1
-		local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
-		local dist = (curPos - spawnPosition).Magnitude
-		local target = FindClosestPlayer(curPos)
-
-		
-		if hum then
-			if dist > maxRadius then
-				hum:MoveTo(spawnPosition)
-			elseif target then
-				hum:MoveTo(target.Position, target)
-			end
-		end
-	end
-end)()
-
--- Simple leg matching - direct name matching
-local legs = {}
-
--- Get all ray cast parts for quick lookup
-local rayParts = {}
-for _, part in ipairs(rayCastParts:GetChildren()) do
-	if part:IsA("BasePart") then
-		rayParts[part.Name] = part
-	end
-end
-
--- Match IK targets to ray cast parts by simple name matching
-for _, ik in ipairs(ikTargets:GetChildren()) do
-	if ik:IsA("BasePart") then
-		-- Convert "IkTarget_RightLeg1" to "RayCastPart_RightLeg1"
-		local rayName = ik.Name:gsub("^IkTarget", "RayCastPart")
-		local ray = rayParts[rayName]
-		
-		if ray then
-			table.insert(legs, { ikTarget = ik, rayPart = ray })
-		else
-			warn("[SPIDER] ✗ No matching ray found for leg:", ik.Name, "looking for:", rayName)
-		end
-	end
-end
-
--- Main stepping loop - simplified like original
-while true do
-	-- Process all legs in sequence like the original
-	for _, leg in ipairs(legs) do
-		ProceduralModule:IkLegStep(leg.ikTarget, leg.rayPart, root, 2, 2, 1, 0.05, rayCastParams)
-	end
-	task.wait(0.1) -- Wait between cycles like original
+else
+	print("[SPIDER] ✓ Successfully initialized", spiderCount, "spider(s)")
 end
