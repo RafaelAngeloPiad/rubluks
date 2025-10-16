@@ -35,8 +35,6 @@ function ProceduralModule:IkLegStep(ikTarget, ikRayPart, root, stepDistance, ste
 		
 		-- Do a step
 		if diff > stepDistance then
-			print("[SPIDER] STEP:", ikTarget.Name, "moving", math.floor(diff * 10) / 10, "studs")
-			
 			local finalFootPos = rayCast.Position + root.CFrame.LookVector * stepForward
 			local middleFootPos = ((finalFootPos - previousFootPos) * 0.5 + previousFootPos) + Vector3.new(0, stepHeight, 0)
 			
@@ -52,17 +50,13 @@ end
 
 -- ========== MAIN SPIDER SCRIPT ==========
 
-print("[SPIDER] Script started, searching for spider_enemy tagged models...")
 local taggedModels = CollectionService:GetTagged("spider_enemy")
-print("[SPIDER] Found", #taggedModels, "models with spider_enemy tag")
 
 -- Wait for a spider_enemy tagged model in workspace
 local enemy = nil
 for i, model in ipairs(taggedModels) do
-	print("[SPIDER] Checking model", i, ":", model:GetFullName(), "IsModel:", model:IsA("Model"), "InWorkspace:", model:IsDescendantOf(workspace))
 	if model:IsA("Model") and model:IsDescendantOf(workspace) then
 		enemy = model
-		print("[SPIDER] ✓ Selected spider:", enemy.Name)
 		break
 	end
 end
@@ -73,24 +67,11 @@ if not enemy then
 	return
 end
 
-print("[SPIDER] Waiting for HumanoidRootPart...")
 local root = enemy:WaitForChild("HumanoidRootPart")
-print("[SPIDER] ✓ Found HumanoidRootPart")
-
-print("[SPIDER] Waiting for Humanoid...")
 local hum = enemy:WaitForChild("Humanoid")
-print("[SPIDER] ✓ Found Humanoid")
-
 local alignOrientation = root:FindFirstChild("AlignOrientation")
-print("[SPIDER] AlignOrientation present:", alignOrientation ~= nil)
-
-print("[SPIDER] Waiting for RayCastParts...")
 local rayCastParts = enemy:WaitForChild("RayCastParts")
-print("[SPIDER] ✓ Found RayCastParts with", #rayCastParts:GetChildren(), "children")
-
-print("[SPIDER] Waiting for IkTargets...")
 local ikTargets = enemy:WaitForChild("IkTargets")
-print("[SPIDER] ✓ Found IkTargets with", #ikTargets:GetChildren(), "children")
 
 -- Hide helper parts
 for _, v in ipairs(ikTargets:GetChildren()) do
@@ -99,14 +80,12 @@ end
 for _, v in ipairs(rayCastParts:GetChildren()) do
 	if v:IsA("BasePart") then v.Transparency = 1 end
 end
-print("[SPIDER] Helper parts hidden")
 
 local rayCastParams = RaycastParams.new()
 rayCastParams.FilterDescendantsInstances = { enemy }
 rayCastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 local spawnPosition = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
-print("[SPIDER] Spawn position set to:", spawnPosition)
 
 local spottingRadius = 40
 local maxRadius = 500
@@ -163,11 +142,9 @@ coroutine.wrap(function()
 		end
 	end
 end)()
-print("[SPIDER] Movement coroutine started")
 
 -- Simple horizontal-only orientation (no vertical tilt)
 if alignOrientation then
-	print("[SPIDER] Setting up simple orientation handler...")
 	RunService.Heartbeat:Connect(function()
 		local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
 		local target = FindClosestPlayer(curPos)
@@ -181,7 +158,6 @@ if alignOrientation then
 			alignOrientation.CFrame = CFrame.new(root.Position) * CFrame.fromOrientation(0, horizontalAngle, 0)
 		end
 	end)
-	print("[SPIDER] ✓ Simple orientation handler connected")
 else
 	warn("[SPIDER] No AlignOrientation found - spider won't rotate toward targets")
 end
@@ -219,37 +195,22 @@ end
 
 -- Build leg list with better debugging
 local legs = {}
-print("[SPIDER] ========== Building leg list ==========")
 for _, ik in ipairs(ikTargets:GetChildren()) do
 	if not ik:IsA("BasePart") then 
-		print("[SPIDER] Skipping non-BasePart:", ik.Name)
 		continue 
 	end
 	local legName = canonicalLegName(ik.Name)
 	local ray = findRayForLeg(legName)
 	if ray then
-		print("[SPIDER] ✓ Matched leg:", ik.Name, "->", legName, "with ray:", ray.Name)
 		table.insert(legs, { ikTarget = ik, rayPart = ray, name = legName })
 	else
 		warn("[SPIDER] ✗ No matching ray found for leg:", ik.Name, "canonical:", legName)
-		print("[SPIDER] Available rays:")
-		for _, c in ipairs(rayCastParts:GetChildren()) do
-			print("[SPIDER]   -", c.Name, "->", c.Name:gsub("[^%w]", ""):lower())
-		end
 	end
 end
 
 table.sort(legs, function(a, b) return a.name < b.name end)
-print("[SPIDER] ========================================")
-print("[SPIDER] Total legs initialized:", #legs)
-print("[SPIDER] Leg order:")
-for i, leg in ipairs(legs) do
-	print("[SPIDER]", i, "-", leg.name, "(IK:", leg.ikTarget.Name, "Ray:", leg.rayPart.Name, ")")
-end
-print("[SPIDER] ========================================")
 
 -- Main stepping loop - simplified like original
-print("[SPIDER] Starting main stepping loop...")
 while true do
 	-- Process all legs in sequence like the original
 	for _, leg in ipairs(legs) do
