@@ -113,9 +113,15 @@ local isLeaping = false
 local leapConnection = nil
 local currentVelocity = nil
 local wallConnection = nil
+local leapStartTime = 0
+local MAX_LEAP_DURATION = 5 -- Maximum leap duration in seconds (safety measure)
 
 local function stopFeralLeap()
 	if not isLeaping then return end
+	
+	-- Debug info
+	local leapDuration = tick() - leapStartTime
+	
 	isLeaping = false
 	
 	-- Disconnect movement loop
@@ -130,9 +136,11 @@ local function stopFeralLeap()
 		wallConnection = nil
 	end
 	
-	-- Destroy velocity
+	-- Destroy velocity (with error handling)
 	if currentVelocity then
-		currentVelocity:Destroy()
+		pcall(function()
+			currentVelocity:Destroy()
+		end)
 		currentVelocity = nil
 	end
 	
@@ -147,6 +155,7 @@ local function startFeralLeap()
 	if not root then return end
 	
 	isLeaping = true
+	leapStartTime = tick()
 	
 	-- Create BodyVelocity
 	local baseDirection = root.CFrame.LookVector
@@ -168,6 +177,13 @@ local function startFeralLeap()
 	-- Update direction with WASD
 	leapConnection = game:GetService("RunService").Heartbeat:Connect(function()
 		if not isLeaping or not currentVelocity or not root then return end
+		
+		-- Safety timeout check
+		local currentTime = tick()
+		if currentTime - leapStartTime > MAX_LEAP_DURATION then
+			stopFeralLeap()
+			return
+		end
 		
 		local moveDir = Vector3.zero
 		
