@@ -219,9 +219,18 @@ end
 -- ATTACK ANIMATION SETUP
 -- ========================================
 
-local function setupAttackAnimations(player)
+local function setupAttackAnimations(player, tool)
 	local character = player.Character
 	if not character then return end
+	
+	-- Make samurai weapon non-collidable when held
+	if tool then
+		for _, part in ipairs(tool:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
 	
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	local animator = hum and hum:FindFirstChildOfClass("Animator")
@@ -354,7 +363,7 @@ local function setupAttackAnimations(player)
 	
 end
 
-local function cleanupAttackAnimations(player)
+local function cleanupAttackAnimations(player, tool)
 	local data = playerAttackData[player]
 	if not data then return end
 	
@@ -679,13 +688,13 @@ end
 -- ACTION EVENT HANDLER
 -- ========================================
 
-remote.OnServerEvent:Connect(function(player, actionName)
+remote.OnServerEvent:Connect(function(player, actionName, tool)
 	
 	-- Handle samurai-specific attack actions (prefixed with "samurai_")
 	if actionName == "samurai_attack_setup" then
-		setupAttackAnimations(player)
+		setupAttackAnimations(player, tool)
 	elseif actionName == "samurai_attack_cleanup" then
-		cleanupAttackAnimations(player)
+		cleanupAttackAnimations(player, tool)
 	elseif actionName == "samurai_left_click_attack" then
 		handleNormalAttack(player)
 	-- Note: samurai_wave removed - now handled globally by GlobalAnimations.server.luau

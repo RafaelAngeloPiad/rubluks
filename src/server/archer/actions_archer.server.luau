@@ -470,9 +470,18 @@ end
 -- ATTACK ANIMATION SETUP
 -- ========================================
 
-local function setupAttackAnimations(player)
+local function setupAttackAnimations(player, tool)
 	local character = player.Character
 	if not character then return end
+
+	-- Make archer weapon non-collidable when held
+	if tool then
+		for _, part in ipairs(tool:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
 
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	local animator = hum and hum:FindFirstChildOfClass("Animator")
@@ -602,7 +611,7 @@ local function setupAttackAnimations(player)
 
 end
 
-local function cleanupAttackAnimations(player)
+local function cleanupAttackAnimations(player, tool)
 	local data = playerAttackData[player]
 	if not data then return end
 
@@ -921,9 +930,11 @@ remote.OnServerEvent:Connect(function(player, actionName, ...)
 
 	-- Handle archer-specific attack actions (prefixed with "archer_")
 	if actionName == "archer_attack_setup" then
-		setupAttackAnimations(player)
+		local tool = args[1]
+		setupAttackAnimations(player, tool)
 	elseif actionName == "archer_attack_cleanup" then
-		cleanupAttackAnimations(player)
+		local tool = args[1]
+		cleanupAttackAnimations(player, tool)
 	elseif actionName == "archer_left_click_attack" then
 		-- Pass camera direction, aim lock state, and first-person state if provided
 		local cameraDirection = args[1]

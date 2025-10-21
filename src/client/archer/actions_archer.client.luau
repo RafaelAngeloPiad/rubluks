@@ -691,7 +691,7 @@ local function onWeaponFound(weaponTool)
 	end)
 	
 	-- Tell server to setup all animations (attack + movement)
-	remote:FireServer("archer_attack_setup")
+	remote:FireServer("archer_attack_setup", weaponTool)
 	
 	-- Sync all camera speeds with server values
 	syncAllCameraSpeeds()
@@ -768,10 +768,11 @@ end
 
 local function onWeaponLost()
 	if ArcherActions._getTool() then
+		local weaponTool = ArcherActions._getTool()
 		
 		-- Tell server to cleanup all animations
 		local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-		remote:FireServer("archer_attack_cleanup")
+		remote:FireServer("archer_attack_cleanup", weaponTool)
 		
 		-- Clear tool reference in module
 		ArcherActions._setTool(nil)

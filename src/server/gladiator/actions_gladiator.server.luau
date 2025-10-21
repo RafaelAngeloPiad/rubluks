@@ -270,9 +270,15 @@ local function attachSwordAndShield(character, tool)
 	local sword = tool:FindFirstChild("Handle")
 	local shield = tool:FindFirstChild("Shield")
 
-	-- Make sure sword and shield are visible
-	if sword then sword.Transparency = 0 end
-	if shield then shield.Transparency = 0 end
+	-- Make sure sword and shield are visible and non-collidable when held
+	if sword then 
+		sword.Transparency = 0
+		sword.CanCollide = false
+	end
+	if shield then 
+		shield.Transparency = 0
+		shield.CanCollide = false
+	end
 
 	local offsets = getHandOffsets(humanoid.RigType)
 
