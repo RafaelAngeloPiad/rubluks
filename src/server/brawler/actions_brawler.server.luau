@@ -221,27 +221,36 @@ local swordMotorName = "SwordRightHandMotor"
 local shieldMotorName = "ShieldLeftHandMotor"
 
 local function getHandOffsets(rigType)
-	-- Shield rotation: 100 degrees around Y, and move forward on Z axis
-	local shieldRotation = CFrame.Angles(0, math.rad(100), 0)
-	local shieldForwardOffset = CFrame.new(-0.5, 0, 0) -- Move shield forward by 0.5 studs
+	-- Shield should face forward (aligned with fingers)
+	-- Adjusted rotation: flipped Y to correct upside-down, rebalanced X to stop lying back
+	local shieldRotation = CFrame.Angles(math.rad(90), math.rad(180), 0)
+
+	-- For your model's orientation:
+	local upAndDownOffset = 0.1     -- (positive = up)
+	local forwardAndBackOffset = 0  -- (negative = forward)
+
+	local shieldOffset = CFrame.new(0, forwardAndBackOffset, upAndDownOffset) * shieldRotation
+
 	if rigType == Enum.HumanoidRigType.R15 then
-		-- R15 default hand offsets
 		return {
 			swordC0 = CFrame.new(0, 0, 0),
 			swordC1 = CFrame.new(0, 0, 0),
-			shieldC0 = shieldForwardOffset * shieldRotation,
+			shieldC0 = shieldOffset,
 			shieldC1 = CFrame.new(0, 0, 0),
 		}
 	else
-		-- R6 default arm offsets
 		return {
 			swordC0 = CFrame.new(0, -1, 0),
 			swordC1 = CFrame.new(0, 0, 0),
-			shieldC0 = CFrame.new(0, -1, 0) * shieldForwardOffset * shieldRotation,
+			shieldC0 = CFrame.new(0, -1, 0) * shieldOffset,
 			shieldC1 = CFrame.new(0, 0, 0),
 		}
 	end
 end
+
+
+
+
 
 local function attachPartToLimb(part, limbName, motorName, character, c0, c1)
 	local limb = character:FindFirstChild(limbName)
