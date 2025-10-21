@@ -30,29 +30,29 @@ _G.ARCHER_ANIMATION_SPEEDS = {
 	idle = 1.0,
 	run = 1.0,
 	jump = 1.0,
-	
+
 	-- Walking speeds (fixed values, not affected by animation speed)
 	walking = {
 		normal = 18,    -- Fixed normal walking speed
 		slow = 3,       -- Fixed speed during skills
 		blocking = 0    -- Fixed speed while blocking
 	},
-	
+
 	-- Attack animations (archer uses single attack system)
 	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
 	moveAttack = 1.0,
 	jumpAttack = 1.0,
 	block = 1.0,
 	-- Note: Wave is now handled globally by GlobalAnimations.server.luau
-	
+
 	-- Skills
 	piercingShot = 1.0,
 	powerShot = 1.0,
-	
+
 	-- Buffs
 	hunterInstinct = 1.0,
 	hunterMark = 1.0,
-	
+
 	-- Ultimate
 	starfall = 1.0
 }
@@ -60,7 +60,7 @@ _G.ARCHER_ANIMATION_SPEEDS = {
 -- Function to apply specific speed to animation track
 function _G.applyArcherAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
-	
+
 	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType] or 1.0
 	animTrack:AdjustSpeed(speed)
 end
@@ -86,16 +86,16 @@ function _G.updateArcherAnimationSpeed(actionType, newSpeed)
 		warn("Invalid parameters for updateArcherAnimationSpeed")
 		return
 	end
-	
+
 	-- Update the speed
 	_G.ARCHER_ANIMATION_SPEEDS[actionType] = newSpeed
-	
+
 	-- Sync with all players
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	for _, player in pairs(Players:GetPlayers()) do
 		remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
 	end
-	
+
 end
 
 
@@ -115,10 +115,10 @@ _G.ARCHER_WALKING_SPEED = {
 function _G.setArcherWalkingSpeed(player, speedType)
 	local character = player.Character
 	if not character then return end
-	
+
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then return end
-	
+
 	local speed = _G.ARCHER_WALKING_SPEED[speedType] or _G.ARCHER_WALKING_SPEED.normal
 	humanoid.WalkSpeed = speed
 end
@@ -139,11 +139,11 @@ _G.ARCHER_COOLDOWNS = {
 	-- Skills
 	piercingShot = 5, -- 10 seconds cooldown
 	powerShot = 5,     -- 8 seconds cooldown
-	
+
 	-- Buffs
 	hunterInstinct = 5, -- 15 seconds cooldown
 	hunterMark = 5,     -- 12 seconds cooldown
-	
+
 	-- Ultimate
 	starfall = 5       -- 30 seconds cooldown (ultimate)
 }
@@ -214,25 +214,25 @@ function _G.createSeparateSpeedArrow(config)
 	local hitboxSpeed = config.hitboxSpeed or _G.ARCHER_ARROW_HITBOX.hitboxSpeed
 	local direction = config.direction
 	local delay = config.delay or 0
-	
+
 	if not arrowPart or not direction then
 		warn("[ARCHER] Missing arrowPart or direction for separate speed arrow")
 		return
 	end
-	
+
 	-- Make arrow part completely non-physical to prevent pushing objects (if enabled)
 	if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
 		arrowPart.CanCollide = false
 		arrowPart.CanQuery = false
 		arrowPart.CanTouch = false
 	end
-	
+
 	-- Apply visual speed to the arrow part
 	local visualBodyVelocity = Instance.new("BodyVelocity")
 	visualBodyVelocity.Velocity = direction * visualSpeed
 	visualBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 	visualBodyVelocity.Parent = arrowPart
-	
+
 	-- Create separate invisible hitbox part that moves at hitbox speed
 	local hitboxPart = Instance.new("Part")
 	hitboxPart.Name = name .. "Hitbox"
@@ -243,16 +243,16 @@ function _G.createSeparateSpeedArrow(config)
 	hitboxPart.CanTouch = false
 	hitboxPart.Transparency = 1 -- Completely invisible
 	hitboxPart.Parent = workspace
-	
+
 	-- Position hitbox at same location as arrow
 	hitboxPart.CFrame = arrowPart.CFrame
-	
+
 	-- Apply hitbox speed to the separate hitbox part
 	local hitboxBodyVelocity = Instance.new("BodyVelocity")
 	hitboxBodyVelocity.Velocity = direction * hitboxSpeed
 	hitboxBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 	hitboxBodyVelocity.Parent = hitboxPart
-	
+
 	-- Create visual debug hitbox (optional, can be disabled)
 	local visual = Instance.new("Part")
 	visual.Size = size
@@ -265,12 +265,12 @@ function _G.createSeparateSpeedArrow(config)
 	visual.Color = Color3.new(0, 1, 0) -- Green for arrow hitbox
 	visual.Name = name .. "ArrowHitboxVisual"
 	visual.Parent = workspace
-	
+
 	-- Start hitbox detection after delay
 	task.delay(delay, function()
 		local hitTargets = {}
 		local arrowStopped = false
-		
+
 		-- Track hitbox part for collisions
 		local connection
 		connection = game:GetService("RunService").Heartbeat:Connect(function()
@@ -279,7 +279,7 @@ function _G.createSeparateSpeedArrow(config)
 				if visual then visual:Destroy() end
 				return
 			end
-			
+
 			-- Stop if either part is destroyed
 			if not arrowPart or not arrowPart.Parent or not hitboxPart or not hitboxPart.Parent then
 				arrowStopped = true
@@ -288,38 +288,39 @@ function _G.createSeparateSpeedArrow(config)
 				if hitboxPart then hitboxPart:Destroy() end
 				return
 			end
-			
+
 			-- Update visual position to match hitbox
 			if visual then
 				visual.CFrame = hitboxPart.CFrame
 			end
-			
+
 			-- Check for hits at hitbox's current position
 			local regionParts = workspace:GetPartBoundsInBox(hitboxPart.CFrame, size)
 			local hitSomething = false
-			
+
 			for _, part in regionParts do
 				-- Skip the hitbox itself, arrow part, and character parts
 				if part ~= hitboxPart and part ~= arrowPart and not part:IsDescendantOf(character) then
 					local model = part:FindFirstAncestorOfClass("Model")
 					if model and model ~= character then
 						local humanoid = model:FindFirstChild("Humanoid")
-						
-						-- Check for enemy hit (only collide with humanoids)
-						if humanoid and not hitTargets[humanoid] then
+
+						-- Check for enemy hit (only collide with living humanoids)
+						if humanoid and not hitTargets[humanoid] and humanoid.Health > 0 then
 							hitTargets[humanoid] = true
 							humanoid:TakeDamage(damage)
 							hitSomething = true
 						end
 						-- Non-humanoid objects are ignored - arrows pass through walls, terrain, etc.
+						-- Dead humanoids (health <= 0) are also ignored - arrows pass through them
 					end
 				end
 			end
-			
+
 			-- If we hit something, stop the arrow and stick it
 			if hitSomething then
 				arrowStopped = true
-				
+
 				-- Flash visual on hit
 				if visual then
 					visual.Color = Color3.new(1, 0, 0) -- Red flash on hit
@@ -329,7 +330,7 @@ function _G.createSeparateSpeedArrow(config)
 						end
 					end)
 				end
-				
+
 				-- Apply configurable delay before anchoring the arrow for better visual alignment
 				local anchorDelay = config.anchorDelay or _G.ARCHER_ARROW_HITBOX.anchorDelay or 0.1
 				task.delay(anchorDelay, function()
@@ -340,7 +341,7 @@ function _G.createSeparateSpeedArrow(config)
 						if bodyVelocity then
 							bodyVelocity:Destroy()
 						end
-						
+
 						-- Also check the arrow's parent model for BodyVelocity (in case it's on the model)
 						if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
 							local parentBodyVelocity = arrowPart.Parent:FindFirstChildOfClass("BodyVelocity")
@@ -348,13 +349,13 @@ function _G.createSeparateSpeedArrow(config)
 								parentBodyVelocity:Destroy()
 							end
 						end
-						
+
 						-- Position arrow at the exact hit location and anchor it
 						local hitPosition = hitboxPart.CFrame
 						if hitPosition then
 							arrowPart.CFrame = hitPosition
 						end
-						
+
 						-- Make sure arrow is completely non-physical before anchoring (if enabled)
 						if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
 							arrowPart.CanCollide = false
@@ -362,7 +363,7 @@ function _G.createSeparateSpeedArrow(config)
 							arrowPart.CanTouch = false
 						end
 						arrowPart.Anchored = true
-						
+
 						-- If the arrow part is inside a model, make sure the model follows it
 						if arrowPart.Parent and arrowPart.Parent:IsA("Model") then
 							-- Use PrimaryPart to make the model follow this part
@@ -371,17 +372,17 @@ function _G.createSeparateSpeedArrow(config)
 							arrowPart.Parent:SetAttribute("NonPhysical", true)
 						end
 					end
-					
+
 					-- Destroy the separate hitbox part since we're done with collision detection
 					if hitboxPart and hitboxPart.Parent then
 						hitboxPart:Destroy()
 					end
 				end)
-				
+
 				connection:Disconnect()
 			end
 		end)
-		
+
 		-- Auto cleanup after 3 seconds
 		task.delay(3, function()
 			if not arrowStopped then
@@ -392,7 +393,7 @@ function _G.createSeparateSpeedArrow(config)
 			end
 		end)
 	end)
-	
+
 	-- Cleanup function
 	return function()
 		if arrowPart and arrowPart.Parent then arrowPart:Destroy() end
@@ -405,20 +406,20 @@ end
 function _G.isSkillOnCooldown(player, skillName)
 	local currentTime = tick()
 	local cooldownTime = _G.ARCHER_COOLDOWNS[skillName]
-	
+
 	if not cooldownTime then
 		return false -- Skill doesn't exist
 	end
-	
+
 	if not playerCooldowns[player.UserId] then
 		playerCooldowns[player.UserId] = {}
 	end
-	
+
 	local lastUsed = playerCooldowns[player.UserId][skillName]
 	if not lastUsed then
 		return false -- Never used before
 	end
-	
+
 	local timeSinceLastUse = currentTime - lastUsed
 	return timeSinceLastUse < cooldownTime
 end
@@ -427,16 +428,16 @@ end
 function _G.getRemainingCooldown(player, skillName)
 	local currentTime = tick()
 	local cooldownTime = _G.ARCHER_COOLDOWNS[skillName]
-	
+
 	if not cooldownTime or not playerCooldowns[player.UserId] then
 		return 0
 	end
-	
+
 	local lastUsed = playerCooldowns[player.UserId][skillName]
 	if not lastUsed then
 		return 0
 	end
-	
+
 	local timeSinceLastUse = currentTime - lastUsed
 	local remaining = cooldownTime - timeSinceLastUse
 	return math.max(0, remaining)
@@ -445,11 +446,11 @@ end
 -- Function to set skill cooldown
 function _G.setSkillCooldown(player, skillName)
 	local currentTime = tick()
-	
+
 	if not playerCooldowns[player.UserId] then
 		playerCooldowns[player.UserId] = {}
 	end
-	
+
 	playerCooldowns[player.UserId][skillName] = currentTime
 end
 
@@ -472,13 +473,13 @@ end
 local function setupAttackAnimations(player)
 	local character = player.Character
 	if not character then return end
-	
+
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	local animator = hum and hum:FindFirstChildOfClass("Animator")
 	local root = character:FindFirstChild("HumanoidRootPart")
-	
+
 	if not animator then return end
-	
+
 	-- Attack Animations (from original archer Attack.lua)
 	local anim1 = Instance.new("Animation")
 	anim1.AnimationId = "rbxassetid://70754044037236"
@@ -537,22 +538,22 @@ local function setupAttackAnimations(player)
 		isBlocking = false,
 		originalWalkSpeed = hum.WalkSpeed
 	}
-	
+
 	-- Start with idle animation
-		idleTrack:Play()
-		_G.applyArcherAnimationSpeed(idleTrack, "idle")
-	
+	idleTrack:Play()
+	_G.applyArcherAnimationSpeed(idleTrack, "idle")
+
 	-- Set walking speed immediately when weapon is equipped
 	_G.setArcherWalkingSpeed(player, "normal")
-	
+
 	-- Sync all animation speeds with client
 	syncAllAnimationSpeedsWithClient(player)
-	
+
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
 		local data = playerAttackData[player]
 		if not data then return end
-		
+
 		if speed > 1 then -- threshold for running
 			if data.idleTrack.IsPlaying then data.idleTrack:Stop() end
 			if not data.runTrack.IsPlaying then 
@@ -567,12 +568,12 @@ local function setupAttackAnimations(player)
 			end
 		end
 	end)
-	
+
 	-- Detect Jump state
 	hum.StateChanged:Connect(function(_, newState)
 		local data = playerAttackData[player]
 		if not data then return end
-		
+
 		if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
 			data.isJumping = true
 			-- Play regular jump animation for movement
@@ -587,7 +588,7 @@ local function setupAttackAnimations(player)
 			end
 		end
 	end)
-	
+
 	-- Setup move attack dash effect
 	moveSlashTrack:GetMarkerReachedSignal("DashAttack"):Connect(function()
 		if root then
@@ -598,13 +599,13 @@ local function setupAttackAnimations(player)
 			Debris:AddItem(bodyVelocity, 0.2)
 		end
 	end)
-	
+
 end
 
 local function cleanupAttackAnimations(player)
 	local data = playerAttackData[player]
 	if not data then return end
-	
+
 	-- Stop all animations
 	if data.animTrack1 then data.animTrack1:Stop() end
 	if data.jumpTrack then data.jumpTrack:Stop() end
@@ -614,7 +615,7 @@ local function cleanupAttackAnimations(player)
 	-- Note: waveTrack removed - now handled globally
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
-	
+
 	-- Reset walk speed
 	local char = player.Character
 	if char then
@@ -623,7 +624,7 @@ local function cleanupAttackAnimations(player)
 			hum.WalkSpeed = data.originalWalkSpeed
 		end
 	end
-	
+
 	playerAttackData[player] = nil
 end
 
@@ -638,27 +639,27 @@ end
 local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFirstPerson)
 	local data = playerAttackData[player]
 	if not data then return end
-	
+
 	-- Prevent spam - only allow attack if not currently attacking
 	if data.isAttacking or data.isBlocking then 
 		return 
 	end
-	
+
 	local char = player.Character
 	if not char then return end
-	
+
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then return end
-	
+
 	local root = char:FindFirstChild("HumanoidRootPart")
 	if not root then return end
-	
+
 	local speed = hum.MoveDirection.Magnitude
 	local isJumping = data.isJumping
-	
+
 	-- Sync aim lock state to client
 	_G.syncAimLockState(player, aimLockEnabled)
-	
+
 	-- Determine shooting direction based on aim lock state (not first-person state)
 	local shootDirection
 	if aimLockEnabled then
@@ -668,16 +669,16 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 		-- Aim lock disabled (first or third person): use character direction (horizontal only)
 		shootDirection = root.CFrame.LookVector
 	end
-	
+
 	data.isAttacking = true
-	
+
 	if isJumping then
 		-- Jump attack (from original archer Attack.lua)
 		-- Stop regular jump animation and play jump attack animation
 		if data.jumpTrack.IsPlaying then data.jumpTrack:Stop() end
 		data.jumpAttackTrack:Play()
 		_G.applyArcherAnimationSpeed(data.jumpAttackTrack, "jumpAttack")
-		
+
 		-- Jump attack projectile (from original archer Attack.lua)
 		data.jumpAttackTrack:GetMarkerReachedSignal("Arrow"):Once(function()
 			local vfx = ReplicatedStorage.ArcherArrow:WaitForChild("Arrow"):Clone()
@@ -726,16 +727,16 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			-- Auto cleanup
 			game:GetService("Debris"):AddItem(vfx, 3)
 		end)
-		
+
 		data.jumpAttackTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
-		
+
 	elseif speed > 0 then
 		-- Move attack (from original archer Attack.lua)
 		data.moveSlashTrack:Play()
 		_G.applyArcherAnimationSpeed(data.moveSlashTrack, "moveAttack")
-		
+
 		-- Move attack projectile (from original archer Attack.lua)
 		data.moveSlashTrack:GetMarkerReachedSignal("DashAttack"):Once(function()
 			local vfx = ReplicatedStorage.ArcherArrow:WaitForChild("Arrow"):Clone()
@@ -783,7 +784,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 
 			-- Auto cleanup
 			game:GetService("Debris"):AddItem(vfx, 3)
-			
+
 			-- Dash backwards like original
 			local bodyVelocity = Instance.new("BodyVelocity")
 			bodyVelocity.MaxForce = Vector3.new(200000, 0, 200000)
@@ -791,16 +792,16 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			bodyVelocity.Parent = root
 			game.Debris:AddItem(bodyVelocity, 0.2)
 		end)
-		
+
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
-		
+
 	else
 		-- Normal attack (from original archer Attack.lua) - single attack, no combo
 		data.animTrack1:Play()
 		_G.applyArcherAnimationSpeed(data.animTrack1, "normalAttack")
-		
+
 		-- Normal attack projectile (from original archer Attack.lua)
 		data.animTrack1:GetMarkerReachedSignal("Arrow"):Once(function()
 			local vfx = ReplicatedStorage.ArcherArrow:WaitForChild("Arrow"):Clone()
@@ -849,7 +850,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			-- Auto cleanup
 			game:GetService("Debris"):AddItem(vfx, 3)
 		end)
-		
+
 		data.animTrack1.Stopped:Once(function() 
 			data.isAttacking = false 
 		end)
@@ -861,13 +862,13 @@ end
 local function handleBlock(player, isBlocking)
 	local data = playerAttackData[player]
 	if not data then return end
-	
+
 	local char = player.Character
 	if not char then return end
-	
+
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then return end
-	
+
 	if isBlocking then
 		-- Start blocking
 		data.isBlocking = true
@@ -885,24 +886,24 @@ end
 local function handleJumpAttack(player)
 	local data = playerAttackData[player]
 	if not data then return end
-	
+
 	if data.isAttacking or data.isBlocking then 
 		return 
 	end
-	
+
 	local char = player.Character
 	if not char then return end
-	
+
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then return end
-	
+
 	-- Check if player is actually jumping using our tracking flag
 	if not data.isJumping then
 		return
 	end
-	
+
 	data.isAttacking = true
-	
+
 	-- Play jump attack animation
 	data.jumpAttackTrack:Play()
 	_G.applyArcherAnimationSpeed(data.jumpAttackTrack, "jumpAttack")
@@ -917,7 +918,7 @@ end
 
 remote.OnServerEvent:Connect(function(player, actionName, ...)
 	local args = {...}
-	
+
 	-- Handle archer-specific attack actions (prefixed with "archer_")
 	if actionName == "archer_attack_setup" then
 		setupAttackAnimations(player)
@@ -929,7 +930,7 @@ remote.OnServerEvent:Connect(function(player, actionName, ...)
 		local aimLockEnabled = args[2] or false
 		local isFirstPerson = args[3] or false
 		handleNormalAttack(player, cameraDirection, aimLockEnabled, isFirstPerson)
-	-- Note: archer_wave removed - now handled globally by GlobalAnimations.server.luau
+		-- Note: archer_wave removed - now handled globally by GlobalAnimations.server.luau
 	elseif actionName == "archer_block_start" then
 		handleBlock(player, true)
 	elseif actionName == "archer_block_end" then
