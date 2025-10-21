@@ -84,6 +84,27 @@ local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	end
 end
 
+-- Configuration (moved up to be accessible by feral leap functions)
+local CONFIG = {
+	weaponTag = "brawler_wpn",
+	-- Walking speed is now controlled by server
+	actions = {
+		[Enum.KeyCode.Q] = "brawlersroar",   -- Skill 1
+		[Enum.KeyCode.E] = "feralleap",      -- Skill 2
+		[Enum.KeyCode.X] = "bloodthirst",    -- Buff 1
+		[Enum.KeyCode.C] = "lastchance",     -- Buff 2
+		[Enum.KeyCode.Z] = "meteordive",     -- Ultimate
+	},
+	-- Custom keybinds for basic actions
+	keybinds = {
+		attack = Enum.UserInputType.MouseButton1, -- Left click
+		block = Enum.KeyCode.V,  -- V key for blocking (same as knight/samurai)
+		jump = Enum.KeyCode.Space, -- Spacebar
+		feralleapStop = Enum.KeyCode.E, -- E key to stop feral leap early (same as activation)
+		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
+	}
+}
+
 -- ========================================
 -- FERAL LEAP CLIENT-SIDE MOVEMENT CONTROL
 -- ========================================
@@ -171,38 +192,19 @@ local function startFeralLeap()
 		end
 	end)
 	
-	-- G key to stop leap early
-	local gKeyConnection
-	gKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	-- E key to stop leap early (same as activation key)
+	local eKeyConnection
+	eKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
-		if input.KeyCode == Enum.KeyCode.G and isLeaping then
+		if input.KeyCode == CONFIG.keybinds.feralleapStop and isLeaping then
 			stopFeralLeap()
-			if gKeyConnection then
-				gKeyConnection:Disconnect()
+			if eKeyConnection then
+				eKeyConnection:Disconnect()
 			end
 		end
 	end)
 end
 
--- Configuration
-local CONFIG = {
-	weaponTag = "brawler_wpn",
-	-- Walking speed is now controlled by server
-	actions = {
-		[Enum.KeyCode.Q] = "brawlersroar",   -- Skill 1
-		[Enum.KeyCode.E] = "feralleap",      -- Skill 2
-		[Enum.KeyCode.X] = "bloodthirst",    -- Buff 1
-		[Enum.KeyCode.C] = "lastchance",     -- Buff 2
-		[Enum.KeyCode.Z] = "meteordive",     -- Ultimate
-	},
-	-- Custom keybinds for basic actions
-	keybinds = {
-		attack = Enum.UserInputType.MouseButton1, -- Left click
-		block = Enum.KeyCode.V,  -- V key for blocking (same as knight/samurai)
-		jump = Enum.KeyCode.Space, -- Spacebar
-		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
-	}
-}
 
 -- ========================================
 -- CAMERA SYSTEM
