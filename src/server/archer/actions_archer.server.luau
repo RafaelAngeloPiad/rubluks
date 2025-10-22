@@ -241,7 +241,7 @@ function _G.createSeparateSpeedArrow(config)
 	hitboxPart.CanCollide = false
 	hitboxPart.CanQuery = false
 	hitboxPart.CanTouch = false
-	hitboxPart.Transparency = 1 -- Completely invisible
+	hitboxPart.Transparency = 0.5 -- Completely invisible
 	hitboxPart.Parent = workspace
 
 	-- Position hitbox at same location as arrow
