@@ -112,7 +112,6 @@ local CONFIG = {
 local isLeaping = false
 local leapConnection = nil
 local currentVelocity = nil
-local wallConnection = nil
 local leapStartTime = 0
 local MAX_LEAP_DURATION = 5 -- Maximum leap duration in seconds (safety measure)
 
@@ -128,12 +127,6 @@ local function stopFeralLeap()
 	if leapConnection then
 		leapConnection:Disconnect()
 		leapConnection = nil
-	end
-	
-	-- Disconnect wall detection
-	if wallConnection then
-		wallConnection:Disconnect()
-		wallConnection = nil
 	end
 	
 	-- Destroy velocity (with error handling)
@@ -163,17 +156,7 @@ local function startFeralLeap()
 	currentVelocity.MaxForce = Vector3.new(1e6, 0, 1e6)
 	currentVelocity.Velocity = baseDirection * 170
 	currentVelocity.Parent = root
-	
-	-- Wall collision detection
-	wallConnection = root.Touched:Connect(function(hit)
-		if not isLeaping then return end
-		if hit:IsDescendantOf(char) then return end
 		
-		if hit.CanCollide and hit.Transparency < 1 then
-			stopFeralLeap()
-		end
-	end)
-	
 	-- Update direction with WASD
 	leapConnection = game:GetService("RunService").Heartbeat:Connect(function()
 		if not isLeaping or not currentVelocity or not root then return end
