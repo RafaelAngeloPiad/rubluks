@@ -180,7 +180,7 @@ local function startFeralLeap()
 	collisionBox = Instance.new("Part")
 	collisionBox.Name = "FeralLeapCollisionBox"
 	collisionBox.Size = Vector3.new(6, 5, 8) -- x (left/right), y (up/down), z (forward/back)	
-	collisionBox.Transparency = 0
+	collisionBox.Transparency = 1
 	collisionBox.CanCollide = false
 	collisionBox.CanQuery = false
 	collisionBox.CanTouch = true
