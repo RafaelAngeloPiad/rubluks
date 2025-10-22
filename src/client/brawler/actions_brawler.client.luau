@@ -187,10 +187,11 @@ local function startFeralLeap()
 	collisionBox.Anchored = false
 	collisionBox.Massless = true
 	collisionBox.Parent = char
-	-- Position the box at the root
-	collisionBox.CFrame = root.CFrame
 	
-	-- Weld collision box to HumanoidRootPart
+	-- Position the box with forward offset BEFORE welding
+	collisionBox.CFrame = root.CFrame * CFrame.new(0, 0, -4) -- 4 studs forward
+	
+	-- Weld collision box to HumanoidRootPart with offset
 	collisionBoxWeld = Instance.new("WeldConstraint")
 	collisionBoxWeld.Part0 = root
 	collisionBoxWeld.Part1 = collisionBox
@@ -236,10 +237,7 @@ local function startFeralLeap()
 			currentVelocity.Velocity = baseDirection * 170
 		end
 		
-		-- Keep collision box at root position
-		if collisionBox and root then
-			collisionBox.CFrame = root.CFrame
-		end
+		-- Collision box position is handled by weld constraint
 	end)
 	
 	-- E key to stop leap early (same as activation key)
