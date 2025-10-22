@@ -114,6 +114,28 @@ local leapConnection = nil
 local currentVelocity = nil
 local leapStartTime = 0
 local MAX_LEAP_DURATION = 5 -- Maximum leap duration in seconds (safety measure)
+local collisionConnection = nil
+local collisionBox = nil
+local collisionBoxWeld = nil
+
+local function disconnectLeapConnections()
+	if leapConnection then
+		leapConnection:Disconnect()
+		leapConnection = nil
+	end
+	if collisionConnection then
+		collisionConnection:Disconnect()
+		collisionConnection = nil
+	end
+	-- Destroy collision box if exists
+	if collisionBox then
+		pcall(function()
+			collisionBox:Destroy()
+		end)
+		collisionBox = nil
+		collisionBoxWeld = nil
+	end
+end
 
 local function stopFeralLeap()
 	if not isLeaping then return end
@@ -123,11 +145,8 @@ local function stopFeralLeap()
 	
 	isLeaping = false
 	
-	-- Disconnect movement loop
-	if leapConnection then
-		leapConnection:Disconnect()
-		leapConnection = nil
-	end
+	-- Disconnect movement loop and collision
+	disconnectLeapConnections()
 	
 	-- Destroy velocity (with error handling)
 	if currentVelocity then
@@ -156,7 +175,34 @@ local function startFeralLeap()
 	currentVelocity.MaxForce = Vector3.new(1e6, 0, 1e6)
 	currentVelocity.Velocity = baseDirection * 170
 	currentVelocity.Parent = root
-		
+	
+	-- Create collision box for reliable collision detection
+	collisionBox = Instance.new("Part")
+	collisionBox.Name = "FeralLeapCollisionBox"
+	collisionBox.Size = Vector3.new(6, 5, 8) -- x (left/right), y (up/down), z (forward/back)	
+	collisionBox.Transparency = 0
+	collisionBox.CanCollide = false
+	collisionBox.CanQuery = false
+	collisionBox.CanTouch = true
+	collisionBox.Anchored = false
+	collisionBox.Massless = true
+	collisionBox.Parent = char
+	-- Position the box at the root
+	collisionBox.CFrame = root.CFrame
+	
+	-- Weld collision box to HumanoidRootPart
+	collisionBoxWeld = Instance.new("WeldConstraint")
+	collisionBoxWeld.Part0 = root
+	collisionBoxWeld.Part1 = collisionBox
+	collisionBoxWeld.Parent = collisionBox
+	
+	-- Collision detection: stop leap instantly on collision
+	collisionConnection = collisionBox.Touched:Connect(function(hit)
+		if not isLeaping then return end
+		if hit:IsDescendantOf(char) then return end
+		stopFeralLeap()
+	end)
+	
 	-- Update direction with WASD
 	leapConnection = game:GetService("RunService").Heartbeat:Connect(function()
 		if not isLeaping or not currentVelocity or not root then return end
@@ -189,6 +235,11 @@ local function startFeralLeap()
 		else
 			currentVelocity.Velocity = baseDirection * 170
 		end
+		
+		-- Keep collision box at root position
+		if collisionBox and root then
+			collisionBox.CFrame = root.CFrame
+		end
 	end)
 	
 	-- E key to stop leap early (same as activation key)
@@ -204,19 +255,16 @@ local function startFeralLeap()
 	end)
 end
 
-
 -- ========================================
 -- CAMERA SYSTEM
 -- Handles cinematic camera movements for skills/buffs/ultimates
 -- ========================================
 
--- Current camera tween (to prevent multiple tweens running simultaneously)
 local currentCameraTween = nil
 local cameraSequenceRunning = false
 local lastCameraSequenceTime = 0
 local CAMERA_SEQUENCE_COOLDOWN = 0.1 -- 100ms cooldown between camera sequences
 
--- Smoothly moves camera to a position over time (scales with action-specific speed multiplier)
 local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	-- Cancel any existing camera tween
 	if currentCameraTween then
@@ -235,7 +283,6 @@ local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	currentCameraTween = nil
 end
 
--- Plays a cinematic camera sequence
 local function playCameraSequence(sequence, actionType)
 	-- Spam protection: check cooldown
 	local currentTime = tick()
@@ -516,6 +563,11 @@ end
 local function onCharacterAdded(character)
 	-- Update humanoid reference
 	humanoid = character:FindFirstChildOfClass("Humanoid")
+	
+	-- Clean up leap connections if character respawns
+	disconnectLeapConnections()
+	isLeaping = false
+	currentVelocity = nil
 	
 	-- Check if weapon is already equipped
 	for _, weaponTool in character:GetChildren() do
