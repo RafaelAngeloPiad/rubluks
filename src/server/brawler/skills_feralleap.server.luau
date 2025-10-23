@@ -145,6 +145,44 @@ remote.OnServerEvent:Connect(function(player, actionName)
 			end
 		end
 		
+		-- Play attack animation when stopped early (same as natural stop)
+		local animTrack2 = animator:LoadAnimation(leapAttackAnim)
+		animTrack2:Play()
+		_G.applyBrawlerAnimationSpeed(animTrack2, "feralleap")
+		
+		-- Get root part for VFX and hitbox
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root then return end
+		
+		-- Trigger VFX at "ClawMark" (same as natural stop)
+		animTrack2:GetMarkerReachedSignal("ClawMark"):Once(function()
+			local vfx = ReplicatedStorage.FeralLeap:WaitForChild("FeralLeap"):Clone()
+			vfx.Parent = workspace
+			vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -25))
+
+			for _, part in ipairs(vfx:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					part.CanCollide = false
+				end
+			end
+
+			Debris:AddItem(vfx, 1)
+			
+			-- Hitbox for claw mark
+			_G.createStaticHitbox({
+				attachTo = root,
+				offset = CFrame.new(0, 1, 0),
+				size = FERALLEAP_CONFIG.hitboxSize,
+				damage = FERALLEAP_CONFIG.hitboxDamage,
+				character = character,
+				name = "FeralLeapClaw",
+				showVisual = true,
+				visualColor = Color3.new(1, 0, 0),
+				delay = FERALLEAP_CONFIG.hitboxDelay
+			})
+		end)
+		
 		-- Tell client to stop leap control immediately
 		remote:FireClient(player, "feralleap_stop")
 	end

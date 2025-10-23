@@ -117,6 +117,7 @@ local MAX_LEAP_DURATION = 5 -- Maximum leap duration in seconds (safety measure)
 local collisionConnection = nil
 local collisionBox = nil
 local collisionBoxWeld = nil
+local hasStoppedLeap = false -- Flag to prevent multiple stop calls
 
 local function disconnectLeapConnections()
 	if leapConnection then
@@ -138,12 +139,13 @@ local function disconnectLeapConnections()
 end
 
 local function stopFeralLeap()
-	if not isLeaping then return end
+	if not isLeaping or hasStoppedLeap then return end
 	
 	-- Debug info
 	local leapDuration = tick() - leapStartTime
 	
 	isLeaping = false
+	hasStoppedLeap = true
 	
 	-- Disconnect movement loop and collision
 	disconnectLeapConnections()
@@ -167,6 +169,7 @@ local function startFeralLeap()
 	if not root then return end
 	
 	isLeaping = true
+	hasStoppedLeap = false
 	leapStartTime = tick()
 	
 	-- Create BodyVelocity
@@ -462,8 +465,21 @@ local function onWeaponFound(weaponTool)
 			-- Start feral leap movement control
 			startFeralLeap()
 		elseif message == "feralleap_stop" then
-			-- Stop feral leap movement control
-			stopFeralLeap()
+			-- Stop feral leap movement control (only if still leaping)
+			-- This is called by server when animation naturally ends
+			if isLeaping then
+				-- Don't call stopFeralLeap() here as it would create a loop
+				-- Just stop the movement without firing server event
+				isLeaping = false
+				hasStoppedLeap = true
+				disconnectLeapConnections()
+				if currentVelocity then
+					pcall(function()
+						currentVelocity:Destroy()
+					end)
+					currentVelocity = nil
+				end
+			end
 		end
 	end)
 	
