@@ -84,7 +84,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			animTrack2:GetMarkerReachedSignal("ClawMark"):Once(function()
 				local vfx = ReplicatedStorage.FeralLeap:WaitForChild("FeralLeap"):Clone()
 				vfx.Parent = workspace
-				vfx:PivotTo(root.CFrame * CFrame.new(0, 1, 0))
+				vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -25))
 
 				for _, part in ipairs(vfx:GetDescendants()) do
 					if part:IsA("BasePart") then
@@ -98,7 +98,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				-- Hitbox for claw mark
 				_G.createStaticHitbox({
 					attachTo = root,
-					offset = CFrame.new(0, 1, -25),
+					offset = CFrame.new(0, 1, 0),
 					size = FERALLEAP_CONFIG.hitboxSize,
 					damage = FERALLEAP_CONFIG.hitboxDamage,
 					character = character,
