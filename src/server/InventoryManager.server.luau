@@ -6,6 +6,9 @@ local MainDataStore = require(ReplicatedStorage:FindFirstChild("MainDataStore"))
 local inventorySaveDebounce = {}
 local DEBOUNCE_TIME = 1 -- seconds
 
+-- Track when players are dying to prevent saving unequipped state
+local playerDying = {}
+
 -- Save backpack tool names AND equipped tool names to DataStore, with debounce
 local function SavePlayerInventory(player)
 	local userId = player.UserId
@@ -71,18 +74,25 @@ end
 
 -- Load inventory (tool names) and give corresponding tools from Workspace
 local function LoadPlayerInventory(player)
+	-- Wait for character and backpack to be fully loaded
+	local character = player.Character
+	if not character then
+		print("[InventoryManager] Character not found for", player.Name, "when loading inventory, waiting for Character...")
+		character = player:WaitForChild("Character")
+	end
+	
+	-- Wait for humanoid to ensure character is fully loaded
+	local humanoid = character:WaitForChild("Humanoid")
+	
+	-- Wait for backpack
 	local backpack = player:FindFirstChild("Backpack")
 	if not backpack then
 		print("[InventoryManager] Backpack not found for", player.Name, "when loading inventory, waiting for Backpack...")
 		backpack = player:WaitForChild("Backpack")
 	end
 
-	-- Wait for character if we need to load equipped items
-	local character = player.Character
-	if not character then
-		print("[InventoryManager] Character not found for", player.Name, "when loading inventory, waiting for Character...")
-		character = player:WaitForChild("Character")
-	end
+	-- Additional wait to ensure everything is properly loaded
+	task.wait(0.5)
 
 	local inventoryData = MainDataStore.LoadInventory(player.UserId)
 	local inventory = inventoryData.inventory or {}
@@ -93,12 +103,14 @@ local function LoadPlayerInventory(player)
 		return
 	end
 
-	-- Load Backpack tools (allow duplicates)
+
+	-- Load Backpack tools (allow duplicates - these come from DataStore)
 	for i, toolName in inventory do
 		local asset = assetsFolder:FindFirstChild(toolName)
 		if asset and asset:IsA("Tool") then
 			asset:Clone().Parent = backpack
 		else
+			warn("[InventoryManager] Tool not found:", toolName)
 		end
 	end
 
@@ -110,7 +122,6 @@ local function LoadPlayerInventory(player)
 				if not character:FindFirstChild(toolName) then
 					asset:Clone().Parent = character
 				end
-			else
 			end
 		end
 	end
@@ -138,7 +149,10 @@ local function BindInventoryEvents(player)
 		end)
 		character.ChildRemoved:Connect(function(child)
 			if child:IsA("Tool") then
-				SavePlayerInventory(player)
+				-- Only save if player is not dying (to prevent losing equipped weapon on death)
+				if not playerDying[player.UserId] then
+					SavePlayerInventory(player)
+				end
 			end
 		end)
 	end
@@ -150,24 +164,7 @@ local function BindInventoryEvents(player)
 	end)
 end
 
-local function MoveEquippedToBackpack(player)
-	-- Get equipped items from MainDataStore
-	local inventoryData = MainDataStore.LoadInventory(player.UserId)
-	local equipped = inventoryData.equipped or {}
-	local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
-	local backpack = player:FindFirstChild("Backpack")
-	if not backpack or not assetsFolder then return end
-
-	for i, toolName in equipped do
-		-- Only move if not already in Backpack
-		if not backpack:FindFirstChild(toolName) then
-			local asset = assetsFolder:FindFirstChild(toolName)
-			if asset and asset:IsA("Tool") then
-				asset:Clone().Parent = backpack
-			end
-		end
-	end
-end
+-- Remove MoveEquippedToBackpack function - we don't want to modify DataStore on death
 
 local function OnCharacterAdded(character, player)
 	-- Wait for Backpack to exist before loading inventory
@@ -179,17 +176,58 @@ local function OnCharacterAdded(character, player)
 	LoadPlayerInventory(player)
 	BindInventoryEvents(player)
 
-	-- Simple death detection - save inventory when player dies
-	local humanoid = character:WaitForChild("Humanoid")
-	humanoid.HealthChanged:Connect(function(health)
-		if health <= 0 then
-			-- Add small delay to ensure equipped tools are still there
-			task.wait(0.1)
-			-- Move equipped items from MainDataStore to Backpack BEFORE saving inventory
-			MoveEquippedToBackpack(player)
-			SavePlayerInventory(player)
-		end
-	end)
+		-- Simple death detection - save inventory when player dies
+		local humanoid = character:WaitForChild("Humanoid")
+		humanoid.HealthChanged:Connect(function(health)
+			if health <= 0 then
+				-- Mark player as dying to prevent saving unequipped state
+				playerDying[player.UserId] = true
+				
+				-- Add small delay to ensure equipped tools are still there
+				task.wait(0.1)
+				
+				-- Get the current state from DataStore to preserve everything
+				local existingData = MainDataStore.LoadInventory(player.UserId)
+				local inventory = existingData.inventory or {}
+				local equipped = existingData.equipped or {}
+				
+				-- Get current backpack items and merge with existing inventory
+				local backpack = player:FindFirstChild("Backpack")
+				if backpack then
+					local currentBackpack = {}
+					for i, item in backpack:GetChildren() do
+						if item:IsA("Tool") then
+							table.insert(currentBackpack, item.Name)
+						end
+					end
+					-- Only update if we have items in backpack (to preserve existing inventory)
+					if #currentBackpack > 0 then
+						inventory = currentBackpack
+					end
+				end
+
+				-- Get current equipped items (should be empty on death, but preserve DataStore equipped)
+				if character then
+					local currentEquipped = {}
+					for i, item in character:GetChildren() do
+						if item:IsA("Tool") then
+							table.insert(currentEquipped, item.Name)
+						end
+					end
+					-- Only update if we have equipped items (to preserve existing equipped)
+					if #currentEquipped > 0 then
+						equipped = currentEquipped
+					end
+				end
+
+				MainDataStore.SaveInventory(player.UserId, {inventory = inventory, equipped = equipped})
+				
+				-- Reset dying flag after a delay
+				task.delay(2, function()
+					playerDying[player.UserId] = false
+				end)
+			end
+		end)
 end
 
 local function OnPlayerAdded(player)
