@@ -211,6 +211,83 @@ local CAMERA_SEQUENCES = {
 }
 
 -- ========================================
+-- TRAIL MANAGEMENT SYSTEM
+-- Handles katana trail activation during attacks
+-- ========================================
+
+-- Trail configuration is now managed server-side only
+-- The server sends trail settings to the client when needed
+
+-- Trail references
+local trail1 = nil
+local trail2 = nil
+local trail3 = nil
+
+-- Function to get trail references from equipped weapon
+local function getTrailReferences()
+	local tool = SamuraiActions._getTool()
+	if not tool then
+		return nil, nil, nil
+	end
+	
+	local handle = tool:FindFirstChild("Handle")
+	if not handle then
+		return nil, nil, nil
+	end
+	
+	local katana = handle:FindFirstChild("Katana")
+	if not katana then
+		return nil, nil, nil
+	end
+	
+	return katana:FindFirstChild("Trail1"), katana:FindFirstChild("Trail2"), katana:FindFirstChild("Trail3")
+end
+
+-- Function to enable all trails with specific Lifetime
+local function enableTrails(lifetime)
+	trail1, trail2, trail3 = getTrailReferences()
+	
+	if trail1 then 
+		trail1.Enabled = true
+		if lifetime then trail1.Lifetime = lifetime end
+	end
+	if trail2 then 
+		trail2.Enabled = true
+		if lifetime then trail2.Lifetime = lifetime end
+	end
+	if trail3 then 
+		trail3.Enabled = true
+		if lifetime then trail3.Lifetime = lifetime end
+	end
+end
+
+-- Function to disable all trails
+local function disableTrails()
+	if trail1 then trail1.Enabled = false end
+	if trail2 then trail2.Enabled = false end
+	if trail3 then trail3.Enabled = false end
+end
+
+-- Function to disable trails with a delay (for attack animations)
+local function disableTrailsWithDelay(delay)
+	task.wait(delay)
+	disableTrails()
+end
+
+-- Function to enable trails with server-provided delay and Lifetime
+local function enableTrailsWithConfig(lifetime, delay)
+	-- Apply delay if specified
+	if delay and delay > 0 then
+		task.wait(delay)
+	end
+	
+	-- Enable trails with the specified Lifetime
+	enableTrails(lifetime)
+	
+	-- Note: Trail cleanup is handled by server when attack animations end
+end
+
+-- ========================================
 -- INPUT LOCK SYSTEM (Using PlayerModule)
 -- ========================================
 
@@ -290,6 +367,9 @@ local function onWeaponFound(weaponTool)
 	-- Update module state
 	SamuraiActions._setTool(weaponTool)
 	
+	-- Initialize trails (disable by default)
+	disableTrails()
+	
 	-- Initialize PlayerModule
 	initializePlayerModule()
 	
@@ -319,6 +399,21 @@ local function onWeaponFound(weaponTool)
 					end
 				end)
 			end
+		elseif message == "enable_trails" then
+			-- data = Lifetime (in seconds) - sets Trail.Lifetime property
+			-- extraData = delay (in seconds)
+			local lifetime = data or 1.0
+			local delay = extraData or 0.0
+			
+			task.spawn(function()
+				enableTrailsWithConfig(lifetime, delay)
+			end)
+		elseif message == "disable_trails" then
+			disableTrails()
+		elseif message == "sync_trail_config" then
+			-- data = trail configuration from server
+			-- This is just for reference - the server handles all trail timing
+			-- No action needed on client side since server sends specific values
 		end
 	end)
 	
@@ -393,6 +488,9 @@ local function onWeaponLost()
 		-- Clear tool reference in module
 		SamuraiActions._setTool(nil)
 	end
+	
+	-- Disable trails when weapon is lost
+	disableTrails()
 	
 	-- Reset camera sequence flag
 	cameraSequenceRunning = false

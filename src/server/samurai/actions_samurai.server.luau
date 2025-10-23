@@ -216,6 +216,72 @@ function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 end
 
 -- ========================================
+-- TRAIL MANAGEMENT SYSTEM
+-- Handles katana trail activation during attacks
+-- ========================================
+
+-- ========================================
+-- TRAIL CONFIGURATION (SERVER-SIDE ONLY)
+-- This is the ONLY place to configure trail behavior
+-- ========================================
+-- HOW TO USE:
+-- 1. Change lifetime values to adjust how long trails stay active
+-- 2. Change activationDelay values to add delay before trails activate
+-- 3. Set lifetime to 0 to keep trails on until manually disabled
+-- 4. Set activationDelay to 0 for immediate activation
+-- 5. Changes here automatically sync to all clients
+-- ========================================
+_G.SAMURAI_TRAIL_CONFIG = {
+	-- Trail Lifetime settings for each attack type (in seconds)
+	-- Note: This sets the Trail.Lifetime property, not a custom duration
+	Lifetime = {
+		combo1 = 0.8,           -- Trail.Lifetime for combo 1
+		combo2 = 1.0,           -- Trail.Lifetime for combo 2
+		combo3 = 2.5,           -- Trail.Lifetime for combo 3 (longer for powerful attack)
+		moveAttack = 1.2,       -- Trail.Lifetime for move attack
+		jumpAttack = 1.5,       -- Trail.Lifetime for jump attack
+		combo1Fallback = 0.8,   -- Trail.Lifetime for combo 1 fallback
+		default = 1.0           -- Fallback for any unlisted attack types
+	},
+	-- Delay before trail activation (in seconds)
+	activationDelay = {
+		combo1 = 0.0,           -- Delay before combo 1 trails activate
+		combo2 = 0.0,           -- Delay before combo 2 trails activate
+		combo3 = 0.0,           -- Delay before combo 3 trails activate
+		moveAttack = 0.0,       -- Delay before move attack trails activate
+		jumpAttack = 0.0,       -- Delay before jump attack trails activate
+		combo1Fallback = 0.0,   -- Delay before combo 1 fallback trails activate
+		default = 0.0           -- Fallback for any unlisted attack types
+	}
+}
+
+-- Function to enable trails on client with attack type (uses server config)
+function _G.enableSamuraiTrails(player, attackType)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local lifetime = _G.SAMURAI_TRAIL_CONFIG.Lifetime[attackType] or _G.SAMURAI_TRAIL_CONFIG.Lifetime.default
+	local delay = _G.SAMURAI_TRAIL_CONFIG.activationDelay[attackType] or _G.SAMURAI_TRAIL_CONFIG.activationDelay.default
+	remote:FireClient(player, "enable_trails", lifetime, delay)
+end
+
+-- Function to enable trails on client with custom lifetime and delay
+function _G.enableSamuraiTrailsCustom(player, lifetime, delay)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "enable_trails", lifetime or 1.0, delay or 0.0)
+end
+
+-- Function to disable trails on client
+function _G.disableSamuraiTrails(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "disable_trails")
+end
+
+-- Function to sync trail configuration with client
+function _G.syncTrailConfig(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "sync_trail_config", _G.SAMURAI_TRAIL_CONFIG)
+end
+
+-- ========================================
 -- ATTACK ANIMATION SETUP
 -- ========================================
 
@@ -315,6 +381,9 @@ local function setupAttackAnimations(player, tool)
 	-- Sync all animation speeds with client
 	syncAllAnimationSpeedsWithClient(player)
 	
+	-- Sync trail configuration with client
+	_G.syncTrailConfig(player)
+	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
 		local data = playerAttackData[player]
@@ -377,6 +446,9 @@ local function cleanupAttackAnimations(player, tool)
 	-- Note: waveTrack removed - now handled globally
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
+	
+	-- Disable trails when weapon is unequipped
+	_G.disableSamuraiTrails(player)
 	
 	-- Clear combo timer
 	if data.comboTimer then
@@ -477,6 +549,9 @@ local function handleNormalAttack(player)
 		data.jumpTrack:Play()
 		_G.applySamuraiAnimationSpeed(data.jumpTrack, "jumpAttack")
 		
+		-- Enable trails for jump attack
+		_G.enableSamuraiTrails(player, "jumpAttack")
+		
 		-- Jump attack hitbox
 		_G.createStaticHitbox({
 			attachTo = root,
@@ -492,6 +567,8 @@ local function handleNormalAttack(player)
 		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
+			-- Disable trails when attack animation ends
+			_G.disableSamuraiTrails(player)
 		end)
 		
 	elseif isMoving then
@@ -504,6 +581,9 @@ local function handleNormalAttack(player)
 		end
 		data.moveSlashTrack:Play()
 		_G.applySamuraiAnimationSpeed(data.moveSlashTrack, "moveAttack")
+		
+		-- Enable trails for move attack
+		_G.enableSamuraiTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
 		_G.createStaticHitbox({
@@ -520,6 +600,8 @@ local function handleNormalAttack(player)
 		
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
+			-- Disable trails when attack animation ends
+			_G.disableSamuraiTrails(player)
 		end)
 		
 	else
@@ -536,6 +618,9 @@ local function handleNormalAttack(player)
 			data.animTrack1:Play()
 			_G.applySamuraiAnimationSpeed(data.animTrack1, "combo1")
 			
+			-- Enable trails for combo 1
+			_G.enableSamuraiTrails(player, "combo1")
+			
 			-- Combo 1 hitbox
 			_G.createStaticHitbox({
 				attachTo = root,
@@ -551,12 +636,17 @@ local function handleNormalAttack(player)
 			
 			data.animTrack1.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Disable trails when attack animation ends
+				_G.disableSamuraiTrails(player)
 				-- Start combo timer after first attack
 				resetComboTimer(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
 			_G.applySamuraiAnimationSpeed(data.animTrack2, "combo2")
+			
+			-- Enable trails for combo 2
+			_G.enableSamuraiTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
 			_G.createStaticHitbox({
@@ -573,6 +663,8 @@ local function handleNormalAttack(player)
 			
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Disable trails when attack animation ends
+				_G.disableSamuraiTrails(player)
 				-- Start combo timer after second attack
 				resetComboTimer(player)
 			end)
@@ -583,6 +675,9 @@ local function handleNormalAttack(player)
 				data.clickCount = 1
 				data.animTrack1:Play()
 				_G.applySamuraiAnimationSpeed(data.animTrack1, "combo1")
+				
+				-- Enable trails for combo 1 fallback
+				_G.enableSamuraiTrails(player, "combo1Fallback")
 				
 				-- Combo 1 hitbox (fallback from combo 3 cooldown)
 				_G.createStaticHitbox({
@@ -599,12 +694,17 @@ local function handleNormalAttack(player)
 				
 				data.animTrack1.Stopped:Once(function() 
 					data.isAttacking = false 
+					-- Disable trails when attack animation ends
+					_G.disableSamuraiTrails(player)
 					resetComboTimer(player)
 				end)
 			else
 				-- Perform combo 3 and start cooldown
 				data.animTrack3:Play()
 				_G.applySamuraiAnimationSpeed(data.animTrack3, "combo3")
+				
+				-- Enable trails for combo 3 (longer duration for the powerful attack)
+				_G.enableSamuraiTrails(player, "combo3")
 				
 				-- Combo 3 hitbox (most powerful)
 				_G.createStaticHitbox({
@@ -621,6 +721,8 @@ local function handleNormalAttack(player)
 				
 				data.animTrack3.Stopped:Once(function() 
 					data.isAttacking = false 
+					-- Disable trails when attack animation ends
+					_G.disableSamuraiTrails(player)
 					data.clickCount = 0 -- reset combo
 					startCombo3Cooldown(player)
 				end)
@@ -676,11 +778,16 @@ local function handleJumpAttack(player)
 	
 	data.isAttacking = true
 	
+	-- Enable trails for jump attack
+	_G.enableSamuraiTrails(player, "jumpAttack")
+	
 	-- Play jump attack animation
 	data.jumpTrack:Play()
 	_G.applySamuraiAnimationSpeed(data.jumpTrack, "jumpAttack")
 	data.jumpTrack.Stopped:Once(function()
 		data.isAttacking = false
+		-- Disable trails when attack animation ends
+		_G.disableSamuraiTrails(player)
 	end)
 end
 
