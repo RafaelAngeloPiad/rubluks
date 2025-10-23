@@ -26,7 +26,7 @@ leapAttackAnim.AnimationId = "rbxassetid://98157070007403"
 
 -- FERAL LEAP HITBOX CONFIG
 local FERALLEAP_CONFIG = {
-	hitboxSize = Vector3.new(30, 30, 30), -- Hitbox size for claw mark
+	hitboxSize = Vector3.new(70, 70, 70), -- Hitbox size for claw mark
 	hitboxDamage = 35, -- Damage on landing
 	hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
 }
@@ -84,7 +84,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			animTrack2:GetMarkerReachedSignal("ClawMark"):Once(function()
 				local vfx = ReplicatedStorage.FeralLeap:WaitForChild("FeralLeap"):Clone()
 				vfx.Parent = workspace
-				vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -25))
+				vfx:PivotTo(root.CFrame * CFrame.new(0, 1, 0))
 
 				for _, part in ipairs(vfx:GetDescendants()) do
 					if part:IsA("BasePart") then
