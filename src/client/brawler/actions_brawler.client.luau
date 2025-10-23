@@ -118,6 +118,8 @@ local collisionConnection = nil
 local collisionBox = nil
 local collisionBoxWeld = nil
 local hasStoppedLeap = false -- Flag to prevent multiple stop calls
+local isInitialized = false -- Flag to track if system is ready
+local initializationDelay = 0.5 -- 0.5 second delay after weapon equip (reduced for testing)
 
 local function disconnectLeapConnections()
 	if leapConnection then
@@ -136,6 +138,28 @@ local function disconnectLeapConnections()
 		collisionBox = nil
 		collisionBoxWeld = nil
 	end
+end
+
+local function cleanupFeralLeapState()
+	-- Stop any active leap
+	if isLeaping then
+		isLeaping = false
+		hasStoppedLeap = true
+		disconnectLeapConnections()
+		
+		-- Destroy velocity
+		if currentVelocity then
+			pcall(function()
+				currentVelocity:Destroy()
+			end)
+			currentVelocity = nil
+		end
+	end
+	
+	-- Reset all state
+	isLeaping = false
+	hasStoppedLeap = false
+	isInitialized = false
 end
 
 local function stopFeralLeap()
@@ -163,10 +187,43 @@ local function stopFeralLeap()
 end
 
 local function startFeralLeap()
+	-- Safety checks
+	if not isInitialized then
+		warn("Feral Leap: System not fully initialized yet, but attempting to start anyway...")
+		-- Don't return, allow it to proceed with warning
+	end
+	
+	if isLeaping then
+		warn("Feral Leap: Already leaping, ignoring start request")
+		return
+	end
+	
 	local char = player.Character
-	if not char then return end
+	if not char then 
+		warn("Feral Leap: No character found")
+		return 
+	end
+	
 	local root = char:FindFirstChild("HumanoidRootPart")
-	if not root then return end
+	if not root then 
+		warn("Feral Leap: No HumanoidRootPart found")
+		return 
+	end
+	
+	-- Clean up any existing state first (but don't reset isLeaping yet)
+	if isLeaping then
+		-- Stop any existing leap
+		hasStoppedLeap = true
+		disconnectLeapConnections()
+		
+		-- Destroy velocity
+		if currentVelocity then
+			pcall(function()
+				currentVelocity:Destroy()
+			end)
+			currentVelocity = nil
+		end
+	end
 	
 	isLeaping = true
 	hasStoppedLeap = false
@@ -214,6 +271,7 @@ local function startFeralLeap()
 		-- Safety timeout check
 		local currentTime = tick()
 		if currentTime - leapStartTime > MAX_LEAP_DURATION then
+			warn("Feral Leap: Maximum duration reached, forcing stop")
 			stopFeralLeap()
 			return
 		end
@@ -431,11 +489,17 @@ end
 -- ========================================
 
 local function onWeaponFound(weaponTool)
+	-- Clean up any existing feral leap state first
+	cleanupFeralLeapState()
+	
 	-- Update module state
 	BrawlerActions._setTool(weaponTool)
 	
 	-- Initialize PlayerModule
 	initializePlayerModule()
+	
+	-- Mark as not initialized initially
+	isInitialized = false
 	
 	-- Listen for messages from server
 	remote.OnClientEvent:Connect(function(message, data, extraData, thirdParam)
@@ -462,7 +526,7 @@ local function onWeaponFound(weaponTool)
 				end
 			end)
 		elseif message == "feralleap_start" then
-			-- Start feral leap movement control
+			-- Start feral leap movement control (with safety check)
 			startFeralLeap()
 		elseif message == "feralleap_stop" then
 			-- Stop feral leap movement control (only if still leaping)
@@ -488,6 +552,11 @@ local function onWeaponFound(weaponTool)
 	
 	-- Sync all camera speeds with server values
 	syncAllCameraSpeeds()
+	
+	-- Initialize system after delay to ensure everything is ready
+	task.delay(initializationDelay, function()
+		isInitialized = true
+	end)
 	
 	-- Clean up old connections
 	if inputConnection then
@@ -555,10 +624,8 @@ local function onWeaponLost()
 		BrawlerActions._setTool(nil)
 	end
 	
-	-- Stop feral leap if active
-	if isLeaping then
-		stopFeralLeap()
-	end
+	-- Clean up all feral leap state
+	cleanupFeralLeapState()
 	
 	-- Reset camera sequence flag
 	cameraSequenceRunning = false

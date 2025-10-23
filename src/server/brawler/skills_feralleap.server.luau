@@ -37,6 +37,31 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
+	-- Safety check: Ensure player has character and is ready
+	local character = player.Character
+	if not character then
+		warn("Feral Leap: Player has no character")
+		return
+	end
+	
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not humanoid then
+		warn("Feral Leap: Player has no humanoid")
+		return
+	end
+	
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		warn("Feral Leap: Player has no HumanoidRootPart")
+		return
+	end
+	
+	-- Check if player is already in a feral leap
+	if feralLeapConnections[player.UserId] then
+		warn("Feral Leap: Player is already in a feral leap")
+		return
+	end
+	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "feralleap") then
 		local remainingTime = _G.getRemainingCooldown(player, "feralleap")
@@ -54,9 +79,6 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		_G.sendCooldownStatus(player, "feralleap", false, 0)
 	end)
 	
-	local character = player.Character or player.CharacterAdded:Wait()
-	local humanoid = character:WaitForChild("Humanoid")
-	local root = character:WaitForChild("HumanoidRootPart")
 	local animator = humanoid:WaitForChild("Animator")
 
 	local animTrack = animator:LoadAnimation(leapAnim)
