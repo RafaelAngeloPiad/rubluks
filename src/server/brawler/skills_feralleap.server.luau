@@ -14,6 +14,9 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- Track feral leap connections for each player
+local feralLeapConnections = {}
+
 -- preload animations
 local leapAnim = Instance.new("Animation")
 leapAnim.AnimationId = "rbxassetid://76859592290622"
@@ -65,47 +68,59 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	-- Tell client to start leap control
 	remote:FireClient(player, "feralleap_start")
 	
-	-- When animation stops or client signals stop
-	local function stopLeap()
-		-- Stop first anim and play second
-		animTrack:Stop()
-		animTrack2:Play()
-		_G.applyBrawlerAnimationSpeed(animTrack2, "feralleap")
-		
-		-- Tell client to stop leap control
-		remote:FireClient(player, "feralleap_stop")
-		
-		-- Trigger VFX at "ClawMark"
-		animTrack2:GetMarkerReachedSignal("ClawMark"):Once(function()
-			local vfx = ReplicatedStorage.FeralLeap:WaitForChild("FeralLeap"):Clone()
-			vfx.Parent = workspace
-			vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -25))
-
-			for _, part in ipairs(vfx:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = false
-					part.CanCollide = false
-				end
-			end
-
-			Debris:AddItem(vfx, 1)
+	-- Store the connection for this player
+	local stoppedConnection = animTrack.Stopped:Connect(function()
+		-- Only proceed if this is a natural stop (not client-triggered)
+		if not feralLeapConnections[player.UserId] or not feralLeapConnections[player.UserId].wasStoppedEarly then
+			-- Stop first anim and play second
+			animTrack:Stop()
+			animTrack2:Play()
+			_G.applyBrawlerAnimationSpeed(animTrack2, "feralleap")
 			
-			-- Hitbox for claw mark
-			_G.createStaticHitbox({
-				attachTo = root,
-				offset = CFrame.new(0, 1, -25),
-				size = FERALLEAP_CONFIG.hitboxSize,
-				damage = FERALLEAP_CONFIG.hitboxDamage,
-				character = character,
-				name = "FeralLeapClaw",
-				showVisual = true,
-				visualColor = Color3.new(1, 0, 0),
-				delay = FERALLEAP_CONFIG.hitboxDelay
-			})
-		end)
-	end
+			-- Tell client to stop leap control
+			remote:FireClient(player, "feralleap_stop")
+			
+			-- Trigger VFX at "ClawMark"
+			animTrack2:GetMarkerReachedSignal("ClawMark"):Once(function()
+				local vfx = ReplicatedStorage.FeralLeap:WaitForChild("FeralLeap"):Clone()
+				vfx.Parent = workspace
+				vfx:PivotTo(root.CFrame * CFrame.new(0, 1, -25))
+
+				for _, part in ipairs(vfx:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.Anchored = false
+						part.CanCollide = false
+					end
+				end
+
+				Debris:AddItem(vfx, 1)
+				
+				-- Hitbox for claw mark
+				_G.createStaticHitbox({
+					attachTo = root,
+					offset = CFrame.new(0, 1, -25),
+					size = FERALLEAP_CONFIG.hitboxSize,
+					damage = FERALLEAP_CONFIG.hitboxDamage,
+					character = character,
+					name = "FeralLeapClaw",
+					showVisual = true,
+					visualColor = Color3.new(1, 0, 0),
+					delay = FERALLEAP_CONFIG.hitboxDelay
+				})
+			end)
+		end
+		
+		-- Clean up connection
+		if feralLeapConnections[player.UserId] then
+			feralLeapConnections[player.UserId] = nil
+		end
+	end)
 	
-	animTrack.Stopped:Connect(stopLeap)
+	-- Store connection info
+	feralLeapConnections[player.UserId] = {
+		connection = stoppedConnection,
+		wasStoppedEarly = false
+	}
 	
 end)
 
@@ -118,11 +133,19 @@ remote.OnServerEvent:Connect(function(player, actionName)
 		local animator = character:FindFirstChildOfClass("Humanoid"):FindFirstChildOfClass("Animator")
 		if not animator then return end
 		
+		-- Mark as stopped early BEFORE stopping the animation
+		if feralLeapConnections[player.UserId] then
+			feralLeapConnections[player.UserId].wasStoppedEarly = true
+		end
+		
 		-- Find and stop the leap animation
 		for _, track in pairs(animator:GetPlayingAnimationTracks()) do
 			if track.Animation.AnimationId == leapAnim.AnimationId then
 				track:Stop()
 			end
 		end
+		
+		-- Tell client to stop leap control immediately
+		remote:FireClient(player, "feralleap_stop")
 	end
 end)
