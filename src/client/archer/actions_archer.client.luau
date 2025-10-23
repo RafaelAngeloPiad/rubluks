@@ -55,7 +55,6 @@ local CAMERA_SPEED_MULTIPLIERS = {
 	run = 1.0,
 	jump = 1.0,
 	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
-	moveAttack = 1.0,
 	jumpAttack = 1.0,
 	block = 1.0,
 	wave = 1.0,

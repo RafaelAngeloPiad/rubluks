@@ -40,7 +40,6 @@ _G.ARCHER_ANIMATION_SPEEDS = {
 
 	-- Attack animations (archer uses single attack system)
 	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
-	moveAttack = 1.0,
 	jumpAttack = 1.0,
 	block = 1.0,
 	-- Note: Wave is now handled globally by GlobalAnimations.server.luau
@@ -506,10 +505,6 @@ local function setupAttackAnimations(player, tool)
 	local jumpAttackTrack = animator:LoadAnimation(jumpAttackAnim)
 	jumpAttackTrack.Priority = Enum.AnimationPriority.Action
 
-	-- Move Attack Animation (from original archer Attack.lua)
-	local moveSlashAnim = Instance.new("Animation")
-	moveSlashAnim.AnimationId = "rbxassetid://92621939945348"
-	local moveSlashTrack = animator:LoadAnimation(moveSlashAnim)
 
 	-- Block Animation
 	local blockAnim = Instance.new("Animation")
@@ -537,7 +532,6 @@ local function setupAttackAnimations(player, tool)
 		animTrack1 = animTrack1,
 		jumpTrack = jumpTrack,
 		jumpAttackTrack = jumpAttackTrack,
-		moveSlashTrack = moveSlashTrack,
 		blockTrack = blockTrack,
 		-- Note: waveTrack removed - now handled globally
 		idleTrack = idleTrack,
@@ -598,16 +592,6 @@ local function setupAttackAnimations(player, tool)
 		end
 	end)
 
-	-- Setup move attack dash effect
-	moveSlashTrack:GetMarkerReachedSignal("DashAttack"):Connect(function()
-		if root then
-			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.MaxForce = Vector3.new(200000, 0, 200000)
-			bodyVelocity.Velocity = root.CFrame.LookVector * 50
-			bodyVelocity.Parent = root
-			Debris:AddItem(bodyVelocity, 0.2)
-		end
-	end)
 
 end
 
@@ -619,7 +603,6 @@ local function cleanupAttackAnimations(player, tool)
 	if data.animTrack1 then data.animTrack1:Stop() end
 	if data.jumpTrack then data.jumpTrack:Stop() end
 	if data.jumpAttackTrack then data.jumpAttackTrack:Stop() end
-	if data.moveSlashTrack then data.moveSlashTrack:Stop() end
 	if data.blockTrack then data.blockTrack:Stop() end
 	-- Note: waveTrack removed - now handled globally
 	if data.idleTrack then data.idleTrack:Stop() end
@@ -738,71 +721,6 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 		end)
 
 		data.jumpAttackTrack.Stopped:Once(function()
-			data.isAttacking = false
-		end)
-
-	elseif speed > 0 then
-		-- Move attack (from original archer Attack.lua)
-		data.moveSlashTrack:Play()
-		_G.applyArcherAnimationSpeed(data.moveSlashTrack, "moveAttack")
-
-		-- Move attack projectile (from original archer Attack.lua)
-		data.moveSlashTrack:GetMarkerReachedSignal("DashAttack"):Once(function()
-			local vfx = ReplicatedStorage.ArcherArrow:WaitForChild("Arrow"):Clone()
-			vfx.Parent = workspace
-
-			local root = char:WaitForChild("HumanoidRootPart")
-
-			-- Position sa harap ng player (independent, no weld) - exact v1 positioning
-			local spawnOffset = _G.getArrowSpawnOffset(isFirstPerson) -- Configurable spawn offset based on first-person state
-			local rotationX = 0 -- ikot pataas/pababa
-			local rotationY = math.rad(-90) -- ikot pakaliwa/pakanan
-			local rotationZ = 0 -- ikot paikot
-
-			local rotation = CFrame.Angles(rotationX, rotationY, rotationZ)
-
-			vfx:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
-
-			-- Ensure lahat ng parts ay hindi naka-anchor pero stable and non-physical (if enabled)
-			for _, part in ipairs(vfx:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = false
-					if _G.ARCHER_ARROW_HITBOX.preventPhysicsPush then
-						part.CanCollide = false
-						part.CanQuery = false
-						part.CanTouch = false
-					end
-				end
-			end
-
-			-- Kukunin natin yung main mesh (arrow)
-			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
-
-			-- Use separate speed arrow system (visual and hitbox can have different speeds)
-			_G.createSeparateSpeedArrow({
-				arrowPart = arrow,
-				size = _G.ARCHER_ARROW_HITBOX.size,
-				damage = _G.ARCHER_ARROW_HITBOX.damage,
-				character = char,
-				name = "MoveArrow",
-				direction = shootDirection,
-				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
-				hitboxSpeed = _G.ARCHER_ARROW_HITBOX.hitboxSpeed,
-				delay = _G.ARCHER_ARROW_HITBOX.delay
-			})
-
-			-- Auto cleanup
-			game:GetService("Debris"):AddItem(vfx, 3)
-
-			-- Dash backwards like original
-			local bodyVelocity = Instance.new("BodyVelocity")
-			bodyVelocity.MaxForce = Vector3.new(200000, 0, 200000)
-			bodyVelocity.Velocity = -root.CFrame.LookVector * 50
-			bodyVelocity.Parent = root
-			game.Debris:AddItem(bodyVelocity, 0.2)
-		end)
-
-		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
 		end)
 
