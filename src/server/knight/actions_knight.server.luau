@@ -745,7 +745,7 @@ local function handleNormalAttack(player)
 					name = "Combo3",
 					showVisual = true,
 					visualColor = Color3.new(1, 0, 0),
-					delay = 2 -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
+					delay = 1 -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
 				})
 				
 				data.animTrack3.Stopped:Once(function() 
