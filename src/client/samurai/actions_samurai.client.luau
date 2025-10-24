@@ -243,21 +243,27 @@ local function getTrailReferences()
 	return katana:FindFirstChild("Trail1"), katana:FindFirstChild("Trail2"), katana:FindFirstChild("Trail3")
 end
 
--- Function to enable all trails with specific Lifetime
-local function enableTrails(lifetime)
+-- Function to enable all trails with individual Lifetime settings
+local function enableTrails(trailConfig)
 	trail1, trail2, trail3 = getTrailReferences()
 	
 	if trail1 then 
 		trail1.Enabled = true
-		if lifetime then trail1.Lifetime = lifetime end
+		if trailConfig and trailConfig.trail1 then 
+			trail1.Lifetime = trailConfig.trail1 
+		end
 	end
 	if trail2 then 
 		trail2.Enabled = true
-		if lifetime then trail2.Lifetime = lifetime end
+		if trailConfig and trailConfig.trail2 then 
+			trail2.Lifetime = trailConfig.trail2 
+		end
 	end
 	if trail3 then 
 		trail3.Enabled = true
-		if lifetime then trail3.Lifetime = lifetime end
+		if trailConfig and trailConfig.trail3 then 
+			trail3.Lifetime = trailConfig.trail3 
+		end
 	end
 end
 
@@ -274,15 +280,10 @@ local function disableTrailsWithDelay(delay)
 	disableTrails()
 end
 
--- Function to enable trails with server-provided delay and Lifetime
-local function enableTrailsWithConfig(lifetime, delay)
-	-- Apply delay if specified
-	if delay and delay > 0 then
-		task.wait(delay)
-	end
-	
-	-- Enable trails with the specified Lifetime
-	enableTrails(lifetime)
+-- Function to enable trails with server-provided configuration
+local function enableTrailsWithConfig(trailConfig)
+	-- Enable trails with the individual trail Lifetime settings
+	enableTrails(trailConfig)
 	
 	-- Note: Trail cleanup is handled by server when attack animations end
 end
@@ -400,13 +401,11 @@ local function onWeaponFound(weaponTool)
 				end)
 			end
 		elseif message == "enable_trails" then
-			-- data = Lifetime (in seconds) - sets Trail.Lifetime property
-			-- extraData = delay (in seconds)
-			local lifetime = data or 1.0
-			local delay = extraData or 0.0
+			-- data = trail configuration table with trail1, trail2, trail3 lifetimes
+			local trailConfig = data
 			
 			task.spawn(function()
-				enableTrailsWithConfig(lifetime, delay)
+				enableTrailsWithConfig(trailConfig)
 			end)
 		elseif message == "disable_trails" then
 			disableTrails()

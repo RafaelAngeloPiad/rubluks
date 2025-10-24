@@ -225,48 +225,37 @@ end
 -- This is the ONLY place to configure trail behavior
 -- ========================================
 -- HOW TO USE:
--- 1. Change lifetime values to adjust how long trails stay active
--- 2. Change activationDelay values to add delay before trails activate
+-- 1. Change lifetime values to adjust how long each individual trail stays active
+-- 2. These settings apply to ALL attacks and combos
 -- 3. Set lifetime to 0 to keep trails on until manually disabled
--- 4. Set activationDelay to 0 for immediate activation
--- 5. Changes here automatically sync to all clients
+-- 4. Changes here automatically sync to all clients
 -- ========================================
 _G.SAMURAI_TRAIL_CONFIG = {
-	-- Trail Lifetime settings for each attack type (in seconds)
-	-- Note: This sets the Trail.Lifetime property, not a custom duration
+	-- Individual Trail Lifetime settings (in seconds)
+	-- These apply to ALL attacks and combos
 	Lifetime = {
-		combo1 = 0.13,           -- Trail.Lifetime for combo 1
-		combo2 = 0.13,           -- Trail.Lifetime for combo 2
-		combo3 = 0.13,           -- Trail.Lifetime for combo 3 (longer for powerful attack)
-		moveAttack = 0.13,       -- Trail.Lifetime for move attack
-		jumpAttack = 0.13,       -- Trail.Lifetime for jump attack
-		combo1Fallback =0.13,   -- Trail.Lifetime for combo 1 fallback
-		default = 0.13          -- Fallback for any unlisted attack types
-	},
-	-- Delay before trail activation (in seconds)
-	activationDelay = {
-		combo1 = 0.0,           -- Delay before combo 1 trails activate
-		combo2 = 0.0,           -- Delay before combo 2 trails activate
-		combo3 = 0.0,           -- Delay before combo 3 trails activate
-		moveAttack = 0.0,       -- Delay before move attack trails activate
-		jumpAttack = 0.0,       -- Delay before jump attack trails activate
-		combo1Fallback = 0.0,   -- Delay before combo 1 fallback trails activate
-		default = 0.0           -- Fallback for any unlisted attack types
+		trail1 = 0.13,      -- Trail1.Lifetime for all attacks
+		trail2 = 0.1,      -- Trail2.Lifetime for all attacks
+		trail3 = 0.08       -- Trail3.Lifetime for all attacks
 	}
 }
 
--- Function to enable trails on client with attack type (uses server config)
+-- Function to enable trails on client (uses global trail config)
 function _G.enableSamuraiTrails(player, attackType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local lifetime = _G.SAMURAI_TRAIL_CONFIG.Lifetime[attackType] or _G.SAMURAI_TRAIL_CONFIG.Lifetime.default
-	local delay = _G.SAMURAI_TRAIL_CONFIG.activationDelay[attackType] or _G.SAMURAI_TRAIL_CONFIG.activationDelay.default
-	remote:FireClient(player, "enable_trails", lifetime, delay)
+	local trailConfig = _G.SAMURAI_TRAIL_CONFIG.Lifetime
+	remote:FireClient(player, "enable_trails", trailConfig)
 end
 
--- Function to enable trails on client with custom lifetime and delay
-function _G.enableSamuraiTrailsCustom(player, lifetime, delay)
+-- Function to enable trails on client with custom individual trail lifetimes
+function _G.enableSamuraiTrailsCustom(player, trail1Lifetime, trail2Lifetime, trail3Lifetime)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	remote:FireClient(player, "enable_trails", lifetime or 1.0, delay or 0.0)
+	local customConfig = {
+		trail1 = trail1Lifetime,
+		trail2 = trail2Lifetime,
+		trail3 = trail3Lifetime
+	}
+	remote:FireClient(player, "enable_trails", customConfig)
 end
 
 -- Function to disable trails on client
