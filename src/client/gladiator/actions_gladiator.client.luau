@@ -211,6 +211,70 @@ local CAMERA_SEQUENCES = {
 }
 
 -- ========================================
+-- TRAIL MANAGEMENT SYSTEM
+-- Handles sword trail activation during attacks
+-- ========================================
+
+-- Trail references
+local trail1 = nil
+local trail2 = nil
+local trail3 = nil
+
+-- Function to get trail references from equipped weapon
+local function getTrailReferences()
+	local tool = GladiatorActions._getTool()
+	if not tool then
+		return nil, nil, nil
+	end
+	
+	local handle = tool:FindFirstChild("Handle")
+	if not handle then
+		return nil, nil, nil
+	end
+	
+	return handle:FindFirstChild("Trail1"), handle:FindFirstChild("Trail2"), handle:FindFirstChild("Trail3")
+end
+
+-- Function to enable all trails with individual Lifetime settings
+local function enableTrails(trailConfig)
+	trail1, trail2, trail3 = getTrailReferences()
+	
+	if trail1 then 
+		trail1.Enabled = true
+		if trailConfig and trailConfig.trail1 then 
+			trail1.Lifetime = trailConfig.trail1 
+		end
+	end
+	if trail2 then 
+		trail2.Enabled = true
+		if trailConfig and trailConfig.trail2 then 
+			trail2.Lifetime = trailConfig.trail2 
+		end
+	end
+	if trail3 then 
+		trail3.Enabled = true
+		if trailConfig and trailConfig.trail3 then 
+			trail3.Lifetime = trailConfig.trail3 
+		end
+	end
+end
+
+-- Function to disable all trails
+local function disableTrails()
+	if trail1 then trail1.Enabled = false end
+	if trail2 then trail2.Enabled = false end
+	if trail3 then trail3.Enabled = false end
+end
+
+-- Function to enable trails with server-provided configuration
+local function enableTrailsWithConfig(trailConfig)
+	-- Enable trails with the individual trail Lifetime settings
+	enableTrails(trailConfig)
+	
+	-- Note: Trail cleanup is handled by server when attack animations end
+end
+
+-- ========================================
 -- INPUT LOCK SYSTEM (Using PlayerModule)
 -- ========================================
 
@@ -290,6 +354,9 @@ local function onWeaponFound(weaponTool)
 	-- Update module state
 	GladiatorActions._setTool(weaponTool)
 	
+	-- Initialize trails (disable by default)
+	disableTrails()
+	
 	-- Initialize PlayerModule
 	initializePlayerModule()
 	
@@ -317,6 +384,19 @@ local function onWeaponFound(weaponTool)
 					playCameraSequence(sequence, data)
 				end
 			end)
+		elseif message == "enable_trails" then
+			-- data = trail configuration table with trail1, trail2, trail3 lifetimes
+			local trailConfig = data
+			
+			task.spawn(function()
+				enableTrailsWithConfig(trailConfig)
+			end)
+		elseif message == "disable_trails" then
+			disableTrails()
+		elseif message == "sync_trail_config" then
+			-- data = trail configuration from server
+			-- This is just for reference - the server handles all trail timing
+			-- No action needed on client side since server sends specific values
 		end
 	end)
 	
@@ -388,9 +468,12 @@ local function onWeaponLost()
 		local weaponTool = GladiatorActions._getTool()
 		remote:FireServer("gladiator_attack_cleanup", weaponTool)
 		
-		-- Clear tool reference in module
-		GladiatorActions._setTool(nil)
+	-- Clear tool reference in module
+	GladiatorActions._setTool(nil)
 	end
+	
+	-- Disable trails when weapon is lost
+	disableTrails()
 	
 	-- Reset camera sequence flag
 	cameraSequenceRunning = false
