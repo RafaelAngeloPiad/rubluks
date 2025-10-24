@@ -235,13 +235,13 @@ _G.SAMURAI_TRAIL_CONFIG = {
 	-- Trail Lifetime settings for each attack type (in seconds)
 	-- Note: This sets the Trail.Lifetime property, not a custom duration
 	Lifetime = {
-		combo1 = 0.8,           -- Trail.Lifetime for combo 1
-		combo2 = 1.0,           -- Trail.Lifetime for combo 2
-		combo3 = 2.5,           -- Trail.Lifetime for combo 3 (longer for powerful attack)
-		moveAttack = 1.2,       -- Trail.Lifetime for move attack
-		jumpAttack = 1.5,       -- Trail.Lifetime for jump attack
-		combo1Fallback = 0.8,   -- Trail.Lifetime for combo 1 fallback
-		default = 1.0           -- Fallback for any unlisted attack types
+		combo1 = 0.13,           -- Trail.Lifetime for combo 1
+		combo2 = 0.13,           -- Trail.Lifetime for combo 2
+		combo3 = 0.13,           -- Trail.Lifetime for combo 3 (longer for powerful attack)
+		moveAttack = 0.13,       -- Trail.Lifetime for move attack
+		jumpAttack = 0.13,       -- Trail.Lifetime for jump attack
+		combo1Fallback =0.13,   -- Trail.Lifetime for combo 1 fallback
+		default = 0.13          -- Fallback for any unlisted attack types
 	},
 	-- Delay before trail activation (in seconds)
 	activationDelay = {
