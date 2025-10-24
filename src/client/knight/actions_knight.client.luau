@@ -232,26 +232,44 @@ local function getTrailReferences()
 	return handle:FindFirstChild("Trail1"), handle:FindFirstChild("Trail2"), handle:FindFirstChild("Trail3")
 end
 
--- Function to enable all trails with individual Lifetime settings
+-- Function to enable all trails with individual settings
 local function enableTrails(trailConfig)
 	trail1, trail2, trail3 = getTrailReferences()
 	
 	if trail1 then 
 		trail1.Enabled = true
-		if trailConfig and trailConfig.trail1 then 
-			trail1.Lifetime = trailConfig.trail1 
+		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail1 then 
+			trail1.Lifetime = trailConfig.Lifetime.trail1 
+		end
+		if trailConfig and trailConfig.Color and trailConfig.Color.trail1 then 
+			trail1.Color = Color3.fromRGB(trailConfig.Color.trail1[1], trailConfig.Color.trail1[2], trailConfig.Color.trail1[3])
+		end
+		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail1 ~= nil then 
+			trail1.FaceCamera = trailConfig.FaceCamera.trail1
 		end
 	end
 	if trail2 then 
 		trail2.Enabled = true
-		if trailConfig and trailConfig.trail2 then 
-			trail2.Lifetime = trailConfig.trail2 
+		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail2 then 
+			trail2.Lifetime = trailConfig.Lifetime.trail2 
+		end
+		if trailConfig and trailConfig.Color and trailConfig.Color.trail2 then 
+			trail2.Color = Color3.fromRGB(trailConfig.Color.trail2[1], trailConfig.Color.trail2[2], trailConfig.Color.trail2[3])
+		end
+		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail2 ~= nil then 
+			trail2.FaceCamera = trailConfig.FaceCamera.trail2
 		end
 	end
 	if trail3 then 
 		trail3.Enabled = true
-		if trailConfig and trailConfig.trail3 then 
-			trail3.Lifetime = trailConfig.trail3 
+		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail3 then 
+			trail3.Lifetime = trailConfig.Lifetime.trail3 
+		end
+		if trailConfig and trailConfig.Color and trailConfig.Color.trail3 then 
+			trail3.Color = Color3.fromRGB(trailConfig.Color.trail3[1], trailConfig.Color.trail3[2], trailConfig.Color.trail3[3])
+		end
+		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail3 ~= nil then 
+			trail3.FaceCamera = trailConfig.FaceCamera.trail3
 		end
 	end
 end

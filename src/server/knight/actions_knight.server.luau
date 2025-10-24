@@ -237,13 +237,29 @@ _G.KNIGHT_TRAIL_CONFIG = {
 		trail1 = 0.13,      -- Trail1.Lifetime for all attacks
 		trail2 = 0.1,       -- Trail2.Lifetime for all attacks
 		trail3 = 0.08       -- Trail3.Lifetime for all attacks
+	},
+	-- Individual Trail Color settings (RGB values 0-255)
+	Color = {
+		trail1 = {255, 255, 255},  -- Trail1.Color (white)
+		trail2 = {255, 255, 255},  -- Trail2.Color (white)
+		trail3 = {255, 255, 255}   -- Trail3.Color (white)
+	},
+	-- Individual Trail FaceCamera settings (boolean)
+	FaceCamera = {
+		trail1 = true,      -- Trail1.FaceCamera
+		trail2 = true,      -- Trail2.FaceCamera
+		trail3 = true       -- Trail3.FaceCamera
 	}
 }
 
 -- Function to enable trails on client (uses global trail config)
 function _G.enableKnightTrails(player, attackType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local trailConfig = _G.KNIGHT_TRAIL_CONFIG.Lifetime
+	local trailConfig = {
+		Lifetime = _G.KNIGHT_TRAIL_CONFIG.Lifetime,
+		Color = _G.KNIGHT_TRAIL_CONFIG.Color,
+		FaceCamera = _G.KNIGHT_TRAIL_CONFIG.FaceCamera
+	}
 	remote:FireClient(player, "enable_trails", trailConfig)
 end
 
