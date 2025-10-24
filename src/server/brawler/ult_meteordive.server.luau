@@ -139,18 +139,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			bv.Parent = mainPart
 		end
 
-		-- Find main part of the VFX (usually primary part)
-		local vfxPrimary = vfx.PrimaryPart or vfx:FindFirstChildWhichIsA("BasePart")
-		if not vfxPrimary then
-			warn("?? No primary part found for MeteorDrop")
-			return
-		end
-
-		-- Weld the VFX to the UpperTorso
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = torso
-		weld.Part1 = vfxPrimary
-		weld.Parent = torso
+		-- No welding needed - meteor falls independently
 
 		game:GetService("Debris"):AddItem(vfx, 1)
 	end)
