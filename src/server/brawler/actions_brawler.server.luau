@@ -214,6 +214,93 @@ function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 end
 
 -- ========================================
+-- TRAIL MANAGEMENT SYSTEM
+-- Handles weapon trail activation during attacks
+-- ========================================
+
+-- ========================================
+-- TRAIL CONFIGURATION (SERVER-SIDE ONLY)
+-- This is the ONLY place to configure trail behavior
+-- ========================================
+-- HOW TO USE:
+-- 1. Change lifetime values to adjust how long each individual trail stays active
+-- 2. These settings apply to ALL attacks and combos
+-- 3. Set lifetime to 0 to keep trails on until manually disabled
+-- 4. Changes here automatically sync to all clients
+-- ========================================
+_G.BRAWLER_TRAIL_CONFIG = {
+	-- Individual Trail Lifetime settings (in seconds)
+	-- These apply to ALL attacks and combos
+	Lifetime = {
+		trail1 = 0.2,      -- Trail1.Lifetime for all attacks (Handle)
+		trail2 = 0.2,       -- Trail2.Lifetime for all attacks (Handle)
+		trail3 = 0.2,     -- Trail3.Lifetime for all attacks (Handle)
+		trail4 = 0.2,      -- Trail1.Lifetime for all attacks (Shield)
+		trail5 = 0.2,       -- Trail2.Lifetime for all attacks (Shield)
+		trail6 = 0.2       -- Trail3.Lifetime for all attacks (Shield)
+	},
+	-- Individual Trail Color settings (RGB values 0-255)
+	Color = {
+		trail1 = {255, 255, 255},  -- Trail1.Color (white) - Handle
+		trail2 = {255, 255, 255},  -- Trail2.Color (white) - Handle
+		trail3 = {255, 255, 255},  -- Trail3.Color (white) - Handle
+		trail4 = {255, 255, 255},  -- Trail1.Color (white) - Shield
+		trail5 = {255, 255, 255},  -- Trail2.Color (white) - Shield
+		trail6 = {255, 255, 255}   -- Trail3.Color (white) - Shield
+	},
+	-- Individual Trail FaceCamera settings (boolean)
+	FaceCamera = {
+		trail1 = true,      -- Trail1.FaceCamera - Handle
+		trail2 = true,      -- Trail2.FaceCamera - Handle
+		trail3 = true,      -- Trail3.FaceCamera - Handle
+		trail4 = true,      -- Trail1.FaceCamera - Shield
+		trail5 = true,      -- Trail2.FaceCamera - Shield
+		trail6 = true       -- Trail3.FaceCamera - Shield
+	}
+}
+
+-- Function to enable trails on client (uses global trail config)
+function _G.enableBrawlerTrails(player, attackType)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local trailConfig = {
+		Lifetime = _G.BRAWLER_TRAIL_CONFIG.Lifetime,
+		Color = _G.BRAWLER_TRAIL_CONFIG.Color,
+		FaceCamera = _G.BRAWLER_TRAIL_CONFIG.FaceCamera
+	}
+	remote:FireClient(player, "enable_trails", trailConfig)
+end
+
+-- Function to enable trails on client with custom individual trail lifetimes
+function _G.enableBrawlerTrailsCustom(player, trail1Lifetime, trail2Lifetime, trail3Lifetime, trail4Lifetime, trail5Lifetime, trail6Lifetime)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local customConfig = {
+		Lifetime = {
+			trail1 = trail1Lifetime,
+			trail2 = trail2Lifetime,
+			trail3 = trail3Lifetime,
+			trail4 = trail4Lifetime,
+			trail5 = trail5Lifetime,
+			trail6 = trail6Lifetime
+		},
+		Color = _G.BRAWLER_TRAIL_CONFIG.Color,
+		FaceCamera = _G.BRAWLER_TRAIL_CONFIG.FaceCamera
+	}
+	remote:FireClient(player, "enable_trails", customConfig)
+end
+
+-- Function to disable trails on client
+function _G.disableBrawlerTrails(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "disable_trails")
+end
+
+-- Function to sync trail configuration with client
+function _G.syncBrawlerTrailConfig(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "sync_trail_config", _G.BRAWLER_TRAIL_CONFIG)
+end
+
+-- ========================================
 -- SWORD & SHIELD ATTACHMENT (from Knight Animation Scripts.lua)
 -- ========================================
 
@@ -436,6 +523,9 @@ local function setupAttackAnimations(player, tool)
 	-- Sync all animation speeds with client
 	syncAllAnimationSpeedsWithClient(player)
 	
+	-- Sync trail configuration with client
+	_G.syncBrawlerTrailConfig(player)
+	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
 		local data = playerAttackData[player]
@@ -521,6 +611,9 @@ local function cleanupAttackAnimations(player, tool)
 		end
 	end
 	
+	-- Disable trails when weapon is unequipped
+	_G.disableBrawlerTrails(player)
+	
 	playerAttackData[player] = nil
 end
 
@@ -583,6 +676,9 @@ local function handleNormalAttack(player)
 		data.jumpTrack:Play()
 		_G.applyBrawlerAnimationSpeed(data.jumpTrack, "jumpAttack")
 		
+		-- Enable trails for jump attack
+		_G.enableBrawlerTrails(player, "jumpAttack")
+		
 		-- Jump attack hitbox
 		_G.createStaticHitbox({
 			attachTo = root,
@@ -598,6 +694,8 @@ local function handleNormalAttack(player)
 		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
+			-- Disable trails when attack animation ends
+			_G.disableBrawlerTrails(player)
 		end)
 		
 	elseif isMoving then
@@ -610,6 +708,9 @@ local function handleNormalAttack(player)
 		end
 		data.moveSlashTrack:Play()
 		_G.applyBrawlerAnimationSpeed(data.moveSlashTrack, "moveAttack")
+		
+		-- Enable trails for move attack
+		_G.enableBrawlerTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
 		_G.createStaticHitbox({
@@ -626,6 +727,8 @@ local function handleNormalAttack(player)
 		
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
+			-- Disable trails when attack animation ends
+			_G.disableBrawlerTrails(player)
 		end)
 		
 	else
@@ -642,6 +745,9 @@ local function handleNormalAttack(player)
 			data.animTrack1:Play()
 			_G.applyBrawlerAnimationSpeed(data.animTrack1, "combo1")
 			
+			-- Enable trails for combo 1
+			_G.enableBrawlerTrails(player, "combo1")
+			
 			-- Combo 1 hitbox
 			_G.createStaticHitbox({
 				attachTo = root,
@@ -657,12 +763,17 @@ local function handleNormalAttack(player)
 			
 			data.animTrack1.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Disable trails when attack animation ends
+				_G.disableBrawlerTrails(player)
 				-- Start combo timer after first attack
 				resetComboTimer(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
 			_G.applyBrawlerAnimationSpeed(data.animTrack2, "combo2")
+			
+			-- Enable trails for combo 2
+			_G.enableBrawlerTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
 			_G.createStaticHitbox({
@@ -679,6 +790,8 @@ local function handleNormalAttack(player)
 			
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Disable trails when attack animation ends
+				_G.disableBrawlerTrails(player)
 				data.clickCount = 0 -- Reset combo to loop back to combo 1
 				-- Start combo timer after second attack
 				resetComboTimer(player)
