@@ -242,7 +242,7 @@ local function enableTrails(trailConfig)
 			trail1.Lifetime = trailConfig.Lifetime.trail1 
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail1 then 
-			trail1.Color = Color3.fromRGB(trailConfig.Color.trail1[1], trailConfig.Color.trail1[2], trailConfig.Color.trail1[3])
+			trail1.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail1[1], trailConfig.Color.trail1[2], trailConfig.Color.trail1[3]))
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail1 ~= nil then 
 			trail1.FaceCamera = trailConfig.FaceCamera.trail1
@@ -254,7 +254,7 @@ local function enableTrails(trailConfig)
 			trail2.Lifetime = trailConfig.Lifetime.trail2 
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail2 then 
-			trail2.Color = Color3.fromRGB(trailConfig.Color.trail2[1], trailConfig.Color.trail2[2], trailConfig.Color.trail2[3])
+			trail2.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail2[1], trailConfig.Color.trail2[2], trailConfig.Color.trail2[3]))
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail2 ~= nil then 
 			trail2.FaceCamera = trailConfig.FaceCamera.trail2
@@ -266,7 +266,7 @@ local function enableTrails(trailConfig)
 			trail3.Lifetime = trailConfig.Lifetime.trail3 
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail3 then 
-			trail3.Color = Color3.fromRGB(trailConfig.Color.trail3[1], trailConfig.Color.trail3[2], trailConfig.Color.trail3[3])
+			trail3.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail3[1], trailConfig.Color.trail3[2], trailConfig.Color.trail3[3]))
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail3 ~= nil then 
 			trail3.FaceCamera = trailConfig.FaceCamera.trail3

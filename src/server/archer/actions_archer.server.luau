@@ -466,6 +466,27 @@ function _G.syncAimLockState(player, aimLockEnabled)
 end
 
 -- ========================================
+-- ARROW TRAIL COLOR CONFIGURATION
+-- Simple color configuration for arrow trails
+-- ========================================
+
+-- Arrow trail color configuration (RGB values 0-255)
+_G.ARCHER_ARROW_TRAIL_COLOR = {255, 255, 255} -- White by default
+
+-- Function to set arrow trail color
+function _G.setArcherArrowTrailColor(player, r, g, b)
+	_G.ARCHER_ARROW_TRAIL_COLOR = {r, g, b}
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "set_arrow_trail_color", {r, g, b})
+end
+
+-- Function to sync arrow trail color with client
+function _G.syncArcherArrowTrailColor(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "set_arrow_trail_color", _G.ARCHER_ARROW_TRAIL_COLOR)
+end
+
+-- ========================================
 -- ATTACK ANIMATION SETUP
 -- ========================================
 
@@ -551,6 +572,9 @@ local function setupAttackAnimations(player, tool)
 
 	-- Sync all animation speeds with client
 	syncAllAnimationSpeedsWithClient(player)
+	
+	-- Sync arrow trail color with client
+	_G.syncArcherArrowTrailColor(player)
 
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)

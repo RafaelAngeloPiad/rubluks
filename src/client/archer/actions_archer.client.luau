@@ -48,6 +48,32 @@ local currentModeIndex = 3 -- Start with third mode (dynamic)
 local isFirstPerson = false
 local firstPersonConnection = nil
 
+-- ========================================
+-- ARROW TRAIL COLOR MANAGEMENT
+-- Simple color configuration for arrow trails
+-- ========================================
+
+-- Current arrow trail color
+local currentArrowTrailColor = {255, 255, 255} -- White by default
+
+-- Function to set arrow trail color
+local function setArrowTrailColor(colorRGB)
+	currentArrowTrailColor = colorRGB
+	
+	-- Find the current arrow in workspace and set its trail color
+	local archerArrow = workspace:FindFirstChild("ArcherArrow")
+	if archerArrow then
+		local arrow = archerArrow:FindFirstChild("Arrow")
+		if arrow then
+			local trail1 = arrow:FindFirstChild("Trail1")
+			if trail1 then
+				trail1.Color = ColorSequence.new(Color3.fromRGB(colorRGB[1], colorRGB[2], colorRGB[3]))
+				print("Archer: Set arrow trail color to RGB(" .. colorRGB[1] .. ", " .. colorRGB[2] .. ", " .. colorRGB[3] .. ")")
+			end
+		end
+	end
+end
+
 
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = {
@@ -686,6 +712,10 @@ local function onWeaponFound(weaponTool)
 					end
 				end)
 			end
+		elseif message == "set_arrow_trail_color" then
+			-- data = {r, g, b} color values
+			local colorRGB = data
+			setArrowTrailColor(colorRGB)
 		end
 	end)
 	
