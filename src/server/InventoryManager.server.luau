@@ -77,7 +77,6 @@ local function LoadPlayerInventory(player)
 	-- Wait for character and backpack to be fully loaded
 	local character = player.Character
 	if not character then
-		print("[InventoryManager] Character not found for", player.Name, "when loading inventory, waiting for Character...")
 		character = player:WaitForChild("Character")
 	end
 	
@@ -87,7 +86,6 @@ local function LoadPlayerInventory(player)
 	-- Wait for backpack
 	local backpack = player:FindFirstChild("Backpack")
 	if not backpack then
-		print("[InventoryManager] Backpack not found for", player.Name, "when loading inventory, waiting for Backpack...")
 		backpack = player:WaitForChild("Backpack")
 	end
 

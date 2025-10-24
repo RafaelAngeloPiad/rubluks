@@ -144,14 +144,6 @@ local function getTrailReferences()
 	local shieldTrail2 = shield:FindFirstChild("Trail2")
 	local shieldTrail3 = shield:FindFirstChild("Trail3")
 	
-	-- Debug: Print what we found
-	print("Brawler Trails Debug:")
-	print("Handle Trail1:", handleTrail1 and "Found" or "Missing")
-	print("Handle Trail2:", handleTrail2 and "Found" or "Missing")
-	print("Handle Trail3:", handleTrail3 and "Found" or "Missing")
-	print("Shield Trail1:", shieldTrail1 and "Found" or "Missing")
-	print("Shield Trail2:", shieldTrail2 and "Found" or "Missing")
-	print("Shield Trail3:", shieldTrail3 and "Found" or "Missing")
 	
 	-- Return in order: handle trails first, then shield trails
 	return handleTrail1, handleTrail2, handleTrail3, shieldTrail1, shieldTrail2, shieldTrail3
@@ -161,115 +153,78 @@ end
 local function enableTrails(trailConfig)
 	trail1, trail2, trail3, trail4, trail5, trail6 = getTrailReferences()
 	
-	print("Brawler Trails: Enabling trails with config:", trailConfig)
 	
 	if trail1 then 
 		trail1.Enabled = true
-		print("Brawler Trails: Enabled Trail1 (Handle)")
 		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail1 then 
 			trail1.Lifetime = trailConfig.Lifetime.trail1 
-			print("Brawler Trails: Set Trail1 Lifetime to", trailConfig.Lifetime.trail1)
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail1 then 
 			trail1.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail1[1], trailConfig.Color.trail1[2], trailConfig.Color.trail1[3]))
-			print("Brawler Trails: Set Trail1 Color")
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail1 ~= nil then 
 			trail1.FaceCamera = trailConfig.FaceCamera.trail1
-			print("Brawler Trails: Set Trail1 FaceCamera to", trailConfig.FaceCamera.trail1)
 		end
-	else
-		print("Brawler Trails: Trail1 (Handle) not found!")
 	end
 	if trail2 then 
 		trail2.Enabled = true
-		print("Brawler Trails: Enabled Trail2 (Handle)")
 		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail2 then 
 			trail2.Lifetime = trailConfig.Lifetime.trail2 
-			print("Brawler Trails: Set Trail2 Lifetime to", trailConfig.Lifetime.trail2)
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail2 then 
 			trail2.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail2[1], trailConfig.Color.trail2[2], trailConfig.Color.trail2[3]))
-			print("Brawler Trails: Set Trail2 Color")
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail2 ~= nil then 
 			trail2.FaceCamera = trailConfig.FaceCamera.trail2
-			print("Brawler Trails: Set Trail2 FaceCamera to", trailConfig.FaceCamera.trail2)
 		end
-	else
-		print("Brawler Trails: Trail2 (Handle) not found!")
 	end
 	if trail3 then 
 		trail3.Enabled = true
-		print("Brawler Trails: Enabled Trail3 (Handle)")
 		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail3 then 
 			trail3.Lifetime = trailConfig.Lifetime.trail3 
-			print("Brawler Trails: Set Trail3 Lifetime to", trailConfig.Lifetime.trail3)
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail3 then 
 			trail3.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail3[1], trailConfig.Color.trail3[2], trailConfig.Color.trail3[3]))
-			print("Brawler Trails: Set Trail3 Color")
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail3 ~= nil then 
 			trail3.FaceCamera = trailConfig.FaceCamera.trail3
-			print("Brawler Trails: Set Trail3 FaceCamera to", trailConfig.FaceCamera.trail3)
 		end
-	else
-		print("Brawler Trails: Trail3 (Handle) not found!")
 	end
 	if trail4 then 
 		trail4.Enabled = true
-		print("Brawler Trails: Enabled Trail4 (Shield)")
 		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail4 then 
 			trail4.Lifetime = trailConfig.Lifetime.trail4 
-			print("Brawler Trails: Set Trail4 Lifetime to", trailConfig.Lifetime.trail4)
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail4 then 
 			trail4.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail4[1], trailConfig.Color.trail4[2], trailConfig.Color.trail4[3]))
-			print("Brawler Trails: Set Trail4 Color")
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail4 ~= nil then 
 			trail4.FaceCamera = trailConfig.FaceCamera.trail4
-			print("Brawler Trails: Set Trail4 FaceCamera to", trailConfig.FaceCamera.trail4)
 		end
-	else
-		print("Brawler Trails: Trail4 (Shield) not found!")
 	end
 	if trail5 then 
 		trail5.Enabled = true
-		print("Brawler Trails: Enabled Trail5 (Shield)")
 		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail5 then 
 			trail5.Lifetime = trailConfig.Lifetime.trail5 
-			print("Brawler Trails: Set Trail5 Lifetime to", trailConfig.Lifetime.trail5)
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail5 then 
 			trail5.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail5[1], trailConfig.Color.trail5[2], trailConfig.Color.trail5[3]))
-			print("Brawler Trails: Set Trail5 Color")
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail5 ~= nil then 
 			trail5.FaceCamera = trailConfig.FaceCamera.trail5
-			print("Brawler Trails: Set Trail5 FaceCamera to", trailConfig.FaceCamera.trail5)
 		end
-	else
-		print("Brawler Trails: Trail5 (Shield) not found!")
 	end
 	if trail6 then 
 		trail6.Enabled = true
-		print("Brawler Trails: Enabled Trail6 (Shield)")
 		if trailConfig and trailConfig.Lifetime and trailConfig.Lifetime.trail6 then 
 			trail6.Lifetime = trailConfig.Lifetime.trail6 
-			print("Brawler Trails: Set Trail6 Lifetime to", trailConfig.Lifetime.trail6)
 		end
 		if trailConfig and trailConfig.Color and trailConfig.Color.trail6 then 
 			trail6.Color = ColorSequence.new(Color3.fromRGB(trailConfig.Color.trail6[1], trailConfig.Color.trail6[2], trailConfig.Color.trail6[3]))
-			print("Brawler Trails: Set Trail6 Color")
 		end
 		if trailConfig and trailConfig.FaceCamera and trailConfig.FaceCamera.trail6 ~= nil then 
 			trail6.FaceCamera = trailConfig.FaceCamera.trail6
-			print("Brawler Trails: Set Trail6 FaceCamera to", trailConfig.FaceCamera.trail6)
 		end
-	else
-		print("Brawler Trails: Trail6 (Shield) not found!")
 	end
 end
 

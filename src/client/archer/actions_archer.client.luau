@@ -68,7 +68,6 @@ local function setArrowTrailColor(colorRGB)
 			local trail1 = arrow:FindFirstChild("Trail1")
 			if trail1 then
 				trail1.Color = ColorSequence.new(Color3.fromRGB(colorRGB[1], colorRGB[2], colorRGB[3]))
-				print("Archer: Set arrow trail color to RGB(" .. colorRGB[1] .. ", " .. colorRGB[2] .. ", " .. colorRGB[3] .. ")")
 			end
 		end
 	end
