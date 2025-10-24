@@ -216,6 +216,61 @@ function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 end
 
 -- ========================================
+-- TRAIL MANAGEMENT SYSTEM
+-- Handles sword trail activation during attacks
+-- ========================================
+
+-- ========================================
+-- TRAIL CONFIGURATION (SERVER-SIDE ONLY)
+-- This is the ONLY place to configure trail behavior
+-- ========================================
+-- HOW TO USE:
+-- 1. Change lifetime values to adjust how long each individual trail stays active
+-- 2. These settings apply to ALL attacks and combos
+-- 3. Set lifetime to 0 to keep trails on until manually disabled
+-- 4. Changes here automatically sync to all clients
+-- ========================================
+_G.KNIGHT_TRAIL_CONFIG = {
+	-- Individual Trail Lifetime settings (in seconds)
+	-- These apply to ALL attacks and combos
+	Lifetime = {
+		trail1 = 0.13,      -- Trail1.Lifetime for all attacks
+		trail2 = 0.1,       -- Trail2.Lifetime for all attacks
+		trail3 = 0.08       -- Trail3.Lifetime for all attacks
+	}
+}
+
+-- Function to enable trails on client (uses global trail config)
+function _G.enableKnightTrails(player, attackType)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local trailConfig = _G.KNIGHT_TRAIL_CONFIG.Lifetime
+	remote:FireClient(player, "enable_trails", trailConfig)
+end
+
+-- Function to enable trails on client with custom individual trail lifetimes
+function _G.enableKnightTrailsCustom(player, trail1Lifetime, trail2Lifetime, trail3Lifetime)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local customConfig = {
+		trail1 = trail1Lifetime,
+		trail2 = trail2Lifetime,
+		trail3 = trail3Lifetime
+	}
+	remote:FireClient(player, "enable_trails", customConfig)
+end
+
+-- Function to disable trails on client
+function _G.disableKnightTrails(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "disable_trails")
+end
+
+-- Function to sync trail configuration with client
+function _G.syncKnightTrailConfig(player)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	remote:FireClient(player, "sync_trail_config", _G.KNIGHT_TRAIL_CONFIG)
+end
+
+-- ========================================
 -- SWORD & SHIELD ATTACHMENT (from Knight Animation Scripts.lua)
 -- ========================================
 
@@ -436,6 +491,9 @@ local function setupAttackAnimations(player, tool)
 	-- Sync all animation speeds with client
 	syncAllAnimationSpeedsWithClient(player)
 	
+	-- Sync trail configuration with client
+	_G.syncKnightTrailConfig(player)
+	
 	-- Movement animation handling
 	hum.Running:Connect(function(speed)
 		local data = playerAttackData[player]
@@ -506,6 +564,9 @@ local function cleanupAttackAnimations(player, tool)
 	-- Note: waveTrack removed - now handled globally
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
+	
+	-- Disable trails when weapon is unequipped
+	_G.disableKnightTrails(player)
 	
 	-- Clear combo timer
 	if data.comboTimer then
@@ -606,6 +667,9 @@ local function handleNormalAttack(player)
 		data.jumpTrack:Play()
 		_G.applyKnightAnimationSpeed(data.jumpTrack, "jumpAttack")
 		
+		-- Enable trails for jump attack
+		_G.enableKnightTrails(player, "jumpAttack")
+		
 		-- Jump attack hitbox
 		_G.createStaticHitbox({
 			attachTo = root,
@@ -621,6 +685,8 @@ local function handleNormalAttack(player)
 		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
+			-- Disable trails when attack animation ends
+			_G.disableKnightTrails(player)
 		end)
 		
 	elseif isMoving then
@@ -633,6 +699,9 @@ local function handleNormalAttack(player)
 		end
 		data.moveSlashTrack:Play()
 		_G.applyKnightAnimationSpeed(data.moveSlashTrack, "moveAttack")
+		
+		-- Enable trails for move attack
+		_G.enableKnightTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
 		_G.createStaticHitbox({
@@ -649,6 +718,8 @@ local function handleNormalAttack(player)
 		
 		data.moveSlashTrack.Stopped:Once(function()
 			data.isAttacking = false
+			-- Disable trails when attack animation ends
+			_G.disableKnightTrails(player)
 		end)
 		
 	else
@@ -665,6 +736,9 @@ local function handleNormalAttack(player)
 			data.animTrack1:Play()
 			_G.applyKnightAnimationSpeed(data.animTrack1, "combo1")
 			
+			-- Enable trails for combo 1
+			_G.enableKnightTrails(player, "combo1")
+			
 			-- Combo 1 hitbox
 			_G.createStaticHitbox({
 				attachTo = root,
@@ -680,12 +754,17 @@ local function handleNormalAttack(player)
 			
 			data.animTrack1.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Disable trails when attack animation ends
+				_G.disableKnightTrails(player)
 				-- Start combo timer after first attack
 				resetComboTimer(player)
 			end)
 		elseif data.clickCount == 2 then
 			data.animTrack2:Play()
 			_G.applyKnightAnimationSpeed(data.animTrack2, "combo2")
+			
+			-- Enable trails for combo 2
+			_G.enableKnightTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
 			_G.createStaticHitbox({
@@ -702,6 +781,8 @@ local function handleNormalAttack(player)
 			
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
+				-- Disable trails when attack animation ends
+				_G.disableKnightTrails(player)
 				-- Start combo timer after second attack
 				resetComboTimer(player)
 			end)
@@ -712,6 +793,9 @@ local function handleNormalAttack(player)
 				data.clickCount = 1
 				data.animTrack1:Play()
 				_G.applyKnightAnimationSpeed(data.animTrack1, "combo1")
+				
+				-- Enable trails for combo 1 fallback
+				_G.enableKnightTrails(player, "combo1Fallback")
 				
 				-- Combo 1 hitbox (fallback from combo 3 cooldown)
 				_G.createStaticHitbox({
@@ -728,12 +812,17 @@ local function handleNormalAttack(player)
 				
 				data.animTrack1.Stopped:Once(function() 
 					data.isAttacking = false 
+					-- Disable trails when attack animation ends
+					_G.disableKnightTrails(player)
 					resetComboTimer(player)
 				end)
 			else
 				-- Perform combo 3 and start cooldown
 				data.animTrack3:Play()
 				_G.applyKnightAnimationSpeed(data.animTrack3, "combo3")
+				
+				-- Enable trails for combo 3
+				_G.enableKnightTrails(player, "combo3")
 				
 				-- Combo 3 hitbox (most powerful)
 				_G.createStaticHitbox({
@@ -750,6 +839,8 @@ local function handleNormalAttack(player)
 				
 				data.animTrack3.Stopped:Once(function() 
 					data.isAttacking = false 
+					-- Disable trails when attack animation ends
+					_G.disableKnightTrails(player)
 					data.clickCount = 0 -- reset combo
 					startCombo3Cooldown(player)
 				end)
@@ -805,11 +896,16 @@ local function handleJumpAttack(player)
 	
 	data.isAttacking = true
 	
+	-- Enable trails for jump attack
+	_G.enableKnightTrails(player, "jumpAttack")
+	
 	-- Play jump attack animation
 	data.jumpTrack:Play()
 	_G.applyKnightAnimationSpeed(data.jumpTrack, "jumpAttack")
 	data.jumpTrack.Stopped:Once(function()
 		data.isAttacking = false
+		-- Disable trails when attack animation ends
+		_G.disableKnightTrails(player)
 	end)
 end
 
