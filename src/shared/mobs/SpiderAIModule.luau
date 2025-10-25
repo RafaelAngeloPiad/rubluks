@@ -61,6 +61,7 @@ local function initializeSpider(enemy)
 	local root = enemy:WaitForChild("HumanoidRootPart")
 	local hum = enemy:WaitForChild("Humanoid")
 	local alignOrientation = root:FindFirstChild("AlignOrientation")
+	local alignmentConnection
 
 	local ikTargets = enemy:WaitForChild("IkTargets")
 	local rayCastParts = enemy:WaitForChild("RayCastParts")
@@ -141,8 +142,12 @@ local function initializeSpider(enemy)
 	-- === MOVEMENT & ATTACK AI ===
 	coroutine.wrap(function()
 		while task.wait(0.25) do
-			-- Check if model still exists or spider died
-			if not enemy.Parent or not hum or hum.Health <= 0 then 
+			-- Check if model still exists, is in workspace, or spider died
+			if not enemy.Parent or enemy.Parent ~= workspace or not hum or hum.Health <= 0 then 
+				-- Force cleanup of all connections and threads
+				if alignmentConnection then
+					alignmentConnection:Disconnect()
+				end
 				break 
 			end
 			local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
@@ -208,7 +213,14 @@ local function initializeSpider(enemy)
 	if IK_RightLeg4 then IK_RightLeg4.Pole = root:FindFirstChild("Pole_RightLeg4") end
 
 	-- === Root alignment ===
-	RunService.Heartbeat:Connect(function()
+	alignmentConnection = RunService.Heartbeat:Connect(function()
+		-- Check if model still exists in workspace
+		if not enemy.Parent or enemy.Parent ~= workspace then
+			alignmentConnection:Disconnect()
+			alignmentConnection = nil
+			return
+		end
+		
 		local ray = workspace:Raycast(root.Position, -1000 * root.CFrame.UpVector, rayCastParams)
 		local target = workspace:FindFirstChild("Target")
 		if ray and target then
@@ -224,6 +236,12 @@ local function initializeSpider(enemy)
 	-- === Manual stepping cycle with proper grouping (skips when attacking) ===
 	coroutine.wrap(function()
 		while true do
+			-- Check if model still exists in workspace
+			if not enemy.Parent or enemy.Parent ~= workspace then
+				-- Force cleanup and exit
+				return
+			end
+			
 			if not ikPaused then
 				-- Group 1: LeftLeg1 + RightLeg4
 				ProceduralModule:IkLegStep(Ik_LeftLeg1, Ray_LeftLeg1, root, 2, 2, 1, 0.01, rayCastParams)

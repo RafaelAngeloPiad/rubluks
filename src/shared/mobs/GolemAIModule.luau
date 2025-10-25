@@ -142,8 +142,8 @@ local function initializeGolem(monster)
 	-- Main AI loop for this golem
 	task.spawn(function()
 		while task.wait(UPDATE_RATE) do
-			-- Check if model still exists or golem died
-			if not monster.Parent or not humanoid or humanoid.Health <= 0 then 
+			-- Check if model still exists, is in workspace, or golem died
+			if not monster.Parent or monster.Parent ~= workspace or not humanoid or humanoid.Health <= 0 then 
 				break 
 			end
 			if not root then root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart end
