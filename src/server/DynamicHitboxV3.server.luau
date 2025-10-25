@@ -562,6 +562,239 @@ function _G.createTravelingHitbox(config)
 	end)
 end
 
+--[[
+	PROJECTILE HITBOX - Separate visual and hitbox parts with different speeds (Archer arrows)
+	
+	SPECIALTY: Visual part moves at one speed, hitbox detection at another speed
+	USE CASE: Archer arrows where visual needs to align with hit detection at different speeds
+	DURATION: Lasts until arrow stops or hits something
+	
+	EXAMPLE:
+	_G.createProjectileHitbox({
+		visualPart = arrowPart,             -- Visual part (the actual arrow) (REQUIRED)
+		direction = shootDirection,         -- Direction vector to move (REQUIRED)
+		size = Vector3.new(6, 6, 6),        -- Hitbox size (REQUIRED)
+		damage = 20,                        -- Damage to apply (REQUIRED)
+		character = character,              -- Player's character to exclude (REQUIRED)
+		name = "NormalArrow",               -- Hitbox name for debugging (REQUIRED)
+		visualSpeed = 100,                  -- Speed of visual part (optional)
+		hitboxSpeed = 80,                   -- Speed of hitbox detection (optional)
+		delay = 0,                          -- Delay before activation (optional)
+		anchorDelay = 0.03,                 -- Delay before anchoring after hit (optional)
+		showVisual = true,                  -- Show debug visual (optional, default: true)
+		visualColor = Color3.new(0, 1, 0), -- Debug visual color (optional)
+		preventPhysicsPush = true,          -- Prevent physics interactions (optional, default: true)
+	})
+]]
+function _G.createProjectileHitbox(config)
+	local visualPart = config.visualPart
+	local direction = config.direction
+	local size = config.size
+	local damage = config.damage
+	local character = config.character
+	local name = config.name
+	local visualSpeed = config.visualSpeed or 100
+	local hitboxSpeed = config.hitboxSpeed or 80
+	local delay = config.delay or 0
+	local anchorDelay = config.anchorDelay or 0.03
+	local showVisual = config.showVisual
+	if showVisual == nil then showVisual = true end
+	local visualColor = config.visualColor or Color3.new(0, 1, 0) -- Green for projectiles
+	local preventPhysicsPush = config.preventPhysicsPush ~= false -- Default true
+
+	if not visualPart or not direction then
+		warn("[HITBOX V3] Projectile hitbox needs visualPart and direction")
+		return
+	end
+
+	-- Make visual part non-physical if enabled
+	if preventPhysicsPush then
+		visualPart.CanCollide = false
+		visualPart.CanQuery = false
+		visualPart.CanTouch = false
+	end
+
+	-- Apply visual speed to the visual part
+	local visualBodyVelocity = Instance.new("BodyVelocity")
+	visualBodyVelocity.Velocity = direction * visualSpeed
+	visualBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+	visualBodyVelocity.Parent = visualPart
+
+	-- Create separate invisible hitbox part that moves at hitbox speed
+	local hitboxPart = Instance.new("Part")
+	hitboxPart.Name = name .. "Hitbox"
+	hitboxPart.Size = Vector3.new(1, 1, 1) -- Small part for precise collision
+	hitboxPart.Anchored = false
+	hitboxPart.CanCollide = false
+	hitboxPart.CanQuery = false
+	hitboxPart.CanTouch = false
+	hitboxPart.Transparency = 1 -- Completely invisible
+	hitboxPart.Parent = workspace
+
+	-- Position hitbox at same location as visual
+	hitboxPart.CFrame = visualPart.CFrame
+
+	-- Apply hitbox speed to the separate hitbox part
+	local hitboxBodyVelocity = Instance.new("BodyVelocity")
+	hitboxBodyVelocity.Velocity = direction * hitboxSpeed
+	hitboxBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+	hitboxBodyVelocity.Parent = hitboxPart
+
+	-- Create visual debug hitbox (using HITBOX_CONFIG.transparency for consistency)
+	local visual = nil
+	if showVisual then
+		visual = Instance.new("Part")
+		visual.Size = size
+		visual.Anchored = true
+		visual.CanCollide = false
+		visual.CanQuery = false
+		visual.CanTouch = false
+		visual.Material = Enum.Material.Neon
+		visual.Transparency = HITBOX_CONFIG.transparency -- Use unified transparency setting
+		visual.Color = visualColor
+		visual.Name = name .. "ProjectileHitboxVisual"
+		visual.Parent = workspace
+	end
+
+	-- Start hitbox detection after delay
+	task.delay(delay, function()
+		local hitTargets = {}
+		local projectileStopped = false
+
+		-- Track hitbox part for collisions
+		local connection
+		connection = RunService.Heartbeat:Connect(function()
+			if projectileStopped then
+				connection:Disconnect()
+				if visual then visual:Destroy() end
+				return
+			end
+
+			-- Stop if either part is destroyed
+			if not visualPart or not visualPart.Parent or not hitboxPart or not hitboxPart.Parent then
+				projectileStopped = true
+				connection:Disconnect()
+				if visual then visual:Destroy() end
+				if hitboxPart then hitboxPart:Destroy() end
+				return
+			end
+
+			-- Update visual position to match hitbox
+			if visual then
+				visual.CFrame = hitboxPart.CFrame
+			end
+
+			-- Check for hits at hitbox's current position
+			local regionParts = workspace:GetPartBoundsInBox(hitboxPart.CFrame, size)
+			local hitSomething = false
+
+			for _, part in regionParts do
+				-- Skip the hitbox itself, visual part, and character parts
+				if part ~= hitboxPart and part ~= visualPart and not part:IsDescendantOf(character) then
+					local model = part:FindFirstAncestorOfClass("Model")
+					if model and model ~= character then
+						local humanoid = model:FindFirstChild("Humanoid")
+
+						-- Check for enemy hit (only collide with living humanoids)
+						if humanoid and not hitTargets[humanoid] and humanoid.Health > 0 then
+							-- Check if damage should be applied using new targeting system
+							if shouldApplyDamage(character, model) then
+								hitTargets[humanoid] = true
+								humanoid:TakeDamage(damage)
+								
+								-- Create damage flash effect on the target
+								createDamageFlash(model, 0.2)
+								hitSomething = true
+							end
+						end
+					end
+				end
+			end
+
+			-- If we hit something, stop the projectile and stick it
+			if hitSomething then
+				projectileStopped = true
+
+				-- Flash visual on hit
+				if visual then
+					visual.Color = Color3.new(1, 0, 0) -- Red flash on hit
+					task.delay(0.1, function()
+						if visual and visual.Parent then
+							visual:Destroy()
+						end
+					end)
+				end
+
+				-- Apply configurable delay before anchoring the arrow for better visual alignment
+				task.delay(anchorDelay, function()
+					-- Stop the visual part's movement and position it at hit location
+					if visualPart and visualPart.Parent then
+						-- Find and destroy any BodyVelocity on the visual part
+						local bodyVelocity = visualPart:FindFirstChildOfClass("BodyVelocity")
+						if bodyVelocity then
+							bodyVelocity:Destroy()
+						end
+
+						-- Also check the visual part's parent model for BodyVelocity (in case it's on the model)
+						if visualPart.Parent and visualPart.Parent:IsA("Model") then
+							local parentBodyVelocity = visualPart.Parent:FindFirstChildOfClass("BodyVelocity")
+							if parentBodyVelocity then
+								parentBodyVelocity:Destroy()
+							end
+						end
+
+						-- Position visual at the exact hit location and anchor it
+						local hitPosition = hitboxPart.CFrame
+						if hitPosition then
+							visualPart.CFrame = hitPosition
+						end
+
+						-- Make sure visual is completely non-physical before anchoring (if enabled)
+						if preventPhysicsPush then
+							visualPart.CanCollide = false
+							visualPart.CanQuery = false
+							visualPart.CanTouch = false
+						end
+						visualPart.Anchored = true
+
+						-- If the visual part is inside a model, make sure the model follows it
+						if visualPart.Parent and visualPart.Parent:IsA("Model") then
+							-- Use PrimaryPart to make the model follow this part
+							visualPart.Parent.PrimaryPart = visualPart
+							-- Also make the model non-physical to prevent pushing
+							visualPart.Parent:SetAttribute("NonPhysical", true)
+						end
+					end
+
+					-- Destroy the separate hitbox part since we're done with collision detection
+					if hitboxPart and hitboxPart.Parent then
+						hitboxPart:Destroy()
+					end
+				end)
+
+				connection:Disconnect()
+			end
+		end)
+
+		-- Auto cleanup after 3 seconds
+		task.delay(3, function()
+			if not projectileStopped then
+				projectileStopped = true
+				connection:Disconnect()
+				if visual then visual:Destroy() end
+				if hitboxPart and hitboxPart.Parent then hitboxPart:Destroy() end
+			end
+		end)
+	end)
+
+	-- Cleanup function
+	return function()
+		if visualPart and visualPart.Parent then visualPart:Destroy() end
+		if hitboxPart and hitboxPart.Parent then hitboxPart:Destroy() end
+		if visual and visual.Parent then visual:Destroy() end
+	end
+end
+
 -- ========================================
 -- MODULE EXPORTS
 -- ========================================
@@ -572,6 +805,7 @@ local DynamicHitboxV3 = {}
 DynamicHitboxV3.createStaticHitbox = _G.createStaticHitbox
 DynamicHitboxV3.createStaticDOTHitbox = _G.createStaticDOTHitbox
 DynamicHitboxV3.createTravelingHitbox = _G.createTravelingHitbox
+DynamicHitboxV3.createProjectileHitbox = _G.createProjectileHitbox
 
 -- Export friendly fire control functions
 DynamicHitboxV3.setPlayerFriendlyFire = _G.setPlayerFriendlyFire
