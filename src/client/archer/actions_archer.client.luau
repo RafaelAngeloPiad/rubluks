@@ -752,11 +752,6 @@ local function onWeaponFound(weaponTool)
 				return
 			end
 			
-			-- Handle jump (Spacebar)
-			if input.KeyCode == CONFIG.keybinds.jump then
-				ArcherActions.jumpAttack()
-				return
-			end
 			
 			-- Note: Wave is now handled globally by GlobalKeybindManager (L key)
 			

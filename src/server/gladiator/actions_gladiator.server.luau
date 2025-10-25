@@ -801,39 +801,6 @@ local function handleBlock(player, isBlocking)
 	end
 end
 
-local function handleJumpAttack(player)
-	local data = playerAttackData[player]
-	if not data then return end
-	
-	if data.isAttacking or data.isBlocking then 
-		return 
-	end
-	
-	local char = player.Character
-	if not char then return end
-	
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if not hum then return end
-	
-	-- Check if player is actually jumping using our tracking flag
-	if not data.isJumping then
-		return
-	end
-	
-	data.isAttacking = true
-	
-	-- Enable trails for jump attack
-	_G.enableGladiatorTrails(player, "jumpAttack")
-	
-	-- Play jump attack animation
-	data.jumpTrack:Play()
-	_G.applyGladiatorAnimationSpeed(data.jumpTrack, "jumpAttack")
-	data.jumpTrack.Stopped:Once(function()
-		data.isAttacking = false
-		-- Disable trails when attack animation ends
-		_G.disableGladiatorTrails(player)
-	end)
-end
 
 -- ========================================
 -- ACTION EVENT HANDLER
@@ -853,8 +820,6 @@ remote.OnServerEvent:Connect(function(player, actionName, tool)
 		handleBlock(player, true)
 	elseif actionName == "gladiator_block_end" then
 		handleBlock(player, false)
-	elseif actionName == "gladiator_jump_attack" then
-		handleJumpAttack(player)
 	elseif actionName == "sync_camera_speeds" then
 		-- Sync all camera speeds with client
 		syncAllAnimationSpeedsWithClient(player)
