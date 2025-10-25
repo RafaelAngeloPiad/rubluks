@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- ========================================
 
 local HITBOX_CONFIG = {
-	transparency = 1, -- Global transparency for all hitbox visuals
+	transparency = 0.8, -- Global transparency for all hitbox visuals
 }
 
 -- ========================================
@@ -43,6 +43,105 @@ local function getScaledDelay(baseDelay, actionType)
 	-- If animation is 2x faster, delays should be 0.5x (half the time)
 	-- If animation is 0.5x slower, delays should be 2x (double the time)
 	return baseDelay / animationSpeed
+end
+
+-- ========================================
+-- DAMAGE TARGETING SYSTEM
+-- ========================================
+
+-- Import HitboxExclusions for mob detection
+local HitboxExclusions = require(game.ReplicatedStorage:WaitForChild("mobs"):WaitForChild("HitboxExclusions"))
+
+-- Friendly fire configuration - separate controls for players and mobs
+local PLAYER_FRIENDLY_FIRE = false -- Set to true to allow players to damage each other
+local MOB_FRIENDLY_FIRE = false -- Set to true to allow mobs to damage each other
+
+-- Function to check if a model is a player
+local function isPlayer(model)
+    return game:GetService("Players"):GetPlayerFromCharacter(model) ~= nil
+end
+
+-- Function to check if a model is a mob (has exclusion tags)
+local function isMob(model)
+    return HitboxExclusions.hasExcludedTag(model)
+end
+
+-- Function to check if damage should be applied
+local function shouldApplyDamage(attacker, target)
+    -- Don't damage self
+    if attacker == target then
+        return false
+    end
+    
+    local attackerIsPlayer = isPlayer(attacker)
+    local targetIsPlayer = isPlayer(target)
+    local attackerIsMob = isMob(attacker)
+    local targetIsMob = isMob(target)
+    
+    -- Player attacking another player
+    if attackerIsPlayer and targetIsPlayer then
+        return PLAYER_FRIENDLY_FIRE
+    end
+    
+    -- Player attacking mob
+    if attackerIsPlayer and targetIsMob then
+        return true
+    end
+    
+    -- Mob attacking player
+    if attackerIsMob and targetIsPlayer then
+        return true
+    end
+    
+    -- Mob attacking mob
+    if attackerIsMob and targetIsMob then
+        return MOB_FRIENDLY_FIRE
+    end
+    
+    -- Default: allow damage
+    return true
+end
+
+-- ========================================
+-- FRIENDLY FIRE CONTROL FUNCTIONS
+-- ========================================
+
+-- Function to set player friendly fire setting
+function _G.setPlayerFriendlyFire(enabled)
+    PLAYER_FRIENDLY_FIRE = enabled
+end
+
+-- Function to get player friendly fire setting
+function _G.getPlayerFriendlyFire()
+    return PLAYER_FRIENDLY_FIRE
+end
+
+-- Function to set mob friendly fire setting
+function _G.setMobFriendlyFire(enabled)
+    MOB_FRIENDLY_FIRE = enabled
+end
+
+-- Function to get mob friendly fire setting
+function _G.getMobFriendlyFire()
+    return MOB_FRIENDLY_FIRE
+end
+
+-- Function to set both friendly fire settings at once (for convenience)
+function _G.setFriendlyFire(playerEnabled, mobEnabled)
+    if playerEnabled ~= nil then
+        PLAYER_FRIENDLY_FIRE = playerEnabled
+    end
+    if mobEnabled ~= nil then
+        MOB_FRIENDLY_FIRE = mobEnabled
+    end
+end
+
+-- Function to get both friendly fire settings
+function _G.getFriendlyFire()
+    return {
+        player = PLAYER_FRIENDLY_FIRE,
+        mob = MOB_FRIENDLY_FIRE
+    }
 end
 
 -- ========================================
@@ -129,17 +228,20 @@ function _G.createStaticHitbox(config)
 				local humanoid = model:FindFirstChild("Humanoid")
 				
 				if humanoid and not hitTargets[humanoid] then
-					hitTargets[humanoid] = true
-					humanoid:TakeDamage(damage)
-					
-					-- Flash visual
-					if visual then
-						visual.Color = Color3.new(1, 1, 1)
-						task.delay(0.05, function()
-							if visual and visual.Parent then
-								visual.Color = visualColor
-							end
-						end)
+					-- Check if damage should be applied using new targeting system
+					if shouldApplyDamage(character, model) then
+						hitTargets[humanoid] = true
+						humanoid:TakeDamage(damage)
+						
+						-- Flash visual
+						if visual then
+							visual.Color = Color3.new(1, 1, 1)
+							task.delay(0.05, function()
+								if visual and visual.Parent then
+									visual.Color = visualColor
+								end
+							end)
+						end
 					end
 				end
 			end
@@ -252,16 +354,19 @@ function _G.createStaticDOTHitbox(config)
 					local humanoid = model:FindFirstChild("Humanoid")
 					
 					if humanoid then
-						humanoid:TakeDamage(damage)
-						
-						-- Flash visual on hit
-						if visual then
-							visual.Color = Color3.new(1, 0.5, 0) -- Orange flash for DOT
-							task.delay(0.05, function()
-								if visual and visual.Parent then
-									visual.Color = visualColor
-								end
-							end)
+						-- Check if damage should be applied using new targeting system
+						if shouldApplyDamage(character, model) then
+							humanoid:TakeDamage(damage)
+							
+							-- Flash visual on hit
+							if visual then
+								visual.Color = Color3.new(1, 0.5, 0) -- Orange flash for DOT
+								task.delay(0.05, function()
+									if visual and visual.Parent then
+										visual.Color = visualColor
+									end
+								end)
+							end
 						end
 					end
 				end
@@ -401,17 +506,20 @@ function _G.createTravelingHitbox(config)
 					local humanoid = model:FindFirstChild("Humanoid")
 					
 					if humanoid and not hitTargets[humanoid] then
-						hitTargets[humanoid] = true
-						humanoid:TakeDamage(damage)
-						
-						-- Flash visual on hit
-						if visual then
-							visual.Color = Color3.new(1, 0, 0)
-							task.delay(0.1, function()
-								if visual and visual.Parent then
-									visual.Color = visualColor
-								end
-							end)
+						-- Check if damage should be applied using new targeting system
+						if shouldApplyDamage(character, model) then
+							hitTargets[humanoid] = true
+							humanoid:TakeDamage(damage)
+							
+							-- Flash visual on hit
+							if visual then
+								visual.Color = Color3.new(1, 0, 0)
+								task.delay(0.1, function()
+									if visual and visual.Parent then
+										visual.Color = visualColor
+									end
+								end)
+							end
 						end
 					end
 				end
@@ -419,4 +527,25 @@ function _G.createTravelingHitbox(config)
 		end)
 	end)
 end
+
+-- ========================================
+-- MODULE EXPORTS
+-- ========================================
+
+local DynamicHitboxV3 = {}
+
+-- Export hitbox creation functions
+DynamicHitboxV3.createStaticHitbox = _G.createStaticHitbox
+DynamicHitboxV3.createStaticDOTHitbox = _G.createStaticDOTHitbox
+DynamicHitboxV3.createTravelingHitbox = _G.createTravelingHitbox
+
+-- Export friendly fire control functions
+DynamicHitboxV3.setPlayerFriendlyFire = _G.setPlayerFriendlyFire
+DynamicHitboxV3.getPlayerFriendlyFire = _G.getPlayerFriendlyFire
+DynamicHitboxV3.setMobFriendlyFire = _G.setMobFriendlyFire
+DynamicHitboxV3.getMobFriendlyFire = _G.getMobFriendlyFire
+DynamicHitboxV3.setFriendlyFire = _G.setFriendlyFire
+DynamicHitboxV3.getFriendlyFire = _G.getFriendlyFire
+
+return DynamicHitboxV3
 

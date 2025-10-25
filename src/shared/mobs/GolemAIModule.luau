@@ -2,7 +2,7 @@
 -- Centralized AI logic that can be called from anywhere
 
 -- Import global exclusions
-local MobExclusions = require(script.Parent.MobExclusions)
+local HitboxExclusions = require(script.Parent.HitboxExclusions)
 
 -- === CONFIG ===
 local WALK_ANIMATION_ID = "rbxassetid://107172094908325" -- walk
@@ -40,7 +40,7 @@ end
 
 -- === HELPERS ===
 local function HasAnyExcludedTag(model)
-	return MobExclusions.hasExcludedTag(model)
+	return HitboxExclusions.hasExcludedTag(model)
 end
 
 local function FindNearestTarget(origin)
@@ -94,6 +94,7 @@ local function initializeGolem(monster)
 	local returningHome = false
 	local attacking = false
 	local isWalking = false
+	local lastAttackTime = 0
 	
 	-- Animation functions for this golem
 	local function playWalk()
@@ -117,17 +118,74 @@ local function initializeGolem(monster)
 	local function playAttack()
 		if not attacking then
 			attacking = true
+			lastAttackTime = tick() -- Track when attack started
 			stopWalk()
 			if root then
 				root.Velocity = Vector3.new(0, 0, 0)
 			end
 			humanoid:MoveTo(root.Position)
 			humanoid.PlatformStand = false
-			pcall(function()
-				attackTrack:Play(0.1)
-				attackTrack.Stopped:Wait()
-			end)
-			attacking = false
+			
+			-- Use coroutine to handle attack with timeout
+			coroutine.wrap(function()
+				pcall(function()
+					attackTrack:Play(0.1)
+					
+					-- Create static hitbox when attack animation plays
+					if _G.createStaticHitbox then
+						_G.createStaticHitbox({
+							attachTo = root,
+							offset = CFrame.new(0, 0, -4), -- Hitbox in front of golem
+							size = Vector3.new(8, 8, 8), -- 8x8x8 stud hitbox
+							damage = 25, -- Adjust damage as needed
+							character = monster, -- Exclude the golem itself
+							name = "GolemAttack",
+							showVisual = true,
+							visualColor = Color3.new(1, 0.5, 0), -- Orange color
+							delay = 0.3, -- Delay to sync with animation
+							visualDuration = 0.8
+						})
+					end
+					
+					-- Wait for animation to stop with timeout
+					local animationStopped = false
+					local timeout = 0
+					local maxTimeout = 3 -- 3 second timeout
+					
+					-- Listen for animation stop
+					local stopConnection
+					stopConnection = attackTrack.Stopped:Connect(function()
+						animationStopped = true
+						if stopConnection then
+							stopConnection:Disconnect()
+						end
+					end)
+					
+					-- Wait for either animation stop or timeout
+					while not animationStopped and timeout < maxTimeout do
+						task.wait(0.1)
+						timeout = timeout + 0.1
+						
+						-- Check if golem is still alive and in workspace
+						if not monster.Parent or monster.Parent ~= workspace or not humanoid or humanoid.Health <= 0 then
+							break
+						end
+					end
+					
+					-- Cleanup
+					if stopConnection then
+						stopConnection:Disconnect()
+					end
+					
+					-- Force stop animation if it's still playing
+					if attackTrack.IsPlaying then
+						attackTrack:Stop(0.1)
+					end
+				end)
+				
+				-- Always reset attacking state
+				attacking = false
+			end)()
 		end
 	end
 	
@@ -140,6 +198,14 @@ local function initializeGolem(monster)
 			end
 			if not root then root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart end
 			if not root then continue end
+
+			-- Safety check: reset attacking state if stuck for too long
+			if attacking and tick() - lastAttackTime > 5 then
+				attacking = false
+				if attackTrack.IsPlaying then
+					attackTrack:Stop(0.1)
+				end
+			end
 
 			local position = root.Position
 			local distFromSpawn = (position - spawnPosition).Magnitude

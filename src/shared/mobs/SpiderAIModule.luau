@@ -5,7 +5,7 @@
 local RunService = game:GetService("RunService")
 
 -- Import global exclusions
-local MobExclusions = require(script.Parent.MobExclusions)
+local HitboxExclusions = require(script.Parent.HitboxExclusions)
 
 -- ========== PROCEDURAL MODULE ==========
 local ProceduralModule = {}
@@ -92,22 +92,68 @@ local function initializeSpider(enemy)
 	local attacking = false
 	local ikPaused = false
 	local attackCooldown = 0.5
+	local lastAttackTime = 0
 
 	local function playAttack()
 		if attacking then return end
 		attacking = true
+		lastAttackTime = tick() -- Track when attack started
 		ikPaused = true  -- 🧠 Pause IK while attacking
 		coroutine.wrap(function()
 			pcall(function()
 				attackTrack:Play(0.1)
-				local stopped = false
-				attackTrack.Stopped:Connect(function() stopped = true end)
-
-				local t = 0
-				while not stopped and t < 5 do
-					task.wait(0.1)
-					t += 0.1
+				
+				-- Create static hitbox when attack animation plays
+				if _G.createStaticHitbox then
+					_G.createStaticHitbox({
+						attachTo = root,
+						offset = CFrame.new(0, 0, -3), -- Hitbox in front of spider
+						size = Vector3.new(6, 6, 6), -- 6x6x6 stud hitbox
+						damage = 15, -- Adjust damage as needed
+						character = enemy, -- Exclude the spider itself
+						name = "SpiderAttack",
+						showVisual = true,
+						visualColor = Color3.new(0.8, 0, 0.8), -- Purple color
+						delay = 0.2, -- Delay to sync with animation
+						visualDuration = 0.6
+					})
 				end
+				
+				-- Wait for animation to stop with timeout
+				local animationStopped = false
+				local timeout = 0
+				local maxTimeout = 3 -- 3 second timeout
+				
+				-- Listen for animation stop
+				local stopConnection
+				stopConnection = attackTrack.Stopped:Connect(function()
+					animationStopped = true
+					if stopConnection then
+						stopConnection:Disconnect()
+					end
+				end)
+				
+				-- Wait for either animation stop or timeout
+				while not animationStopped and timeout < maxTimeout do
+					task.wait(0.1)
+					timeout = timeout + 0.1
+					
+					-- Check if spider is still alive and in workspace
+					if not enemy.Parent or enemy.Parent ~= workspace or not hum or hum.Health <= 0 then
+						break
+					end
+				end
+				
+				-- Cleanup
+				if stopConnection then
+					stopConnection:Disconnect()
+				end
+				
+				-- Force stop animation if it's still playing
+				if attackTrack.IsPlaying then
+					attackTrack:Stop(0.1)
+				end
+				
 				task.wait(attackCooldown)
 			end)
 			ikPaused = false  -- ✅ Resume IK after attack ends
@@ -116,7 +162,7 @@ local function initializeSpider(enemy)
 	end
 
 	local function HasAnyExcludedTag(model)
-		return MobExclusions.hasExcludedTag(model)
+		return HitboxExclusions.hasExcludedTag(model)
 	end
 
 	local function FindClosestPlayer(position)
@@ -148,6 +194,16 @@ local function initializeSpider(enemy)
 				end
 				break 
 			end
+			
+			-- Safety check: reset attacking state if stuck for too long
+			if attacking and tick() - lastAttackTime > 5 then
+				attacking = false
+				ikPaused = false
+				if attackTrack.IsPlaying then
+					attackTrack:Stop(0.1)
+				end
+			end
+			
 			local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
 			local dist = (curPos - spawnPosition).Magnitude
 			local target = FindClosestPlayer(curPos)
