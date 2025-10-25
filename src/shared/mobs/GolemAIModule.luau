@@ -1,9 +1,8 @@
 -- Golem AI Module
 -- Centralized AI logic that can be called from anywhere
 
-local CollectionService = game:GetService("CollectionService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+-- Import global exclusions
+local MobExclusions = require(script.Parent.MobExclusions)
 
 -- === CONFIG ===
 local WALK_ANIMATION_ID = "rbxassetid://107172094908325" -- walk
@@ -17,8 +16,6 @@ local RETURN_WAIT = 2
 local WALK_SPEED_SCALE = 16
 local MIN_WALK_SPEED = 0.5
 local STOP_DELAY = 0.25
-local EXCLUDE_TAGS = {"golem_entity"}
-
 -- === TRACKING ===
 -- No need for tracking since each model has its own initializer
 
@@ -43,12 +40,7 @@ end
 
 -- === HELPERS ===
 local function HasAnyExcludedTag(model)
-	for _, tag in ipairs(EXCLUDE_TAGS) do
-		if CollectionService:HasTag(model, tag) then
-			return true
-		end
-	end
-	return false
+	return MobExclusions.hasExcludedTag(model)
 end
 
 local function FindNearestTarget(origin)

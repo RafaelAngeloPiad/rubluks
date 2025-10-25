@@ -3,7 +3,9 @@
 -- Enhanced with pole system and proper leg grouping for better movement
 
 local RunService = game:GetService("RunService")
-local CollectionService = game:GetService("CollectionService")
+
+-- Import global exclusions
+local MobExclusions = require(script.Parent.MobExclusions)
 
 -- ========== PROCEDURAL MODULE ==========
 local ProceduralModule = {}
@@ -77,7 +79,6 @@ local function initializeSpider(enemy)
 	local spottingRadius = 40
 	local attackRange = 8
 	local maxRadius = 200
-	local excludeTags = { "spider_entity" }
 
 	-- === Attack animation setup (smooth and synced) ===
 	local ATTACK_ANIMATION_ID = "rbxassetid://132697102857784"
@@ -115,10 +116,7 @@ local function initializeSpider(enemy)
 	end
 
 	local function HasAnyExcludedTag(model)
-		for _, tag in ipairs(excludeTags) do
-			if CollectionService:HasTag(model, tag) then return true end
-		end
-		return false
+		return MobExclusions.hasExcludedTag(model)
 	end
 
 	local function FindClosestPlayer(position)
