@@ -840,4 +840,179 @@ function ServerConfigs.getLegacyHitboxConfig(attackType)
 	return ServerConfigs.getHitboxConfig(attackType, "Samurai") -- Default to Samurai for legacy calls
 end
 
+-- ========================================
+-- CLIENT CONFIGURATIONS
+-- ========================================
+
+-- Client-side configuration for all classes
+ServerConfigs.Client = {
+	-- Highlight cleanup configuration
+	HighlightCleanup = {
+		cleanupInterval = 60 -- Clean up highlights every 60 seconds
+	},
+	
+	-- Camera speed multipliers for all classes
+	CameraSpeedMultipliers = {
+		-- Basic movements (shared across all classes)
+		idle = 1.0,
+		run = 1.0,
+		jump = 1.0,
+		block = 1.0,
+		wave = 1.0,
+		
+		-- Archer specific
+		archer = {
+			normalAttack = 1.0,
+			jumpAttack = 1.0,
+			piercingShot = 1.0,
+			powerShot = 1.0,
+			hunterInstinct = 1.0,
+			hunterMark = 1.0,
+			starfall = 1.0
+		},
+		
+		-- Samurai specific
+		samurai = {
+			combo1 = 1.0,
+			combo2 = 1.0,
+			combo3 = 1.0,
+			moveAttack = 1.0,
+			jumpAttack = 1.0,
+			kozuki = 1.0,
+			wakizashi = 1.0,
+			banzai = 1.0,
+			bushido = 1.0,
+			zantetsuken = 1.0
+		},
+		
+		-- Brawler specific
+		brawler = {
+			combo1 = 1.0,
+			combo2 = 1.0,
+			moveAttack = 1.0,
+			jumpAttack = 1.0,
+			feralleap = 1.0,
+			brawlersroar = 1.0,
+			bloodthirst = 1.0,
+			lastchance = 1.0,
+			meteordive = 1.0
+		},
+		
+		-- Knight specific
+		knight = {
+			combo1 = 1.0,
+			combo2 = 1.0,
+			combo3 = 1.0,
+			moveAttack = 1.0,
+			jumpAttack = 1.0,
+			sworddance = 1.0,
+			cyclone_slash = 1.0,
+			warcry = 1.0,
+			warriormight = 1.0,
+			mightyblade = 1.0
+		},
+		
+		-- Gladiator specific
+		gladiator = {
+			combo1 = 1.0,
+			combo2 = 1.0,
+			moveAttack = 1.0,
+			jumpAttack = 1.0,
+			shieldbash = 1.0,
+			dragoonjump = 1.0,
+			championsblood = 1.0,
+			championscheer = 1.0,
+			demonicvorpaldance = 1.0
+		}
+	},
+	
+	-- Archer specific client configurations
+	Archer = {
+		-- Aim lock configuration
+		aimLock = {
+			mode = "dynamic", -- Options: true (always), false (never), "dynamic" (toggle with F)
+			modes = {true, false, "dynamic"},
+			currentModeIndex = 3 -- Start with dynamic mode
+		},
+		
+		-- Arrow trail color (RGB values 0-255)
+		arrowTrailColor = {255, 255, 255} -- White by default
+	},
+	
+	-- Brawler specific client configurations
+	Brawler = {
+		-- Feral leap initialization delay
+		feralLeap = {
+			initializationDelay = 0.5 -- Delay after weapon equip before system is ready
+		}
+	},
+	
+	-- Keybind configurations for all classes
+	Keybinds = {
+		-- Global keybinds (shared across all classes)
+		global = {
+			attack = Enum.UserInputType.MouseButton1, -- Left click
+			block = Enum.KeyCode.V,
+			jump = Enum.KeyCode.Space,
+			wave = Enum.KeyCode.T -- Global wave keybind
+		},
+		
+		-- Archer specific keybinds
+		archer = {
+			piercingShot = Enum.KeyCode.Q,
+			powerShot = Enum.KeyCode.E,
+			hunterInstinct = Enum.KeyCode.X,
+			hunterMark = Enum.KeyCode.C,
+			starfall = Enum.KeyCode.Z,
+			dynamicAim = Enum.KeyCode.F -- F key for aim lock toggle
+		},
+		
+		-- Samurai specific keybinds
+		samurai = {
+			wakizashi = Enum.KeyCode.Q,
+			kozuki = Enum.KeyCode.E,
+			banzai = Enum.KeyCode.X,
+			bushido = Enum.KeyCode.C,
+			zantetsuken = Enum.KeyCode.Z
+		},
+		
+		-- Brawler specific keybinds
+		brawler = {
+			feralleap = Enum.KeyCode.E,
+			brawlersroar = Enum.KeyCode.Q,
+			bloodthirst = Enum.KeyCode.X,
+			lastchance = Enum.KeyCode.C,
+			meteordive = Enum.KeyCode.Z,
+			feralleapStop = Enum.KeyCode.E -- E key to stop feral leap early
+		},
+		
+		-- Knight specific keybinds
+		knight = {
+			sworddance = Enum.KeyCode.Q,
+			cyclone_slash = Enum.KeyCode.E,
+			warcry = Enum.KeyCode.X,
+			warriormight = Enum.KeyCode.C,
+			mightyblade = Enum.KeyCode.Z
+		},
+		
+		-- Gladiator specific keybinds
+		gladiator = {
+			shieldbash = Enum.KeyCode.Q,
+			dragoonjump = Enum.KeyCode.E,
+			championsblood = Enum.KeyCode.X,
+			championscheer = Enum.KeyCode.C,
+			demonicvorpaldance = Enum.KeyCode.Z
+		}
+	},
+	
+	-- Weapon tag configurations
+	WeaponTags = {
+		archer = "archer_wpn",
+		samurai = "samurai_wpn",
+		brawler = "brawler_wpn",
+		knight = "knight_wpn",
+		gladiator = "gladiator_wpn"
+	}
+}
+
 return ServerConfigs

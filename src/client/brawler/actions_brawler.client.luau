@@ -20,29 +20,14 @@ local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
+-- Import centralized configuration
+local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Import the action module for shared logic
 local BrawlerActions = require(script.Parent.BrawlerActionModule)
 
 -- Camera speed configuration (separate for each action type)
-local CAMERA_SPEED_MULTIPLIERS = {
-	idle = 1.0,
-	run = 1.0,
-	jump = 1.0,
-	combo1 = 1.0,
-	combo2 = 1.0,
-	moveAttack = 1.0,
-	jumpAttack = 1.0,
-	block = 1.0,
-	wave = 1.0,
-	-- Skills (placeholder for future)
-	feralleap = 1.0,
-	brawlersroar = 1.0,
-	-- Buffs (placeholder for future)
-	bloodthirst = 1.0,
-	lastchance = 1.0,
-	-- Ultimate (placeholder for future)
-	meteordive = 1.0
-}
+local CAMERA_SPEED_MULTIPLIERS = ServerConfigs.Client.CameraSpeedMultipliers
 
 -- Current action type for camera speed reference
 local currentActionType = "idle"
@@ -80,27 +65,27 @@ local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
 	BrawlerActions._setCooldown(skillName, isOnCooldown)
 	if isOnCooldown then
-		local timeText = remainingTime and tostring(remainingTime) or "unknown"
+		local timeText = remainingTime and tostring(remainingTime)
 	end
 end
 
 -- Configuration (moved up to be accessible by feral leap functions)
 local CONFIG = {
-	weaponTag = "brawler_wpn",
+	weaponTag = ServerConfigs.Client.WeaponTags.brawler,
 	-- Walking speed is now controlled by server
 	actions = {
-		[Enum.KeyCode.Q] = "brawlersroar",   -- Skill 1
-		[Enum.KeyCode.E] = "feralleap",      -- Skill 2
-		[Enum.KeyCode.X] = "bloodthirst",    -- Buff 1
-		[Enum.KeyCode.C] = "lastchance",     -- Buff 2
-		[Enum.KeyCode.Z] = "meteordive",     -- Ultimate
+		[ServerConfigs.Client.Keybinds.brawler.brawlersroar] = "brawlersroar",
+		[ServerConfigs.Client.Keybinds.brawler.feralleap] = "feralleap",
+		[ServerConfigs.Client.Keybinds.brawler.bloodthirst] = "bloodthirst",
+		[ServerConfigs.Client.Keybinds.brawler.lastchance] = "lastchance",
+		[ServerConfigs.Client.Keybinds.brawler.meteordive] = "meteordive",
 	},
 	-- Custom keybinds for basic actions
 	keybinds = {
-		attack = Enum.UserInputType.MouseButton1, -- Left click
-		block = Enum.KeyCode.V,  -- V key for blocking (same as knight/samurai)
-		jump = Enum.KeyCode.Space, -- Spacebar
-		feralleapStop = Enum.KeyCode.E, -- E key to stop feral leap early (same as activation)
+		attack = ServerConfigs.Client.Keybinds.global.attack,
+		block = ServerConfigs.Client.Keybinds.global.block,
+		jump = ServerConfigs.Client.Keybinds.global.jump,
+		feralleapStop = ServerConfigs.Client.Keybinds.brawler.feralleapStop,
 		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
 	}
 }
@@ -260,7 +245,7 @@ local collisionBox = nil
 local collisionBoxWeld = nil
 local hasStoppedLeap = false -- Flag to prevent multiple stop calls
 local isInitialized = false -- Flag to track if system is ready
-local initializationDelay = 0.5 -- 0.5 second delay after weapon equip (reduced for testing)
+local initializationDelay = ServerConfigs.Client.Brawler.feralLeap.initializationDelay
 
 local function disconnectLeapConnections()
 	if leapConnection then
@@ -473,7 +458,7 @@ local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	end
 	
 	-- Use specific action speed or fallback to current action type
-	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType]
 	local scaledDuration = tweenDuration / speedMultiplier
 	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
@@ -507,7 +492,7 @@ local function playCameraSequence(sequence, actionType)
 	local root = char:WaitForChild("HumanoidRootPart")
 
 	-- Get speed multiplier for this action
-	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType]
 
 	-- Play each step in the sequence (exact copy from original MightyBlade.lua)
 	for _, step in ipairs(sequence) do
@@ -518,7 +503,7 @@ local function playCameraSequence(sequence, actionType)
 			targetCFrame = root.CFrame * step.cf
 		else
 			-- Old format: construct CFrame from offset and rotations
-			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX, step.rotY, step.rotZ)
 		end
 		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
 		-- Scale hold time with action-specific camera speed multiplier

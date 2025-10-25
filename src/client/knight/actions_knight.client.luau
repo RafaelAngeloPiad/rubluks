@@ -20,27 +20,14 @@ local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
+-- Import centralized configuration
+local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Import the action module for shared logic
 local KnightActions = require(script.Parent.KnightActionModule)
 
 -- Camera speed configuration (separate for each action type)
-local CAMERA_SPEED_MULTIPLIERS = {
-	idle = 1.0,
-	run = 1.0,
-	jump = 1.0,
-	combo1 = 1.0,
-	combo2 = 1.0,
-	combo3 = 1.0,
-	moveAttack = 1.0,
-	jumpAttack = 1.0,
-	block = 1.0,
-	wave = 1.0,
-	sworddance = 1.0,
-	cyclone_slash = 1.0,
-	warcry = 1.0,
-	warriormight = 1.0,
-	mightyblade = 1.0
-}
+local CAMERA_SPEED_MULTIPLIERS = ServerConfigs.Client.CameraSpeedMultipliers
 
 -- Current action type for camera speed reference
 local currentActionType = "idle"
@@ -78,26 +65,26 @@ local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
 	KnightActions._setCooldown(skillName, isOnCooldown)
 	if isOnCooldown then
-		local timeText = remainingTime and tostring(remainingTime) or "unknown"
+		local timeText = remainingTime and tostring(remainingTime)
 	end
 end
 
 -- Configuration
 local CONFIG = {
-	weaponTag = "knight_wpn",
+	weaponTag = ServerConfigs.Client.WeaponTags.knight,
 	-- Walking speed is now controlled by server
 	actions = {
-		[Enum.KeyCode.Q] = "sworddance",      -- Skill 1
-		[Enum.KeyCode.E] = "cyclone_slash",   -- Skill 2
-		[Enum.KeyCode.X] = "warcry",          -- Buff 1
-		[Enum.KeyCode.C] = "warriormight",    -- Buff 2
-		[Enum.KeyCode.Z] = "mightyblade",     -- Ultimate
+		[ServerConfigs.Client.Keybinds.knight.sworddance] = "sworddance",
+		[ServerConfigs.Client.Keybinds.knight.cyclone_slash] = "cyclone_slash",
+		[ServerConfigs.Client.Keybinds.knight.warcry] = "warcry",
+		[ServerConfigs.Client.Keybinds.knight.warriormight] = "warriormight",
+		[ServerConfigs.Client.Keybinds.knight.mightyblade] = "mightyblade",
 	},
 	-- Custom keybinds for basic actions
 	keybinds = {
-		attack = Enum.UserInputType.MouseButton1, -- Left click
-		block = Enum.KeyCode.V,
-		jump = Enum.KeyCode.Space, -- Spacebar
+		attack = ServerConfigs.Client.Keybinds.global.attack,
+		block = ServerConfigs.Client.Keybinds.global.block,
+		jump = ServerConfigs.Client.Keybinds.global.jump,
 		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
 	}
 }
@@ -122,7 +109,7 @@ local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	end
 	
 	-- Use specific action speed or fallback to current action type
-	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType]
 	local scaledDuration = tweenDuration / speedMultiplier
 	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
@@ -157,7 +144,7 @@ local function playCameraSequence(sequence, actionType)
 	local root = char:WaitForChild("HumanoidRootPart")
 
 	-- Get speed multiplier for this action
-	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType]
 
 	-- Play each step in the sequence (exact copy from original MightyBlade.lua)
 	for _, step in ipairs(sequence) do
@@ -168,7 +155,7 @@ local function playCameraSequence(sequence, actionType)
 			targetCFrame = root.CFrame * step.cf
 		else
 			-- Old format: construct CFrame from offset and rotations
-			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX, step.rotY, step.rotZ)
 		end
 		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
 		-- Scale hold time with action-specific camera speed multiplier

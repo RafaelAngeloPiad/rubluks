@@ -21,6 +21,9 @@ local controls = nil
 local humanoid = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
+-- Import centralized configuration
+local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Import the action module for shared logic
 local ArcherActions = require(script.Parent.ArcherActionModule)
 
@@ -38,11 +41,11 @@ local dynamicAimHeld = false
 
 -- Aim Lock Mode Configuration
 -- Options: true (always aim lock), false (never aim lock), "dynamic" (toggle with F key)
-local AIM_LOCK_MODE = "dynamic" -- Change this to control aim lock behavior
+local AIM_LOCK_MODE = ServerConfigs.Client.Archer.aimLock.mode
 
 -- Aim Lock Mode Toggle System
-local aimLockModes = {true, false, "dynamic"}
-local currentModeIndex = 3 -- Start with third mode (dynamic)
+local aimLockModes = ServerConfigs.Client.Archer.aimLock.modes
+local currentModeIndex = ServerConfigs.Client.Archer.aimLock.currentModeIndex
 
 -- First-Person Detection System
 local isFirstPerson = false
@@ -54,7 +57,7 @@ local firstPersonConnection = nil
 -- ========================================
 
 -- Current arrow trail color
-local currentArrowTrailColor = {255, 255, 255} -- White by default
+local currentArrowTrailColor = ServerConfigs.Client.Archer.arrowTrailColor
 
 -- Function to set arrow trail color
 local function setArrowTrailColor(colorRGB)
@@ -75,20 +78,7 @@ end
 
 
 -- Camera speed configuration (separate for each action type)
-local CAMERA_SPEED_MULTIPLIERS = {
-	idle = 1.0,
-	run = 1.0,
-	jump = 1.0,
-	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
-	jumpAttack = 1.0,
-	block = 1.0,
-	wave = 1.0,
-	piercingShot = 1.0,
-	powerShot = 1.0,
-	hunterInstinct = 1.0,
-	hunterMark = 1.0,
-	starfall = 1.0
-}
+local CAMERA_SPEED_MULTIPLIERS = ServerConfigs.Client.CameraSpeedMultipliers
 
 -- Current action type for camera speed reference
 local currentActionType = "idle"
@@ -126,29 +116,29 @@ local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
 	ArcherActions._setCooldown(skillName, isOnCooldown)
 	if isOnCooldown then
-		local timeText = remainingTime and tostring(remainingTime) or "unknown"
+		local timeText = remainingTime and tostring(remainingTime)
 	end
 end
 
 -- Configuration
 local CONFIG = {
-	weaponTag = "archer_wpn",
+	weaponTag = ServerConfigs.Client.WeaponTags.archer,
 	-- Walking speed is now controlled by server
 	actions = {
-		[Enum.KeyCode.Q] = "piercingShot",
-		[Enum.KeyCode.E] = "powerShot",
-		[Enum.KeyCode.X] = "hunterInstinct", -- Moved from R to C
-		[Enum.KeyCode.C] = "hunterMark", -- Moved from F to X
-		[Enum.KeyCode.Z] = "starfall",
+		[ServerConfigs.Client.Keybinds.archer.piercingShot] = "piercingShot",
+		[ServerConfigs.Client.Keybinds.archer.powerShot] = "powerShot",
+		[ServerConfigs.Client.Keybinds.archer.hunterInstinct] = "hunterInstinct",
+		[ServerConfigs.Client.Keybinds.archer.hunterMark] = "hunterMark",
+		[ServerConfigs.Client.Keybinds.archer.starfall] = "starfall",
 	},
 	-- Custom keybinds for basic actions
 	keybinds = {
-		attack = Enum.UserInputType.MouseButton1, -- Left click
-		block = Enum.KeyCode.V,
-		jump = Enum.KeyCode.Space, -- Spacebar
+		attack = ServerConfigs.Client.Keybinds.global.attack,
+		block = ServerConfigs.Client.Keybinds.global.block,
+		jump = ServerConfigs.Client.Keybinds.global.jump,
 		-- Note: Wave is now a global keybind (L key) - handled by GlobalKeybindManager
 		aimLockToggle = Enum.KeyCode.T, -- T key for aim lock mode toggle
-		dynamicAim = Enum.KeyCode.F, -- F key for dynamic aim lock
+		dynamicAim = ServerConfigs.Client.Keybinds.archer.dynamicAim,
 	}
 }
 
@@ -308,7 +298,7 @@ local function disableCameraOffset()
 	if player.Character and player.Character:FindFirstChild("Humanoid") then
 		local humanoid = player.Character.Humanoid
 		-- Restore original camera offset
-		humanoid.CameraOffset = originalCameraOffset or Vector3.new(0, 0, 0)
+		humanoid.CameraOffset = originalCameraOffset
 	end
 end
 
@@ -463,7 +453,7 @@ local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	end
 	
 	-- Use specific action speed or fallback to current action type
-	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType]
 	local scaledDuration = tweenDuration / speedMultiplier
 	local tweenInfo = TweenInfo.new(scaledDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	local tween = TweenService:Create(camera, tweenInfo, {CFrame = targetCFrame})
@@ -498,7 +488,7 @@ local function playCameraSequence(sequence, actionType)
 	local root = char:WaitForChild("HumanoidRootPart")
 
 	-- Get speed multiplier for this action
-	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType] or 1.0
+	local speedMultiplier = CAMERA_SPEED_MULTIPLIERS[actionType] or CAMERA_SPEED_MULTIPLIERS[currentActionType]
 
 	-- Disable archer aiming system during starfall ultimate and hunterMark buff
 	if actionType == "starfall" or actionType == "hunterMark" then
@@ -514,7 +504,7 @@ local function playCameraSequence(sequence, actionType)
 			targetCFrame = root.CFrame * step.cf
 		else
 			-- Old format: construct CFrame from offset and rotations
-			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX or 0, step.rotY or 0, step.rotZ or 0)
+			targetCFrame = root.CFrame * step.offset * CFrame.Angles(step.rotX, step.rotY, step.rotZ)
 		end
 		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
 		local scaledHoldTime = step.holdTime / speedMultiplier

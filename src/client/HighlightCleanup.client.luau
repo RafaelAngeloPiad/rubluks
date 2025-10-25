@@ -5,8 +5,12 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
+
+-- Import centralized configuration
+local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
 -- Function to clean up highlights on player
 local function cleanupPlayerHighlights()
@@ -21,7 +25,7 @@ end
 
 -- Clean up highlights every minute (60 seconds)
 local cleanupTimer = 0
-local cleanupInterval = 60 -- 60 seconds
+local cleanupInterval = ServerConfigs.Client.HighlightCleanup.cleanupInterval
 
 -- Connect to Heartbeat for timer
 RunService.Heartbeat:Connect(function(deltaTime)
