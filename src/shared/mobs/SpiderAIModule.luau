@@ -109,7 +109,7 @@ local function initializeSpider(enemy)
 						attachTo = root,
 						offset = CFrame.new(0, 0, -3), -- Hitbox in front of spider
 						size = Vector3.new(6, 6, 6), -- 6x6x6 stud hitbox
-						damage = 15, -- Adjust damage as needed
+						damage = 50, -- Adjust damage as needed
 						character = enemy, -- Exclude the spider itself
 						name = "SpiderAttack",
 						showVisual = true,

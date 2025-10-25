@@ -104,6 +104,19 @@ local function initializeGolem(monster)
 		end
 	end
 	
+	-- Emergency attack reset function
+	local function forceResetAttack()
+		if attacking then
+			warn("Force resetting golem attack!")
+			attacking = false
+			pcall(function()
+				if attackTrack.IsPlaying then
+					attackTrack:Stop(0)
+				end
+			end)
+		end
+	end
+	
 	local function stopWalk()
 		if isWalking then
 			isWalking = false
@@ -147,7 +160,7 @@ local function initializeGolem(monster)
 						})
 					end
 					
-					-- Wait for animation to stop with timeout
+					-- Wait for animation to stop with timeout (same as spider)
 					local animationStopped = false
 					local timeout = 0
 					local maxTimeout = 3 -- 3 second timeout
@@ -172,14 +185,9 @@ local function initializeGolem(monster)
 						end
 					end
 					
-					-- Cleanup
+					-- Cleanup connection
 					if stopConnection then
 						stopConnection:Disconnect()
-					end
-					
-					-- Force stop animation if it's still playing
-					if attackTrack.IsPlaying then
-						attackTrack:Stop(0.1)
 					end
 				end)
 				
@@ -200,11 +208,8 @@ local function initializeGolem(monster)
 			if not root then continue end
 
 			-- Safety check: reset attacking state if stuck for too long
-			if attacking and tick() - lastAttackTime > 5 then
-				attacking = false
-				if attackTrack.IsPlaying then
-					attackTrack:Stop(0.1)
-				end
+			if attacking and tick() - lastAttackTime > 3 then
+				forceResetAttack()
 			end
 
 			local position = root.Position
@@ -232,7 +237,7 @@ local function initializeGolem(monster)
 
 					if targetDistFromSpawn <= RETURN_RADIUS then
 						-- Attack or follow
-						if targetDist <= ATTACK_RANGE then
+						if targetDist <= ATTACK_RANGE and not attacking then
 							stopWalk()
 							playAttack()
 						else
