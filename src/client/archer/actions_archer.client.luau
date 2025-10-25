@@ -180,7 +180,7 @@ local function createCrosshair()
 		local camera = workspace.CurrentCamera
 		if not camera then return end
 		
-		local crosshairOffset = Vector3.new(-17, 14, 0) -- X: left(-)/right(+), Y: down(-)/up(+)
+		local crosshairOffset = Vector3.new(-19.5, 14, 0) -- X: left(-)/right(+), Y: down(-)/up(+) (adjusted for increased camera offset)
 			
 			-- Get camera's center view direction (same as projectile)
 			local cameraDirection = camera.CFrame.LookVector
@@ -284,7 +284,7 @@ local function enableCameraOffset()
 	
 	-- Set camera offset to move player to the left side of screen
 	-- This moves the player but keeps the crosshair centered
-	humanoid.CameraOffset = Vector3.new(2.5, 0, 0) -- 2.5 studs to the left
+	humanoid.CameraOffset = Vector3.new(4.0, 0, 0) -- 4.0 studs to the left (increased from 2.5)
 	
 	cameraOffsetEnabled = true
 end
