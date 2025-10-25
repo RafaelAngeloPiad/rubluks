@@ -14,8 +14,7 @@
 
 -- -- Death trigger
 -- local function OnDeath()
--- 	print("[MobDeathHandler] Mob died:", Mob.Name)
-	
+
 -- 	-- Disable movement/AI scripts
 -- 	for _, child in ipairs(Mob:GetChildren()) do
 -- 		if child:IsA("Script") or child:IsA("LocalScript") then
@@ -33,11 +32,10 @@
 
 -- 	-- Detach limbs
 -- 	BreakJoints(Mob)
-	
+
 -- 	-- Wait a few seconds then completely remove from map
 -- 	task.wait(3) -- Wait 3 seconds
-	
--- 	print("[MobDeathHandler] Removing mob from map:", Mob.Name)
+
 -- 	Mob:Destroy() -- Completely removes the mob from the game
 -- end
 

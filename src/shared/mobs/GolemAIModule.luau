@@ -74,7 +74,6 @@ local function initializeGolem(monster)
 	-- Use model reference as unique identifier
 	local golemId = monster
 	
-	print("[GolemAI] Initializing golem:", monster.Name)
 	
 	local humanoid = monster:WaitForChild("Humanoid")
 	local root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart
@@ -145,7 +144,6 @@ local function initializeGolem(monster)
 		while task.wait(UPDATE_RATE) do
 			-- Check if model still exists or golem died
 			if not monster.Parent or not humanoid or humanoid.Health <= 0 then 
-				print("[GolemAI] Golem removed or died:", monster.Name)
 				break 
 			end
 			if not root then root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart end

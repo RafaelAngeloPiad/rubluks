@@ -1,5 +1,5 @@
--- Centralized Spider AI System
--- Looks for models with "spider_entity" tag and initializes them
+-- Spider AI Module
+-- Centralized AI logic that can be called from anywhere
 -- Enhanced with pole system and proper leg grouping for better movement
 
 local RunService = game:GetService("RunService")
@@ -54,14 +54,10 @@ end
 
 
 -- ========== TRACKING ==========
-local initializedSpiders = {}
+-- No need for tracking since each model has its own initializer
 
 -- ========== MAIN SPIDER SCRIPT ==========
-local function InitializeSpider(enemy)
-	-- Use model reference as unique identifier
-	local spiderId = enemy
-	
-	print("[SpiderAI] Initializing spider:", enemy.Name)
+local function initializeSpider(enemy)
 	local root = enemy:WaitForChild("HumanoidRootPart")
 	local hum = enemy:WaitForChild("Humanoid")
 	local alignOrientation = root:FindFirstChild("AlignOrientation")
@@ -147,7 +143,6 @@ local function InitializeSpider(enemy)
 		while task.wait(0.25) do
 			-- Check if model still exists or spider died
 			if not enemy.Parent or not hum or hum.Health <= 0 then 
-				print("[SpiderAI] Spider removed or died:", enemy.Name)
 				break 
 			end
 			local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
@@ -256,38 +251,17 @@ local function InitializeSpider(enemy)
 	end)()
 end
 
--- === TRACKING ===
--- No need for tracking since each model has its own initializer
-
 -- === MODULE EXPORTS ===
 local SpiderAIModule = {}
 
 function SpiderAIModule.initializeSpider(model)
-	InitializeSpider(model)
+	initializeSpider(model)
 end
 
 function SpiderAIModule.isInitialized(model)
 	-- Always return false since we don't track initialization
 	-- Each model has its own initializer that only runs once
 	return false
-end
-
--- === AUTO-INITIALIZATION (Optional) ===
--- This function can be called to automatically find and initialize all spiders with tags
-function SpiderAIModule.autoInitializeSpiders()
-	print("[SpiderAI] Looking for spiders with 'spider_entity' tag...")
-	
-	-- Initialize existing spiders
-	for _, spider in ipairs(CollectionService:GetTagged("spider_entity")) do
-		InitializeSpider(spider)
-	end
-	
-	-- Listen for new spiders
-	CollectionService:GetInstanceAddedSignal("spider_entity"):Connect(function(spider)
-		InitializeSpider(spider)
-	end)
-	
-	print("[SpiderAI] Spider AI system ready!")
 end
 
 return SpiderAIModule
