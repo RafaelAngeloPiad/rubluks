@@ -640,7 +640,7 @@ local function handleNormalAttack(player)
 		_G.enableKnightTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Knight")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -674,7 +674,7 @@ local function handleNormalAttack(player)
 		_G.enableKnightTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Knight")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -711,7 +711,7 @@ local function handleNormalAttack(player)
 			_G.enableKnightTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Knight")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -739,7 +739,7 @@ local function handleNormalAttack(player)
 			_G.enableKnightTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Knight")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -770,8 +770,8 @@ local function handleNormalAttack(player)
 				-- Enable trails for combo 1 fallback
 				_G.enableKnightTrails(player, "combo1Fallback")
 				
-				-- Combo 1 hitbox (fallback from combo 3 cooldown)
-				local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
+			-- Combo 1 hitbox (fallback from combo 3 cooldown)
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Knight")
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = hitboxConfig.offset,
@@ -798,8 +798,8 @@ local function handleNormalAttack(player)
 				-- Enable trails for combo 3
 				_G.enableKnightTrails(player, "combo3")
 				
-				-- Combo 3 hitbox (most powerful)
-				local hitboxConfig = ServerConfigs.getHitboxConfig("combo3")
+			-- Combo 3 hitbox (most powerful)
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Knight")
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = hitboxConfig.offset,

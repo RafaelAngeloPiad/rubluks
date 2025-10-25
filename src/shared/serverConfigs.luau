@@ -522,56 +522,209 @@ ServerConfigs.GladiatorSkills = {
 }
 
 -- ========================================
+-- CLASS-SPECIFIC HITBOX CONFIGURATIONS
+-- ========================================
+
+-- Archer Hitboxes (Ranged attacks)
+ServerConfigs.ArcherHitboxes = {
+	normalAttack = {
+		offset = CFrame.new(0, 0, -2),
+		size = Vector3.new(6, 6, 6),
+		damage = 20,
+		delay = 0,
+		visualColor = Color3.new(0, 1, 0) -- Green for arrows
+	},
+	jumpAttack = {
+		offset = CFrame.new(0, -5, -10),
+		size = Vector3.new(8, 20, 15),
+		damage = 20,
+		delay = 0,
+		visualColor = Color3.new(0, 1, 0) -- Green for arrows
+	},
+	block = {
+		offset = CFrame.new(0, 0, -2),
+		size = Vector3.new(6, 6, 4),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(0.5, 0.5, 0.5)
+	}
+}
+
+-- Samurai Hitboxes (Fast, precise attacks)
+ServerConfigs.SamuraiHitboxes = {
+	combo1 = {
+		offset = CFrame.new(0, 0, -3),
+		size = Vector3.new(12, 12, 9),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(1, 0.8, 0) -- Orange
+	},
+	combo2 = {
+		offset = CFrame.new(0, 0, -4),
+		size = Vector3.new(15, 15, 12),
+		damage = 12,
+		delay = 0,
+		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
+	},
+	combo3 = {
+		offset = CFrame.new(0, 0, -5),
+		size = Vector3.new(25, 25, 25),
+		damage = 20,
+		delay = 2, -- Base delay (auto-scales with animation speed)
+		visualColor = Color3.new(1, 0, 0) -- Red
+	},
+	moveAttack = {
+		offset = CFrame.new(0, 0, -10),
+		size = Vector3.new(18, 18, 18),
+		damage = 15,
+		delay = 0.4, -- Base delay (auto-scales with animation speed)
+		visualColor = Color3.new(0, 0.8, 1) -- Light blue
+	},
+	jumpAttack = {
+		offset = CFrame.new(0, -5, -10),
+		size = Vector3.new(8, 20, 15),
+		damage = 12,
+		delay = 0,
+		visualColor = Color3.new(0, 1, 0) -- Green
+	},
+	block = {
+		offset = CFrame.new(0, 0, -2),
+		size = Vector3.new(6, 6, 4),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
+	}
+}
+
+-- Brawler Hitboxes (Heavy, close-range attacks)
+ServerConfigs.BrawlerHitboxes = {
+	combo1 = {
+		offset = CFrame.new(0, 0, -3),
+		size = Vector3.new(12, 12, 9),
+		damage = 10, -- Slightly higher damage for brawler
+		delay = 0,
+		visualColor = Color3.new(1, 0.5, 0) -- Dark orange
+	},
+	combo2 = {
+		offset = CFrame.new(0, 0, -4),
+		size = Vector3.new(15, 15, 12),
+		damage = 15, -- Higher damage for brawler
+		delay = 0,
+		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
+	},
+	moveAttack = {
+		offset = CFrame.new(0, 0, -10),
+		size = Vector3.new(18, 18, 18),
+		damage = 18, -- Higher damage for brawler
+		delay = 0.4, -- Base delay (auto-scales with animation speed)
+		visualColor = Color3.new(0, 0.8, 1) -- Light blue
+	},
+	jumpAttack = {
+		offset = CFrame.new(0, -5, -10),
+		size = Vector3.new(8, 20, 15),
+		damage = 15, -- Higher damage for brawler
+		delay = 0,
+		visualColor = Color3.new(0, 1, 0) -- Green
+	},
+	block = {
+		offset = CFrame.new(0, 0, -2),
+		size = Vector3.new(6, 6, 4),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
+	}
+}
+
+-- Knight Hitboxes (Balanced, defensive attacks)
+ServerConfigs.KnightHitboxes = {
+	combo1 = {
+		offset = CFrame.new(0, 0, -3),
+		size = Vector3.new(12, 12, 9),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(1, 0.8, 0) -- Orange
+	},
+	combo2 = {
+		offset = CFrame.new(0, 0, -4),
+		size = Vector3.new(15, 15, 12),
+		damage = 12,
+		delay = 0,
+		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
+	},
+	combo3 = {
+		offset = CFrame.new(0, 0, -5),
+		size = Vector3.new(25, 25, 25),
+		damage = 20,
+		delay = 1, -- Shorter delay than samurai
+		visualColor = Color3.new(1, 0, 0) -- Red
+	},
+	moveAttack = {
+		offset = CFrame.new(0, 0, -10),
+		size = Vector3.new(18, 18, 18),
+		damage = 15,
+		delay = 0.4, -- Base delay (auto-scales with animation speed)
+		visualColor = Color3.new(0, 0.8, 1) -- Light blue
+	},
+	jumpAttack = {
+		offset = CFrame.new(0, -5, -10),
+		size = Vector3.new(8, 20, 15),
+		damage = 12,
+		delay = 0,
+		visualColor = Color3.new(0, 1, 0) -- Green
+	},
+	block = {
+		offset = CFrame.new(0, 0, -2),
+		size = Vector3.new(6, 6, 4),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
+	}
+}
+
+-- Gladiator Hitboxes (Aggressive, wide attacks)
+ServerConfigs.GladiatorHitboxes = {
+	combo1 = {
+		offset = CFrame.new(0, 0, -3),
+		size = Vector3.new(12, 12, 9),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(1, 0.8, 0) -- Orange
+	},
+	combo2 = {
+		offset = CFrame.new(0, 0, -4),
+		size = Vector3.new(15, 15, 12),
+		damage = 12,
+		delay = 0,
+		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
+	},
+	moveAttack = {
+		offset = CFrame.new(0, 0, -10),
+		size = Vector3.new(18, 18, 18),
+		damage = 15,
+		delay = 0.4, -- Base delay (auto-scales with animation speed)
+		visualColor = Color3.new(0, 0.8, 1) -- Light blue
+	},
+	jumpAttack = {
+		offset = CFrame.new(0, -5, -10),
+		size = Vector3.new(8, 20, 15),
+		damage = 12,
+		delay = 0,
+		visualColor = Color3.new(0, 1, 0) -- Green
+	},
+	block = {
+		offset = CFrame.new(0, 0, -2),
+		size = Vector3.new(6, 6, 4),
+		damage = 8,
+		delay = 0,
+		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
+	}
+}
+
+-- ========================================
 -- GLOBAL HITBOX CONFIGURATIONS
 -- ========================================
 
 ServerConfigs.Hitboxes = {
-	-- Normal Attack Hitboxes
-	NormalAttacks = {
-		combo1 = {
-			offset = CFrame.new(0, 0, -3),
-			size = Vector3.new(12, 12, 9),
-			damage = 8,
-			delay = 0,
-			visualColor = Color3.new(1, 0.8, 0)
-		},
-		combo2 = {
-			offset = CFrame.new(0, 0, -4),
-			size = Vector3.new(15, 15, 12),
-			damage = 12,
-			delay = 0,
-			visualColor = Color3.new(0.8, 0.2, 1)
-		},
-		combo3 = {
-			offset = CFrame.new(0, 0, -5),
-			size = Vector3.new(25, 25, 25),
-			damage = 20,
-			delay = 2, -- Base delay (auto-scales with animation speed)
-			visualColor = Color3.new(1, 0, 0)
-		},
-		moveAttack = {
-			offset = CFrame.new(0, 0, -10),
-			size = Vector3.new(18, 18, 18),
-			damage = 15,
-			delay = 0.4, -- Base delay (auto-scales with animation speed)
-			visualColor = Color3.new(0, 0.8, 1)
-		},
-		jumpAttack = {
-			offset = CFrame.new(0, -5, -10),
-			size = Vector3.new(8, 20, 15),
-			damage = 12,
-			delay = 0,
-			visualColor = Color3.new(0, 1, 0)
-		},
-		block = {
-			offset = CFrame.new(0, 0, -2),
-			size = Vector3.new(6, 6, 4),
-			damage = 8,
-			delay = 0,
-			visualColor = Color3.new(0.5, 0.5, 0.5)
-		}
-	},
-	
 	-- DOT (Damage Over Time) Configuration
 	DOT = {
 		defaultTickTime = 0.5, -- Default damage tick time in seconds
@@ -645,14 +798,20 @@ function ServerConfigs.getSkillConfig(classType, skillName)
 	return {}
 end
 
--- Function to get hitbox configuration for normal attacks
-function ServerConfigs.getHitboxConfig(attackType)
-	return ServerConfigs.Hitboxes.NormalAttacks[attackType] or ServerConfigs.Hitboxes.Defaults
+-- Function to get class-specific hitbox configuration
+function ServerConfigs.getHitboxConfig(attackType, classType)
+	local classHitboxes = ServerConfigs[classType .. "Hitboxes"]
+	if classHitboxes and classHitboxes[attackType] then
+		return classHitboxes[attackType]
+	end
+	
+	-- Fallback to defaults if class-specific config not found
+	return ServerConfigs.Hitboxes.Defaults
 end
 
 -- Function to get hitbox configuration with defaults
-function ServerConfigs.getHitboxConfigWithDefaults(attackType, customConfig)
-	local baseConfig = ServerConfigs.getHitboxConfig(attackType)
+function ServerConfigs.getHitboxConfigWithDefaults(attackType, classType, customConfig)
+	local baseConfig = ServerConfigs.getHitboxConfig(attackType, classType)
 	local defaults = ServerConfigs.Hitboxes.Defaults
 	
 	return {
@@ -662,6 +821,11 @@ function ServerConfigs.getHitboxConfigWithDefaults(attackType, customConfig)
 		delay = customConfig and customConfig.delay or baseConfig.delay or defaults.defaultDelay,
 		visualColor = customConfig and customConfig.visualColor or baseConfig.visualColor or defaults.defaultVisualColor
 	}
+end
+
+-- Legacy function for backward compatibility
+function ServerConfigs.getLegacyHitboxConfig(attackType)
+	return ServerConfigs.getHitboxConfig(attackType, "Samurai") -- Default to Samurai for legacy calls
 end
 
 return ServerConfigs

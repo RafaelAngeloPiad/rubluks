@@ -491,7 +491,7 @@ local function handleNormalAttack(player)
 		_G.enableSamuraiTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Samurai")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -525,7 +525,7 @@ local function handleNormalAttack(player)
 		_G.enableSamuraiTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Samurai")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -562,7 +562,7 @@ local function handleNormalAttack(player)
 			_G.enableSamuraiTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Samurai")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -590,7 +590,7 @@ local function handleNormalAttack(player)
 			_G.enableSamuraiTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Samurai")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -621,8 +621,8 @@ local function handleNormalAttack(player)
 				-- Enable trails for combo 1 fallback
 				_G.enableSamuraiTrails(player, "combo1Fallback")
 				
-				-- Combo 1 hitbox (fallback from combo 3 cooldown)
-				local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
+			-- Combo 1 hitbox (fallback from combo 3 cooldown)
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Samurai")
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = hitboxConfig.offset,
@@ -649,8 +649,8 @@ local function handleNormalAttack(player)
 				-- Enable trails for combo 3 (longer duration for the powerful attack)
 				_G.enableSamuraiTrails(player, "combo3")
 				
-				-- Combo 3 hitbox (most powerful)
-				local hitboxConfig = ServerConfigs.getHitboxConfig("combo3")
+			-- Combo 3 hitbox (most powerful)
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Samurai")
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = hitboxConfig.offset,

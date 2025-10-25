@@ -610,7 +610,7 @@ local function handleNormalAttack(player)
 		_G.enableGladiatorTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Gladiator")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -644,7 +644,7 @@ local function handleNormalAttack(player)
 		_G.enableGladiatorTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Gladiator")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -681,7 +681,7 @@ local function handleNormalAttack(player)
 			_G.enableGladiatorTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Gladiator")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -709,7 +709,7 @@ local function handleNormalAttack(player)
 			_G.enableGladiatorTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Gladiator")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,

@@ -606,7 +606,7 @@ local function handleNormalAttack(player)
 		_G.enableBrawlerTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Brawler")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -640,7 +640,7 @@ local function handleNormalAttack(player)
 		_G.enableBrawlerTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
-		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack")
+		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Brawler")
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
@@ -677,7 +677,7 @@ local function handleNormalAttack(player)
 			_G.enableBrawlerTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Brawler")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -705,7 +705,7 @@ local function handleNormalAttack(player)
 			_G.enableBrawlerTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
-			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2")
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Brawler")
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
