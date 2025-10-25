@@ -102,6 +102,31 @@ local function shouldApplyDamage(attacker, target)
     return true
 end
 
+-- Function to create damage flash effect using Highlight
+local function createDamageFlash(model, duration)
+    duration = duration or 0.2 -- Default 0.2 seconds
+    
+    -- Find or create highlight for the model
+    local highlight = model:FindFirstChildOfClass("Highlight")
+    if not highlight then
+        highlight = Instance.new("Highlight")
+        highlight.Parent = model
+    end
+    
+    -- Flash red
+    highlight.FillColor = Color3.new(1, 0, 0) -- Bright red
+    highlight.FillTransparency = 0.8 -- Slightly transparent
+    highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
+    highlight.OutlineTransparency = 0 -- Solid outline
+    
+    -- Destroy highlight after duration
+    task.delay(duration, function()
+        if highlight and highlight.Parent then
+            highlight:Destroy()
+        end
+    end)
+end
+
 -- ========================================
 -- FRIENDLY FIRE CONTROL FUNCTIONS
 -- ========================================
@@ -233,6 +258,9 @@ function _G.createStaticHitbox(config)
 						hitTargets[humanoid] = true
 						humanoid:TakeDamage(damage)
 						
+						-- Create damage flash effect on the target
+						createDamageFlash(model, 0.2)
+						
 						-- Flash visual
 						if visual then
 							visual.Color = Color3.new(1, 1, 1)
@@ -357,6 +385,9 @@ function _G.createStaticDOTHitbox(config)
 						-- Check if damage should be applied using new targeting system
 						if shouldApplyDamage(character, model) then
 							humanoid:TakeDamage(damage)
+							
+							-- Create damage flash effect on the target
+							createDamageFlash(model, 0.15)
 							
 							-- Flash visual on hit
 							if visual then
@@ -510,6 +541,9 @@ function _G.createTravelingHitbox(config)
 						if shouldApplyDamage(character, model) then
 							hitTargets[humanoid] = true
 							humanoid:TakeDamage(damage)
+							
+							-- Create damage flash effect on the target
+							createDamageFlash(model, 0.2)
 							
 							-- Flash visual on hit
 							if visual then
