@@ -10,7 +10,19 @@ local ServerConfigs = {}
 -- ========================================
 
 ServerConfigs.Hitbox = {
-	transparency = 0.8, -- Global transparency for all hitbox visuals
+	transparency = 1, -- Global transparency for all hitbox visuals
+	
+		-- Highlighting Configuration
+		highlighting = {
+			-- Damage flash effect settings (same for all hitbox types)
+			damageFlash = {
+				fillColor = Color3.new(1, 0, 0), -- Bright red
+				fillTransparency = 0.9, -- Slightly transparent
+				outlineColor = Color3.new(1, 0, 0), -- Red outline
+				outlineTransparency = 0, -- Solid outline
+				duration = 0.2 -- Flash duration in seconds
+			}
+		}
 }
 
 -- ========================================

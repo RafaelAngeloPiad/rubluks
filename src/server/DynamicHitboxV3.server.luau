@@ -93,6 +93,9 @@ end
 local function createDamageFlash(model, duration)
     duration = duration
     
+    -- Get highlighting configuration
+    local highlightConfig = ServerConfigs.Hitbox.highlighting.damageFlash
+    
     -- Find or create highlight for the model
     local highlight = model:FindFirstChildOfClass("Highlight")
     if not highlight then
@@ -100,11 +103,11 @@ local function createDamageFlash(model, duration)
         highlight.Parent = model
     end
     
-    -- Flash red
-    highlight.FillColor = Color3.new(1, 0, 0) -- Bright red
-    highlight.FillTransparency = 0.8 -- Slightly transparent
-    highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
-    highlight.OutlineTransparency = 0 -- Solid outline
+    -- Apply configuration values
+    highlight.FillColor = highlightConfig.fillColor
+    highlight.FillTransparency = highlightConfig.fillTransparency
+    highlight.OutlineColor = highlightConfig.outlineColor
+    highlight.OutlineTransparency = highlightConfig.outlineTransparency
     
     -- Destroy highlight after duration
     task.delay(duration, function()
@@ -246,17 +249,7 @@ function _G.createStaticHitbox(config)
 						humanoid:TakeDamage(damage)
 						
 						-- Create damage flash effect on the target
-						createDamageFlash(model, 0.2)
-						
-						-- Flash visual
-						if visual then
-							visual.Color = Color3.new(1, 1, 1)
-							task.delay(0.05, function()
-								if visual and visual.Parent then
-									visual.Color = visualColor
-								end
-							end)
-						end
+						createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 					end
 				end
 			end
@@ -374,17 +367,7 @@ function _G.createStaticDOTHitbox(config)
 							humanoid:TakeDamage(damage)
 							
 							-- Create damage flash effect on the target
-							createDamageFlash(model, 0.15)
-							
-							-- Flash visual on hit
-							if visual then
-								visual.Color = Color3.new(1, 0.5, 0) -- Orange flash for DOT
-								task.delay(0.05, function()
-									if visual and visual.Parent then
-										visual.Color = visualColor
-									end
-								end)
-							end
+							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 						end
 					end
 				end
@@ -530,17 +513,7 @@ function _G.createTravelingHitbox(config)
 							humanoid:TakeDamage(damage)
 							
 							-- Create damage flash effect on the target
-							createDamageFlash(model, 0.2)
-							
-							-- Flash visual on hit
-							if visual then
-								visual.Color = Color3.new(1, 0, 0)
-								task.delay(0.1, function()
-									if visual and visual.Parent then
-										visual.Color = visualColor
-									end
-								end)
-							end
+							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 						end
 					end
 				end
@@ -690,7 +663,7 @@ function _G.createProjectileHitbox(config)
 								humanoid:TakeDamage(damage)
 								
 								-- Create damage flash effect on the target
-								createDamageFlash(model, 0.2)
+								createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 								hitSomething = true
 							end
 						end
@@ -702,14 +675,9 @@ function _G.createProjectileHitbox(config)
 			if hitSomething then
 				projectileStopped = true
 
-				-- Flash visual on hit
+				-- Destroy visual on hit
 				if visual then
-					visual.Color = Color3.new(1, 0, 0) -- Red flash on hit
-					task.delay(0.1, function()
-						if visual and visual.Parent then
-							visual:Destroy()
-						end
-					end)
+					visual:Destroy()
 				end
 
 				-- Apply configurable delay before anchoring the arrow for better visual alignment
