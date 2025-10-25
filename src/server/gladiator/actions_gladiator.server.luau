@@ -8,7 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
 -- Import centralized configuration
-local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("serverConfigs"))
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")

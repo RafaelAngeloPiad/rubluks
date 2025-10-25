@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- ========================================
 
 -- Import centralized configuration
-local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("serverConfigs"))
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
 local HITBOX_CONFIG = {
 	transparency = ServerConfigs.Hitbox.transparency, -- Global transparency for all hitbox visuals
