@@ -61,14 +61,7 @@ local function InitializeSpider(enemy)
 	-- Use model reference as unique identifier
 	local spiderId = enemy
 	
-	-- Check if already initialized
-	if initializedSpiders[spiderId] then
-		print("[SpiderAI] Spider already initialized:", enemy.Name)
-		return
-	end
-	
 	print("[SpiderAI] Initializing spider:", enemy.Name)
-	initializedSpiders[spiderId] = true
 	local root = enemy:WaitForChild("HumanoidRootPart")
 	local hum = enemy:WaitForChild("Humanoid")
 	local alignOrientation = root:FindFirstChild("AlignOrientation")
@@ -152,7 +145,11 @@ local function InitializeSpider(enemy)
 	-- === MOVEMENT & ATTACK AI ===
 	coroutine.wrap(function()
 		while task.wait(0.25) do
-			if not hum or hum.Health <= 0 then break end
+			-- Check if model still exists or spider died
+			if not enemy.Parent or not hum or hum.Health <= 0 then 
+				print("[SpiderAI] Spider removed or died:", enemy.Name)
+				break 
+			end
 			local curPos = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
 			local dist = (curPos - spawnPosition).Magnitude
 			local target = FindClosestPlayer(curPos)
@@ -260,7 +257,7 @@ local function InitializeSpider(enemy)
 end
 
 -- === TRACKING ===
-local initializedSpiders = {}
+-- No need for tracking since each model has its own initializer
 
 -- === MODULE EXPORTS ===
 local SpiderAIModule = {}
@@ -270,7 +267,9 @@ function SpiderAIModule.initializeSpider(model)
 end
 
 function SpiderAIModule.isInitialized(model)
-	return initializedSpiders[model] ~= nil
+	-- Always return false since we don't track initialization
+	-- Each model has its own initializer that only runs once
+	return false
 end
 
 -- === AUTO-INITIALIZATION (Optional) ===

@@ -20,7 +20,7 @@ local STOP_DELAY = 0.25
 local EXCLUDE_TAGS = {"golem_entity"}
 
 -- === TRACKING ===
-local initializedGolems = {}
+-- No need for tracking since each model has its own initializer
 
 -- === ANIMATION FUNCTIONS ===
 local function createAnimations(humanoid)
@@ -74,14 +74,7 @@ local function initializeGolem(monster)
 	-- Use model reference as unique identifier
 	local golemId = monster
 	
-	-- Check if already initialized
-	if initializedGolems[golemId] then
-		print("[GolemAI] Golem already initialized:", monster.Name)
-		return
-	end
-	
 	print("[GolemAI] Initializing golem:", monster.Name)
-	initializedGolems[golemId] = true
 	
 	local humanoid = monster:WaitForChild("Humanoid")
 	local root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart
@@ -150,7 +143,11 @@ local function initializeGolem(monster)
 	-- Main AI loop for this golem
 	task.spawn(function()
 		while task.wait(UPDATE_RATE) do
-			if not humanoid or humanoid.Health <= 0 then break end
+			-- Check if model still exists or golem died
+			if not monster.Parent or not humanoid or humanoid.Health <= 0 then 
+				print("[GolemAI] Golem removed or died:", monster.Name)
+				break 
+			end
 			if not root then root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart end
 			if not root then continue end
 
@@ -231,7 +228,9 @@ function GolemAIModule.initializeGolem(model)
 end
 
 function GolemAIModule.isInitialized(model)
-	return initializedGolems[model] ~= nil
+	-- Always return false since we don't track initialization
+	-- Each model has its own initializer that only runs once
+	return false
 end
 
 return GolemAIModule
