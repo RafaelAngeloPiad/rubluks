@@ -76,17 +76,6 @@ local function explosionNear(character, angle, tilt)
 		end
 	end
 
-	-- Hitbox at explosion location (similar to Starfall)
-	_G.createStaticHitbox({
-		cframe = spawnCF,
-		size = Vector3.new(25, 25, 25),
-		damage = 25,
-		character = character,
-		name = "MightyBlade Explosion Near",
-		showVisual = true,
-		visualColor = Color3.new(1, 0.5, 0),
-		delay = 0.1,
-	})
 
 	Debris:AddItem(vfx, 1)
 
@@ -150,17 +139,6 @@ local function explosionFar(character, angle, tilt)
 		end
 	end
 
-	-- Hitbox at explosion location (similar to Starfall)
-	_G.createStaticHitbox({
-		cframe = spawnCF,
-		size = Vector3.new(30, 30, 30),
-		damage = 30,
-		character = character,
-		name = "MightyBlade Explosion Far",
-		showVisual = true,
-		visualColor = Color3.new(1, 0.3, 0),
-		delay = 0.1,
-	})
 
 	Debris:AddItem(vfx, 1)
 

@@ -97,16 +97,17 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		game:GetService("Debris"):AddItem(vfx, 4)
 		
-		-- Hitbox for meteor explosion
-		_G.createStaticHitbox({
+		-- MASSIVE CENTER DOT HITBOX for MeteorDive
+		_G.createStaticDOTHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -1, 0),
-			size = METEORDIVE_CONFIG.explosionHitboxSize,
-			damage = METEORDIVE_CONFIG.explosionHitboxDamage,
+			size = Vector3.new(250, 60, 250), -- Massive center hitbox
+			damage = 8, -- Damage per tick
+			damageTickTime = 0.5, -- Damage every 0.5 seconds
 			character = character,
-			name = "MeteorExplosion",
+			name = "MeteorDive Center DOT",
 			showVisual = true,
-			visualColor = Color3.new(1, 0.5, 0),
+			visualColor = Color3.new(1, 0.5, 0), -- Orange color
 			delay = METEORDIVE_CONFIG.hitboxDelay
 		})
 	end)

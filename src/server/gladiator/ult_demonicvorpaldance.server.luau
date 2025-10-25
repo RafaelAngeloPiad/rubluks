@@ -88,19 +88,6 @@ local function explosionNear(character, angle, tilt)
 
 	Debris:AddItem(vfx, 1)
 	
-	-- Hitbox for near explosion
-	local hitboxCF = baseCF * outwardRotation * CFrame.new(0, -3, -forwardOffset)
-	_G.createStaticHitbox({
-		attachTo = root,
-		offset = root.CFrame:ToObjectSpace(hitboxCF),
-		size = DEMONICVORPAL_CONFIG.nearHitboxSize,
-		damage = DEMONICVORPAL_CONFIG.nearHitboxDamage,
-		character = character,
-		name = "DemonicVorpalNear",
-		showVisual = true,
-		visualColor = Color3.new(1, 0, 0.5),
-		delay = DEMONICVORPAL_CONFIG.hitboxDelay
-	})
 end
 
 -- Helper function: Explosion Far
@@ -133,19 +120,6 @@ local function explosionFar(character, angle, tilt)
 
 	Debris:AddItem(vfx, 1)
 	
-	-- Hitbox for far explosion
-	local hitboxCF = baseCF * outwardRotation * CFrame.new(0, -3, -forwardOffset)
-	_G.createStaticHitbox({
-		attachTo = root,
-		offset = root.CFrame:ToObjectSpace(hitboxCF),
-		size = DEMONICVORPAL_CONFIG.farHitboxSize,
-		damage = DEMONICVORPAL_CONFIG.farHitboxDamage,
-		character = character,
-		name = "DemonicVorpalFar",
-		showVisual = true,
-		visualColor = Color3.new(1, 0, 0.8),
-		delay = DEMONICVORPAL_CONFIG.hitboxDelay
-	})
 end
 
 remote.OnServerEvent:Connect(function(player, skillType)
@@ -233,6 +207,21 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			explosionNear(character, angle,  math.rad(0))
 			explosionFar(character, angle,  math.rad(0))
 		end
+		
+		-- MASSIVE CENTER DOT HITBOX for DemonicVorpalDance
+		local root = character:WaitForChild("HumanoidRootPart")
+		_G.createStaticDOTHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, 0, 0),
+			size = Vector3.new(250, 60, 250), -- Massive center hitbox
+			damage = 5, -- Damage per tick
+			damageTickTime = 0.5, -- Damage every 0.5 seconds
+			character = character,
+			name = "DemonicVorpalDance Center DOT",
+			showVisual = true,
+			visualColor = Color3.new(1, 0, 0.5), -- Pink/red color
+			delay = 0.2
+		})
 	end)
 
 end)

@@ -70,28 +70,6 @@ local function createExplosionNear(character, angle)
 		end
 	end
 
-	-- Hitbox system (added to original)
-	_G.createStaticHitbox({
-		cframe = spawnCF,
-		size = Vector3.new(25, 25, 25), -- Increased from 15x15x15 to 25x25x25
-		damage = 25,
-		character = character,
-		name = "Starfall Explosion Near",
-		showVisual = true,
-		visualColor = Color3.new(1, 0.5, 0),
-		delay = 0.1,
-	})
-	
-	_G.createStaticHitbox({
-		cframe = root.CFrame,
-		size = Vector3.new(25, 25, 25), -- Increased from 15x15x15 to 25x25x25
-		damage = 25,
-		character = character,
-		name = "Starfall Center Near",
-		showVisual = true,
-		visualColor = Color3.new(0, 1, 0),
-		delay = 0.1,
-	})
 
 	Debris:AddItem(vfx, 1.2)
 end
@@ -120,28 +98,6 @@ local function createExplosionFar(character, angle)
 		end
 	end
 
-	-- Hitbox system (added to original)
-	_G.createStaticHitbox({
-		cframe = spawnCF,
-		size = Vector3.new(30, 30, 30), -- Increased from 20x20x20 to 30x30x30
-		damage = 30,
-		character = character,
-		name = "Starfall Explosion Far",
-		showVisual = true,
-		visualColor = Color3.new(1, 0.3, 0),
-		delay = 0.1,
-	})
-	
-	_G.createStaticHitbox({
-		cframe = root.CFrame,
-		size = Vector3.new(30, 30, 30), -- Increased from 20x20x20 to 30x30x30
-		damage = 30,
-		character = character,
-		name = "Starfall Center Far",
-		showVisual = true,
-		visualColor = Color3.new(0, 0.5, 1),
-		delay = 0.1,
-	})
 
 	Debris:AddItem(vfx, 1.2)
 end
