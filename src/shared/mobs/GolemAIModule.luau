@@ -1,8 +1,9 @@
--- Centralized Golem AI System
--- Looks for models with "golem_entity" tag and initializes them
+-- Golem AI Module
+-- Centralized AI logic that can be called from anywhere
 
 local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 -- === CONFIG ===
 local WALK_ANIMATION_ID = "rbxassetid://107172094908325" -- walk
@@ -222,18 +223,15 @@ local function initializeGolem(monster)
 	end)
 end
 
--- === MAIN INITIALIZATION ===
-print("[GolemAI] Looking for golems with 'golem_entity' tag...")
+-- === MODULE EXPORTS ===
+local GolemAIModule = {}
 
--- Initialize existing golems
-for _, golem in ipairs(CollectionService:GetTagged("golem_entity")) do
-	initializeGolem(golem)
+function GolemAIModule.initializeGolem(model)
+	initializeGolem(model)
 end
 
--- Listen for new golems
-CollectionService:GetInstanceAddedSignal("golem_entity"):Connect(function(golem)
-	initializeGolem(golem)
-end)
+function GolemAIModule.isInitialized(model)
+	return initializedGolems[model] ~= nil
+end
 
-print("[GolemAI] Golem AI system ready!")
-
+return GolemAIModule

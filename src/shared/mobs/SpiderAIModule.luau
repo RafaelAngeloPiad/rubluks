@@ -259,17 +259,36 @@ local function InitializeSpider(enemy)
 	end)()
 end
 
--- === MAIN INITIALIZATION ===
-print("[SpiderAI] Looking for spiders with 'spider_entity' tag...")
+-- === TRACKING ===
+local initializedSpiders = {}
 
--- Initialize existing spiders
-for _, spider in ipairs(CollectionService:GetTagged("spider_entity")) do
-	InitializeSpider(spider)
+-- === MODULE EXPORTS ===
+local SpiderAIModule = {}
+
+function SpiderAIModule.initializeSpider(model)
+	InitializeSpider(model)
 end
 
--- Listen for new spiders
-CollectionService:GetInstanceAddedSignal("spider_entity"):Connect(function(spider)
-	InitializeSpider(spider)
-end)
+function SpiderAIModule.isInitialized(model)
+	return initializedSpiders[model] ~= nil
+end
 
-print("[SpiderAI] Spider AI system ready!")
+-- === AUTO-INITIALIZATION (Optional) ===
+-- This function can be called to automatically find and initialize all spiders with tags
+function SpiderAIModule.autoInitializeSpiders()
+	print("[SpiderAI] Looking for spiders with 'spider_entity' tag...")
+	
+	-- Initialize existing spiders
+	for _, spider in ipairs(CollectionService:GetTagged("spider_entity")) do
+		InitializeSpider(spider)
+	end
+	
+	-- Listen for new spiders
+	CollectionService:GetInstanceAddedSignal("spider_entity"):Connect(function(spider)
+		InitializeSpider(spider)
+	end)
+	
+	print("[SpiderAI] Spider AI system ready!")
+end
+
+return SpiderAIModule
