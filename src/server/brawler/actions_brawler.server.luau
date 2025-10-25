@@ -7,6 +7,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("serverConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -25,51 +28,20 @@ local playerAttackData = {}
 -- 2. Camera speeds will automatically sync with these values
 -- 3. Use _G.updateBrawlerAnimationSpeed(actionType, newSpeed) to update at runtime
 --
-_G.BRAWLER_ANIMATION_SPEEDS = {
-	-- Basic movements
-	idle = 1.0,
-	run = 1.0,
-	jump = 1.0,
-	
-	-- Walking speeds (fixed values, not affected by animation speed)
-	walking = {
-		normal = 18,    -- Fixed normal walking speed
-		slow = 3,       -- Fixed speed during skills
-		blocking = 0    -- Fixed speed while blocking
-	},
-	
-	-- Attack combos (Brawler only has 2-hit combo)
-	combo1 = 1.0,
-	combo2 = 1.0,
-	moveAttack = 1.0,
-	jumpAttack = 1.0,
-	block = 1.0,
-	-- Note: Wave is now handled globally by GlobalAnimations.server.luau
-	
-	-- Skills
-	feralleap = 1.0,
-	brawlersroar = 1.0,
-	
-	-- Buffs
-	bloodthirst = 1.0,
-	lastchance = 1.0,
-	
-	-- Ultimate
-	meteordive = 1.0
-}
+_G.BRAWLER_ANIMATION_SPEEDS = ServerConfigs.Brawler.AnimationSpeeds
 
 -- Function to apply specific speed to animation track
 function _G.applyBrawlerAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
 	
-	local speed = _G.BRAWLER_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.BRAWLER_ANIMATION_SPEEDS[actionType]
 	animTrack:AdjustSpeed(speed)
 end
 
 -- Function to sync specific animation speed with client
 local function syncAnimationSpeedWithClient(player, actionType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local speed = _G.BRAWLER_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.BRAWLER_ANIMATION_SPEEDS[actionType]
 	remote:FireClient(player, "update_animation_speed", speed, actionType)
 end
 
@@ -106,11 +78,7 @@ end
 
 -- Fixed walking speed settings (no longer dependent on animation speed)
 -- These are the actual speeds used, not multiplied by anything
-_G.BRAWLER_WALKING_SPEED = {
-	normal = 18,    -- Fixed normal walking speed
-	slow = 3,       -- Fixed speed during skills
-	blocking = 0    -- Fixed speed while blocking
-}
+_G.BRAWLER_WALKING_SPEED = ServerConfigs.Brawler.AnimationSpeeds.walking
 
 -- Function to set player walking speed
 function _G.setBrawlerWalkingSpeed(player, speedType)
@@ -125,9 +93,7 @@ function _G.setBrawlerWalkingSpeed(player, speedType)
 end
 
 -- Combo system configuration
-local COMBO_CONFIG = {
-	comboTimeout = 1, -- 1 second timeout for combo reset (Brawler has only 2-hit combo)
-}
+local COMBO_CONFIG = ServerConfigs.Brawler.ComboConfig
 
 -- ========================================
 -- CENTRALIZED COOLDOWN CONFIGURATION
@@ -139,18 +105,7 @@ local COMBO_CONFIG = {
 -- 2. All skills automatically use these values
 -- 3. No need to modify individual skill files
 --
-_G.BRAWLER_COOLDOWNS = {
-	-- Skills
-	feralleap = 5,
-	brawlersroar = 5,
-	
-	-- Buffs
-	bloodthirst = 5,
-	lastchance = 5,
-	
-	-- Ultimate
-	meteordive = 5
-}
+_G.BRAWLER_COOLDOWNS = ServerConfigs.Brawler.Cooldowns
 
 -- Centralized cooldown tracking for all players
 local playerCooldowns = {}
@@ -228,36 +183,7 @@ end
 -- 3. Set lifetime to 0 to keep trails on until manually disabled
 -- 4. Changes here automatically sync to all clients
 -- ========================================
-_G.BRAWLER_TRAIL_CONFIG = {
-	-- Individual Trail Lifetime settings (in seconds)
-	-- These apply to ALL attacks and combos
-	Lifetime = {
-		trail1 = 0.2,      -- Trail1.Lifetime for all attacks (Handle)
-		trail2 = 0.2,       -- Trail2.Lifetime for all attacks (Handle)
-		trail3 = 0.2,     -- Trail3.Lifetime for all attacks (Handle)
-		trail4 = 0.2,      -- Trail1.Lifetime for all attacks (Shield)
-		trail5 = 0.2,       -- Trail2.Lifetime for all attacks (Shield)
-		trail6 = 0.2       -- Trail3.Lifetime for all attacks (Shield)
-	},
-	-- Individual Trail Color settings (RGB values 0-255)
-	Color = {
-		trail1 = {255, 255, 255},  -- Trail1.Color (white) - Handle
-		trail2 = {255, 255, 255},  -- Trail2.Color (white) - Handle
-		trail3 = {255, 255, 255},  -- Trail3.Color (white) - Handle
-		trail4 = {255, 255, 255},  -- Trail1.Color (white) - Shield
-		trail5 = {255, 255, 255},  -- Trail2.Color (white) - Shield
-		trail6 = {255, 255, 255}   -- Trail3.Color (white) - Shield
-	},
-	-- Individual Trail FaceCamera settings (boolean)
-	FaceCamera = {
-		trail1 = true,      -- Trail1.FaceCamera - Handle
-		trail2 = true,      -- Trail2.FaceCamera - Handle
-		trail3 = true,      -- Trail3.FaceCamera - Handle
-		trail4 = true,      -- Trail1.FaceCamera - Shield
-		trail5 = true,      -- Trail2.FaceCamera - Shield
-		trail6 = true       -- Trail3.FaceCamera - Shield
-	}
-}
+_G.BRAWLER_TRAIL_CONFIG = ServerConfigs.Brawler.TrailConfig
 
 -- Function to enable trails on client (uses global trail config)
 function _G.enableBrawlerTrails(player, attackType)
@@ -680,17 +606,18 @@ local function handleNormalAttack(player)
 		_G.enableBrawlerTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
+		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack")
 		_G.createStaticHitbox({
 			attachTo = root,
-			offset = CFrame.new(0, -5, -10),
-			size = Vector3.new(8, 20, 15), -- Increased from 5x17x12 to 8x20x15
-			damage = 12,
-		character = char,
-		name = "JumpAttack",
-		showVisual = true,
-		visualColor = Color3.new(0, 1, 0),
-		delay = 0
-	})
+			offset = hitboxConfig.offset,
+			size = hitboxConfig.size,
+			damage = hitboxConfig.damage,
+			character = char,
+			name = "JumpAttack",
+			showVisual = true,
+			visualColor = hitboxConfig.visualColor,
+			delay = hitboxConfig.delay
+		})
 		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
@@ -713,16 +640,17 @@ local function handleNormalAttack(player)
 		_G.enableBrawlerTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
+		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack")
 		_G.createStaticHitbox({
 			attachTo = root,
-			offset = CFrame.new(0, 0, -10), -- x left / right, y up / down, z forward / backward
-			size = Vector3.new(18, 18, 18), -- Increased from 12x12x12 to 18x18x18
-			damage = 15,
+			offset = hitboxConfig.offset,
+			size = hitboxConfig.size,
+			damage = hitboxConfig.damage,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
-			visualColor = Color3.new(0, 0.8, 1),
-			delay = 0.4 -- Base delay (auto-scales with animation speed)
+			visualColor = hitboxConfig.visualColor,
+			delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed)
 		})
 		
 		data.moveSlashTrack.Stopped:Once(function()
@@ -749,16 +677,17 @@ local function handleNormalAttack(player)
 			_G.enableBrawlerTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
 			_G.createStaticHitbox({
 				attachTo = root,
-				offset = CFrame.new(0, 0, -3),
-				size = Vector3.new(12, 12, 9),
-				damage = 8,
+				offset = hitboxConfig.offset,
+				size = hitboxConfig.size,
+				damage = hitboxConfig.damage,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
-				visualColor = Color3.new(1, 0.8, 0),
-				delay = 0
+				visualColor = hitboxConfig.visualColor,
+				delay = hitboxConfig.delay
 			})
 			
 			data.animTrack1.Stopped:Once(function() 
@@ -776,16 +705,17 @@ local function handleNormalAttack(player)
 			_G.enableBrawlerTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2")
 			_G.createStaticHitbox({
 				attachTo = root,
-				offset = CFrame.new(0, 0, -4),
-				size = Vector3.new(15, 15, 12),
-				damage = 12,
+				offset = hitboxConfig.offset,
+				size = hitboxConfig.size,
+				damage = hitboxConfig.damage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
-				visualColor = Color3.new(0.8, 0.2, 1),
-				delay = 0
+				visualColor = hitboxConfig.visualColor,
+				delay = hitboxConfig.delay
 			})
 			
 			data.animTrack2.Stopped:Once(function() 

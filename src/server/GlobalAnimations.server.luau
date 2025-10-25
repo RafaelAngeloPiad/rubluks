@@ -54,7 +54,7 @@ end
 local function applyAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
 	
-	local speed = _G.GLOBAL_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.GLOBAL_ANIMATION_SPEEDS[actionType]
 	animTrack:AdjustSpeed(speed)
 end
 

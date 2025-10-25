@@ -7,6 +7,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("serverConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -25,49 +28,20 @@ local playerAttackData = {}
 -- 2. Camera speeds will automatically sync with these values
 -- 3. Use _G.updateArcherAnimationSpeed(actionType, newSpeed) to update at runtime
 --
-_G.ARCHER_ANIMATION_SPEEDS = {
-	-- Basic movements
-	idle = 1.0,
-	run = 1.0,
-	jump = 1.0,
-
-	-- Walking speeds (fixed values, not affected by animation speed)
-	walking = {
-		normal = 18,    -- Fixed normal walking speed
-		slow = 3,       -- Fixed speed during skills
-		blocking = 0    -- Fixed speed while blocking
-	},
-
-	-- Attack animations (archer uses single attack system)
-	normalAttack = 1.0,    -- Single normal attack (replaces combo1)
-	jumpAttack = 1.0,
-	block = 1.0,
-	-- Note: Wave is now handled globally by GlobalAnimations.server.luau
-
-	-- Skills
-	piercingShot = 1.0,
-	powerShot = 1.0,
-
-	-- Buffs
-	hunterInstinct = 1.0,
-	hunterMark = 1.0,
-
-	-- Ultimate
-	starfall = 1.0
-}
+_G.ARCHER_ANIMATION_SPEEDS = ServerConfigs.Archer.AnimationSpeeds
 
 -- Function to apply specific speed to animation track
 function _G.applyArcherAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
 
-	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType]
 	animTrack:AdjustSpeed(speed)
 end
 
 -- Function to sync specific animation speed with client
 local function syncAnimationSpeedWithClient(player, actionType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType]
 	remote:FireClient(player, "update_animation_speed", speed, actionType)
 end
 
@@ -104,11 +78,7 @@ end
 
 -- Fixed walking speed settings (no longer dependent on animation speed)
 -- These are the actual speeds used, not multiplied by anything
-_G.ARCHER_WALKING_SPEED = {
-	normal = 18,    -- Fixed normal walking speed
-	slow = 3,       -- Fixed speed during skills
-	blocking = 0    -- Fixed speed while blocking
-}
+_G.ARCHER_WALKING_SPEED = ServerConfigs.Archer.AnimationSpeeds.walking
 
 -- Function to set player walking speed
 function _G.setArcherWalkingSpeed(player, speedType)
@@ -134,18 +104,7 @@ end
 -- 2. All skills automatically use these values
 -- 3. No need to modify individual skill files
 --
-_G.ARCHER_COOLDOWNS = {
-	-- Skills
-	piercingShot = 5, -- 10 seconds cooldown
-	powerShot = 5,     -- 8 seconds cooldown
-
-	-- Buffs
-	hunterInstinct = 5, -- 15 seconds cooldown
-	hunterMark = 5,     -- 12 seconds cooldown
-
-	-- Ultimate
-	starfall = 5       -- 30 seconds cooldown (ultimate)
-}
+_G.ARCHER_COOLDOWNS = ServerConfigs.Archer.Cooldowns
 
 -- ========================================
 -- CENTRALIZED ARROW HITBOX CONFIGURATION
@@ -161,30 +120,14 @@ _G.ARCHER_COOLDOWNS = {
 --    - Decrease if arrow goes through target before stopping
 --
 
-local archerArrowVisualSpeed = 100
-local archerArrowHitboxSpeed = archerArrowVisualSpeed - 20
-
-_G.ARCHER_ARROW_HITBOX = {
-	delay = 0,           -- Delay before hitbox becomes active (seconds)
-	size = Vector3.new(6, 6, 6),  -- Hitbox size for all arrows (increased from 2x2x2)
-	damage = 20,         -- Damage for all normal arrows
-	visualSpeed = archerArrowVisualSpeed,    -- Visual arrow asset speed (how fast the arrow model moves)
-	hitboxSpeed = archerArrowHitboxSpeed,    -- Hitbox detection speed (how fast the hitbox moves for collision detection)
-	anchorDelay = 0.03,   -- Delay before arrow gets anchored/sticks after hit detection (seconds) - tweak this for visual alignment
-	preventPhysicsPush = true  -- Prevent arrows from pushing objects around (set to false if you want old behavior)
-}
+_G.ARCHER_ARROW_HITBOX = ServerConfigs.Archer.ArrowHitbox
 
 -- ========================================
 -- ARROW SPAWN OFFSET CONFIGURATION
 -- ========================================
 
 -- Unified arrow spawn offsets for easy tweaking
-_G.ARCHER_ARROW_SPAWN_OFFSETS = {
-	-- First-person mode: offset from camera center
-	firstPerson = Vector3.new(0, 0, 2),    -- Forward offset from camera center (adjust Z for distance)
-	-- Third-person mode: offset from player body (current spawnOffset)
-	thirdPerson = Vector3.new(1, 0, 1),    -- Offset from player body (X=left/right, Y=up/down, Z=forward/back)
-}
+_G.ARCHER_ARROW_SPAWN_OFFSETS = ServerConfigs.Archer.ArrowSpawnOffsets
 
 -- Function to get spawn offset based on first-person state
 function _G.getArrowSpawnOffset(isFirstPerson)
@@ -281,7 +224,7 @@ end
 -- ========================================
 
 -- Arrow trail color configuration (RGB values 0-255)
-_G.ARCHER_ARROW_TRAIL_COLOR = {255, 255, 255} -- White by default
+_G.ARCHER_ARROW_TRAIL_COLOR = ServerConfigs.Archer.ArrowTrailColor
 
 -- Function to set arrow trail color
 function _G.setArcherArrowTrailColor(player, r, g, b)

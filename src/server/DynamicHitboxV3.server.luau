@@ -11,8 +11,11 @@ local Players = game:GetService("Players")
 -- CONFIGURATION
 -- ========================================
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("serverConfigs"))
+
 local HITBOX_CONFIG = {
-	transparency = 0.8, -- Global transparency for all hitbox visuals
+	transparency = ServerConfigs.Hitbox.transparency, -- Global transparency for all hitbox visuals
 }
 
 -- ========================================
@@ -20,29 +23,13 @@ local HITBOX_CONFIG = {
 -- ========================================
 
 -- Function to scale delays based on animation speed multiplier
-local function getScaledDelay(baseDelay, actionType)
+local function getScaledDelay(baseDelay, actionType, classType)
 	if not baseDelay or baseDelay == 0 then
 		return 0
 	end
 	
-	-- Get specific animation speed for the action type
-	local animationSpeed = 1.0 -- Default speed
-	
-	-- Check for Knight animation speeds
-	if _G.KNIGHT_ANIMATION_SPEEDS and actionType then
-		animationSpeed = _G.KNIGHT_ANIMATION_SPEEDS[actionType] or 1.0
-	-- Check for Archer animation speeds
-	elseif _G.ARCHER_ANIMATION_SPEEDS and actionType then
-		animationSpeed = _G.ARCHER_ANIMATION_SPEEDS[actionType] or 1.0
-	-- Check for Samurai animation speeds (fallback)
-	elseif _G.SAMURAI_ANIMATION_SPEEDS and actionType then
-		animationSpeed = _G.SAMURAI_ANIMATION_SPEEDS[actionType] or 1.0
-	end
-	
-	-- Scale delay inversely with animation speed
-	-- If animation is 2x faster, delays should be 0.5x (half the time)
-	-- If animation is 0.5x slower, delays should be 2x (double the time)
-	return baseDelay / animationSpeed
+	-- Use centralized configuration for delay scaling
+	return ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 end
 
 -- ========================================
@@ -104,7 +91,7 @@ end
 
 -- Function to create damage flash effect using Highlight
 local function createDamageFlash(model, duration)
-    duration = duration or 0.2 -- Default 0.2 seconds
+    duration = duration
     
     -- Find or create highlight for the model
     local highlight = model:FindFirstChildOfClass("Highlight")
@@ -318,7 +305,7 @@ function _G.createStaticDOTHitbox(config)
 		
 		local visualColor = config.visualColor
 		local damageTickTime = config.damageTickTime
-		if not damageTickTime then damageTickTime = 0.5 end
+		-- damageTickTime must be provided in config
 		damageTickTime = getScaledDelay(damageTickTime, config.actionType)
 		
 		-- If attachTo is provided, use its CFrame with offset
@@ -594,9 +581,9 @@ function _G.createProjectileHitbox(config)
 	local character = config.character
 	local name = config.name
 	local visualSpeed = config.visualSpeed or 100
-	local hitboxSpeed = config.hitboxSpeed or 80
-	local delay = config.delay or 0
-	local anchorDelay = config.anchorDelay or 0.03
+	local hitboxSpeed = config.hitboxSpeed
+	local delay = config.delay
+	local anchorDelay = config.anchorDelay
 	local showVisual = config.showVisual
 	if showVisual == nil then showVisual = true end
 	local visualColor = config.visualColor or Color3.new(0, 1, 0) -- Green for projectiles

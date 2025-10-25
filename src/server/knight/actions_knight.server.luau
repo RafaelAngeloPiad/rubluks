@@ -7,6 +7,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("serverConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -25,52 +28,20 @@ local playerAttackData = {}
 -- 2. Camera speeds will automatically sync with these values
 -- 3. Use _G.updateKnightAnimationSpeed(actionType, newSpeed) to update at runtime
 --
-_G.KNIGHT_ANIMATION_SPEEDS = {
-	-- Basic movements
-	idle = 1.0,
-	run = 1.0,
-	jump = 1.0,
-	
-	-- Walking speeds (fixed values, not affected by animation speed)
-	walking = {
-		normal = 18,    -- Fixed normal walking speed
-		slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
-		blocking = 0    -- Fixed speed while blocking
-	},
-	
-	-- Attack combos
-	combo1 = 1.0,
-	combo2 = 1.0,
-	combo3 = 1.0,
-	moveAttack = 1.0,
-	jumpAttack = 1.0,
-	block = 1.0,
-	-- Note: Wave is now handled globally by GlobalAnimations.server.luau
-	
-	-- Skills
-	sworddance = 1.0,
-	cyclone_slash = 1.0,
-	
-	-- Buffs
-	warcry = 1.0,
-	warriormight = 1.0,
-	
-	-- Ultimate
-	mightyblade = 1.0
-}
+_G.KNIGHT_ANIMATION_SPEEDS = ServerConfigs.Knight.AnimationSpeeds
 
 -- Function to apply specific speed to animation track
 function _G.applyKnightAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
 	
-	local speed = _G.KNIGHT_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.KNIGHT_ANIMATION_SPEEDS[actionType]
 	animTrack:AdjustSpeed(speed)
 end
 
 -- Function to sync specific animation speed with client
 local function syncAnimationSpeedWithClient(player, actionType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local speed = _G.KNIGHT_ANIMATION_SPEEDS[actionType] or 1.0
+	local speed = _G.KNIGHT_ANIMATION_SPEEDS[actionType]
 	remote:FireClient(player, "update_animation_speed", speed, actionType)
 end
 
@@ -107,11 +78,7 @@ end
 
 -- Fixed walking speed settings (no longer dependent on animation speed)
 -- These are the actual speeds used, not multiplied by anything
-_G.KNIGHT_WALKING_SPEED = {
-	normal = 18,    -- Fixed normal walking speed
-	slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
-	blocking = 0    -- Fixed speed while blocking
-}
+_G.KNIGHT_WALKING_SPEED = ServerConfigs.Knight.AnimationSpeeds.walking
 
 -- Function to set player walking speed
 function _G.setKnightWalkingSpeed(player, speedType)
@@ -126,10 +93,7 @@ function _G.setKnightWalkingSpeed(player, speedType)
 end
 
 -- Combo system configuration
-local COMBO_CONFIG = {
-	comboTimeout = 1, -- 1 second timeout for combo reset
-	combo3Cooldown = 20, -- 3 second cooldown for 3rd attack
-}
+local COMBO_CONFIG = ServerConfigs.Knight.ComboConfig
 
 -- ========================================
 -- CENTRALIZED COOLDOWN CONFIGURATION
@@ -141,18 +105,7 @@ local COMBO_CONFIG = {
 -- 2. All skills automatically use these values
 -- 3. No need to modify individual skill files
 --
-_G.KNIGHT_COOLDOWNS = {
-	-- Skills
-	sworddance = 5,        -- 10 seconds cooldown
-	cyclone_slash = 5,     -- 8 seconds cooldown
-	
-	-- Buffs
-	warcry = 5,            -- 15 seconds cooldown
-	warriormight = 5,      -- 12 seconds cooldown
-	
-	-- Ultimate
-	mightyblade = 5        -- 30 seconds cooldown (ultimate)
-}
+_G.KNIGHT_COOLDOWNS = ServerConfigs.Knight.Cooldowns
 
 -- Centralized cooldown tracking for all players
 local playerCooldowns = {}
@@ -687,17 +640,18 @@ local function handleNormalAttack(player)
 		_G.enableKnightTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
+		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack")
 		_G.createStaticHitbox({
 			attachTo = root,
-			offset = CFrame.new(0, -5, -10),
-			size = Vector3.new(8, 20, 15), -- Increased from 5x17x12 to 8x20x15
-			damage = 12,
-		character = char,
-		name = "JumpAttack",
-		showVisual = true,
-		visualColor = Color3.new(0, 1, 0),
-		delay = 0
-	})
+			offset = hitboxConfig.offset,
+			size = hitboxConfig.size,
+			damage = hitboxConfig.damage,
+			character = char,
+			name = "JumpAttack",
+			showVisual = true,
+			visualColor = hitboxConfig.visualColor,
+			delay = hitboxConfig.delay
+		})
 		
 		data.jumpTrack.Stopped:Once(function()
 			data.isAttacking = false
@@ -720,16 +674,17 @@ local function handleNormalAttack(player)
 		_G.enableKnightTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
+		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack")
 		_G.createStaticHitbox({
 			attachTo = root,
-			offset = CFrame.new(0, 0, -10), -- x left / right, y up / down, z forward / backward
-			size = Vector3.new(18, 18, 18), -- Increased from 12x12x12 to 18x18x18
-			damage = 15,
+			offset = hitboxConfig.offset,
+			size = hitboxConfig.size,
+			damage = hitboxConfig.damage,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
-			visualColor = Color3.new(0, 0.8, 1),
-			delay = 0.4 -- Base delay (auto-scales with animation speed)
+			visualColor = hitboxConfig.visualColor,
+			delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed)
 		})
 		
 		data.moveSlashTrack.Stopped:Once(function()
@@ -756,16 +711,17 @@ local function handleNormalAttack(player)
 			_G.enableKnightTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
 			_G.createStaticHitbox({
 				attachTo = root,
-				offset = CFrame.new(0, 0, -3),
-				size = Vector3.new(12, 12, 9), -- Increased from 8x8x6 to 12x12x9
-				damage = 8,
+				offset = hitboxConfig.offset,
+				size = hitboxConfig.size,
+				damage = hitboxConfig.damage,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
-				visualColor = Color3.new(1, 0.8, 0),
-				delay = 0
+				visualColor = hitboxConfig.visualColor,
+				delay = hitboxConfig.delay
 			})
 			
 			data.animTrack1.Stopped:Once(function() 
@@ -783,16 +739,17 @@ local function handleNormalAttack(player)
 			_G.enableKnightTrails(player, "combo2")
 			
 			-- Combo 2 hitbox
+			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2")
 			_G.createStaticHitbox({
 				attachTo = root,
-				offset = CFrame.new(0, 0, -4),
-				size = Vector3.new(15, 15, 12), -- Increased from 10x10x8 to 15x15x12
-				damage = 12,
+				offset = hitboxConfig.offset,
+				size = hitboxConfig.size,
+				damage = hitboxConfig.damage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
-				visualColor = Color3.new(0.8, 0.2, 1),
-				delay = 0
+				visualColor = hitboxConfig.visualColor,
+				delay = hitboxConfig.delay
 			})
 			
 			data.animTrack2.Stopped:Once(function() 
@@ -814,16 +771,17 @@ local function handleNormalAttack(player)
 				_G.enableKnightTrails(player, "combo1Fallback")
 				
 				-- Combo 1 hitbox (fallback from combo 3 cooldown)
+				local hitboxConfig = ServerConfigs.getHitboxConfig("combo1")
 				_G.createStaticHitbox({
 					attachTo = root,
-					offset = CFrame.new(0, 0, -3),
-					size = Vector3.new(12, 12, 9), -- Increased from 8x8x6 to 12x12x9
-					damage = 8,
+					offset = hitboxConfig.offset,
+					size = hitboxConfig.size,
+					damage = hitboxConfig.damage,
 					character = char,
 					name = "Combo1_Fallback",
 					showVisual = true,
-					visualColor = Color3.new(1, 0.8, 0),
-					delay = 0
+					visualColor = hitboxConfig.visualColor,
+					delay = hitboxConfig.delay
 				})
 				
 				data.animTrack1.Stopped:Once(function() 
@@ -841,16 +799,17 @@ local function handleNormalAttack(player)
 				_G.enableKnightTrails(player, "combo3")
 				
 				-- Combo 3 hitbox (most powerful)
+				local hitboxConfig = ServerConfigs.getHitboxConfig("combo3")
 				_G.createStaticHitbox({
 					attachTo = root,
-					offset = CFrame.new(0, 0, -5),
-					size = Vector3.new(25, 25, 25), -- Increased from 17x17x17 to 25x25x25
-					damage = 20,
+					offset = hitboxConfig.offset,
+					size = hitboxConfig.size,
+					damage = hitboxConfig.damage,
 					character = char,
 					name = "Combo3",
 					showVisual = true,
-					visualColor = Color3.new(1, 0, 0),
-					delay = 1 -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
+					visualColor = hitboxConfig.visualColor,
+					delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
 				})
 				
 				data.animTrack3.Stopped:Once(function() 
