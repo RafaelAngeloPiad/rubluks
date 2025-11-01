@@ -67,7 +67,7 @@ ServerConfigs.Hitboxes = {
 			damage = 0.2,                -- 20% of MaxAttack (base: 100 ATK = 20 damage)
 			skill1Damage = 0.35,         -- 35% of MaxAttack (base: 100 ATK = 35 damage) - PiercingShot
 			skill2Damage = 0.4,          -- 40% of MaxAttack (base: 100 ATK = 40 damage) - PowerShot
-			skill2TickTime = 0.3,        -- PowerShot DOT tick time
+			skill2TickTime = 1,        -- PowerShot DOT tick time
 			ultDamage = 0.1,             -- 10% of MaxAttack (base: 100 ATK = 10 damage) - Starfall
 			ultTickTime = 0.5,           -- Starfall DOT tick time
 			-- Arrow projectile configuration
@@ -120,12 +120,12 @@ ServerConfigs.Hitboxes = {
 			-- Skill-specific hitbox configurations
 			skills = {
 				piercingShot = {
-					hitboxSize = Vector3.new(6, 6, 6),
-					hitboxDelay = 0.1
+					hitboxSize = Vector3.new(10, 10, 10),
+					hitboxDelay = 0
 				},
 				powerShot = {
-					hitboxSize = Vector3.new(8, 8, 8),
-					hitboxDelay = 0.1
+					hitboxSize = Vector3.new(10, 10, 10),
+					hitboxDelay = 0
 				},
 				starfall = {
 					hitboxSize = Vector3.new(250, 60, 250),

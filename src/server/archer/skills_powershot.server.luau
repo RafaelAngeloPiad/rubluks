@@ -219,8 +219,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		
 		-- Configuration for 6 PowerTrails
 		local forwardOffset = 5 -- Starting distance from player
-		local gap = 15 -- Distance between each trail
-		local numTrails = 6 -- Number of trails to generate
+		local gap = 20 -- Distance between each trail
+		local numTrails = 5 -- Number of trails to generate
 		
 		-- Generate 6 PowerTrails in a line
 		for i = 1, numTrails do
@@ -248,14 +248,14 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 			-- Calculate DOT damage based on player's MaxAttack stat (skill2Damage multiplier for trail)
 			-- Trail damage is a percentage of the skill damage (adjust multiplier as needed)
-			local trailDamageMultiplier = (ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4) * 0.125 -- 12.5% of skill damage per tick
+			local trailDamageMultiplier = (ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4) * 0.05 -- 5% of skill damage per tick (nerfed from 12.5%)
 			local trailDamage = calculateDamageForHitbox(player, "Archer", trailDamageMultiplier)
 			
 			-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
 			_G.createStaticDOTHitbox({
 				cframe = CFrame.lookAt(trailPosition, trailPosition + shootDirection),
 				offset = CFrame.new(0, 0, 0), -- Center of trail
-				size = Vector3.new(12, 12, 20), -- Smaller size for individual trails
+				size = Vector3.new(10, 10, 10), -- Smaller size for individual trails
 				damage = trailDamage, -- Scaled damage per tick
 				damageTickTime = ServerConfigs.ArcherSkills.PowerShot.damageTickTime or 0.3,
 				character = character,
