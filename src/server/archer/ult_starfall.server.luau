@@ -144,6 +144,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
+	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
+	if not ServerConfigs.isWeaponClassMatch(player) then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[Starfall] Skill blocked: Player " .. player.Name .. " tried to use Archer skill with mismatched weapon.")
+			return
+		end
+	end
+	
 	-- Cooldown check (added system)
 	if _G.isSkillOnCooldown(player, "starfall") then
 		local remainingTime = _G.getRemainingCooldown(player, "starfall")

@@ -59,6 +59,14 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		return
 	end
 	
+	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
+	if not ServerConfigs.isWeaponClassMatch(player) then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[PowerShot] Skill blocked: Player " .. player.Name .. " tried to use Archer skill with mismatched weapon.")
+			return
+		end
+	end
+	
 	-- Get camera direction, aim lock state, and first-person state if provided
 	local args = {...}
 	local cameraDirection = args[1]

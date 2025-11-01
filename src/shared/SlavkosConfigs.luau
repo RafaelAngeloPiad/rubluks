@@ -953,23 +953,32 @@ function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
 		return 0, false
 	end
 	
+	-- Apply mismatched weapon penalty before calculating damage
+	local adjustedMultiplier = ServerConfigs.applyMismatchedWeaponPenalty(player, damageMultiplier)
+	
 	-- Calculate base damage
 	local maxAttack = ServerConfigs.getPlayerMaxAttack(player)
-	local baseDamage = ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	local baseDamage = ServerConfigs.calculateDamage(adjustedMultiplier, maxAttack)
 	
-	-- Check for crit
-	local critRate = ServerConfigs.getPlayerCritRate(player)
-	local isCrit = ServerConfigs.rollCrit(critRate)
+	-- Check for crit (only if weapon matches class - no crits for mismatched weapons)
+	local isWeaponMatch = ServerConfigs.isWeaponClassMatch(player)
+	local isCrit = false
 	
-	if isCrit then
-		-- Apply crit multiplier
-		local critMultiplier = ServerConfigs.getPlayerCritMultiplier(player)
-		-- CritMultiplier is stored as percentage (150 = 1.5x), so divide by 100
-		local finalDamage = math.floor(baseDamage * (critMultiplier / 100))
-		return finalDamage, true
-	else
-		return baseDamage, false
+	if isWeaponMatch then
+		local critRate = ServerConfigs.getPlayerCritRate(player)
+		isCrit = ServerConfigs.rollCrit(critRate)
+		
+		if isCrit then
+			-- Apply crit multiplier
+			local critMultiplier = ServerConfigs.getPlayerCritMultiplier(player)
+			-- CritMultiplier is stored as percentage (150 = 1.5x), so divide by 100
+			local finalDamage = math.floor(baseDamage * (critMultiplier / 100))
+			return finalDamage, true
+		end
 	end
+	
+	-- No crit or mismatched weapon
+	return baseDamage, false
 end
 
 -- Function to get base damage for a class's normal attack
@@ -1029,6 +1038,106 @@ function ServerConfigs.getPlayerMaxAttack(player)
 	end
 	
 	return maxAttack.Value or 0
+end
+
+-- Function to get player's class from leaderstats
+-- @param player: Player instance
+-- @return: Class name (e.g., "Archer", "Samurai") or nil
+function ServerConfigs.getPlayerClass(player)
+	if not player then
+		return nil
+	end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return nil
+	end
+	
+	local class = leaderstats:FindFirstChild("Class")
+	if not class then
+		return nil
+	end
+	
+	return class.Value or nil
+end
+
+-- Function to detect which weapon class is equipped by checking weapon tags
+-- @param player: Player instance
+-- @return: Weapon class name (e.g., "archer", "samurai") or nil if no weapon found
+function ServerConfigs.getEquippedWeaponClass(player)
+	if not player or not player.Character then
+		return nil
+	end
+	
+	local CollectionService = game:GetService("CollectionService")
+	
+	-- Check all tools in character
+	for _, item in ipairs(player.Character:GetChildren()) do
+		if item:IsA("Tool") then
+			-- Check each weapon tag
+			for className, weaponTag in pairs(ServerConfigs.Client.WeaponTags) do
+				if CollectionService:HasTag(item, weaponTag) then
+					-- Capitalize first letter to match class names (e.g., "archer" -> "Archer")
+					return className:sub(1, 1):upper() .. className:sub(2)
+				end
+			end
+		end
+	end
+	
+	return nil
+end
+
+-- Function to check if equipped weapon matches player's class
+-- @param player: Player instance
+-- @return: true if weapon matches class, false otherwise
+function ServerConfigs.isWeaponClassMatch(player)
+	local playerClass = ServerConfigs.getPlayerClass(player)
+	local weaponClass = ServerConfigs.getEquippedWeaponClass(player)
+	
+	-- If no class or no weapon, return false
+	if not playerClass or not weaponClass then
+		return false
+	end
+	
+	-- Compare classes (case-insensitive)
+	return playerClass:lower() == weaponClass:lower()
+end
+
+-- Function to apply mismatched weapon penalty to damage multiplier
+-- @param player: Player instance
+-- @param baseDamageMultiplier: Original damage multiplier
+-- @return: Adjusted damage multiplier (penalty applied if weapon doesn't match)
+function ServerConfigs.applyMismatchedWeaponPenalty(player, baseDamageMultiplier)
+	if not player or not baseDamageMultiplier then
+		return 0
+	end
+	
+	-- Check if weapon matches class
+	local isMatch = ServerConfigs.isWeaponClassMatch(player)
+	
+	if isMatch then
+		-- Weapon matches class, use normal multiplier
+		return baseDamageMultiplier
+	else
+		-- Weapon doesn't match, apply penalty
+		local penaltyConfig = ServerConfigs.Client.MismatchedWeaponPenalty
+		local penaltyMultiplier = penaltyConfig.damageMultiplier or 0.01
+		
+		-- Apply penalty (multiply by penalty multiplier)
+		local penalizedMultiplier = baseDamageMultiplier * penaltyMultiplier
+		
+		-- Ensure minimum damage is applied
+		local maxAttack = ServerConfigs.getPlayerMaxAttack(player)
+		local minDamage = penaltyConfig.minDamage or 1
+		local calculatedDamage = penalizedMultiplier * maxAttack
+		
+		-- If calculated damage would be less than minDamage, adjust multiplier
+		if calculatedDamage < minDamage and maxAttack > 0 then
+			penalizedMultiplier = minDamage / maxAttack
+		end
+		
+		return penalizedMultiplier
+	end
 end
 
 -- Function to get class-specific configuration
@@ -1247,6 +1356,13 @@ ServerConfigs.Client = {
 		brawler = "brawler_wpn",
 		knight = "knight_wpn",
 		gladiator = "gladiator_wpn"
+	},
+	
+	-- Mismatched weapon penalty configuration
+	MismatchedWeaponPenalty = {
+		damageMultiplier = 0.01,  -- 1% damage when using wrong class weapon (configurable)
+		allowSkills = false,      -- Disable skills when weapon doesn't match class
+		minDamage = 1             -- Minimum damage output (1 damage)
 	}
 }
 

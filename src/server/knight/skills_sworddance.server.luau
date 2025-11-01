@@ -62,6 +62,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
+	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
+	if not ServerConfigs.isWeaponClassMatch(player) then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[SwordDance] Skill blocked: Player " .. player.Name .. " tried to use Knight skill with mismatched weapon.")
+			return
+		end
+	end
+	
 	-- Check cooldown using centralized system
 	if _G.isSkillOnCooldown(player, "sworddance") then
 		local remainingTime = _G.getRemainingCooldown(player, "sworddance")

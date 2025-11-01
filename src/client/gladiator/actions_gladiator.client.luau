@@ -26,6 +26,41 @@ local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 -- Import the action module for shared logic
 local GladiatorActions = require(script.Parent.GladiatorActionModule)
 
+-- Helper function to check if equipped weapon matches player's class (client-side)
+local function isWeaponClassMatch()
+	local playerClass = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Class")
+	if not playerClass then
+		return false
+	end
+	
+	local character = player.Character
+	if not character then
+		return false
+	end
+	
+	local playerClassName = playerClass.Value or nil
+	if not playerClassName or playerClassName == "Slavkorian" then
+		return false
+	end
+	
+	-- Check all tools in character
+	for _, item in ipairs(character:GetChildren()) do
+		if item:IsA("Tool") then
+			-- Check each weapon tag
+			for className, weaponTag in pairs(ServerConfigs.Client.WeaponTags) do
+				if CollectionService:HasTag(item, weaponTag) then
+					-- Capitalize first letter to match class names (e.g., "gladiator" -> "Gladiator")
+					local weaponClassName = className:sub(1, 1):upper() .. className:sub(2)
+					-- Compare classes (case-insensitive)
+					return playerClassName:lower() == weaponClassName:lower()
+				end
+			end
+		end
+	end
+	
+	return false
+end
+
 -- Camera speed configuration (separate for each action type)
 local CAMERA_SPEED_MULTIPLIERS = ServerConfigs.Client.CameraSpeedMultipliers
 
@@ -334,6 +369,14 @@ end
 -- ========================================
 
 local function useAction(actionName)
+	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
+	if not isWeaponClassMatch() then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[Gladiator Client] Skill blocked: Player tried to use skill with mismatched weapon.")
+			return
+		end
+	end
+	
 	-- Use the module to perform the action (handles all validation)
 	local success = GladiatorActions.useSkill(actionName)
 	
@@ -341,8 +384,8 @@ local function useAction(actionName)
 		return
 	end
 	
-	-- Play camera sequence if this action has one AND it's not on cooldown
-	if CAMERA_SEQUENCES[actionName] and not skillCooldowns[actionName] then
+	-- Play camera sequence if this action has one AND it's not on cooldown AND weapon matches class
+	if CAMERA_SEQUENCES[actionName] and not skillCooldowns[actionName] and isWeaponClassMatch() then
 		task.spawn(function()
 			playCameraSequence(CAMERA_SEQUENCES[actionName], actionName)
 		end)
@@ -379,6 +422,10 @@ local function onWeaponFound(weaponTool)
 			updateCooldownStatus(data, extraData, thirdParam) -- data = skillName, extraData = isOnCooldown, thirdParam = remainingTime
 		elseif message == "play_camera_sequence" then
 			-- data = action name (placeholder for future gladiator sequences)
+			-- Check if weapon matches player class before playing camera sequence
+			if not isWeaponClassMatch() then
+				return -- Block camera sequence if weapon doesn't match class
+			end
 			-- Server-triggered sequences should always run (server handles cooldown logic)
 			task.spawn(function()
 				-- Use the predefined sequence from CAMERA_SEQUENCES
