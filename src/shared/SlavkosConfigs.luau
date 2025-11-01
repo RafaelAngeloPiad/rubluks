@@ -17,10 +17,10 @@ ServerConfigs.Hitbox = {
 			-- Damage flash effect settings (same for all hitbox types)
 			damageFlash = {
 				fillColor = Color3.new(1, 0, 0), -- Bright red
-				fillTransparency = 0.9, -- Slightly transparent
+				fillTransparency = 0.95, -- Slightly transparent
 				outlineColor = Color3.new(1, 0, 0), -- Red outline
 				outlineTransparency = 0, -- Solid outline
-				duration = 0.2 -- Flash duration in seconds
+				duration = 0.1 -- Flash duration in seconds
 			}
 		},
 		
@@ -58,6 +58,13 @@ ServerConfigs.Hitboxes = {
 			arrowHitboxSpeed = 80,       -- Arrow hitbox detection speed (visualSpeed - 20)
 			arrowAnchorDelay = 0.03,     -- Delay before arrow gets anchored/sticks after hit detection
 			arrowPreventPhysicsPush = true,  -- Prevent arrows from pushing objects around
+			-- Arrow spawn offsets
+			arrowSpawnOffsets = {
+				firstPerson = Vector3.new(0, 0, 2),    -- Forward offset from camera center
+				thirdPerson = Vector3.new(1, 0, 1),    -- Offset from player body
+			},
+			-- Arrow trail color (RGB 0-255)
+			arrowTrailColor = {255, 255, 255},  -- White
 			-- Animation speeds
 			animSpeed = {
 				idle = 1.0,
@@ -91,6 +98,21 @@ ServerConfigs.Hitboxes = {
 				hunterInstinct = 5,
 				hunterMark = 5,
 				starfall = 5
+			},
+			-- Skill-specific hitbox configurations
+			skills = {
+				piercingShot = {
+					hitboxSize = Vector3.new(6, 6, 6),
+					hitboxDelay = 0.1
+				},
+				powerShot = {
+					hitboxSize = Vector3.new(8, 8, 8),
+					hitboxDelay = 0.1
+				},
+				starfall = {
+					hitboxSize = Vector3.new(250, 60, 250),
+					hitboxDelay = 0.2
+				}
 			}
 		},
 		Samurai = {
@@ -155,6 +177,21 @@ ServerConfigs.Hitboxes = {
 				trail1 = true,
 				trail2 = true,
 				trail3 = true
+			},
+			-- Skill-specific hitbox configurations
+			skills = {
+				kozuki = {
+					hitboxSize = Vector3.new(10, 10, 10),
+					hitboxDelay = 0.1
+				},
+				wakizashi = {
+					hitboxSize = Vector3.new(8, 8, 8),
+					hitboxDelay = 0.1
+				},
+				zantetsuken = {
+					hitboxSize = Vector3.new(20, 20, 20),
+					hitboxDelay = 0.2
+				}
 			}
 		},
 		Brawler = {
@@ -227,6 +264,21 @@ ServerConfigs.Hitboxes = {
 				trail4 = true,      -- Shield
 				trail5 = true,      -- Shield
 				trail6 = true       -- Shield
+			},
+			-- Skill-specific hitbox configurations
+			skills = {
+				feralleap = {
+					hitboxSize = Vector3.new(70, 70, 70),
+					hitboxDelay = 0.1
+				},
+				brawlersroar = {
+					hitboxSize = Vector3.new(25, 25, 25),
+					hitboxDelay = 0.1
+				},
+				meteordive = {
+					hitboxSize = Vector3.new(250, 60, 250),
+					hitboxDelay = 0.2
+				}
 			}
 		},
 		Knight = {
@@ -293,6 +345,24 @@ ServerConfigs.Hitboxes = {
 				trail1 = true,
 				trail2 = true,
 				trail3 = true
+			},
+			-- Skill-specific hitbox configurations
+			skills = {
+				sworddance = {
+					swordHitboxSize = Vector3.new(12, 50, 12),
+					swordHitboxDelay = 0.1
+				},
+				cycloneslash = {
+					smallHitboxDuration = 1.0,
+					smallHitboxSize = Vector3.new(8, 8, 8),
+					smallHitboxDelay = 0.1,
+					bigHitboxSize = Vector3.new(20, 20, 20),
+					bigHitboxDelay = 0.1
+				},
+				mightyblade = {
+					hitboxSize = Vector3.new(250, 60, 250),
+					hitboxDelay = 0.2
+				}
 			}
 		},
 		Gladiator = {
@@ -356,6 +426,21 @@ ServerConfigs.Hitboxes = {
 				trail1 = true,
 				trail2 = true,
 				trail3 = true
+			},
+			-- Skill-specific hitbox configurations
+			skills = {
+				shieldbash = {
+					hitboxSize = Vector3.new(15, 15, 15),
+					hitboxDelay = 0.1
+				},
+				dragoonjump = {
+					hitboxSize = Vector3.new(20, 20, 20),
+					hitboxDelay = 1
+				},
+				demonicvorpaldance = {
+					hitboxSize = Vector3.new(250, 60, 250),
+					hitboxDelay = 0.2
+				}
 			}
 		}
 	},
@@ -391,16 +476,11 @@ ServerConfigs.Archer = {
 		preventPhysicsPush = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowPreventPhysicsPush
 	},
 	
-	-- Archer Arrow Spawn Offsets
-	ArrowSpawnOffsets = {
-		-- First-person mode: offset from camera center
-		firstPerson = Vector3.new(0, 0, 2),    -- Forward offset from camera center
-		-- Third-person mode: offset from player body
-		thirdPerson = Vector3.new(1, 0, 1),    -- Offset from player body
-	},
+	-- Archer Arrow Spawn Offsets (references UnifiedAttacks.Archer)
+	ArrowSpawnOffsets = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowSpawnOffsets,
 	
-	-- Archer Trail Color Configuration (RGB values 0-255)
-	ArrowTrailColor = {255, 255, 255} -- White by default
+	-- Archer Trail Color Configuration (references UnifiedAttacks.Archer)
+	ArrowTrailColor = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowTrailColor
 }
 
 -- Samurai Configuration (references UnifiedAttacks.Samurai)
@@ -469,134 +549,109 @@ ServerConfigs.Gladiator = {
 -- SKILL-SPECIFIC CONFIGURATIONS
 -- ========================================
 
--- Archer Skills
+-- Archer Skills (references UnifiedAttacks.Archer)
 ServerConfigs.ArcherSkills = {
-	-- PowerShot Configuration
 	PowerShot = {
-		hitboxSize = Vector3.new(8, 8, 8),
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skills.powerShot.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage,
-		hitboxDelay = 0.1,
-		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2TickTime,
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skills.powerShot.hitboxDelay,
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2TickTime
 	},
-	
-	-- PiercingShot Configuration
 	PiercingShot = {
-		hitboxSize = Vector3.new(6, 6, 6),
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skills.piercingShot.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill1Damage,
-		hitboxDelay = 0.1,
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skills.piercingShot.hitboxDelay
 	},
-	
-	-- Starfall Ultimate Configuration (single static DOT hitbox)
 	Starfall = {
-		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skills.starfall.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.ultDamage,
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.ultTickTime,
-		hitboxDelay = 0.2, -- Delay before hitbox activates
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skills.starfall.hitboxDelay
 	}
 }
 
--- Samurai Skills
+-- Samurai Skills (references UnifiedAttacks.Samurai)
 ServerConfigs.SamuraiSkills = {
-	-- Kozuki Configuration
 	Kozuki = {
-		hitboxSize = Vector3.new(10, 10, 10),
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.kozuki.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill2Damage,
-		hitboxDelay = 0.1,
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.kozuki.hitboxDelay
 	},
-	
-	-- Wakizashi Configuration
 	Wakizashi = {
-		hitboxSize = Vector3.new(8, 8, 8),
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.wakizashi.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill1Damage,
-		hitboxDelay = 0.1,
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.wakizashi.hitboxDelay
 	},
-	
-	-- Zantetsuken Ultimate Configuration
 	Zantetsuken = {
-		hitboxSize = Vector3.new(20, 20, 20),
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.zantetsuken.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.ultDamage,
-		hitboxDelay = 0.2,
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.zantetsuken.hitboxDelay
 	}
 }
 
--- Brawler Skills
+-- Brawler Skills (references UnifiedAttacks.Brawler)
 ServerConfigs.BrawlerSkills = {
-	-- FeralLeap Configuration
 	FeralLeap = {
-		hitboxSize = Vector3.new(70, 70, 70), -- Hitbox size for claw mark
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.feralleap.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage,
-		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.feralleap.hitboxDelay
 	},
-	
-	-- BrawlersRoar Configuration
 	BrawlersRoar = {
-		hitboxSize = Vector3.new(25, 25, 25), -- Hitbox size for roar
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.brawlersroar.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill1Damage,
-		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.brawlersroar.hitboxDelay
 	},
-	
-	-- MeteorDive Ultimate Configuration (single static DOT hitbox)
 	MeteorDive = {
-		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.meteordive.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultDamage,
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultTickTime,
-		hitboxDelay = 0.2, -- Delay before hitbox activates (in seconds)
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.meteordive.hitboxDelay
 	}
 }
 
--- Knight Skills
+-- Knight Skills (references UnifiedAttacks.Knight)
 ServerConfigs.KnightSkills = {
-	-- SwordDance Configuration
 	SwordDance = {
-		swordHitboxSize = Vector3.new(12, 50, 12), -- Hitbox size (wider horizontally: width, HEIGHT, depth)
+		swordHitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.sworddance.swordHitboxSize,
 		swordHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill1Damage,
-		swordHitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
+		swordHitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.sworddance.swordHitboxDelay
 	},
-	
-	-- CycloneSlash Configuration
 	CycloneSlash = {
-		smallHitboxDuration = 1.0, -- How long to use small hitbox before switching to big (in seconds)
-		smallHitboxSize = Vector3.new(8, 8, 8),
+		smallHitboxDuration = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.smallHitboxDuration,
+		smallHitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.smallHitboxSize,
 		smallHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage,
-		smallHitboxDelay = 0.1,
-		bigHitboxSize = Vector3.new(20, 20, 20),
+		smallHitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.smallHitboxDelay,
+		bigHitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.bigHitboxSize,
 		bigHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage,
-		bigHitboxDelay = 0.1,
+		bigHitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.bigHitboxDelay,
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime,
-		bigDamageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime,
+		bigDamageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime
 	},
-	
-	-- MightyBlade Ultimate Configuration (single static DOT hitbox)
 	MightyBlade = {
-		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.mightyblade.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultDamage,
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultTickTime,
-		hitboxDelay = 0.2, -- Delay before hitbox activates
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.mightyblade.hitboxDelay
 	}
 }
 
--- Gladiator Skills
+-- Gladiator Skills (references UnifiedAttacks.Gladiator)
 ServerConfigs.GladiatorSkills = {
-	-- ShieldBash Configuration
 	ShieldBash = {
-		hitboxSize = Vector3.new(15, 15, 15), -- Hitbox size
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.shieldbash.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill1Damage,
-		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.shieldbash.hitboxDelay
 	},
-	
-	-- DragoonJump Configuration
 	DragoonJump = {
-		hitboxSize = Vector3.new(20, 20, 20), -- Hitbox size for each explosion
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.dragoonjump.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill2Damage,
-		hitboxDelay = 1, -- Delay before hitbox activates (in seconds) - synced with explosion VFX
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.dragoonjump.hitboxDelay
 	},
-	
-	-- DemonicVorpalDance Ultimate Configuration (single static DOT hitbox)
 	DemonicVorpalDance = {
-		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.demonicvorpaldance.hitboxSize,
 		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultDamage,
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultTickTime,
-		hitboxDelay = 0.2, -- Delay before hitbox activates (in seconds)
+		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.demonicvorpaldance.hitboxDelay
 	}
 }
 
@@ -926,8 +981,8 @@ ServerConfigs.Client = {
 			currentModeIndex = 3 -- Start with dynamic mode
 		},
 		
-		-- Arrow trail color (RGB values 0-255)
-		arrowTrailColor = {255, 255, 255} -- White by default
+		-- Arrow trail color (references UnifiedAttacks.Archer)
+		arrowTrailColor = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowTrailColor
 	},
 	
 	-- Brawler specific client configurations
