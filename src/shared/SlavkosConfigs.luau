@@ -51,7 +51,47 @@ ServerConfigs.Hitboxes = {
 			skill2Damage = 40,           -- PowerShot
 			skill2TickTime = 0.3,        -- PowerShot DOT tick time
 			ultDamage = 10,              -- Starfall
-			ultTickTime = 0.5            -- Starfall DOT tick time
+			ultTickTime = 0.5,           -- Starfall DOT tick time
+			-- Arrow projectile configuration
+			arrowDelay = 0,              -- Delay before arrow hitbox becomes active (seconds)
+			arrowVisualSpeed = 100,      -- Visual arrow asset speed
+			arrowHitboxSpeed = 80,       -- Arrow hitbox detection speed (visualSpeed - 20)
+			arrowAnchorDelay = 0.03,     -- Delay before arrow gets anchored/sticks after hit detection
+			arrowPreventPhysicsPush = true,  -- Prevent arrows from pushing objects around
+			-- Animation speeds
+			animSpeed = {
+				idle = 1.0,
+				run = 1.0,
+				jump = 1.0,
+				normalAttack = 1.0,
+				jumpAttack = 1.0,
+				block = 1.0,
+				piercingShot = 1.0,
+				powerShot = 1.0,
+				hunterInstinct = 1.0,
+				hunterMark = 1.0,
+				starfall = 1.0,
+				-- Walking speeds (fixed values, not affected by animation speed)
+				walking = {
+					normal = 18,    -- Fixed normal walking speed
+					slow = 3,       -- Fixed speed during skills
+					blocking = 0    -- Fixed speed while blocking
+				}
+			},
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walkingSpeed = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills
+				blocking = 0    -- Fixed speed while blocking
+			},
+			-- Cooldowns
+			cooldowns = {
+				piercingShot = 5,
+				powerShot = 5,
+				hunterInstinct = 5,
+				hunterMark = 5,
+				starfall = 5
+			}
 		},
 		Samurai = {
 			offset = CFrame.new(0, 0, -5),
@@ -59,7 +99,63 @@ ServerConfigs.Hitboxes = {
 			damage = 12,
 			skill1Damage = 25,           -- Wakizashi
 			skill2Damage = 30,           -- Kozuki
-			ultDamage = 50               -- Zantetsuken
+			ultDamage = 50,              -- Zantetsuken
+			-- Animation speeds
+			animSpeed = {
+				idle = 1.0,
+				run = 1.0,
+				jump = 1.0,
+				combo1 = 1.0,
+				combo2 = 1.0,
+				combo3 = 1.0,
+				moveAttack = 1.0,
+				jumpAttack = 1.0,
+				block = 1.0,
+				kozuki = 1.0,
+				wakizashi = 1.0,
+				banzai = 1.0,
+				bushido = 1.0,
+				zantetsuken = 1.0,
+				-- Walking speeds (fixed values, not affected by animation speed)
+				walking = {
+					normal = 18,    -- Fixed normal walking speed
+					slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
+					blocking = 0    -- Fixed speed while blocking
+				}
+			},
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walkingSpeed = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
+				blocking = 0    -- Fixed speed while blocking
+			},
+			-- Cooldowns
+			cooldowns = {
+				kozuki = 5,
+				wakizashi = 5,
+				banzai = 5,
+				bushido = 5,
+				zantetsuken = 5
+			},
+			-- Combo configuration
+			comboTimeout = 1,        -- 1 second timeout for combo reset
+			combo3Cooldown = 20,     -- 3 second cooldown for 3rd attack
+			-- Trail configuration
+			trailLifetime = {
+				trail1 = 0.13,
+				trail2 = 0.1,
+				trail3 = 0.08
+			},
+			trailColor = {
+				trail1 = {255, 255, 255},  -- White
+				trail2 = {255, 255, 255},  -- White
+				trail3 = {255, 255, 255}   -- White
+			},
+			trailFaceCamera = {
+				trail1 = true,
+				trail2 = true,
+				trail3 = true
+			}
 		},
 		Brawler = {
 			offset = CFrame.new(0, 0, -5),
@@ -68,7 +164,70 @@ ServerConfigs.Hitboxes = {
 			skill1Damage = 20,           -- BrawlersRoar
 			skill2Damage = 35,           -- FeralLeap
 			ultDamage = 8,               -- MeteorDive
-			ultTickTime = 0.5            -- MeteorDive DOT tick time
+			ultTickTime = 0.5,           -- MeteorDive DOT tick time
+			-- Animation speeds
+			animSpeed = {
+				idle = 1.0,
+				run = 1.0,
+				jump = 1.0,
+				combo1 = 1.0,
+				combo2 = 1.0,
+				moveAttack = 1.0,
+				jumpAttack = 1.0,
+				block = 1.0,
+				feralleap = 1.0,
+				brawlersroar = 1.0,
+				bloodthirst = 1.0,
+				lastchance = 1.0,
+				meteordive = 1.0,
+				-- Walking speeds (fixed values, not affected by animation speed)
+				walking = {
+					normal = 18,    -- Fixed normal walking speed
+					slow = 3,       -- Fixed speed during skills
+					blocking = 0    -- Fixed speed while blocking
+				}
+			},
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walkingSpeed = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills
+				blocking = 0    -- Fixed speed while blocking
+			},
+			-- Cooldowns
+			cooldowns = {
+				feralleap = 5,
+				brawlersroar = 5,
+				bloodthirst = 5,
+				lastchance = 5,
+				meteordive = 5
+			},
+			-- Combo configuration
+			comboTimeout = 1,        -- 1 second timeout for combo reset (Brawler has only 2-hit combo)
+			-- Trail configuration
+			trailLifetime = {
+				trail1 = 0.2,      -- Handle
+				trail2 = 0.2,      -- Handle
+				trail3 = 0.2,      -- Handle
+				trail4 = 0.2,      -- Shield
+				trail5 = 0.2,      -- Shield
+				trail6 = 0.2       -- Shield
+			},
+			trailColor = {
+				trail1 = {255, 255, 255},  -- Handle - White
+				trail2 = {255, 255, 255},  -- Handle - White
+				trail3 = {255, 255, 255},  -- Handle - White
+				trail4 = {255, 255, 255},  -- Shield - White
+				trail5 = {255, 255, 255},  -- Shield - White
+				trail6 = {255, 255, 255}   -- Shield - White
+			},
+			trailFaceCamera = {
+				trail1 = true,      -- Handle
+				trail2 = true,      -- Handle
+				trail3 = true,      -- Handle
+				trail4 = true,      -- Shield
+				trail5 = true,      -- Shield
+				trail6 = true       -- Shield
+			}
 		},
 		Knight = {
 			offset = CFrame.new(0, 0, -5),
@@ -76,9 +235,65 @@ ServerConfigs.Hitboxes = {
 			damage = 12,
 			skill1Damage = 30,           -- SwordDance
 			skill2Damage = 25,           -- CycloneSlash
-			skill2TickTime = 0.4,   -- CycloneSlash  hitbox tick timw
+			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
 			ultDamage = 10,              -- MightyBlade
-			ultTickTime = 0.5            -- MightyBlade DOT tick time
+			ultTickTime = 0.5,           -- MightyBlade DOT tick time
+			-- Animation speeds
+			animSpeed = {
+				idle = 1.0,
+				run = 1.0,
+				jump = 1.0,
+				combo1 = 1.0,
+				combo2 = 1.0,
+				combo3 = 1.0,
+				moveAttack = 1.0,
+				jumpAttack = 1.0,
+				block = 1.0,
+				sworddance = 1.0,
+				cyclone_slash = 1.0,
+				warcry = 1.0,
+				warriormight = 1.0,
+				mightyblade = 1.0,
+				-- Walking speeds (fixed values, not affected by animation speed)
+				walking = {
+					normal = 18,    -- Fixed normal walking speed
+					slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
+					blocking = 0    -- Fixed speed while blocking
+				}
+			},
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walkingSpeed = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
+				blocking = 0    -- Fixed speed while blocking
+			},
+			-- Cooldowns
+			cooldowns = {
+				sworddance = 5,
+				cyclone_slash = 5,
+				warcry = 5,
+				warriormight = 5,
+				mightyblade = 5
+			},
+			-- Combo configuration
+			comboTimeout = 1,        -- 1 second timeout for combo reset
+			combo3Cooldown = 20,     -- 3 second cooldown for 3rd attack
+			-- Trail configuration
+			trailLifetime = {
+				trail1 = 0.5,
+				trail2 = 0.5,
+				trail3 = 0.5
+			},
+			trailColor = {
+				trail1 = {255, 255, 255},  -- White
+				trail2 = {255, 255, 255},  -- White
+				trail3 = {255, 255, 255}   -- White
+			},
+			trailFaceCamera = {
+				trail1 = true,
+				trail2 = true,
+				trail3 = true
+			}
 		},
 		Gladiator = {
 			offset = CFrame.new(0, 0, -5),
@@ -87,7 +302,61 @@ ServerConfigs.Hitboxes = {
 			skill1Damage = 25,           -- ShieldBash
 			skill2Damage = 15,           -- DragoonJump
 			ultDamage = 5,               -- DemonicVorpalDance
-			ultTickTime = 0.5            -- DemonicVorpalDance DOT tick time
+			ultTickTime = 0.5,           -- DemonicVorpalDance DOT tick time
+			-- Animation speeds
+			animSpeed = {
+				idle = 1.0,
+				run = 1.0,
+				jump = 1.0,
+				combo1 = 1.0,
+				combo2 = 1.0,
+				moveAttack = 1.0,
+				jumpAttack = 1.0,
+				block = 1.0,
+				shieldbash = 1.0,
+				dragoonjump = 1.0,
+				championsblood = 1.0,
+				championscheer = 1.0,
+				demonicvorpaldance = 1.0,
+				-- Walking speeds (fixed values, not affected by animation speed)
+				walking = {
+					normal = 18,    -- Fixed normal walking speed
+					slow = 3,       -- Fixed speed during skills
+					blocking = 0    -- Fixed speed while blocking
+				}
+			},
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walkingSpeed = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills
+				blocking = 0    -- Fixed speed while blocking
+			},
+			-- Cooldowns
+			cooldowns = {
+				shieldbash = 5,
+				dragoonjump = 5,
+				championsblood = 5,
+				championscheer = 5,
+				demonicvorpaldance = 5
+			},
+			-- Combo configuration
+			comboTimeout = 1,        -- 1 second timeout for combo reset (Gladiator has only 2-hit combo)
+			-- Trail configuration
+			trailLifetime = {
+				trail1 = 0.5,
+				trail2 = 0.5,
+				trail3 = 0.5
+			},
+			trailColor = {
+				trail1 = {255, 255, 255},  -- White
+				trail2 = {255, 255, 255},  -- White
+				trail3 = {255, 255, 255}   -- White
+			},
+			trailFaceCamera = {
+				trail1 = true,
+				trail2 = true,
+				trail3 = true
+			}
 		}
 	},
 	
@@ -105,64 +374,21 @@ ServerConfigs.Hitboxes = {
 -- ANIMATION SPEED CONFIGURATIONS
 -- ========================================
 
--- Archer Animation Speeds
+-- Archer Configuration (references UnifiedAttacks.Archer)
 ServerConfigs.Archer = {
-	AnimationSpeeds = {
-		-- Basic movements
-		idle = 1.0,
-		run = 1.0,
-		jump = 1.0,
-		
-		-- Walking speeds (fixed values, not affected by animation speed)
-		walking = {
-			normal = 18,    -- Fixed normal walking speed
-			slow = 3,       -- Fixed speed during skills
-			blocking = 0    -- Fixed speed while blocking
-		},
-		
-		-- Attack animations (archer uses single attack system)
-		normalAttack = 1.0,    -- Single normal attack (replaces combo1)
-		jumpAttack = 1.0,
-		block = 1.0,
-		
-		-- Skills
-		piercingShot = 1.0,
-		powerShot = 1.0,
-		
-		-- Buffs
-		hunterInstinct = 1.0,
-		hunterMark = 1.0,
-		
-		-- Ultimate
-		starfall = 1.0
-	},
+	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.animSpeed,
+	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.cooldowns,
+	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.walkingSpeed,
 	
-	-- Archer Cooldowns
-	Cooldowns = {
-		-- Skills
-		piercingShot = 5, -- 10 seconds cooldown
-		powerShot = 5,     -- 8 seconds cooldown
-
-		-- Buffs
-		hunterInstinct = 5, -- 15 seconds cooldown
-		hunterMark = 5,     -- 12 seconds cooldown
-
-		-- Ultimate
-		starfall = 5       -- 30 seconds cooldown (ultimate)
-	},
-	
-	-- Archer Arrow Configuration
-	ArrowVisualSpeed = 100,
-	ArrowHitboxSpeed = 80, -- archerArrowVisualSpeed - 20
-	
+	-- Archer Arrow Configuration (references UnifiedAttacks.Archer)
 	ArrowHitbox = {
-		delay = 0,           -- Delay before hitbox becomes active (seconds)
-		size = Vector3.new(6, 6, 6),  -- Hitbox size for all arrows
-		damage = 20,         -- Damage for all normal arrows
-		visualSpeed = 100,   -- Visual arrow asset speed
-		hitboxSpeed = 80,    -- Hitbox detection speed
-		anchorDelay = 0.03,  -- Delay before arrow gets anchored/sticks after hit detection
-		preventPhysicsPush = true  -- Prevent arrows from pushing objects around
+		delay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowDelay,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage,
+		visualSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowVisualSpeed,
+		hitboxSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowHitboxSpeed,
+		anchorDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowAnchorDelay,
+		preventPhysicsPush = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowPreventPhysicsPush
 	},
 	
 	-- Archer Arrow Spawn Offsets
@@ -177,300 +403,65 @@ ServerConfigs.Archer = {
 	ArrowTrailColor = {255, 255, 255} -- White by default
 }
 
--- Samurai Animation Speeds
+-- Samurai Configuration (references UnifiedAttacks.Samurai)
 ServerConfigs.Samurai = {
-	AnimationSpeeds = {
-		-- Basic movements
-		idle = 1.0,
-		run = 1.0,
-		jump = 1.0,
-		
-		-- Walking speeds (fixed values, not affected by animation speed)
-		walking = {
-			normal = 18,    -- Fixed normal walking speed
-			slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
-			blocking = 0    -- Fixed speed while blocking
-		},
-		
-		-- Attack combos
-		combo1 = 1.0,
-		combo2 = 1.0,
-		combo3 = 1.0,
-		moveAttack = 1.0,
-		jumpAttack = 1.0,
-		block = 1.0,
-		
-		-- Skills
-		kozuki = 1.0,
-		wakizashi = 1.0,
-		
-		-- Buffs
-		banzai = 1.0,
-		bushido = 1.0,
-		
-		-- Ultimate
-		zantetsuken = 1.0
-	},
-	
-	-- Samurai Cooldowns
-	Cooldowns = {
-		-- Skills
-		kozuki = 5,        -- 10 seconds cooldown
-		wakizashi = 5,      -- 8 seconds cooldown
-		
-		-- Buffs
-		banzai = 5,        -- 15 seconds cooldown
-		bushido = 5,       -- 12 seconds cooldown
-		
-		-- Ultimate
-		zantetsuken = 5    -- 30 seconds cooldown (ultimate)
-	},
-	
-	-- Samurai Combo Configuration
+	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.animSpeed,
+	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.cooldowns,
+	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.walkingSpeed,
 	ComboConfig = {
-		comboTimeout = 1, -- 1 second timeout for combo reset
-		combo3Cooldown = 20, -- 3 second cooldown for 3rd attack
+		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.comboTimeout,
+		combo3Cooldown = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.combo3Cooldown
 	},
-	
-	-- Samurai Trail Configuration
 	TrailConfig = {
-		-- Individual Trail Lifetime settings (in seconds)
-		Lifetime = {
-			trail1 = 0.13,      -- Trail1.Lifetime for all attacks
-			trail2 = 0.1,      -- Trail2.Lifetime for all attacks
-			trail3 = 0.08       -- Trail3.Lifetime for all attacks
-		},
-		-- Individual Trail Color settings (RGB values 0-255)
-		Color = {
-			trail1 = {255, 255, 255},  -- Trail1.Color (white)
-			trail2 = {255, 255, 255},  -- Trail2.Color (white)
-			trail3 = {255, 255, 255}   -- Trail3.Color (white)
-		},
-		-- Individual Trail FaceCamera settings (boolean)
-		FaceCamera = {
-			trail1 = true,      -- Trail1.FaceCamera
-			trail2 = true,      -- Trail2.FaceCamera
-			trail3 = true       -- Trail3.FaceCamera
-		}
+		Lifetime = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.trailLifetime,
+		Color = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.trailColor,
+		FaceCamera = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.trailFaceCamera
 	}
 }
 
--- Brawler Animation Speeds
+-- Brawler Configuration (references UnifiedAttacks.Brawler)
 ServerConfigs.Brawler = {
-	AnimationSpeeds = {
-		-- Basic movements
-		idle = 1.0,
-		run = 1.0,
-		jump = 1.0,
-		
-		-- Walking speeds (fixed values, not affected by animation speed)
-		walking = {
-			normal = 18,    -- Fixed normal walking speed
-			slow = 3,       -- Fixed speed during skills
-			blocking = 0    -- Fixed speed while blocking
-		},
-		
-		-- Attack combos (Brawler only has 2-hit combo)
-		combo1 = 1.0,
-		combo2 = 1.0,
-		moveAttack = 1.0,
-		jumpAttack = 1.0,
-		block = 1.0,
-		
-		-- Skills
-		feralleap = 1.0,
-		brawlersroar = 1.0,
-		
-		-- Buffs
-		bloodthirst = 1.0,
-		lastchance = 1.0,
-		
-		-- Ultimate
-		meteordive = 1.0
-	},
-	
-	-- Brawler Cooldowns
-	Cooldowns = {
-		-- Skills
-		feralleap = 5,
-		brawlersroar = 5,
-		
-		-- Buffs
-		bloodthirst = 5,
-		lastchance = 5,
-		
-		-- Ultimate
-		meteordive = 5
-	},
-	
-	-- Brawler Combo Configuration
+	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.animSpeed,
+	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.cooldowns,
+	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.walkingSpeed,
 	ComboConfig = {
-		comboTimeout = 1, -- 1 second timeout for combo reset (Brawler has only 2-hit combo)
+		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.comboTimeout
 	},
-	
-	-- Brawler Trail Configuration
 	TrailConfig = {
-		-- Individual Trail Lifetime settings (in seconds)
-		Lifetime = {
-			trail1 = 0.2,      -- Trail1.Lifetime for all attacks (Handle)
-			trail2 = 0.2,       -- Trail2.Lifetime for all attacks (Handle)
-			trail3 = 0.2,     -- Trail3.Lifetime for all attacks (Handle)
-			trail4 = 0.2,      -- Trail1.Lifetime for all attacks (Shield)
-			trail5 = 0.2,       -- Trail2.Lifetime for all attacks (Shield)
-			trail6 = 0.2       -- Trail3.Lifetime for all attacks (Shield)
-		},
-		-- Individual Trail Color settings (RGB values 0-255)
-		Color = {
-			trail1 = {255, 255, 255},  -- Trail1.Color (white) - Handle
-			trail2 = {255, 255, 255},  -- Trail2.Color (white) - Handle
-			trail3 = {255, 255, 255},  -- Trail3.Color (white) - Handle
-			trail4 = {255, 255, 255},  -- Trail1.Color (white) - Shield
-			trail5 = {255, 255, 255},  -- Trail2.Color (white) - Shield
-			trail6 = {255, 255, 255}   -- Trail3.Color (white) - Shield
-		},
-		-- Individual Trail FaceCamera settings (boolean)
-		FaceCamera = {
-			trail1 = true,      -- Trail1.FaceCamera - Handle
-			trail2 = true,      -- Trail2.FaceCamera - Handle
-			trail3 = true,      -- Trail3.FaceCamera - Handle
-			trail4 = true,      -- Trail1.FaceCamera - Shield
-			trail5 = true,      -- Trail2.FaceCamera - Shield
-			trail6 = true       -- Trail3.FaceCamera - Shield
-		}
+		Lifetime = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.trailLifetime,
+		Color = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.trailColor,
+		FaceCamera = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.trailFaceCamera
 	}
 }
 
--- Knight Animation Speeds
+-- Knight Configuration (references UnifiedAttacks.Knight)
 ServerConfigs.Knight = {
-	AnimationSpeeds = {
-		-- Basic movements
-		idle = 1.0,
-		run = 1.0,
-		jump = 1.0,
-		
-		-- Walking speeds (fixed values, not affected by animation speed)
-		walking = {
-			normal = 18,    -- Fixed normal walking speed
-			slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
-			blocking = 0    -- Fixed speed while blocking
-		},
-		
-		-- Attack combos
-		combo1 = 1.0,
-		combo2 = 1.0,
-		combo3 = 1.0,
-		moveAttack = 1.0,
-		jumpAttack = 1.0,
-		block = 1.0,
-		
-		-- Skills
-		sworddance = 1.0,
-		cyclone_slash = 1.0,
-		
-		-- Buffs
-		warcry = 1.0,
-		warriormight = 1.0,
-		
-		-- Ultimate
-		mightyblade = 1.0
-	},
-	
-	-- Knight Cooldowns
-	Cooldowns = {
-		-- Skills
-		sworddance = 5,        -- 10 seconds cooldown
-		cyclone_slash = 5,     -- 8 seconds cooldown
-		
-		-- Buffs
-		warcry = 5,            -- 15 seconds cooldown
-		warriormight = 5,      -- 12 seconds cooldown
-		
-		-- Ultimate
-		mightyblade = 5        -- 30 seconds cooldown (ultimate)
-	},
-	
-	-- Knight Combo Configuration
+	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.animSpeed,
+	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.cooldowns,
+	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.walkingSpeed,
 	ComboConfig = {
-		comboTimeout = 1, -- 1 second timeout for combo reset
-		combo3Cooldown = 20, -- 3 second cooldown for 3rd attack
+		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.comboTimeout,
+		combo3Cooldown = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.combo3Cooldown
 	},
-	
-	-- Knight Trail Configuration
 	TrailConfig = {
-		-- Individual Trail Lifetime settings (in seconds)
-		Lifetime = {
-			trail1 = 0.5,  -- First attack trail lifetime
-			trail2 = 0.5,  -- Second attack trail lifetime
-			trail3 = 0.5,  -- Third attack trail lifetime
-		},
-		Color = ColorSequence.new(Color3.new(0, 0, 1)), -- Blue trail color
-		FaceCamera = true
+		Lifetime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.trailLifetime,
+		Color = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.trailColor,
+		FaceCamera = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.trailFaceCamera
 	}
 }
 
--- Gladiator Animation Speeds
+-- Gladiator Configuration (references UnifiedAttacks.Gladiator)
 ServerConfigs.Gladiator = {
-	AnimationSpeeds = {
-		-- Basic movements
-		idle = 1.0,
-		run = 1.0,
-		jump = 1.0,
-		
-		-- Walking speeds (fixed values, not affected by animation speed)
-		walking = {
-			normal = 18,    -- Fixed normal walking speed
-			slow = 3,       -- Fixed speed during skills
-			blocking = 0    -- Fixed speed while blocking
-		},
-		
-		-- Attack combos (Gladiator only has 2-hit combo)
-		combo1 = 1.0,
-		combo2 = 1.0,
-		moveAttack = 1.0,
-		jumpAttack = 1.0,
-		block = 1.0,
-		
-		-- Skills
-		shieldbash = 1.0,
-		dragoonjump = 1.0,
-		
-		-- Buffs
-		championsblood = 1.0,
-		championscheer = 1.0,
-		
-		-- Ultimate
-		demonicvorpaldance = 1.0
-	},
-	
-	-- Gladiator Cooldowns
-	Cooldowns = {
-		-- Skills
-		shieldbash = 5,
-		dragoonjump = 5,
-		
-		-- Buffs
-		championsblood = 5,
-		championscheer = 5,
-		
-		-- Ultimate
-		demonicvorpaldance = 5
-	},
-	
-	-- Gladiator Combo Configuration
+	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.animSpeed,
+	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.cooldowns,
+	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.walkingSpeed,
 	ComboConfig = {
-		comboTimeout = 1, -- 1 second timeout for combo reset (Gladiator has only 2-hit combo)
+		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.comboTimeout
 	},
-	
-	-- Gladiator Trail Configuration
 	TrailConfig = {
-		-- Individual Trail Lifetime settings (in seconds)
-		Lifetime = {
-			trail1 = 0.5,  -- First attack trail lifetime
-			trail2 = 0.5,  -- Second attack trail lifetime
-			trail3 = 0.5,  -- Third attack trail lifetime
-		},
-		Color = ColorSequence.new(Color3.new(1, 1, 0)), -- Yellow trail color
-		FaceCamera = true
+		Lifetime = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.trailLifetime,
+		Color = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.trailColor,
+		FaceCamera = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.trailFaceCamera
 	}
 }
 
@@ -628,13 +619,6 @@ ServerConfigs.ArcherHitboxes = {
 		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green for arrows
-	},
-	block = {
-		offset = CFrame.new(0, 0, -2),
-		size = Vector3.new(6, 6, 4),
-		damage = 8,
-		delay = 0,
-		visualColor = Color3.new(0.5, 0.5, 0.5)
 	}
 }
 
@@ -674,13 +658,6 @@ ServerConfigs.SamuraiHitboxes = {
 		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
-	},
-	block = {
-		offset = CFrame.new(0, 0, -2),
-		size = Vector3.new(6, 6, 4),
-		damage = 8,
-		delay = 0,
-		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
 	}
 }
 
@@ -713,13 +690,6 @@ ServerConfigs.BrawlerHitboxes = {
 		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
-	},
-	block = {
-		offset = CFrame.new(0, 0, -2),
-		size = Vector3.new(6, 6, 4),
-		damage = 8,
-		delay = 0,
-		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
 	}
 }
 
@@ -759,13 +729,6 @@ ServerConfigs.KnightHitboxes = {
 		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
-	},
-	block = {
-		offset = CFrame.new(0, 0, -2),
-		size = Vector3.new(6, 6, 4),
-		damage = 8,
-		delay = 0,
-		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
 	}
 }
 
@@ -798,34 +761,6 @@ ServerConfigs.GladiatorHitboxes = {
 		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
-	},
-	block = {
-		offset = CFrame.new(0, 0, -2),
-		size = Vector3.new(6, 6, 4),
-		damage = 8,
-		delay = 0,
-		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
-	}
-}
-
--- ========================================
--- GLOBAL DAMAGE CONFIGURATIONS
--- ========================================
-
-ServerConfigs.Damage = {
-	-- Normal Attack Damages (legacy - use Hitboxes.NormalAttacks instead)
-	NormalAttacks = {
-		combo1 = 12,
-		combo2 = 15,
-		combo3 = 20,
-		moveAttack = 12,
-		jumpAttack = 15,
-		block = 8,
-	},
-	
-	-- DOT (Damage Over Time) Configuration
-	DOT = {
-		defaultTickTime = 0.5, -- Default damage tick time in seconds
 	}
 }
 
