@@ -37,27 +37,62 @@ local BaseStats = {
 		Samurai = {
 			HP = 1.08,     -- 8% growth
 			ATK = 1.05,    -- 5% growth
-			D = 1.08       -- 8% growth
+			D = 1.08,      -- 8% growth
+			DP = 1.05,     -- 5% growth - Defense Penetration
+			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
+			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
+			SD = 1.05,     -- 5% growth - Skill Damage
+			HR = 1.05,     -- 5% growth - Health Regeneration
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01    -- 1% growth - Attack Speed
 		},
 		Archer = {
 			HP = 1.06,     -- 6% growth
 			ATK = 1.10,    -- 10% growth
-			D = 1.05       -- 5% growth
+			D = 1.05,      -- 5% growth
+			DP = 1.05,     -- 5% growth - Defense Penetration
+			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
+			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
+			SD = 1.05,     -- 5% growth - Skill Damage
+			HR = 1.05,     -- 5% growth - Health Regeneration
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01    -- 1% growth - Attack Speed
 		},
 		Gladiator = {
 			HP = 1.10,     -- 10% growth
 			ATK = 1.03,    -- 3% growth
-			D = 1.08       -- 8% growth
+			D = 1.08,      -- 8% growth
+			DP = 1.05,     -- 5% growth - Defense Penetration
+			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
+			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
+			SD = 1.05,     -- 5% growth - Skill Damage
+			HR = 1.05,     -- 5% growth - Health Regeneration
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01    -- 1% growth - Attack Speed
 		},
 		Brawler = {  -- Berserker in spreadsheet
 			HP = 1.07,     -- 7% growth
 			ATK = 1.09,    -- 9% growth
-			D = 1.05       -- 5% growth
+			D = 1.05,      -- 5% growth
+			DP = 1.05,     -- 5% growth - Defense Penetration
+			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
+			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
+			SD = 1.05,     -- 5% growth - Skill Damage
+			HR = 1.05,     -- 5% growth - Health Regeneration
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01    -- 1% growth - Attack Speed
 		},
 		Knight = {
 			HP = 1.07,     -- 7% growth
 			ATK = 1.07,    -- 7% growth
-			D = 1.07       -- 7% growth
+			D = 1.07,      -- 7% growth
+			DP = 1.05,     -- 5% growth - Defense Penetration
+			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
+			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
+			SD = 1.05,     -- 5% growth - Skill Damage
+			HR = 1.05,     -- 5% growth - Health Regeneration
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01    -- 1% growth - Attack Speed
 		}
 	},
 	
@@ -369,17 +404,92 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- Only apply multipliers if stats are initialized AND level actually increased (not decreased/reset)
 		-- This prevents applying multipliers during initial load or reset
-		if statsInitialized and newLevel > previousLevel then
+		-- Debug: Check why multipliers might not be applying
+		if not statsInitialized then
+			print("[Level Debug] Stats not initialized yet, skipping multiplier application")
+		elseif newLevel <= previousLevel then
+			print("[Level Debug] Level did not increase (new: " .. newLevel .. ", prev: " .. previousLevel .. "), skipping multipliers")
+		else
 			local multipliers = BaseStats.LevelUpMultipliers[class.Value]
 			
-			-- Apply multipliers if available and below max level
-			if multipliers and newLevel <= BaseStats.XP.maxLevel then
-				-- Apply level-up multipliers
+			if not multipliers then
+				warn("[Level Debug] No multipliers found for class: " .. tostring(class.Value))
+			elseif newLevel > BaseStats.XP.maxLevel then
+				print("[Level Debug] Level exceeds max level (" .. BaseStats.XP.maxLevel .. "), skipping multipliers")
+			else
+				print("[Level Debug] Applying multipliers for class: " .. class.Value .. ", level: " .. newLevel)
+				-- Apply level-up multipliers for all stats
 				leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * multipliers.HP)
 				maxAttack.Value = math.floor(maxAttack.Value * multipliers.ATK)
 				maxDefense.Value = math.floor(maxDefense.Value * multipliers.D)
+				
+				-- Apply offense stat multipliers
+				if leaderstats:FindFirstChild("DefensePenetration") and multipliers.DP then
+					local oldDP = leaderstats.DefensePenetration.Value
+					leaderstats.DefensePenetration.Value = math.floor(oldDP * multipliers.DP)
+					if oldDP ~= leaderstats.DefensePenetration.Value then
+						print("[Level Debug] DP: " .. oldDP .. " -> " .. leaderstats.DefensePenetration.Value .. " (mult: " .. multipliers.DP .. ")")
+					end
+				end
+				-- CritRate needs math.ceil because it's a small percentage stat (starts at 5)
+				-- 5 * 1.03 = 5.15, floor(5.15) = 5 (stays same), ceil(5.15) = 6 (increases!)
+				if leaderstats:FindFirstChild("CritRate") and multipliers.CR then
+					local oldCR = leaderstats.CritRate.Value
+					local newCritRate = oldCR * multipliers.CR
+					-- Always use ceil to ensure progression (removes floating point comparison issues)
+					leaderstats.CritRate.Value = math.ceil(newCritRate)
+					if oldCR ~= leaderstats.CritRate.Value then
+						print("[Level Debug] CR: " .. oldCR .. " -> " .. leaderstats.CritRate.Value .. " (mult: " .. multipliers.CR .. ", calc: " .. newCritRate .. ")")
+					end
+				end
+				-- CritMultiplier works fine with floor since it starts at 150 (150 * 1.01 = 151.5, floor = 151 ✓)
+				-- But we use round to ensure it always increases slightly
+				if leaderstats:FindFirstChild("CritMultiplier") and multipliers.CM then
+					local oldCM = leaderstats.CritMultiplier.Value
+					local newCritMultiplier = oldCM * multipliers.CM
+					-- Use round to ensure it increases (1.01 multiplier on 150 = 151.5, round = 152)
+					-- math.round might not exist, so use: math.floor(x + 0.5)
+					leaderstats.CritMultiplier.Value = math.floor(newCritMultiplier + 0.5)
+					if oldCM ~= leaderstats.CritMultiplier.Value then
+						print("[Level Debug] CM: " .. oldCM .. " -> " .. leaderstats.CritMultiplier.Value .. " (mult: " .. multipliers.CM .. ", calc: " .. newCritMultiplier .. ")")
+					end
+				end
+				if leaderstats:FindFirstChild("SkillDamage") and multipliers.SD then
+					local oldSD = leaderstats.SkillDamage.Value
+					leaderstats.SkillDamage.Value = math.floor(oldSD * multipliers.SD)
+					if oldSD ~= leaderstats.SkillDamage.Value then
+						print("[Level Debug] SD: " .. oldSD .. " -> " .. leaderstats.SkillDamage.Value .. " (mult: " .. multipliers.SD .. ")")
+					end
+				end
+				
+				-- Apply defense/utility stat multipliers
+				if leaderstats:FindFirstChild("HealthRegen") and multipliers.HR then
+					local oldHR = leaderstats.HealthRegen.Value
+					leaderstats.HealthRegen.Value = math.floor(oldHR * multipliers.HR)
+					if oldHR ~= leaderstats.HealthRegen.Value then
+						print("[Level Debug] HR: " .. oldHR .. " -> " .. leaderstats.HealthRegen.Value .. " (mult: " .. multipliers.HR .. ")")
+					end
+				end
+				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
+					local oldMspd = leaderstats.MovementSpeed.Value
+					leaderstats.MovementSpeed.Value = math.floor(oldMspd * multipliers.Mspd)
+					if oldMspd ~= leaderstats.MovementSpeed.Value then
+						print("[Level Debug] Mspd: " .. oldMspd .. " -> " .. leaderstats.MovementSpeed.Value .. " (mult: " .. multipliers.Mspd .. ")")
+					end
+				end
+				if leaderstats:FindFirstChild("AttackSpeed") and multipliers.Aspd then
+					local oldAspd = leaderstats.AttackSpeed.Value
+					leaderstats.AttackSpeed.Value = math.floor(oldAspd * multipliers.Aspd)
+					if oldAspd ~= leaderstats.AttackSpeed.Value then
+						print("[Level Debug] Aspd: " .. oldAspd .. " -> " .. leaderstats.AttackSpeed.Value .. " (mult: " .. multipliers.Aspd .. ")")
+					end
+				end
 
-				print("[Level Debug] Applied multipliers - HP: " .. leaderstats.MaxHealth.Value .. ", ATK: " .. maxAttack.Value .. ", DEF: " .. maxDefense.Value)
+				print("[Level Debug] Applied multipliers - HP: " .. leaderstats.MaxHealth.Value .. 
+					", ATK: " .. maxAttack.Value .. 
+					", DEF: " .. maxDefense.Value ..
+					", CR: " .. (leaderstats.CritRate and leaderstats.CritRate.Value or 0) ..
+					", CM: " .. (leaderstats.CritMultiplier and leaderstats.CritMultiplier.Value or 0))
 
 				-- update humanoid din habang buhay pa siya (if character exists)
 				if plr.Character then
@@ -387,6 +497,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 					if humanoid then
 						humanoid.MaxHealth = leaderstats.MaxHealth.Value
 						humanoid.Health = humanoid.MaxHealth
+						-- Update movement speed if applicable
+						if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
+							humanoid.WalkSpeed = leaderstats.MovementSpeed.Value
+						end
 					end
 				end
 			end
@@ -463,11 +577,23 @@ game.Players.PlayerAdded:Connect(function(plr)
 		leaderstats.AttackSpeed.Value = 0
 		-- Apply base stats immediately
 		applyBaseStats()
+		-- Mark stats as initialized when class is set (allows leveling before character spawns)
+		if class.Value and class.Value ~= "Slavkorian" then
+			statsInitialized = true
+			print("[PlayerManager] Stats initialized when class set to: " .. class.Value)
+		else
+			statsInitialized = false
+		end
 	end)
 	
 	-- Apply base stats on initial load (if no saved data or if class was selected)
 	if not data or (data and class.Value ~= "Slavkorian") then
 		applyBaseStats()
+		-- Mark stats as initialized if class is already set
+		if class.Value and class.Value ~= "Slavkorian" then
+			statsInitialized = true
+			print("[PlayerManager] Stats initialized on initial load for class: " .. class.Value)
+		end
 	end
 
 	-- Sa spawn
@@ -489,8 +615,14 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
+		print("[PlayerManager] Stats initialized for " .. plr.Name)
 		
-		
+		-- Also initialize stats immediately when class is set (before character spawns)
+		-- This allows leveling up to work even before character spawns
+		if class.Value and class.Value ~= "Slavkorian" then
+			statsInitialized = true
+			print("[PlayerManager] Stats initialized early for class: " .. class.Value)
+		end
 	end)
 	
 end)

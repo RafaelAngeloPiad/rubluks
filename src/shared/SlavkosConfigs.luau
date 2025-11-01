@@ -867,6 +867,66 @@ end
 -- DAMAGE CALCULATION FUNCTIONS
 -- ========================================
 
+-- Function to get player's CritRate stat
+-- @param player: Player instance
+-- @return: CritRate value (0-100) or 0
+function ServerConfigs.getPlayerCritRate(player)
+	if not player then
+		return 0
+	end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return 0
+	end
+	
+	local critRate = leaderstats:FindFirstChild("CritRate")
+	if not critRate then
+		return 0
+	end
+	
+	return critRate.Value or 0
+end
+
+-- Function to get player's CritMultiplier stat
+-- @param player: Player instance
+-- @return: CritMultiplier value (e.g., 150 = 1.5x damage) or 150 (default)
+function ServerConfigs.getPlayerCritMultiplier(player)
+	if not player then
+		return 150
+	end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return 150
+	end
+	
+	local critMultiplier = leaderstats:FindFirstChild("CritMultiplier")
+	if not critMultiplier then
+		return 150
+	end
+	
+	return critMultiplier.Value or 150
+end
+
+-- Function to check if an attack crits based on CritRate
+-- @param critRate: CritRate value (0-100)
+-- @return: Boolean indicating if the attack crits
+function ServerConfigs.rollCrit(critRate)
+	if not critRate or critRate <= 0 then
+		return false
+	end
+	
+	-- Clamp crit rate to 0-100
+	critRate = math.max(0, math.min(100, critRate))
+	
+	-- Roll random number between 0-100
+	local roll = math.random() * 100
+	
+	-- Crit if roll is less than critRate
+	return roll < critRate
+end
+
 -- Function to calculate actual damage from damage multiplier and player's MaxAttack stat
 -- @param damageMultiplier: The multiplier from UnifiedAttacks (e.g., 0.2 = 20% of MaxAttack)
 -- @param playerMaxAttack: The player's MaxAttack stat value
@@ -876,6 +936,34 @@ function ServerConfigs.calculateDamage(damageMultiplier, playerMaxAttack)
 		return 0
 	end
 	return math.floor(damageMultiplier * playerMaxAttack)
+end
+
+-- Function to calculate damage with crit chance (returns damage and isCrit flag)
+-- @param damageMultiplier: The multiplier from UnifiedAttacks (e.g., 0.2 = 20% of MaxAttack)
+-- @param player: Player instance (for getting stats)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	if not damageMultiplier or not player then
+		return 0, false
+	end
+	
+	-- Calculate base damage
+	local maxAttack = ServerConfigs.getPlayerMaxAttack(player)
+	local baseDamage = ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	
+	-- Check for crit
+	local critRate = ServerConfigs.getPlayerCritRate(player)
+	local isCrit = ServerConfigs.rollCrit(critRate)
+	
+	if isCrit then
+		-- Apply crit multiplier
+		local critMultiplier = ServerConfigs.getPlayerCritMultiplier(player)
+		-- CritMultiplier is stored as percentage (150 = 1.5x), so divide by 100
+		local finalDamage = math.floor(baseDamage * (critMultiplier / 100))
+		return finalDamage, true
+	else
+		return baseDamage, false
+	end
 end
 
 -- Function to get base damage for a class's normal attack

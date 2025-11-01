@@ -24,17 +24,24 @@ local function getPlayerMaxAttack(player)
 	return maxAttack.Value or 0
 end
 
--- Helper function to calculate actual damage from multiplier
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param classType: Class name (e.g., "Archer")
+-- @param damageMultiplier: Damage multiplier (e.g., 0.2 = 20% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
 local function calculateDamageForHitbox(player, classType, damageMultiplier)
-	local maxAttack = getPlayerMaxAttack(player)
-	
-	-- Check if calculateDamage function exists (fallback for module caching issues)
-	if ServerConfigs.calculateDamage then
-		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
 	else
-		-- Fallback: if function doesn't exist, use multiplier directly as damage
-		warn("[PiercingShot] ServerConfigs.calculateDamage not found, using fallback.")
-		return math.floor(damageMultiplier * maxAttack)
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[PiercingShot] ServerConfigs.calculateDamageWithCrit not found, using fallback.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
 	end
 end
 
@@ -209,7 +216,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Calculate actual damage based on player's MaxAttack stat (skill1Damage is now a multiplier)
 		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill1Damage or 0.35
-		local actualDamage = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+		local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
 		
 		-- Use projectile hitbox system for piercing arrow
 		_G.createTravelingHitbox({

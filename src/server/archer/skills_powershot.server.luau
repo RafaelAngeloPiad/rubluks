@@ -23,17 +23,24 @@ local function getPlayerMaxAttack(player)
 	return maxAttack.Value or 0
 end
 
--- Helper function to calculate actual damage from multiplier
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param classType: Class name (e.g., "Archer")
+-- @param damageMultiplier: Damage multiplier (e.g., 0.2 = 20% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
 local function calculateDamageForHitbox(player, classType, damageMultiplier)
-	local maxAttack = getPlayerMaxAttack(player)
-	
-	-- Check if calculateDamage function exists (fallback for module caching issues)
-	if ServerConfigs.calculateDamage then
-		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
 	else
-		-- Fallback: if function doesn't exist, use multiplier directly as damage
-		warn("[PowerShot] ServerConfigs.calculateDamage not found, using fallback.")
-		return math.floor(damageMultiplier * maxAttack)
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[PowerShot] ServerConfigs.calculateDamageWithCrit not found, using fallback.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
 	end
 end
 
@@ -183,7 +190,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 		-- Calculate actual damage based on player's MaxAttack stat (skill2Damage is now a multiplier)
 		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4
-		local actualDamage = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+		local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
 		
 		-- Use projectile hitbox system for power arrow
 		_G.createTravelingHitbox({
@@ -248,8 +255,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 
 			-- Calculate DOT damage based on player's MaxAttack stat (skill2Damage multiplier for trail)
 			-- Trail damage is a percentage of the skill damage (adjust multiplier as needed)
+			-- Note: Each DOT tick rolls crit independently
 			local trailDamageMultiplier = (ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4) * 0.05 -- 5% of skill damage per tick (nerfed from 12.5%)
-			local trailDamage = calculateDamageForHitbox(player, "Archer", trailDamageMultiplier)
+			local trailDamage, trailIsCrit = calculateDamageForHitbox(player, "Archer", trailDamageMultiplier)
 			
 			-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
 			_G.createStaticDOTHitbox({

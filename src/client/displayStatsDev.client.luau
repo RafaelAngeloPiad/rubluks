@@ -479,6 +479,13 @@ local function setupStatConnections()
 					statLabels["CurrentXP"].Text = string.format("%d / %d", stat.Value, leaderstats.MaximumXP.Value)
 				elseif statLabels[stat.Name] then
 					statLabels[stat.Name].Text = tostring(stat.Value)
+					-- Debug: Print when stat changes for scaling stats
+					local scalingStats = {"CritRate", "CritMultiplier", "DefensePenetration", "SkillDamage", "HealthRegen", "MovementSpeed", "AttackSpeed"}
+					for _, scalingStat in ipairs(scalingStats) do
+						if stat.Name == scalingStat then
+							print("[Display] " .. scalingStat .. " changed to: " .. stat.Value)
+						end
+					end
 				end
 			end)
 			statConnections[stat] = conn

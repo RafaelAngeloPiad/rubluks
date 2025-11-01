@@ -30,18 +30,24 @@ local function getPlayerMaxAttack(player)
 	return maxAttack.Value or 0
 end
 
--- Helper function to calculate actual damage from multiplier
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param classType: Class name (e.g., "Brawler")
+-- @param damageMultiplier: Damage multiplier (e.g., 0.389 = 38.9% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
 local function calculateDamageForHitbox(player, classType, damageMultiplier)
-	local maxAttack = getPlayerMaxAttack(player)
-	
-	-- Check if calculateDamage function exists (fallback for module caching issues)
-	if ServerConfigs.calculateDamage then
-		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
 	else
-		-- Fallback: if function doesn't exist, use multiplier directly as damage
-		-- This prevents attacks from breaking if module hasn't reloaded
-		warn("[Brawler FeralLeap] ServerConfigs.calculateDamage not found, using fallback. Please reload ServerConfigs module.")
-		return math.floor(damageMultiplier * maxAttack)
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Brawler FeralLeap] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
 	end
 end
 
@@ -144,7 +150,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				-- Hitbox for claw mark
 				-- Calculate actual damage from multiplier (damage is now a multiplier)
 				local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage or ServerConfigs.BrawlerSkills.FeralLeap.hitboxDamage
-				local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
+				local actualDamage, isCrit = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = CFrame.new(0, 1, 0),
