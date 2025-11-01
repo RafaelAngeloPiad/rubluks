@@ -22,6 +22,12 @@ ServerConfigs.Hitbox = {
 				outlineTransparency = 0, -- Solid outline
 				duration = 0.2 -- Flash duration in seconds
 			}
+		},
+		
+		-- Knockback Configuration
+		knockback = {
+			enabled = false, -- Enable/disable knockback
+			force = 10 -- Knockback force (velocity applied to mob)
 		}
 }
 

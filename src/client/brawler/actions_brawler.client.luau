@@ -102,20 +102,13 @@ local trail1, trail2, trail3, trail4, trail5, trail6 = nil
 local function getTrailReferences()
 	local tool = BrawlerActions._getTool()
 	if not tool then
-		warn("Brawler Trails: No tool found")
 		return nil, nil, nil, nil, nil, nil
 	end
 
 	local handle = tool:FindFirstChild("Handle")
 	local shield = tool:FindFirstChild("Shield")
 	
-	if not handle then
-		warn("Brawler Trails: No Handle found in tool")
-		return nil, nil, nil, nil, nil, nil
-	end
-	
-	if not shield then
-		warn("Brawler Trails: No Shield found in tool")
+	if not handle or not shield then
 		return nil, nil, nil, nil, nil, nil
 	end
 
@@ -128,7 +121,6 @@ local function getTrailReferences()
 	local shieldTrail1 = shield:FindFirstChild("Trail1")
 	local shieldTrail2 = shield:FindFirstChild("Trail2")
 	local shieldTrail3 = shield:FindFirstChild("Trail3")
-	
 	
 	-- Return in order: handle trails first, then shield trails
 	return handleTrail1, handleTrail2, handleTrail3, shieldTrail1, shieldTrail2, shieldTrail3
@@ -671,12 +663,15 @@ local function onWeaponFound(weaponTool)
 				end
 			end
 		elseif message == "enable_trails" then
-			-- data = trail configuration table with trail1-6 settings
-			local trailConfig = data
-			
-			task.spawn(function()
-				enableTrailsWithConfig(trailConfig)
-			end)
+			-- Only enable trails if brawler weapon is equipped
+			if BrawlerActions._getTool() then
+				-- data = trail configuration table with trail1-6 settings
+				local trailConfig = data
+				
+				task.spawn(function()
+					enableTrailsWithConfig(trailConfig)
+				end)
+			end
 		elseif message == "disable_trails" then
 			-- Disable all trails
 			task.spawn(function()
