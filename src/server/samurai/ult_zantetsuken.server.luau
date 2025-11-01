@@ -7,6 +7,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 1.0 = 100% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Samurai Zantetsuken] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -16,8 +52,11 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://133910790786834"
 
+-- ZANTETSUKEN CONFIG (using centralized config)
+local ZANTETSUKEN_CONFIG = ServerConfigs.SamuraiSkills.Zantetsuken
+
 -- kung tinatawag sa loob ng function kung saan meron 'character' at 'angle'
-local function createSlash(character, angle)
+local function createSlash(player, character, angle)
 	local root = character:WaitForChild("HumanoidRootPart")
 
 	local vfx = ReplicatedStorage.WakizashiAura:WaitForChild("Slash"):Clone()
@@ -55,13 +94,15 @@ local function createSlash(character, angle)
 	bodyVelocity.Parent = bladePart
 
 	-- HITBOX V3: Attach traveling hitbox to blade
+	local damageMultiplier = ZANTETSUKEN_CONFIG.hitboxDamage
+	local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 	_G.createTravelingHitbox({
 		attachTo = bladePart,
 		offset = CFrame.new(-30, 0, 0), -- tagilid kasi yung blade so x - up down  y - left / right  z - up down
-		size = Vector3.new(12, 40, 12), -- Increased from 8x30x8 to 12x40x12
-		damage = 30,
+		size = ZANTETSUKEN_CONFIG.hitboxSize,
+		damage = actualDamage,
 		-- duration removed - will last as long as bladePart exists (2 seconds via Debris)
-		delay = 0.25, -- delay before hitbox appears (in seconds)
+		delay = ZANTETSUKEN_CONFIG.hitboxDelay, -- delay before hitbox appears (in seconds)
 		character = character,
 		name = "Zantetsuken",
 		showVisual = true,
@@ -228,7 +269,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:GetMarkerReachedSignal("SonicBlade"):Connect(function()
 		local angles = {0, 45, 90, 135, 180, 225, 270, 315}
 		for _, a in ipairs(angles) do
-			createSlash(character, a)
+			createSlash(player, character, a)
 		end
 	end)
 

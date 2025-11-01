@@ -10,6 +10,40 @@ local Debris = game:GetService("Debris")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param classType: Class name (e.g., "Gladiator")
+-- @param damageMultiplier: Damage multiplier (e.g., 0.4 = 40% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Gladiator] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -611,11 +645,13 @@ local function handleNormalAttack(player)
 		
 		-- Jump attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Gladiator")
+		local damageMultiplier = hitboxConfig.damage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, "Gladiator", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = hitboxConfig.damage,
+			damage = actualDamage,
 			character = char,
 			name = "JumpAttack",
 			showVisual = true,
@@ -645,11 +681,13 @@ local function handleNormalAttack(player)
 		
 		-- Move attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Gladiator")
+		local damageMultiplier = hitboxConfig.damage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, "Gladiator", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = hitboxConfig.damage,
+			damage = actualDamage,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
@@ -682,11 +720,13 @@ local function handleNormalAttack(player)
 			
 			-- Combo 1 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Gladiator")
+			local damageMultiplier = hitboxConfig.damage
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Gladiator", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = hitboxConfig.damage,
+				damage = actualDamage,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
@@ -710,11 +750,13 @@ local function handleNormalAttack(player)
 			
 			-- Combo 2 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Gladiator")
+			local damageMultiplier = hitboxConfig.damage
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Gladiator", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = hitboxConfig.damage,
+				damage = actualDamage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,

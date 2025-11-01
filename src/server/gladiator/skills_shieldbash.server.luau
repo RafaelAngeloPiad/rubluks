@@ -8,6 +8,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.833 = 83.3% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Gladiator ShieldBash] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -17,12 +53,8 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://124154885589921"
 
--- SHIELD BASH HITBOX CONFIG
-local SHIELDBASH_CONFIG = {
-	hitboxSize = Vector3.new(15, 15, 15), -- Hitbox size
-	hitboxDamage = 25, -- Damage per hit
-	hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
-}
+-- SHIELD BASH HITBOX CONFIG (using centralized config)
+local SHIELDBASH_CONFIG = ServerConfigs.GladiatorSkills.ShieldBash
 
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle shieldbash skill requests
@@ -97,11 +129,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1)
 		
 		-- Hitbox for Shield Bash
+		local damageMultiplier = SHIELDBASH_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 0, -10),
 			size = SHIELDBASH_CONFIG.hitboxSize,
-			damage = SHIELDBASH_CONFIG.hitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "ShieldBash",
 			showVisual = true,

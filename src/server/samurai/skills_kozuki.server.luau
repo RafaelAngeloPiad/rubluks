@@ -8,6 +8,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.6 = 60% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Samurai Kozuki] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -16,6 +52,9 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 -- preload animation
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://101344605319771"
+
+-- KOZUKI CONFIG (using centralized config)
+local KOZUKI_CONFIG = ServerConfigs.SamuraiSkills.Kozuki
 
 local function ResizeVFX(vfx, scale)
 	for _, obj in ipairs(vfx:GetDescendants()) do
@@ -198,13 +237,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 
 		-- HITBOX V3: Static hitbox at root position (after dash)
+		local damageMultiplier = KOZUKI_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(12, 12, 15), -- Increased from 8x8x10 to 12x12x15
-			damage = 30,
+			size = KOZUKI_CONFIG.hitboxSize,
+			damage = actualDamage,
 			-- duration removed - visual will last as long as VFX (1 second via Debris)
-			delay = 0, -- delay before hitbox appears (in seconds)
+			delay = KOZUKI_CONFIG.hitboxDelay, -- delay before hitbox appears (in seconds)
 			character = character,
 			name = "Kozuki",
 			showVisual = true,

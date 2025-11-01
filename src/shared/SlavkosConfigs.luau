@@ -136,10 +136,10 @@ ServerConfigs.Hitboxes = {
 		Samurai = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 12,
-			skill1Damage = 25,           -- Wakizashi
-			skill2Damage = 30,           -- Kozuki
-			ultDamage = 50,              -- Zantetsuken
+			damage = 0.24,                -- 24% of MaxAttack (base: 50 ATK = 12 damage)
+			skill1Damage = 0.5,           -- 50% of MaxAttack (base: 50 ATK = 25 damage) - Wakizashi
+			skill2Damage = 0.6,           -- 60% of MaxAttack (base: 50 ATK = 30 damage) - Kozuki
+			ultDamage = 1.0,              -- 100% of MaxAttack (base: 50 ATK = 50 damage) - Zantetsuken
 			-- Animation speeds
 			animSpeed = {
 				idle = 1.0,
@@ -302,11 +302,11 @@ ServerConfigs.Hitboxes = {
 		Knight = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 12,
-			skill1Damage = 30,           -- SwordDance
-			skill2Damage = 25,           -- CycloneSlash
+			damage = 0.171,               -- 17.1% of MaxAttack (base: 70 ATK = 12 damage)
+			skill1Damage = 0.429,        -- 42.9% of MaxAttack (base: 70 ATK = 30 damage) - SwordDance
+			skill2Damage = 0.357,        -- 35.7% of MaxAttack (base: 70 ATK = 25 damage) - CycloneSlash
 			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
-			ultDamage = 10,              -- MightyBlade
+			ultDamage = 0.143,           -- 14.3% of MaxAttack (base: 70 ATK = 10 damage) - MightyBlade
 			ultTickTime = 0.5,           -- MightyBlade DOT tick time
 			-- Animation speeds
 			animSpeed = {
@@ -386,10 +386,10 @@ ServerConfigs.Hitboxes = {
 		Gladiator = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 12,
-			skill1Damage = 25,           -- ShieldBash
-			skill2Damage = 15,           -- DragoonJump
-			ultDamage = 5,               -- DemonicVorpalDance
+			damage = 0.4,                -- 40% of MaxAttack (base: 30 ATK = 12 damage)
+			skill1Damage = 0.833,        -- 83.3% of MaxAttack (base: 30 ATK = 25 damage) - ShieldBash
+			skill2Damage = 0.5,          -- 50% of MaxAttack (base: 30 ATK = 15 damage) - DragoonJump
+			ultDamage = 0.167,           -- 16.7% of MaxAttack (base: 30 ATK = 5 damage) - DemonicVorpalDance
 			ultTickTime = 0.5,           -- DemonicVorpalDance DOT tick time
 			-- Animation speeds
 			animSpeed = {
@@ -590,20 +590,21 @@ ServerConfigs.ArcherSkills = {
 }
 
 -- Samurai Skills (references UnifiedAttacks.Samurai)
+-- Note: hitboxDamage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.SamuraiSkills = {
 	Kozuki = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.kozuki.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill2Damage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill2Damage, -- Multiplier: 0.6
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.kozuki.hitboxDelay
 	},
 	Wakizashi = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.wakizashi.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill1Damage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill1Damage, -- Multiplier: 0.5
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.wakizashi.hitboxDelay
 	},
 	Zantetsuken = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.zantetsuken.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.ultDamage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.ultDamage, -- Multiplier: 1.0
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skills.zantetsuken.hitboxDelay
 	}
 }
@@ -630,46 +631,48 @@ ServerConfigs.BrawlerSkills = {
 }
 
 -- Knight Skills (references UnifiedAttacks.Knight)
+-- Note: hitboxDamage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.KnightSkills = {
 	SwordDance = {
 		swordHitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.sworddance.swordHitboxSize,
-		swordHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill1Damage,
+		swordHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill1Damage, -- Multiplier: 0.429
 		swordHitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.sworddance.swordHitboxDelay
 	},
 	CycloneSlash = {
 		smallHitboxDuration = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.smallHitboxDuration,
 		smallHitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.smallHitboxSize,
-		smallHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage,
+		smallHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage, -- Multiplier: 0.357
 		smallHitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.smallHitboxDelay,
 		bigHitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.bigHitboxSize,
-		bigHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage,
+		bigHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage, -- Multiplier: 0.357
 		bigHitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.cycloneslash.bigHitboxDelay,
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime,
 		bigDamageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime
 	},
 	MightyBlade = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.mightyblade.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultDamage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultDamage, -- Multiplier: 0.143
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultTickTime,
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skills.mightyblade.hitboxDelay
 	}
 }
 
 -- Gladiator Skills (references UnifiedAttacks.Gladiator)
+-- Note: hitboxDamage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.GladiatorSkills = {
 	ShieldBash = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.shieldbash.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill1Damage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill1Damage, -- Multiplier: 0.833
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.shieldbash.hitboxDelay
 	},
 	DragoonJump = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.dragoonjump.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill2Damage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill2Damage, -- Multiplier: 0.5
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.dragoonjump.hitboxDelay
 	},
 	DemonicVorpalDance = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.demonicvorpaldance.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultDamage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultDamage, -- Multiplier: 0.167
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultTickTime,
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skills.demonicvorpaldance.hitboxDelay
 	}
@@ -698,39 +701,40 @@ ServerConfigs.ArcherHitboxes = {
 }
 
 -- Samurai Hitboxes (Fast, precise attacks)
+-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.SamuraiHitboxes = {
 	combo1 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage, -- Multiplier: 0.24
 		delay = 0,
 		visualColor = Color3.new(1, 0.8, 0) -- Orange
 	},
 	combo2 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage, -- Multiplier: 0.24
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	combo3 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage, -- Multiplier: 0.24
 		delay = 2, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(1, 0, 0) -- Red
 	},
 	moveAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage, -- Multiplier: 0.24
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage, -- Multiplier: 0.24
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	}
@@ -770,71 +774,73 @@ ServerConfigs.BrawlerHitboxes = {
 }
 
 -- Knight Hitboxes (Balanced, defensive attacks)
+-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.KnightHitboxes = {
 	combo1 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage, -- Multiplier: 0.171
 		delay = 0,
 		visualColor = Color3.new(1, 0.8, 0) -- Orange
 	},
 	combo2 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage, -- Multiplier: 0.171
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	combo3 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage, -- Multiplier: 0.171
 		delay = 1, -- Shorter delay than samurai
 		visualColor = Color3.new(1, 0, 0) -- Red
 	},
 	moveAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage, -- Multiplier: 0.171
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage, -- Multiplier: 0.171
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	}
 }
 
 -- Gladiator Hitboxes (Aggressive, wide attacks)
+-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.GladiatorHitboxes = {
 	combo1 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage, -- Multiplier: 0.4
 		delay = 0,
 		visualColor = Color3.new(1, 0.8, 0) -- Orange
 	},
 	combo2 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage, -- Multiplier: 0.4
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	moveAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage, -- Multiplier: 0.4
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage, -- Multiplier: 0.4
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	}

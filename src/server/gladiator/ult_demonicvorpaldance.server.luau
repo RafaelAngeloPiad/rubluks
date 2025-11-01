@@ -9,6 +9,42 @@ local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 local TweenService = game:GetService("TweenService")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.167 = 16.7% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Gladiator DemonicVorpalDance] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -17,6 +53,9 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 -- preload animation
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://117441445922611"
+
+-- DEMONIC VORPAL DANCE HITBOX CONFIG (using centralized config)
+local DEMONICVORPALDANCE_CONFIG = ServerConfigs.GladiatorSkills.DemonicVorpalDance
 
 
 -- Helper function: Enter Arena (spawns demonic shields in a circle)
@@ -202,17 +241,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		
 		-- MASSIVE CENTER DOT HITBOX for DemonicVorpalDance
 		local root = character:WaitForChild("HumanoidRootPart")
+		local damageMultiplier = DEMONICVORPALDANCE_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticDOTHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(250, 60, 250), -- Massive center hitbox
-			damage = 5, -- Damage per tick
-			damageTickTime = 0.5, -- Damage every 0.5 seconds
+			size = DEMONICVORPALDANCE_CONFIG.hitboxSize, -- Massive center hitbox
+			damage = actualDamage, -- Damage per tick (calculated with crit)
+			damageTickTime = DEMONICVORPALDANCE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
 			character = character,
 			name = "DemonicVorpalDance Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(1, 0, 0.5), -- Pink/red color
-			delay = 0.2
+			delay = DEMONICVORPALDANCE_CONFIG.hitboxDelay
 		})
 	end)
 

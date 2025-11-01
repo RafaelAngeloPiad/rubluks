@@ -8,6 +8,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.357 = 35.7% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Knight CycloneSlash] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -17,10 +53,8 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://129607332522508"
 
--- CYCLONE SLASH HITBOX TIMING CONFIG
-local CYCLONE_CONFIG = {
-	smallHitboxDuration = 1.0, -- How long to use small hitbox before switching to big (in seconds)
-}
+-- CYCLONE SLASH HITBOX CONFIG (using centralized config)
+local CYCLONE_CONFIG = ServerConfigs.KnightSkills.CycloneSlash
 
 local function ResizeVFX(vfx, scale)
 	for _, obj in ipairs(vfx:GetDescendants()) do
@@ -118,32 +152,36 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		weld.Parent = mainPart
 
 		-- PHASE 1: Small hitbox for initial duration
+		local smallDamageMultiplier = CYCLONE_CONFIG.smallHitboxDamage
+		local smallActualDamage, smallIsCrit = calculateDamageForHitbox(player, smallDamageMultiplier)
 		_G.createStaticDOTHitbox({
 			attachTo = mainPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(15, 15, 15), -- Small hitbox
-			damage = 3,
-			damageTickTime = 0.4,
+			size = CYCLONE_CONFIG.smallHitboxSize, -- Small hitbox
+			damage = smallActualDamage, -- Damage per tick (calculated with crit)
+			damageTickTime = CYCLONE_CONFIG.damageTickTime,
 			character = character,
 			name = "CycloneSlashSmall",
 			showVisual = true,
 			visualColor = Color3.new(0.3, 0, 0.6), -- Darker purple
-			delay = 0
+			delay = CYCLONE_CONFIG.smallHitboxDelay
 		})
 		
 		-- After duration, spawn big hitbox
 		task.delay(CYCLONE_CONFIG.smallHitboxDuration, function()
+			local bigDamageMultiplier = CYCLONE_CONFIG.bigHitboxDamage
+			local bigActualDamage, bigIsCrit = calculateDamageForHitbox(player, bigDamageMultiplier)
 			_G.createStaticDOTHitbox({
 				attachTo = mainPart,
 				offset = CFrame.new(0, 0, 0),
-				size = Vector3.new(40, 30, 40), -- Big hitbox
-				damage = 7,
-				damageTickTime = 0.3,
+				size = CYCLONE_CONFIG.bigHitboxSize, -- Big hitbox
+				damage = bigActualDamage, -- Damage per tick (calculated with crit)
+				damageTickTime = CYCLONE_CONFIG.bigDamageTickTime,
 				character = character,
 				name = "CycloneSlashBig",
 				showVisual = true,
 				visualColor = Color3.new(0.8, 0, 1), -- Brighter purple
-				delay = 0
+				delay = CYCLONE_CONFIG.bigHitboxDelay
 			})
 		end)
 

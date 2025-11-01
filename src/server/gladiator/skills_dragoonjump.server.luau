@@ -8,6 +8,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.5 = 50% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Gladiator DragoonJump] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -17,12 +53,8 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://102537581819156"
 
--- DRAGOON JUMP HITBOX CONFIG
-local DRAGOONJUMP_CONFIG = {
-	hitboxSize = Vector3.new(20, 20, 20), -- Hitbox size for each explosion
-	hitboxDamage = 15, -- Damage per explosion hit
-	hitboxDelay = 1, -- Delay before hitbox activates (in seconds) - synced with explosion VFX
-}
+-- DRAGOON JUMP HITBOX CONFIG (using centralized config)
+local DRAGOONJUMP_CONFIG = ServerConfigs.GladiatorSkills.DragoonJump
 
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle dragoonjump skill requests
@@ -97,11 +129,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1.5)
 		
 		-- Hitbox for explosion 1
+		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -20),
 			size = DRAGOONJUMP_CONFIG.hitboxSize,
-			damage = DRAGOONJUMP_CONFIG.hitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "DragoonJump1",
 			showVisual = true,
@@ -142,11 +176,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1.5)
 		
 		-- Hitbox for explosion 2
+		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -40),
 			size = DRAGOONJUMP_CONFIG.hitboxSize,
-			damage = DRAGOONJUMP_CONFIG.hitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "DragoonJump2",
 			showVisual = true,
@@ -187,11 +223,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1.5)
 		
 		-- Hitbox for explosion 3
+		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -60),
 			size = DRAGOONJUMP_CONFIG.hitboxSize,
-			damage = DRAGOONJUMP_CONFIG.hitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "DragoonJump3",
 			showVisual = true,
@@ -232,11 +270,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1.5)
 		
 		-- Hitbox for explosion 4
+		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -80),
 			size = DRAGOONJUMP_CONFIG.hitboxSize,
-			damage = DRAGOONJUMP_CONFIG.hitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "DragoonJump4",
 			showVisual = true,
@@ -277,11 +317,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 1.5)
 		
 		-- Hitbox for explosion 5
+		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -100),
 			size = DRAGOONJUMP_CONFIG.hitboxSize,
-			damage = DRAGOONJUMP_CONFIG.hitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "DragoonJump5",
 			showVisual = true,

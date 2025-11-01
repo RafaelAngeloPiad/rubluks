@@ -8,6 +8,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.429 = 42.9% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Knight SwordDance] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -17,12 +53,8 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://96753545500324"
 
--- SWORD DANCE HITBOX CONFIG
-local SWORDDANCE_CONFIG = {
-	swordHitboxSize = Vector3.new(12, 50, 12), -- Hitbox size (wider horizontally: width, HEIGHT, depth)
-	swordHitboxDamage = 30, -- Damage per sword hit
-	swordHitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
-}
+-- SWORD DANCE HITBOX CONFIG (using centralized config)
+local SWORDDANCE_CONFIG = ServerConfigs.KnightSkills.SwordDance
 
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle sworddance skill requests
@@ -124,11 +156,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createTravelingHitbox({
 			attachTo = currentSwordVFX1,
 			offset = CFrame.new(0, 0, 0),
 			size = SWORDDANCE_CONFIG.swordHitboxSize,
-			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword1",
 			showVisual = true,
@@ -161,11 +195,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createTravelingHitbox({
 			attachTo = currentSwordVFX2,
 			offset = CFrame.new(0, 0, 0),
 			size = SWORDDANCE_CONFIG.swordHitboxSize,
-			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword2",
 			showVisual = true,
@@ -198,11 +234,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createTravelingHitbox({
 			attachTo = currentSwordVFX3,
 			offset = CFrame.new(0, 0, 0),
 			size = SWORDDANCE_CONFIG.swordHitboxSize,
-			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword3",
 			showVisual = true,
@@ -235,11 +273,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
+		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
 		_G.createTravelingHitbox({
 			attachTo = currentSwordVFX4,
 			offset = CFrame.new(0, 0, 0),
 			size = SWORDDANCE_CONFIG.swordHitboxSize,
-			damage = SWORDDANCE_CONFIG.swordHitboxDamage,
+			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword4",
 			showVisual = true,

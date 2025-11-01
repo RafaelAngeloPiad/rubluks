@@ -10,6 +10,40 @@ local Debris = game:GetService("Debris")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param classType: Class name (e.g., "Knight")
+-- @param damageMultiplier: Damage multiplier (e.g., 0.171 = 17.1% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Knight] ServerConfigs.calculateDamageWithCrit not found, using fallback. Please reload ServerConfigs module.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -641,11 +675,13 @@ local function handleNormalAttack(player)
 		
 		-- Jump attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Knight")
+		local damageMultiplier = hitboxConfig.damage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = hitboxConfig.damage,
+			damage = actualDamage,
 			character = char,
 			name = "JumpAttack",
 			showVisual = true,
@@ -675,11 +711,13 @@ local function handleNormalAttack(player)
 		
 		-- Move attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Knight")
+		local damageMultiplier = hitboxConfig.damage
+		local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = hitboxConfig.damage,
+			damage = actualDamage,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
@@ -712,11 +750,13 @@ local function handleNormalAttack(player)
 			
 			-- Combo 1 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Knight")
+			local damageMultiplier = hitboxConfig.damage
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = hitboxConfig.damage,
+				damage = actualDamage,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
@@ -740,11 +780,13 @@ local function handleNormalAttack(player)
 			
 			-- Combo 2 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Knight")
+			local damageMultiplier = hitboxConfig.damage
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = hitboxConfig.damage,
+				damage = actualDamage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
@@ -772,17 +814,19 @@ local function handleNormalAttack(player)
 				
 			-- Combo 1 hitbox (fallback from combo 3 cooldown)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Knight")
-				_G.createStaticHitbox({
-					attachTo = root,
-					offset = hitboxConfig.offset,
-					size = hitboxConfig.size,
-					damage = hitboxConfig.damage,
-					character = char,
-					name = "Combo1_Fallback",
-					showVisual = true,
-					visualColor = hitboxConfig.visualColor,
-					delay = hitboxConfig.delay
-				})
+			local damageMultiplier = hitboxConfig.damage
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
+			_G.createStaticHitbox({
+				attachTo = root,
+				offset = hitboxConfig.offset,
+				size = hitboxConfig.size,
+				damage = actualDamage,
+				character = char,
+				name = "Combo1_Fallback",
+				showVisual = true,
+				visualColor = hitboxConfig.visualColor,
+				delay = hitboxConfig.delay
+			})
 				
 				data.animTrack1.Stopped:Once(function() 
 					data.isAttacking = false 
@@ -800,17 +844,19 @@ local function handleNormalAttack(player)
 				
 			-- Combo 3 hitbox (most powerful)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Knight")
-				_G.createStaticHitbox({
-					attachTo = root,
-					offset = hitboxConfig.offset,
-					size = hitboxConfig.size,
-					damage = hitboxConfig.damage,
-					character = char,
-					name = "Combo3",
-					showVisual = true,
-					visualColor = hitboxConfig.visualColor,
-					delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
-				})
+			local damageMultiplier = hitboxConfig.damage
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
+			_G.createStaticHitbox({
+				attachTo = root,
+				offset = hitboxConfig.offset,
+				size = hitboxConfig.size,
+				damage = actualDamage,
+				character = char,
+				name = "Combo3",
+				showVisual = true,
+				visualColor = hitboxConfig.visualColor,
+				delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
+			})
 				
 				data.animTrack3.Stopped:Once(function() 
 					data.isAttacking = false 
