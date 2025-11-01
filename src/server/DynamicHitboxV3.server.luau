@@ -130,13 +130,7 @@ local function applyKnockback(attacker, target)
 		return
 	end
 	
-	-- Get attacker's HumanoidRootPart
-	local attackerRoot = attacker:FindFirstChild("HumanoidRootPart")
-	if not attackerRoot then
-		return
-	end
-	
-	-- Get target model's HumanoidRootPart (find parent model of HumanoidRootPart)
+	-- Get target model's HumanoidRootPart
 	local targetRoot = target:FindFirstChild("HumanoidRootPart")
 	if not targetRoot then
 		return
@@ -152,19 +146,16 @@ local function applyKnockback(attacker, target)
 		-- Normalize horizontal direction
 		horizontalDirection = horizontalDirection / magnitude
 		
-		-- Use horizontal direction only (no upward component)
-		local knockbackDir = horizontalDirection
-		
 		-- Calculate knockback velocity (horizontal only)
-		local knockbackVel = knockbackDir * knockbackConfig.force
+		local knockbackVel = horizontalDirection * knockbackConfig.force
 		
-		-- Get humanoid to temporarily disable AI movement
+		-- Get humanoid
 		local humanoid = target:FindFirstChildOfClass("Humanoid")
 		if not humanoid then
 			return
 		end
 		
-		-- Temporarily stop AI from moving
+		-- Temporarily disable AI movement
 		local originalPlatformStand = humanoid.PlatformStand
 		humanoid.PlatformStand = true
 		
@@ -173,110 +164,17 @@ local function applyKnockback(attacker, target)
 			targetRoot.Anchored = false
 		end
 		
-		-- Set up raycast parameters to find ground level
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = {target}
-		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-		
-		-- Find ground level below mob
-		local rayOrigin = targetRoot.Position
-		local rayDirection = Vector3.new(0, -1000, 0)
-		local rayResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-		
-		local groundLevel = rayResult and rayResult.Position.Y or (targetRoot.Position.Y - 5)
-		
-		-- Create temporary invisible collision floor that moves with the mob
-		-- This prevents parts from sinking underground while allowing horizontal movement
-		local collisionFloor = Instance.new("Part")
-		collisionFloor.Name = "KnockbackFloor"
-		collisionFloor.Size = Vector3.new(50, 1, 50) -- Wide floor to catch all parts
-		collisionFloor.Transparency = 1
-		collisionFloor.Anchored = false
-		collisionFloor.CanCollide = true
-		collisionFloor.CanQuery = false
-		collisionFloor.CanTouch = true
-		collisionFloor.Material = Enum.Material.SmoothPlastic
-		collisionFloor.Parent = workspace
-		
-		-- Position floor just below the mob's feet
-		collisionFloor.CFrame = CFrame.new(targetRoot.Position.X, groundLevel - 0.5, targetRoot.Position.Z)
-		
-		-- Weld floor to root part so it moves with the mob horizontally
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = targetRoot
-		weld.Part1 = collisionFloor
-		weld.Parent = collisionFloor
-		
-		-- Apply horizontal velocity only (don't touch Y)
+		-- Simply apply horizontal velocity (no collision floors, no position corrections)
 		local currentVel = targetRoot.AssemblyLinearVelocity
 		local horizontalVel = Vector3.new(knockbackVel.X, 0, knockbackVel.Z)
 		
-		-- Keep current Y velocity (let gravity handle vertical)
+		-- Apply velocity - keep Y unchanged, only push horizontally
 		targetRoot.AssemblyLinearVelocity = Vector3.new(currentVel.X + horizontalVel.X, currentVel.Y, currentVel.Z + horizontalVel.Z)
 		
-		-- Update floor position to stay at ground level while mob moves horizontally
-		local knockbackStartTime = tick()
-		local floorUpdateConnection
-		
-		floorUpdateConnection = RunService.Heartbeat:Connect(function()
-			if not targetRoot or not targetRoot.Parent or not humanoid or not humanoid.Parent then
-				floorUpdateConnection:Disconnect()
-				if collisionFloor then collisionFloor:Destroy() end
-				return
-			end
-			
-			local elapsed = tick() - knockbackStartTime
-			
-			-- After 0.3 seconds, restore PlatformStand but keep floor active
-			if elapsed > 0.3 and elapsed < 0.4 then
-				if humanoid and humanoid.Parent and targetRoot and targetRoot.Parent then
-					humanoid.PlatformStand = originalPlatformStand
-				end
-			end
-			
-			-- Update floor position to stay at ground level (moves horizontally with mob)
-			local currentRayOrigin = targetRoot.Position
-			local currentRayResult = workspace:Raycast(currentRayOrigin, Vector3.new(0, -1000, 0), raycastParams)
-			local currentGroundLevel = currentRayResult and currentRayResult.Position.Y or (currentRayOrigin.Y - 5)
-			
-			-- Keep floor at ground level, X/Z follows mob
-			if collisionFloor and collisionFloor.Parent then
-				collisionFloor.CFrame = CFrame.new(targetRoot.Position.X, currentGroundLevel - 0.5, targetRoot.Position.Z)
-			end
-			
-			-- After PlatformStand is restored, gradually remove floor (0.5 seconds after knockback)
-			if elapsed > 0.5 then
-				floorUpdateConnection:Disconnect()
-				-- Make floor non-collidable first, give mob time to settle
-				if collisionFloor and collisionFloor.Parent then
-					collisionFloor.CanCollide = false
-					-- Destroy after a short delay to ensure mob has settled
-					task.delay(0.2, function()
-						if collisionFloor and collisionFloor.Parent then
-							collisionFloor:Destroy()
-						end
-					end)
-				end
-			end
-		end)
-		
-		-- Debug: verify knockback is applied
-		print("[KNOCKBACK] Applied to", target.Name, "Velocity:", horizontalVel)
-		
-		-- Safety cleanup (fallback in case heartbeat connection doesn't clean up)
-		task.delay(1.0, function()
-			if floorUpdateConnection then
-				floorUpdateConnection:Disconnect()
-			end
-			if collisionFloor and collisionFloor.Parent then
-				-- Ensure humanoid is restored
-				if humanoid and humanoid.Parent and targetRoot and targetRoot.Parent then
-					humanoid.PlatformStand = originalPlatformStand
-				end
-				-- Make non-collidable then destroy
-				collisionFloor.CanCollide = false
-				task.wait(0.1)
-				collisionFloor:Destroy()
+		-- Restore AI movement after short delay
+		task.delay(0.3, function()
+			if humanoid and humanoid.Parent and targetRoot and targetRoot.Parent then
+				humanoid.PlatformStand = originalPlatformStand
 			end
 		end)
 	end

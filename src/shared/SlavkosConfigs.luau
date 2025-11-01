@@ -27,7 +27,7 @@ ServerConfigs.Hitbox = {
 		-- Knockback Configuration
 		knockback = {
 			enabled = false, -- Enable/disable knockback
-			force = 10 -- Knockback force (velocity applied to mob)
+			force = 20 -- Knockback force (velocity applied to mob)
 		}
 }
 
