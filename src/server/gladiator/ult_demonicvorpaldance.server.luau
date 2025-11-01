@@ -18,14 +18,6 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://117441445922611"
 
--- DEMONIC VORPAL DANCE HITBOX CONFIG
-local DEMONICVORPAL_CONFIG = {
-	nearHitboxSize = Vector3.new(35, 35, 35), -- Hitbox size for near explosions (wider to cover center)
-	farHitboxSize = Vector3.new(40, 40, 40), -- Hitbox size for far explosions (wider to cover center)
-	nearHitboxDamage = 20, -- Damage per near explosion
-	farHitboxDamage = 25, -- Damage per far explosion
-	hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
-}
 
 -- Helper function: Enter Arena (spawns demonic shields in a circle)
 local function enterArena(character, angle, tilt)

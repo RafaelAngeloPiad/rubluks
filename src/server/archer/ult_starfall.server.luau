@@ -197,14 +197,16 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			createExplosionFar(character, angle)
 		end
 		
-		-- Massive center hitbox (added to original)
+		-- Massive center DOT hitbox
 		local root = character:WaitForChild("HumanoidRootPart")
-		_G.createStaticHitbox({
-			cframe = root.CFrame,
-			size = Vector3.new(250, 60, 250), -- Increased from 200x50x200 to 250x60x250
-			damage = 40,
+		_G.createStaticDOTHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, 0, 0),
+			size = Vector3.new(250, 60, 250), -- Massive center hitbox
+			damage = 10, -- Damage per tick
+			damageTickTime = 0.5, -- Damage every 0.5 seconds
 			character = character,
-			name = "Starfall Center Massive",
+			name = "Starfall Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(1, 0, 0),
 			delay = 0.2

@@ -301,14 +301,16 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			explosionNear(character, angle,  math.rad(-70))
 		end
 		
-		-- MASSIVE CENTER HITBOX for SwordNear (low damage)
+		-- ONE MASSIVE CENTER DOT HITBOX for entire ultimate
 		local root = character:WaitForChild("HumanoidRootPart")
-		_G.createStaticHitbox({
-			cframe = root.CFrame,
+		_G.createStaticDOTHitbox({
+			attachTo = root,
+			offset = CFrame.new(0, 0, 0),
 			size = Vector3.new(250, 60, 250), -- Massive center hitbox
-			damage = 10, -- Low damage
+			damage = 10, -- Damage per tick
+			damageTickTime = 0.5, -- Damage every 0.5 seconds
 			character = character,
-			name = "MightyBlade Center Massive Near",
+			name = "MightyBlade Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(0.8, 0.8, 0), -- Yellow
 			delay = 0.2
@@ -320,19 +322,6 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			swordsFar(character, angle,  math.rad(-70))
 			explosionFar(character, angle,  math.rad(-70))
 		end
-		
-		-- MASSIVE CENTER HITBOX for SwordFar (low damage)
-		local root = character:WaitForChild("HumanoidRootPart")
-		_G.createStaticHitbox({
-			cframe = root.CFrame,
-			size = Vector3.new(250, 60, 250), -- Massive center hitbox
-			damage = 10, -- Low damage
-			character = character,
-			name = "MightyBlade Center Massive Far",
-			showVisual = true,
-			visualColor = Color3.new(1, 0, 0), -- Red
-			delay = 0.2
-		})
 	end)
 
 end)

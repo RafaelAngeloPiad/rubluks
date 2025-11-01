@@ -32,6 +32,76 @@ ServerConfigs.Hitbox = {
 }
 
 -- ========================================
+-- GLOBAL HITBOX CONFIGURATIONS
+-- ========================================
+
+ServerConfigs.Hitboxes = {
+	-- DOT (Damage Over Time) Configuration
+	DOT = {
+		defaultTickTime = 0.5, -- Default damage tick time in seconds
+	},
+	
+	-- Unified Non-Skill Attack Configurations (separate per class)
+	UnifiedAttacks = {
+		Archer = {
+			offset = CFrame.new(0, 0, -2),
+			size = Vector3.new(6, 6, 6),
+			damage = 20,
+			skill1Damage = 35,           -- PiercingShot
+			skill2Damage = 40,           -- PowerShot
+			skill2TickTime = 0.3,        -- PowerShot DOT tick time
+			ultDamage = 10,              -- Starfall
+			ultTickTime = 0.5            -- Starfall DOT tick time
+		},
+		Samurai = {
+			offset = CFrame.new(0, 0, -5),
+			size = Vector3.new(15, 15, 12),
+			damage = 12,
+			skill1Damage = 25,           -- Wakizashi
+			skill2Damage = 30,           -- Kozuki
+			ultDamage = 50               -- Zantetsuken
+		},
+		Brawler = {
+			offset = CFrame.new(0, 0, -5),
+			size = Vector3.new(15, 15, 12),
+			damage = 12,
+			skill1Damage = 20,           -- BrawlersRoar
+			skill2Damage = 35,           -- FeralLeap
+			ultDamage = 8,               -- MeteorDive
+			ultTickTime = 0.5            -- MeteorDive DOT tick time
+		},
+		Knight = {
+			offset = CFrame.new(0, 0, -5),
+			size = Vector3.new(15, 15, 12),
+			damage = 12,
+			skill1Damage = 30,           -- SwordDance
+			skill2Damage = 25,           -- CycloneSlash
+			skill2TickTime = 0.4,   -- CycloneSlash  hitbox tick timw
+			ultDamage = 10,              -- MightyBlade
+			ultTickTime = 0.5            -- MightyBlade DOT tick time
+		},
+		Gladiator = {
+			offset = CFrame.new(0, 0, -5),
+			size = Vector3.new(15, 15, 12),
+			damage = 12,
+			skill1Damage = 25,           -- ShieldBash
+			skill2Damage = 15,           -- DragoonJump
+			ultDamage = 5,               -- DemonicVorpalDance
+			ultTickTime = 0.5            -- DemonicVorpalDance DOT tick time
+		}
+	},
+	
+	-- Hitbox Defaults
+	Defaults = {
+		defaultSize = Vector3.new(8, 8, 8),
+		defaultDelay = 0.1,
+		defaultDamage = 20,
+		defaultOffset = CFrame.new(0, 0, -5),
+		defaultVisualColor = Color3.new(1, 0, 0)
+	}
+}
+
+-- ========================================
 -- ANIMATION SPEED CONFIGURATIONS
 -- ========================================
 
@@ -413,23 +483,24 @@ ServerConfigs.ArcherSkills = {
 	-- PowerShot Configuration
 	PowerShot = {
 		hitboxSize = Vector3.new(8, 8, 8),
-		hitboxDamage = 40,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage,
 		hitboxDelay = 0.1,
-		damageTickTime = 0.3, -- Damage every 0.3 seconds
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2TickTime,
 	},
 	
 	-- PiercingShot Configuration
 	PiercingShot = {
 		hitboxSize = Vector3.new(6, 6, 6),
-		hitboxDamage = 35,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill1Damage,
 		hitboxDelay = 0.1,
 	},
 	
-	-- Starfall Ultimate Configuration
+	-- Starfall Ultimate Configuration (single static DOT hitbox)
 	Starfall = {
-		hitboxSize = Vector3.new(15, 15, 15),
-		hitboxDamage = 40,
-		hitboxDelay = 0.2,
+		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.ultDamage,
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.ultTickTime,
+		hitboxDelay = 0.2, -- Delay before hitbox activates
 	}
 }
 
@@ -438,21 +509,21 @@ ServerConfigs.SamuraiSkills = {
 	-- Kozuki Configuration
 	Kozuki = {
 		hitboxSize = Vector3.new(10, 10, 10),
-		hitboxDamage = 30,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill2Damage,
 		hitboxDelay = 0.1,
 	},
 	
 	-- Wakizashi Configuration
 	Wakizashi = {
 		hitboxSize = Vector3.new(8, 8, 8),
-		hitboxDamage = 25,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.skill1Damage,
 		hitboxDelay = 0.1,
 	},
 	
 	-- Zantetsuken Ultimate Configuration
 	Zantetsuken = {
 		hitboxSize = Vector3.new(20, 20, 20),
-		hitboxDamage = 50,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.ultDamage,
 		hitboxDelay = 0.2,
 	}
 }
@@ -462,23 +533,23 @@ ServerConfigs.BrawlerSkills = {
 	-- FeralLeap Configuration
 	FeralLeap = {
 		hitboxSize = Vector3.new(70, 70, 70), -- Hitbox size for claw mark
-		hitboxDamage = 35, -- Damage on landing
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage,
 		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
 	},
 	
 	-- BrawlersRoar Configuration
 	BrawlersRoar = {
 		hitboxSize = Vector3.new(25, 25, 25), -- Hitbox size for roar
-		hitboxDamage = 20, -- Damage per hit
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill1Damage,
 		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
 	},
 	
-	-- MeteorDive Ultimate Configuration
+	-- MeteorDive Ultimate Configuration (single static DOT hitbox)
 	MeteorDive = {
-		explosionHitboxSize = Vector3.new(40, 40, 40), -- Hitbox size for meteor explosion
-		explosionHitboxDamage = 50, -- Damage on meteor impact
+		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultDamage,
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultTickTime,
 		hitboxDelay = 0.2, -- Delay before hitbox activates (in seconds)
-		damageTickTime = 0.5, -- Damage every 0.5 seconds
 	}
 }
 
@@ -487,7 +558,7 @@ ServerConfigs.KnightSkills = {
 	-- SwordDance Configuration
 	SwordDance = {
 		swordHitboxSize = Vector3.new(12, 50, 12), -- Hitbox size (wider horizontally: width, HEIGHT, depth)
-		swordHitboxDamage = 30, -- Damage per sword hit
+		swordHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill1Damage,
 		swordHitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
 	},
 	
@@ -495,20 +566,21 @@ ServerConfigs.KnightSkills = {
 	CycloneSlash = {
 		smallHitboxDuration = 1.0, -- How long to use small hitbox before switching to big (in seconds)
 		smallHitboxSize = Vector3.new(8, 8, 8),
-		smallHitboxDamage = 15,
+		smallHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage,
 		smallHitboxDelay = 0.1,
 		bigHitboxSize = Vector3.new(20, 20, 20),
-		bigHitboxDamage = 25,
+		bigHitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2Damage,
 		bigHitboxDelay = 0.1,
-		damageTickTime = 0.4, -- For small hitbox
-		bigDamageTickTime = 0.3, -- For big hitbox
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime,
+		bigDamageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.skill2TickTime,
 	},
 	
-	-- MightyBlade Ultimate Configuration
+	-- MightyBlade Ultimate Configuration (single static DOT hitbox)
 	MightyBlade = {
-		hitboxSize = Vector3.new(15, 15, 15),
-		hitboxDamage = 40,
-		hitboxDelay = 0.2,
+		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultDamage,
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.ultTickTime,
+		hitboxDelay = 0.2, -- Delay before hitbox activates
 	}
 }
 
@@ -517,25 +589,23 @@ ServerConfigs.GladiatorSkills = {
 	-- ShieldBash Configuration
 	ShieldBash = {
 		hitboxSize = Vector3.new(15, 15, 15), -- Hitbox size
-		hitboxDamage = 25, -- Damage per hit
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill1Damage,
 		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
 	},
 	
 	-- DragoonJump Configuration
 	DragoonJump = {
 		hitboxSize = Vector3.new(20, 20, 20), -- Hitbox size for each explosion
-		hitboxDamage = 15, -- Damage per explosion hit
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.skill2Damage,
 		hitboxDelay = 1, -- Delay before hitbox activates (in seconds) - synced with explosion VFX
 	},
 	
-	-- DemonicVorpalDance Ultimate Configuration
+	-- DemonicVorpalDance Ultimate Configuration (single static DOT hitbox)
 	DemonicVorpalDance = {
-		nearHitboxSize = Vector3.new(35, 35, 35), -- Hitbox size for near explosions (wider to cover center)
-		farHitboxSize = Vector3.new(40, 40, 40), -- Hitbox size for far explosions (wider to cover center)
-		nearHitboxDamage = 20, -- Damage per near explosion
-		farHitboxDamage = 25, -- Damage per far explosion
-		hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
-		damageTickTime = 0.5, -- Damage every 0.5 seconds
+		hitboxSize = Vector3.new(250, 60, 250), -- Massive center hitbox
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultDamage,
+		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.ultTickTime,
+		hitboxDelay = 0.2, -- Delay before hitbox activates (in seconds)
 	}
 }
 
@@ -546,16 +616,16 @@ ServerConfigs.GladiatorSkills = {
 -- Archer Hitboxes (Ranged attacks)
 ServerConfigs.ArcherHitboxes = {
 	normalAttack = {
-		offset = CFrame.new(0, 0, -2),
-		size = Vector3.new(6, 6, 6),
-		damage = 20,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green for arrows
 	},
 	jumpAttack = {
-		offset = CFrame.new(0, -5, -10),
-		size = Vector3.new(8, 20, 15),
-		damage = 20,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green for arrows
 	},
@@ -571,37 +641,37 @@ ServerConfigs.ArcherHitboxes = {
 -- Samurai Hitboxes (Fast, precise attacks)
 ServerConfigs.SamuraiHitboxes = {
 	combo1 = {
-		offset = CFrame.new(0, 0, -3),
-		size = Vector3.new(12, 12, 9),
-		damage = 8,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
 		delay = 0,
 		visualColor = Color3.new(1, 0.8, 0) -- Orange
 	},
 	combo2 = {
-		offset = CFrame.new(0, 0, -4),
-		size = Vector3.new(15, 15, 12),
-		damage = 12,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	combo3 = {
-		offset = CFrame.new(0, 0, -5),
-		size = Vector3.new(25, 25, 25),
-		damage = 20,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
 		delay = 2, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(1, 0, 0) -- Red
 	},
 	moveAttack = {
-		offset = CFrame.new(0, 0, -10),
-		size = Vector3.new(18, 18, 18),
-		damage = 15,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
-		offset = CFrame.new(0, -5, -10),
-		size = Vector3.new(8, 20, 15),
-		damage = 12,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	},
@@ -617,30 +687,30 @@ ServerConfigs.SamuraiHitboxes = {
 -- Brawler Hitboxes (Heavy, close-range attacks)
 ServerConfigs.BrawlerHitboxes = {
 	combo1 = {
-		offset = CFrame.new(0, 0, -3),
-		size = Vector3.new(12, 12, 9),
-		damage = 10, -- Slightly higher damage for brawler
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
 		delay = 0,
 		visualColor = Color3.new(1, 0.5, 0) -- Dark orange
 	},
 	combo2 = {
-		offset = CFrame.new(0, 0, -4),
-		size = Vector3.new(15, 15, 12),
-		damage = 15, -- Higher damage for brawler
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	moveAttack = {
-		offset = CFrame.new(0, 0, -10),
-		size = Vector3.new(18, 18, 18),
-		damage = 18, -- Higher damage for brawler
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
-		offset = CFrame.new(0, -5, -10),
-		size = Vector3.new(8, 20, 15),
-		damage = 15, -- Higher damage for brawler
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	},
@@ -656,37 +726,37 @@ ServerConfigs.BrawlerHitboxes = {
 -- Knight Hitboxes (Balanced, defensive attacks)
 ServerConfigs.KnightHitboxes = {
 	combo1 = {
-		offset = CFrame.new(0, 0, -3),
-		size = Vector3.new(12, 12, 9),
-		damage = 8,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
 		delay = 0,
 		visualColor = Color3.new(1, 0.8, 0) -- Orange
 	},
 	combo2 = {
-		offset = CFrame.new(0, 0, -4),
-		size = Vector3.new(15, 15, 12),
-		damage = 12,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	combo3 = {
-		offset = CFrame.new(0, 0, -5),
-		size = Vector3.new(25, 25, 25),
-		damage = 20,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
 		delay = 1, -- Shorter delay than samurai
 		visualColor = Color3.new(1, 0, 0) -- Red
 	},
 	moveAttack = {
-		offset = CFrame.new(0, 0, -10),
-		size = Vector3.new(18, 18, 18),
-		damage = 15,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
-		offset = CFrame.new(0, -5, -10),
-		size = Vector3.new(8, 20, 15),
-		damage = 12,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	},
@@ -702,30 +772,30 @@ ServerConfigs.KnightHitboxes = {
 -- Gladiator Hitboxes (Aggressive, wide attacks)
 ServerConfigs.GladiatorHitboxes = {
 	combo1 = {
-		offset = CFrame.new(0, 0, -3),
-		size = Vector3.new(12, 12, 9),
-		damage = 8,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
 		delay = 0,
 		visualColor = Color3.new(1, 0.8, 0) -- Orange
 	},
 	combo2 = {
-		offset = CFrame.new(0, 0, -4),
-		size = Vector3.new(15, 15, 12),
-		damage = 12,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	moveAttack = {
-		offset = CFrame.new(0, 0, -10),
-		size = Vector3.new(18, 18, 18),
-		damage = 15,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
-		offset = CFrame.new(0, -5, -10),
-		size = Vector3.new(8, 20, 15),
-		damage = 12,
+		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.offset,
+		size = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.size,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.damage,
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	},
@@ -735,26 +805,6 @@ ServerConfigs.GladiatorHitboxes = {
 		damage = 8,
 		delay = 0,
 		visualColor = Color3.new(0.5, 0.5, 0.5) -- Gray
-	}
-}
-
--- ========================================
--- GLOBAL HITBOX CONFIGURATIONS
--- ========================================
-
-ServerConfigs.Hitboxes = {
-	-- DOT (Damage Over Time) Configuration
-	DOT = {
-		defaultTickTime = 0.5, -- Default damage tick time in seconds
-	},
-	
-	-- Hitbox Defaults
-	Defaults = {
-		defaultSize = Vector3.new(8, 8, 8),
-		defaultDelay = 0.1,
-		defaultDamage = 20,
-		defaultOffset = CFrame.new(0, 0, -5),
-		defaultVisualColor = Color3.new(1, 0, 0)
 	}
 }
 
