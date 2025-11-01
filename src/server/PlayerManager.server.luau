@@ -60,10 +60,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local maxDefense = Instance.new("NumberValue", leaderstats)
 	maxDefense.Name = "MaxDefense"
 	maxDefense.Value = 0 -- Will be set based on class
-	
-	local maxMagicDefense = Instance.new("NumberValue", leaderstats)
-	maxMagicDefense.Name = "MaxMagicDefense"
-	maxMagicDefense.Value = 0 -- Will be set based on class
 
 	local slavkoins = Instance.new("NumberValue", leaderstats)
 	slavkoins.Name = "Slavkoins"
@@ -81,7 +77,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 		class.Value = data.Class or "Slavkorian"
 		maxAttack.Value = data.MaxAttack or 0
 		maxDefense.Value = data.MaxDefense or 0
-		maxMagicDefense.Value = data.MaxMagicDefense or 0
 		slavkoins.Value = data.Slavkoins or 0
 		maxHealth.Value = data.MaxHealth or 0
 
@@ -99,7 +94,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 			
 			-- If no base stats found for class, use Slavkorian defaults
 			if not baseStats then
-				baseStats = { HP = 1000, ATK = 100, D = 0, MD = 0 }
+				baseStats = { HP = 1000, ATK = 100, D = 0 }
 			end
 			
 			-- Set base stats if not already set
@@ -113,10 +108,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 			
 			if leaderstats:FindFirstChild("MaxDefense").Value == 0 then
 				leaderstats.MaxDefense.Value = baseStats.D
-			end
-			
-			if leaderstats:FindFirstChild("MaxMagicDefense").Value == 0 then
-				leaderstats.MaxMagicDefense.Value = baseStats.MD or 0
 			end
 
 			-- Apply stored MaxHealth to humanoid
@@ -137,7 +128,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 			leaderstats.MaxHealth.Value = 0 -- reset so ma-trigger ulit yung base assign
 			leaderstats.MaxAttack.Value = 0
 			leaderstats.MaxDefense.Value = 0
-			leaderstats.MaxMagicDefense.Value = 0
 			applyStats()
 		end)
 
@@ -151,9 +141,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 				leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * multipliers.HP)
 				maxAttack.Value = math.floor(maxAttack.Value * multipliers.ATK)
 				maxDefense.Value = math.floor(maxDefense.Value * multipliers.D)
-				if multipliers.MD then
-					maxMagicDefense.Value = math.floor(maxMagicDefense.Value * multipliers.MD)
-				end
 
 				-- update humanoid din habang buhay pa siya
 				humanoid.MaxHealth = leaderstats.MaxHealth.Value
@@ -168,12 +155,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 				--print("LEVELED UP! Excess XP: " .. overtop)
 				currxp.Value = overtop
 
-				-- Harder to level up after 40
-				if level.Value > 40 then
-					maxxp.Value = maxxp.Value + 0
-				else
-					maxxp.Value = maxxp.Value + 0 
-				end
+				-- Apply XP multiplier for next level
+				local xpMultiplier = ServerConfigs.BaseStats.XP.xpMultiplier or 1.2
+				maxxp.Value = math.floor(maxxp.Value * xpMultiplier)
 
 				level.Value = level.Value + 1
 				-- LEVEL CAP: Clamp level to max level from config
@@ -202,7 +186,6 @@ game.Players.PlayerRemoving:Connect(function(plr)
 			Class = leaderstats.Class.Value,
 			MaxAttack = leaderstats.MaxAttack.Value,
 			MaxDefense = leaderstats.MaxDefense.Value,
-			MaxMagicDefense = leaderstats.MaxMagicDefense.Value,
 			Slavkoins = leaderstats.Slavkoins.value,
 			MaxHealth = leaderstats.MaxHealth.Value
 		}

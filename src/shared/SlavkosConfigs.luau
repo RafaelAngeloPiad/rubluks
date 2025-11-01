@@ -15,7 +15,8 @@ ServerConfigs.BaseStats = {
 		startLevel = 1,
 		startXP = 0,
 		startMaxXP = 5,
-		maxLevel = 50
+		maxLevel = 50,
+		xpMultiplier = 1.2  -- Each level requires 20% more XP than the previous
 	},
 	
 	-- Level-up multipliers per class (base values from spreadsheet)
@@ -23,32 +24,27 @@ ServerConfigs.BaseStats = {
 		Samurai = {
 			HP = 1.08,     -- 8% growth
 			ATK = 1.05,    -- 5% growth
-			D = 1.08,      -- 8% growth
-			MD = 1.08      -- 8% growth (Magic Defense)
+			D = 1.08       -- 8% growth
 		},
 		Archer = {
 			HP = 1.06,     -- 6% growth
 			ATK = 1.10,    -- 10% growth
-			D = 1.05,      -- 5% growth
-			MD = 1.05      -- 5% growth
+			D = 1.05       -- 5% growth
 		},
 		Gladiator = {
 			HP = 1.10,     -- 10% growth
 			ATK = 1.03,    -- 3% growth
-			D = 1.08,      -- 8% growth
-			MD = 1.08      -- 8% growth
+			D = 1.08       -- 8% growth
 		},
 		Brawler = {
 			HP = 1.07,     -- 7% growth
 			ATK = 1.09,    -- 9% growth
-			D = 1.05,      -- 5% growth
-			MD = 1.05      -- 5% growth
+			D = 1.05       -- 5% growth
 		},
 		Knight = {
 			HP = 1.07,     -- 7% growth
 			ATK = 1.07,    -- 7% growth
-			D = 1.07,      -- 7% growth
-			MD = 1.07      -- 7% growth
+			D = 1.07       -- 7% growth
 		}
 	},
 	
@@ -63,7 +59,6 @@ ServerConfigs.BaseStats = {
 		-- Defense Stats
 		HP = 1200,        -- Health Points: Life pool (dies if ≤ 0)
 		D = 50,           -- Defense: Reduces Penetration
-		MD = 50,          -- Magic Defense: Reduces magical damage
 		HR = 0,           -- Health Regeneration: Health Points gained per second
 		Mspd = 18,        -- Movement Speed: Displacement per second
 		Aspd = 1,         -- Attack Speed: Amount of hits per second
@@ -80,7 +75,6 @@ ServerConfigs.BaseStats = {
 		-- Defense Stats
 		HP = 1600,
 		D = 80,
-		MD = 80,
 		HR = 0,
 		Mspd = 18,
 		Aspd = 1,
@@ -97,7 +91,6 @@ ServerConfigs.BaseStats = {
 		-- Defense Stats
 		HP = 1400,
 		D = 50,
-		MD = 50,
 		HR = 0,
 		Mspd = 18,
 		Aspd = 1,
@@ -114,7 +107,6 @@ ServerConfigs.BaseStats = {
 		-- Defense Stats
 		HP = 1400,
 		D = 70,
-		MD = 70,
 		HR = 0,
 		Mspd = 18,
 		Aspd = 1,
@@ -131,7 +123,6 @@ ServerConfigs.BaseStats = {
 		-- Defense Stats
 		HP = 2000,
 		D = 80,
-		MD = 80,
 		HR = 0,
 		Mspd = 18,
 		Aspd = 1,
