@@ -215,10 +215,10 @@ ServerConfigs.Hitboxes = {
 		Brawler = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 12,
-			skill1Damage = 20,           -- BrawlersRoar
-			skill2Damage = 35,           -- FeralLeap
-			ultDamage = 8,               -- MeteorDive
+			damage = 0.133,              -- 13.3% of MaxAttack (base: 90 ATK = 12 damage)
+			skill1Damage = 0.222,        -- 22.2% of MaxAttack (base: 90 ATK = 20 damage) - BrawlersRoar
+			skill2Damage = 0.389,        -- 38.9% of MaxAttack (base: 90 ATK = 35 damage) - FeralLeap
+			ultDamage = 0.089,           -- 8.9% of MaxAttack (base: 90 ATK = 8 damage) - MeteorDive
 			ultTickTime = 0.5,           -- MeteorDive DOT tick time
 			-- Animation speeds
 			animSpeed = {
@@ -609,20 +609,21 @@ ServerConfigs.SamuraiSkills = {
 }
 
 -- Brawler Skills (references UnifiedAttacks.Brawler)
+-- Note: hitboxDamage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.BrawlerSkills = {
 	FeralLeap = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.feralleap.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage, -- Multiplier: 0.389
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.feralleap.hitboxDelay
 	},
 	BrawlersRoar = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.brawlersroar.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill1Damage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill1Damage, -- Multiplier: 0.222
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.brawlersroar.hitboxDelay
 	},
 	MeteorDive = {
 		hitboxSize = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.meteordive.hitboxSize,
-		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultDamage,
+		hitboxDamage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultDamage, -- Multiplier: 0.089
 		damageTickTime = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultTickTime,
 		hitboxDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skills.meteordive.hitboxDelay
 	}
@@ -736,32 +737,33 @@ ServerConfigs.SamuraiHitboxes = {
 }
 
 -- Brawler Hitboxes (Heavy, close-range attacks)
+-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 ServerConfigs.BrawlerHitboxes = {
 	combo1 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage, -- Multiplier: 0.133
 		delay = 0,
 		visualColor = Color3.new(1, 0.5, 0) -- Dark orange
 	},
 	combo2 = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage, -- Multiplier: 0.133
 		delay = 0,
 		visualColor = Color3.new(0.8, 0.2, 1) -- Purple
 	},
 	moveAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage, -- Multiplier: 0.133
 		delay = 0.4, -- Base delay (auto-scales with animation speed)
 		visualColor = Color3.new(0, 0.8, 1) -- Light blue
 	},
 	jumpAttack = {
 		offset = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.offset,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage,
+		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage, -- Multiplier: 0.133
 		delay = 0,
 		visualColor = Color3.new(0, 1, 0) -- Green
 	}

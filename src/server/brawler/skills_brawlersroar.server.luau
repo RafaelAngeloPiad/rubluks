@@ -9,21 +9,45 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		-- This prevents attacks from breaking if module hasn't reloaded
+		warn("[Brawler BrawlersRoar] ServerConfigs.calculateDamage not found, using fallback. Please reload ServerConfigs module.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
+
 -- preload animation
 local auraAnim = Instance.new("Animation")
 auraAnim.AnimationId = "rbxassetid://132356955410856"
-
--- BERSERKER'S ROAR HITBOX CONFIG
-local BRAWLERSROAR_CONFIG = {
-	hitboxSize = Vector3.new(25, 25, 25), -- Hitbox size for roar
-	hitboxDamage = 20, -- Damage per hit
-	hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
-}
 
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle brawlersroar skill requests
@@ -94,16 +118,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 2.5)
 		
 		-- Hitbox for roar
+		-- Calculate actual damage from multiplier (damage is now a multiplier)
+		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill1Damage or ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxDamage
+		local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 10, -20),
-			size = BRAWLERSROAR_CONFIG.hitboxSize,
-			damage = BRAWLERSROAR_CONFIG.hitboxDamage,
+			size = ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxSize,
+			damage = actualDamage,
 			character = character,
 			name = "BrawlersRoar",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.3, 0),
-			delay = BRAWLERSROAR_CONFIG.hitboxDelay
+			delay = ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxDelay
 		})
 	end)
 

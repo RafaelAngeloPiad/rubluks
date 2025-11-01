@@ -10,21 +10,45 @@ local Debris = game:GetService("Debris")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		-- This prevents attacks from breaking if module hasn't reloaded
+		warn("[Brawler MeteorDive] ServerConfigs.calculateDamage not found, using fallback. Please reload ServerConfigs module.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
+
 -- preload animation
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://95054632322392"
-
--- METEOR DIVE HITBOX CONFIG
-local METEORDIVE_CONFIG = {
-	explosionHitboxSize = Vector3.new(40, 40, 40), -- Hitbox size for meteor explosion
-	explosionHitboxDamage = 50, -- Damage on meteor impact
-	hitboxDelay = 0.2, -- Delay before hitbox activates (in seconds)
-}
 
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle meteordive ultimate requests
@@ -98,17 +122,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 4)
 		
 		-- MASSIVE CENTER DOT HITBOX for MeteorDive
+		-- Calculate actual damage from multiplier (damage is now a multiplier)
+		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultDamage or ServerConfigs.BrawlerSkills.MeteorDive.hitboxDamage
+		local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 		_G.createStaticDOTHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -1, 0),
-			size = Vector3.new(250, 60, 250), -- Massive center hitbox
-			damage = 8, -- Damage per tick
-			damageTickTime = 0.5, -- Damage every 0.5 seconds
+			size = ServerConfigs.BrawlerSkills.MeteorDive.hitboxSize,
+			damage = actualDamage, -- Damage per tick (calculated from multiplier)
+			damageTickTime = ServerConfigs.BrawlerSkills.MeteorDive.damageTickTime or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultTickTime,
 			character = character,
 			name = "MeteorDive Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.5, 0), -- Orange color
-			delay = METEORDIVE_CONFIG.hitboxDelay
+			delay = ServerConfigs.BrawlerSkills.MeteorDive.hitboxDelay
 		})
 	end)
 	

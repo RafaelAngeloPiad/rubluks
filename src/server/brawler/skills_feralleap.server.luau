@@ -9,10 +9,41 @@ local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 local RunService = game:GetService("RunService")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		-- This prevents attacks from breaking if module hasn't reloaded
+		warn("[Brawler FeralLeap] ServerConfigs.calculateDamage not found, using fallback. Please reload ServerConfigs module.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
 
 -- Track feral leap connections for each player
 local feralLeapConnections = {}
@@ -23,13 +54,6 @@ leapAnim.AnimationId = "rbxassetid://76859592290622"
 
 local leapAttackAnim = Instance.new("Animation")
 leapAttackAnim.AnimationId = "rbxassetid://98157070007403"
-
--- FERAL LEAP HITBOX CONFIG
-local FERALLEAP_CONFIG = {
-	hitboxSize = Vector3.new(70, 70, 70), -- Hitbox size for claw mark
-	hitboxDamage = 35, -- Damage on landing
-	hitboxDelay = 0.1, -- Delay before hitbox activates (in seconds)
-}
 
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle feralleap skill requests
@@ -118,16 +142,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				Debris:AddItem(vfx, 1)
 				
 				-- Hitbox for claw mark
+				-- Calculate actual damage from multiplier (damage is now a multiplier)
+				local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage or ServerConfigs.BrawlerSkills.FeralLeap.hitboxDamage
+				local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 				_G.createStaticHitbox({
 					attachTo = root,
 					offset = CFrame.new(0, 1, 0),
-					size = FERALLEAP_CONFIG.hitboxSize,
-					damage = FERALLEAP_CONFIG.hitboxDamage,
+					size = ServerConfigs.BrawlerSkills.FeralLeap.hitboxSize,
+					damage = actualDamage,
 					character = character,
 					name = "FeralLeapClaw",
 					showVisual = true,
 					visualColor = Color3.new(1, 0, 0),
-					delay = FERALLEAP_CONFIG.hitboxDelay
+					delay = ServerConfigs.BrawlerSkills.FeralLeap.hitboxDelay
 				})
 			end)
 		end
@@ -192,16 +219,19 @@ remote.OnServerEvent:Connect(function(player, actionName)
 			Debris:AddItem(vfx, 1)
 			
 			-- Hitbox for claw mark
+			-- Calculate actual damage from multiplier (damage is now a multiplier)
+			local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill2Damage or ServerConfigs.BrawlerSkills.FeralLeap.hitboxDamage
+			local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = CFrame.new(0, 1, 0),
-				size = FERALLEAP_CONFIG.hitboxSize,
-				damage = FERALLEAP_CONFIG.hitboxDamage,
+				size = ServerConfigs.BrawlerSkills.FeralLeap.hitboxSize,
+				damage = actualDamage,
 				character = character,
 				name = "FeralLeapClaw",
 				showVisual = true,
 				visualColor = Color3.new(1, 0, 0),
-				delay = FERALLEAP_CONFIG.hitboxDelay
+				delay = ServerConfigs.BrawlerSkills.FeralLeap.hitboxDelay
 			})
 		end)
 		

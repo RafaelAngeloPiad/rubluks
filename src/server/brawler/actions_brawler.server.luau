@@ -10,6 +10,34 @@ local Debris = game:GetService("Debris")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		-- This prevents attacks from breaking if module hasn't reloaded
+		warn("[Brawler] ServerConfigs.calculateDamage not found, using fallback. Please reload ServerConfigs module.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -607,11 +635,14 @@ local function handleNormalAttack(player)
 		
 		-- Jump attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Brawler")
+		-- Calculate actual damage from multiplier (damage is now a multiplier)
+		local damageMultiplier = hitboxConfig.damage or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage
+		local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = hitboxConfig.damage,
+			damage = actualDamage,
 			character = char,
 			name = "JumpAttack",
 			showVisual = true,
@@ -641,11 +672,14 @@ local function handleNormalAttack(player)
 		
 		-- Move attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Brawler")
+		-- Calculate actual damage from multiplier (damage is now a multiplier)
+		local damageMultiplier = hitboxConfig.damage or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage
+		local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = hitboxConfig.damage,
+			damage = actualDamage,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
@@ -678,11 +712,14 @@ local function handleNormalAttack(player)
 			
 			-- Combo 1 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Brawler")
+			-- Calculate actual damage from multiplier (damage is now a multiplier)
+			local damageMultiplier = hitboxConfig.damage or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage
+			local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = hitboxConfig.damage,
+				damage = actualDamage,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
@@ -706,11 +743,14 @@ local function handleNormalAttack(player)
 			
 			-- Combo 2 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Brawler")
+			-- Calculate actual damage from multiplier (damage is now a multiplier)
+			local damageMultiplier = hitboxConfig.damage or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.damage
+			local actualDamage = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = hitboxConfig.damage,
+				damage = actualDamage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
