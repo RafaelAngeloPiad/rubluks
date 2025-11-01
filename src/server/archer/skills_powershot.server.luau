@@ -7,6 +7,36 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		warn("[PowerShot] ServerConfigs.calculateDamage not found, using fallback.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -151,17 +181,21 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = arrowPart
 
+		-- Calculate actual damage based on player's MaxAttack stat (skill2Damage is now a multiplier)
+		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4
+		local actualDamage = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+		
 		-- Use projectile hitbox system for power arrow
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(35, 35, 35), -- Increased from 25x25x25 to 35x35x35
-			damage = 35,
+			size = ServerConfigs.ArcherSkills.PowerShot.hitboxSize,
+			damage = actualDamage, -- Use calculated damage based on MaxAttack
 			character = character,
 			name = "PowerArrow",
 			showVisual = true,
 			visualColor = Color3.new(1, 1, 0), -- Yellow for power arrow
-			delay = 0
+			delay = ServerConfigs.ArcherSkills.PowerShot.hitboxDelay
 		})
 
 		-- Auto cleanup
@@ -212,13 +246,18 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 				end
 			end
 
+			-- Calculate DOT damage based on player's MaxAttack stat (skill2Damage multiplier for trail)
+			-- Trail damage is a percentage of the skill damage (adjust multiplier as needed)
+			local trailDamageMultiplier = (ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4) * 0.125 -- 12.5% of skill damage per tick
+			local trailDamage = calculateDamageForHitbox(player, "Archer", trailDamageMultiplier)
+			
 			-- Add static DOT hitbox to PowerTrail (horizontal fire trail)
 			_G.createStaticDOTHitbox({
 				cframe = CFrame.lookAt(trailPosition, trailPosition + shootDirection),
 				offset = CFrame.new(0, 0, 0), -- Center of trail
 				size = Vector3.new(12, 12, 20), -- Smaller size for individual trails
-				damage = 5, -- Damage per tick
-				damageTickTime = 0.3, -- Damage every 0.3 seconds
+				damage = trailDamage, -- Scaled damage per tick
+				damageTickTime = ServerConfigs.ArcherSkills.PowerShot.damageTickTime or 0.3,
 				character = character,
 				name = "PowerTrail" .. i,
 				showVisual = true,

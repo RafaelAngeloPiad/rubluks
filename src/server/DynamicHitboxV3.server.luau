@@ -117,6 +117,106 @@ local function createDamageFlash(model, duration)
     end)
 end
 
+-- Function to create damage number display above character head
+local function createDamageNumber(model, damage)
+	-- Check if damage numbers are enabled
+	local damageNumbersConfig = ServerConfigs.Hitbox.damageNumbers
+	if not damageNumbersConfig or not damageNumbersConfig.enabled then
+		return
+	end
+	
+	-- Get character's head or HumanoidRootPart
+	local head = model:FindFirstChild("Head")
+	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
+	
+	if not head and not humanoidRootPart then
+		return
+	end
+	
+	-- Use head if available, otherwise use HumanoidRootPart
+	local attachPart = head or humanoidRootPart
+	if not attachPart then
+		return
+	end
+	
+	-- Create BillboardGui
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.Name = "DamageNumber"
+	billboardGui.Size = UDim2.new(0, 200, 0, 100)
+	billboardGui.StudsOffset = Vector3.new(
+		(math.random() - 0.5) * 2 * damageNumbersConfig.randomOffsetX, -- Random horizontal offset
+		damageNumbersConfig.offsetY, -- Vertical offset
+		0
+	)
+	billboardGui.AlwaysOnTop = true
+	billboardGui.LightInfluence = 0
+	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	billboardGui.Parent = attachPart
+	
+	-- Create TextLabel
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = "-" .. tostring(math.floor(damage))
+	textLabel.TextColor3 = damageNumbersConfig.textColor
+	textLabel.TextSize = damageNumbersConfig.textSize
+	textLabel.Font = damageNumbersConfig.font
+	textLabel.TextStrokeTransparency = damageNumbersConfig.strokeTransparency
+	textLabel.TextStrokeColor3 = damageNumbersConfig.strokeColor
+	textLabel.TextXAlignment = Enum.TextXAlignment.Center
+	textLabel.TextYAlignment = Enum.TextYAlignment.Center
+	textLabel.Parent = billboardGui
+	
+	-- Animate the damage number (rise and fade)
+	local startTime = tick()
+	local startY = billboardGui.StudsOffset.Y
+	local endY = startY + damageNumbersConfig.riseHeight
+	local connection
+	
+	connection = RunService.Heartbeat:Connect(function()
+		local currentTime = tick()
+		local elapsed = currentTime - startTime
+		
+		if elapsed >= damageNumbersConfig.duration or not billboardGui.Parent then
+			connection:Disconnect()
+			if billboardGui and billboardGui.Parent then
+				billboardGui:Destroy()
+			end
+			return
+		end
+		
+		-- Calculate rise position
+		local progress = elapsed / damageNumbersConfig.duration
+		local currentY = startY + (damageNumbersConfig.riseHeight * progress)
+		billboardGui.StudsOffset = Vector3.new(
+			billboardGui.StudsOffset.X,
+			currentY,
+			0
+		)
+		
+		-- Calculate fade
+		local fadeProgress = 0
+		if elapsed >= damageNumbersConfig.fadeStart then
+			fadeProgress = (elapsed - damageNumbersConfig.fadeStart) / (damageNumbersConfig.duration - damageNumbersConfig.fadeStart)
+			fadeProgress = math.min(fadeProgress, 1)
+		end
+		
+		-- Apply fade to text
+		textLabel.TextTransparency = fadeProgress
+		textLabel.TextStrokeTransparency = math.min(damageNumbersConfig.strokeTransparency + fadeProgress, 1)
+	end)
+	
+	-- Cleanup after duration
+	task.delay(damageNumbersConfig.duration + 0.1, function()
+		if connection then
+			connection:Disconnect()
+		end
+		if billboardGui and billboardGui.Parent then
+			billboardGui:Destroy()
+		end
+	end)
+end
+
 -- Function to apply knockback to mobs when hit by players
 local function applyKnockback(attacker, target)
 	-- Only apply knockback when player attacks mob
@@ -316,6 +416,9 @@ function _G.createStaticHitbox(config)
 						
 						-- Create damage flash effect on the target
 						createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
+						
+						-- Create damage number display
+						createDamageNumber(model, damage)
 					end
 				end
 			end
@@ -437,6 +540,9 @@ function _G.createStaticDOTHitbox(config)
 							
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
+							
+							-- Create damage number display
+							createDamageNumber(model, damage)
 						end
 					end
 				end
@@ -586,6 +692,9 @@ function _G.createTravelingHitbox(config)
 							
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
+							
+							-- Create damage number display
+							createDamageNumber(model, damage)
 						end
 					end
 				end
@@ -739,6 +848,9 @@ function _G.createProjectileHitbox(config)
 								
 								-- Create damage flash effect on the target
 								createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
+								
+								-- Create damage number display
+								createDamageNumber(model, damage)
 								hitSomething = true
 							end
 						end

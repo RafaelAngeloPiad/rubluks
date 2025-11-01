@@ -10,6 +10,34 @@ local Debris = game:GetService("Debris")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		-- This prevents arrows from breaking if module hasn't reloaded
+		warn("[Archer] ServerConfigs.calculateDamage not found, using fallback. Please reload ServerConfigs module.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -480,12 +508,16 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
+			-- Calculate actual damage based on player's MaxAttack stat (damage is now a multiplier)
+			local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage or 0.2
+			local actualDamage = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+
 			-- Use DynamicHitbox V3 projectile hitbox system (visual and hitbox can have different speeds)
 			_G.createProjectileHitbox({
 				visualPart = arrow,
 				direction = shootDirection,
 				size = _G.ARCHER_ARROW_HITBOX.size,
-				damage = _G.ARCHER_ARROW_HITBOX.damage,
+				damage = actualDamage, -- Use calculated damage based on MaxAttack
 				character = char,
 				name = "JumpArrow",
 				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
@@ -542,12 +574,16 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			-- Kukunin natin yung main mesh (arrow)
 			local arrow = vfx:FindFirstChildWhichIsA("BasePart") or vfx
 
+			-- Calculate actual damage based on player's MaxAttack stat (damage is now a multiplier)
+			local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage or 0.2
+			local actualDamage = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+
 			-- Use DynamicHitbox V3 projectile hitbox system (visual and hitbox can have different speeds)
 			_G.createProjectileHitbox({
 				visualPart = arrow,
 				direction = shootDirection,
 				size = _G.ARCHER_ARROW_HITBOX.size,
-				damage = _G.ARCHER_ARROW_HITBOX.damage,
+				damage = actualDamage, -- Use calculated damage based on MaxAttack
 				character = char,
 				name = "NormalArrow",
 				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,

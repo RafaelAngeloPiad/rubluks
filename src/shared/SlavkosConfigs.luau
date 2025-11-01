@@ -24,6 +24,24 @@ ServerConfigs.Hitbox = {
 			}
 		},
 		
+		-- Damage Numbers Configuration
+		damageNumbers = {
+			enabled = true, -- Enable/disable damage numbers
+			font = Enum.Font.GothamBold, -- Font style
+			textSize = 36, -- Text size
+			textColor = Color3.new(1, 0.8, 0), -- Orange/yellow color
+			backgroundColor = Color3.new(0, 0, 0), -- Black background
+			backgroundTransparency = 0.5, -- Background transparency
+			strokeColor = Color3.new(0, 0, 0), -- Black stroke
+			strokeTransparency = 0, -- Solid stroke
+			duration = 1.5, -- How long the number stays visible (seconds)
+			riseHeight = 3, -- How high the number rises (studs)
+			riseSpeed = 2, -- Speed at which number rises (studs per second)
+			fadeStart = 0.5, -- When to start fading (after this many seconds)
+			offsetY = 2, -- Vertical offset from character head (studs)
+			randomOffsetX = 1, -- Random horizontal offset range (studs)
+		},
+		
 		-- Knockback Configuration
 		knockback = {
 			enabled = false, -- Enable/disable knockback
@@ -46,11 +64,11 @@ ServerConfigs.Hitboxes = {
 		Archer = {
 			offset = CFrame.new(0, 0, -2),
 			size = Vector3.new(6, 6, 6),
-			damage = 20,
-			skill1Damage = 35,           -- PiercingShot
-			skill2Damage = 40,           -- PowerShot
+			damage = 0.2,                -- 20% of MaxAttack (base: 100 ATK = 20 damage)
+			skill1Damage = 0.35,         -- 35% of MaxAttack (base: 100 ATK = 35 damage) - PiercingShot
+			skill2Damage = 0.4,          -- 40% of MaxAttack (base: 100 ATK = 40 damage) - PowerShot
 			skill2TickTime = 0.3,        -- PowerShot DOT tick time
-			ultDamage = 10,              -- Starfall
+			ultDamage = 0.1,             -- 10% of MaxAttack (base: 100 ATK = 10 damage) - Starfall
 			ultTickTime = 0.5,           -- Starfall DOT tick time
 			-- Arrow projectile configuration
 			arrowDelay = 0,              -- Delay before arrow hitbox becomes active (seconds)
@@ -466,10 +484,11 @@ ServerConfigs.Archer = {
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.walkingSpeed,
 	
 	-- Archer Arrow Configuration (references UnifiedAttacks.Archer)
+	-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 	ArrowHitbox = {
 		delay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowDelay,
 		size = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.size,
-		damage = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage,
+		damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage, -- Multiplier: 0.2
 		visualSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowVisualSpeed,
 		hitboxSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowHitboxSpeed,
 		anchorDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowAnchorDelay,
@@ -840,6 +859,80 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 	-- If animation is 2x faster, delays should be 0.5x (half the time)
 	-- If animation is 0.5x slower, delays should be 2x (double the time)
 	return baseDelay / animationSpeed
+end
+
+-- ========================================
+-- DAMAGE CALCULATION FUNCTIONS
+-- ========================================
+
+-- Function to calculate actual damage from damage multiplier and player's MaxAttack stat
+-- @param damageMultiplier: The multiplier from UnifiedAttacks (e.g., 0.2 = 20% of MaxAttack)
+-- @param playerMaxAttack: The player's MaxAttack stat value
+-- @return: Actual damage value (damageMultiplier * playerMaxAttack)
+function ServerConfigs.calculateDamage(damageMultiplier, playerMaxAttack)
+	if not damageMultiplier or not playerMaxAttack then
+		return 0
+	end
+	return math.floor(damageMultiplier * playerMaxAttack)
+end
+
+-- Function to get base damage for a class's normal attack
+-- @param classType: Class name (e.g., "Archer", "Samurai")
+-- @param playerMaxAttack: The player's MaxAttack stat value
+-- @return: Actual damage value
+function ServerConfigs.getBaseDamage(classType, playerMaxAttack)
+	if not classType or not ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+		return 0
+	end
+	
+	local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks[classType].damage or 0
+	return ServerConfigs.calculateDamage(damageMultiplier, playerMaxAttack)
+end
+
+-- Function to get skill damage (skill1, skill2, or ult)
+-- @param classType: Class name (e.g., "Archer", "Samurai")
+-- @param skillType: "skill1", "skill2", or "ult"
+-- @param playerMaxAttack: The player's MaxAttack stat value
+-- @return: Actual damage value
+function ServerConfigs.getSkillDamage(classType, skillType, playerMaxAttack)
+	if not classType or not ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+		return 0
+	end
+	
+	local classConfig = ServerConfigs.Hitboxes.UnifiedAttacks[classType]
+	local damageMultiplier = 0
+	
+	if skillType == "skill1" then
+		damageMultiplier = classConfig.skill1Damage or 0
+	elseif skillType == "skill2" then
+		damageMultiplier = classConfig.skill2Damage or 0
+	elseif skillType == "ult" then
+		damageMultiplier = classConfig.ultDamage or 0
+	end
+	
+	return ServerConfigs.calculateDamage(damageMultiplier, playerMaxAttack)
+end
+
+-- Function to get player stats from leaderstats
+-- Helper function to get player's MaxAttack stat
+-- @param player: Player instance
+-- @return: MaxAttack value or 0
+function ServerConfigs.getPlayerMaxAttack(player)
+	if not player then
+		return 0
+	end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return 0
+	end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then
+		return 0
+	end
+	
+	return maxAttack.Value or 0
 end
 
 -- Function to get class-specific configuration

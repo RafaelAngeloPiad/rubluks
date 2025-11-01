@@ -8,6 +8,36 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier
+local function calculateDamageForHitbox(player, classType, damageMultiplier)
+	local maxAttack = getPlayerMaxAttack(player)
+	
+	-- Check if calculateDamage function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamage then
+		return ServerConfigs.calculateDamage(damageMultiplier, maxAttack)
+	else
+		-- Fallback: if function doesn't exist, use multiplier directly as damage
+		warn("[PiercingShot] ServerConfigs.calculateDamage not found, using fallback.")
+		return math.floor(damageMultiplier * maxAttack)
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -177,17 +207,21 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 			end
 		end
 
+		-- Calculate actual damage based on player's MaxAttack stat (skill1Damage is now a multiplier)
+		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill1Damage or 0.35
+		local actualDamage = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+		
 		-- Use projectile hitbox system for piercing arrow
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
-			size = Vector3.new(30, 30, 30),
-			damage = 25,
+			size = ServerConfigs.ArcherSkills.PiercingShot.hitboxSize,
+			damage = actualDamage, -- Use calculated damage based on MaxAttack
 			character = character,
 			name = "PiercingArrow",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.5, 0), -- Orange for flaming arrow
-			delay = 0
+			delay = ServerConfigs.ArcherSkills.PiercingShot.hitboxDelay
 		})
 
 		-- Auto cleanup
