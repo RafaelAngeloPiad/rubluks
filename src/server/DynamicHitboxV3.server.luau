@@ -62,11 +62,15 @@ local function getDefenseStats(model)
 		local currentDefense = 0
 		local maxDefense = 0
 		
-		if leaderstats:FindFirstChild("CurrentDefense") then
-			currentDefense = leaderstats.CurrentDefense.Value
-		end
 		if leaderstats:FindFirstChild("MaxDefense") then
 			maxDefense = leaderstats.MaxDefense.Value
+		end
+		
+		if leaderstats:FindFirstChild("CurrentDefense") then
+			currentDefense = leaderstats.CurrentDefense.Value
+		else
+			-- If CurrentDefense doesn't exist, default to MaxDefense (full defense)
+			currentDefense = maxDefense
 		end
 		
 		return currentDefense, maxDefense
@@ -96,8 +100,14 @@ local function setDefenseStats(model, currentDefense, maxDefense)
 	if player and player:FindFirstChild("leaderstats") then
 		local leaderstats = player.leaderstats
 		
-		if leaderstats:FindFirstChild("CurrentDefense") then
-			leaderstats.CurrentDefense.Value = currentDefense
+		local currentDefStat = leaderstats:FindFirstChild("CurrentDefense")
+		if currentDefStat then
+			currentDefStat.Value = currentDefense
+		else
+			-- Create CurrentDefense if it doesn't exist (shouldn't happen normally, but safety check)
+			local newCurrentDef = Instance.new("NumberValue", leaderstats)
+			newCurrentDef.Name = "CurrentDefense"
+			newCurrentDef.Value = currentDefense
 		end
 	end
 	

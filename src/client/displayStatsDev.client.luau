@@ -643,15 +643,24 @@ local function setupStatConnections()
 		end
 		
 		-- Connect to humanoid health changes for real-time health display
-		if player.Character and player.Character:FindFirstChild("Humanoid") then
-			local humanoid = player.Character.Humanoid
-			local conn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-				if statLabels["MaxHealth"] and humanoid.MaxHealth then
-					statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", humanoid.Health, humanoid.MaxHealth)
+		-- Wait for character to load if needed
+		local function setupHumanoidConnection()
+			if player.Character and player.Character:FindFirstChild("Humanoid") then
+				local humanoid = player.Character.Humanoid
+				-- Disconnect old connection if it exists
+				if statConnections["HumanoidHealth"] then
+					statConnections["HumanoidHealth"]:Disconnect()
 				end
-			end)
-			statConnections["HumanoidHealth"] = conn
+				local conn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+					if statLabels["MaxHealth"] and humanoid.MaxHealth then
+						statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", humanoid.Health, humanoid.MaxHealth)
+					end
+				end)
+				statConnections["HumanoidHealth"] = conn
+			end
 		end
+		
+		setupHumanoidConnection()
 	
 	-- Special handling for class change to refresh base stats
 	if leaderstats:FindFirstChild("Class") then
@@ -667,6 +676,7 @@ end
 player.CharacterAdded:Connect(function()
 	task.wait(1)
 	updateStatsDisplay()
+	setupStatConnections() -- Reconnect stat change listeners on respawn
 end)
 
 -- Initial setup

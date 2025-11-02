@@ -708,6 +708,18 @@ game.Players.PlayerAdded:Connect(function(plr)
 		humanoid.MaxHealth = leaderstats.MaxHealth.Value
 		humanoid.Health = humanoid.MaxHealth
 		
+		-- Reset CurrentDefense to MaxDefense on respawn
+		local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		if currentDefense and maxDefense then
+			currentDefense.Value = maxDefense.Value
+		elseif maxDefense then
+			-- Create CurrentDefense if it doesn't exist
+			local newCurrentDefense = Instance.new("NumberValue", leaderstats)
+			newCurrentDefense.Name = "CurrentDefense"
+			newCurrentDefense.Value = maxDefense.Value
+		end
+		
 		-- Apply Movement Speed if configured
 		local baseStats = BaseStats[class.Value]
 		if baseStats and baseStats.Mspd then
@@ -767,22 +779,31 @@ local function savePlayerData(plr)
 	-- LEVEL CAP: Clamp level before saving
 	leaderstats.Level.Value = math.min(leaderstats.Level.Value, BaseStats.XP.maxLevel)
 
+	-- Helper function to safely get a stat value
+	local function getStatValue(statName, defaultValue)
+		local stat = leaderstats:FindFirstChild(statName)
+		if stat and stat:IsA("ValueBase") then
+			return tonumber(stat.Value) or defaultValue
+		end
+		return defaultValue
+	end
+	
 	local dataToSave = {
-		Level = tonumber(leaderstats.Level.Value) or 1,
-		CurrentXP = tonumber(leaderstats.CurrentXP.Value) or 0,
-		MaximumXP = tonumber(leaderstats.MaximumXP.Value) or BaseStats.XP.startMaxXP,
+		Level = getStatValue("Level", 1),
+		CurrentXP = getStatValue("CurrentXP", 0),
+		MaximumXP = getStatValue("MaximumXP", BaseStats.XP.startMaxXP),
 		Class = tostring(leaderstats.Class.Value) or "Slavkorian",
-		MaxAttack = tonumber(leaderstats.MaxAttack.Value) or 0,
-		DefensePenetration = tonumber(leaderstats.DefensePenetration.Value) or 0,
-		CritRate = tonumber(leaderstats.CritRate.Value) or 0,
-		CritMultiplier = tonumber(leaderstats.CritMultiplier.Value) or 0,
-		MaxDefense = tonumber(leaderstats.MaxDefense.Value) or 0,
-		CurrentDefense = tonumber(leaderstats.CurrentDefense.Value) or 0,
-		MaxHealth = tonumber(leaderstats.MaxHealth.Value) or 0,
-		HealthRegen = tonumber(leaderstats.HealthRegen.Value) or 0,
-		MovementSpeed = tonumber(leaderstats.MovementSpeed.Value) or 0,
-		AttackSpeed = tonumber(leaderstats.AttackSpeed.Value) or 0,
-		Slavkoins = tonumber(leaderstats.Slavkoins.Value) or 0
+		MaxAttack = getStatValue("MaxAttack", 0),
+		DefensePenetration = getStatValue("DefensePenetration", 0),
+		CritRate = getStatValue("CritRate", 0),
+		CritMultiplier = getStatValue("CritMultiplier", 0),
+		MaxDefense = getStatValue("MaxDefense", 0),
+		CurrentDefense = getStatValue("CurrentDefense", getStatValue("MaxDefense", 0)), -- Default to MaxDefense if CurrentDefense doesn't exist
+		MaxHealth = getStatValue("MaxHealth", 0),
+		HealthRegen = getStatValue("HealthRegen", 0),
+		MovementSpeed = getStatValue("MovementSpeed", 0),
+		AttackSpeed = getStatValue("AttackSpeed", 0),
+		Slavkoins = getStatValue("Slavkoins", 0)
 	}
 
 	local success, err = MainDataStore.SavePlayerData(plr.UserId, dataToSave)
