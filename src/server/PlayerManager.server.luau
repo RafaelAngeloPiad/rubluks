@@ -571,6 +571,58 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 	end
 
+	-- Health regeneration system
+	local healthRegenConnections = {}
+	
+	-- Function to start health regeneration for a character
+	local function startHealthRegen(character, humanoid)
+		-- Clean up any existing thread for this character
+		if healthRegenConnections[character] then
+			-- Cancel the existing thread
+			task.cancel(healthRegenConnections[character])
+			healthRegenConnections[character] = nil
+		end
+		
+		-- Get HealthRegen stat
+		local healthRegenStat = leaderstats:FindFirstChild("HealthRegen")
+		if not healthRegenStat or healthRegenStat.Value <= 0 then
+			return -- No health regen, don't start system
+		end
+		
+		-- Run health regeneration every second
+		local regenThread = task.spawn(function()
+			while character and character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 do
+				-- Check if character and humanoid still exist before waiting
+				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+					break
+				end
+				
+				task.wait(1) -- Wait 1 second
+				
+				-- Check again after wait (character might have been removed)
+				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+					break
+				end
+				
+				-- Get current HealthRegen value
+				local currentHealthRegen = healthRegenStat.Value
+				if currentHealthRegen > 0 then
+					-- Regenerate health (cap at MaxHealth)
+					local newHealth = math.min(humanoid.Health + currentHealthRegen, humanoid.MaxHealth)
+					humanoid.Health = newHealth
+				else
+					-- If HealthRegen becomes 0, stop regenerating
+					break
+				end
+			end
+			
+			-- Clean up when done
+			healthRegenConnections[character] = nil
+		end)
+		
+		healthRegenConnections[character] = regenThread
+	end
+	
 	-- Sa spawn
 	plr.CharacterAdded:Connect(function(char)
 		local humanoid = char:WaitForChild("Humanoid")
@@ -588,6 +640,20 @@ game.Players.PlayerAdded:Connect(function(plr)
 			humanoid.WalkSpeed = baseStats.Mspd
 		end
 		
+		-- Start health regeneration system
+		startHealthRegen(char, humanoid)
+		
+		-- Update health regen when the stat changes
+		local healthRegenStat = leaderstats:FindFirstChild("HealthRegen")
+		if healthRegenStat then
+			healthRegenStat.Changed:Connect(function()
+				-- Restart health regen system with new value
+				if char.Parent and humanoid.Parent then
+					startHealthRegen(char, humanoid)
+				end
+			end)
+		end
+		
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
 		
@@ -595,6 +661,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- This allows leveling up to work even before character spawns
 		if class.Value and class.Value ~= "Slavkorian" then
 			statsInitialized = true
+		end
+	end)
+	
+	-- Clean up health regen when player leaves
+	plr.CharacterRemoving:Connect(function(char)
+		if healthRegenConnections[char] then
+			healthRegenConnections[char] = nil
 		end
 	end)
 	

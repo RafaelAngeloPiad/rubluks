@@ -17,6 +17,10 @@
       "StarterPlayerScripts": {
         "$path": "src/client",
         "$ignoreUnknownInstances": true
+      },
+      "StarterCharacterScripts": {
+        "$path": "src/character",
+        "$ignoreUnknownInstances": true
       }
     },
 
