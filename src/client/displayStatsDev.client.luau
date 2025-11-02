@@ -199,6 +199,8 @@ local function getStatColor(statName)
 		MaxHealth = Color3.fromRGB(255, 100, 100),
 		MaxAttack = Color3.fromRGB(255, 150, 100),
 		MaxDefense = Color3.fromRGB(100, 150, 255),
+		DefensePenetration = Color3.fromRGB(255, 150, 200),  -- Pink for DP
+		HealthRegen = Color3.fromRGB(100, 255, 150),          -- Green for Health Regen
 		Slavkoins = Color3.fromRGB(255, 215, 0)
 	}
 	return colors[statName] or Color3.fromRGB(255, 255, 255)
@@ -266,7 +268,7 @@ local function updateStatsDisplay()
 	end
 	
 	if leaderstats:FindFirstChild("DefensePenetration") then
-		statLabels["DefensePenetration"] = createStatRow("DP", leaderstats.DefensePenetration.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
+		statLabels["DefensePenetration"] = createStatRow("DP", leaderstats.DefensePenetration.Value, getStatColor("DefensePenetration"), layoutOrder)
 		layoutOrder = layoutOrder + 1
 	end
 	
@@ -281,7 +283,7 @@ local function updateStatsDisplay()
 	end
 	
 	if leaderstats:FindFirstChild("HealthRegen") then
-		statLabels["HealthRegen"] = createStatRow("Health Regen", leaderstats.HealthRegen.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
+		statLabels["HealthRegen"] = createStatRow("Health Regen", leaderstats.HealthRegen.Value, getStatColor("HealthRegen"), layoutOrder)
 		layoutOrder = layoutOrder + 1
 	end
 	

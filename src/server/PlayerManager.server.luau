@@ -415,9 +415,20 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 				
 				-- Apply offense stat multipliers
+				-- Defense Penetration: Use round to ensure it increases (important when starting at 0)
 				if leaderstats:FindFirstChild("DefensePenetration") and multipliers.DP then
 					local oldDP = leaderstats.DefensePenetration.Value
-					leaderstats.DefensePenetration.Value = math.floor(oldDP * multipliers.DP)
+					local newDP = oldDP * multipliers.DP
+					-- Use round to ensure it increases (math.floor(x + 0.5))
+					local roundedDP = math.floor(newDP + 0.5)
+					-- Ensure it increases by at least 1 if it was 0 or very small (prevents staying at 0)
+					if oldDP == 0 then
+						-- If starting from 0, give at least 1 point on first level up
+						leaderstats.DefensePenetration.Value = 1
+					else
+						-- Otherwise use rounded value, but ensure it increases
+						leaderstats.DefensePenetration.Value = math.max(roundedDP, oldDP + 1)
+					end
 				end
 				-- CritRate needs math.ceil because it's a small percentage stat (starts at 5)
 				-- 5 * 1.03 = 5.15, floor(5.15) = 5 (stays same), ceil(5.15) = 6 (increases!)
@@ -438,9 +449,20 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 				
 				-- Apply defense/utility stat multipliers
+				-- Health Regeneration: Use round to ensure it increases (important when starting at 0)
 				if leaderstats:FindFirstChild("HealthRegen") and multipliers.HR then
 					local oldHR = leaderstats.HealthRegen.Value
-					leaderstats.HealthRegen.Value = math.floor(oldHR * multipliers.HR)
+					local newHR = oldHR * multipliers.HR
+					-- Use round to ensure it increases (math.floor(x + 0.5))
+					local roundedHR = math.floor(newHR + 0.5)
+					-- Ensure it increases by at least 1 if it was 0 or very small (prevents staying at 0)
+					if oldHR == 0 then
+						-- If starting from 0, give at least 1 point on first level up
+						leaderstats.HealthRegen.Value = 1
+					else
+						-- Otherwise use rounded value, but ensure it increases
+						leaderstats.HealthRegen.Value = math.max(roundedHR, oldHR + 1)
+					end
 				end
 				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
 					local oldMspd = leaderstats.MovementSpeed.Value
