@@ -253,7 +253,19 @@ local function initializeGolem(monster, variantName)
 				end
 			else
 				local target = currentTarget
-				if not target or (target.Position - position).Magnitude > FOLLOW_RANGE then
+				-- Check if current target is still valid (alive and in range)
+				if target then
+					local targetModel = target:FindFirstAncestorOfClass("Model")
+					local targetHum = targetModel and targetModel:FindFirstChild("Humanoid")
+					-- Invalidate target if it died or is too far
+					if not targetHum or targetHum.Health <= 0 or (target.Position - position).Magnitude > FOLLOW_RANGE then
+						target = nil
+						currentTarget = nil
+					end
+				end
+				
+				-- Find new target if needed
+				if not target then
 					target = FindNearestTarget(position)
 					currentTarget = target
 				end
