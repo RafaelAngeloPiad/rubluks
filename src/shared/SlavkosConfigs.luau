@@ -46,6 +46,24 @@ ServerConfigs.Hitbox = {
 		knockback = {
 			enabled = false, -- Enable/disable knockback
 			force = 20 -- Knockback force (velocity applied to mob)
+		},
+		
+		-- Mob Stats Display Configuration
+		mobStatsDisplay = {
+			enabled = true, -- Enable/disable floating mob stats GUI
+			offsetY = 4, -- Vertical offset from character head (studs) - above damage numbers
+			size = Vector2.new(200, 150), -- GUI size in pixels
+			backgroundColor = Color3.new(0.1, 0.1, 0.1), -- Background color
+			backgroundTransparency = 0.3, -- Background transparency
+			borderColor = Color3.new(0.5, 0.5, 0.5), -- Border color
+			borderSizePixel = 2, -- Border thickness
+			cornerRadius = 5, -- Corner roundness
+			textColor = Color3.new(1, 1, 1), -- Text color
+			textSize = 12, -- Font size
+			font = Enum.Font.Gotham, -- Font style
+			headerColor = Color3.new(1, 0.8, 0), -- Header text color
+			headerSize = 14, -- Header font size
+			updateRate = 0.1 -- Update frequency in seconds
 		}
 }
 
@@ -1363,24 +1381,6 @@ ServerConfigs.Client = {
 		damageMultiplier = 0.01,  -- 1% damage when using wrong class weapon (configurable)
 		allowSkills = false,      -- Disable skills when weapon doesn't match class
 		minDamage = 1             -- Minimum damage output (1 damage)
-	}
-}
-
--- ========================================
--- MOB BASE STATS CONFIGURATION
--- ========================================
-
--- Base stats for different mob types
-ServerConfigs.MobBaseStats = {
-	Golem = {
-		HP = 500,
-		D = 20,    -- Defense
-		DP = 0     -- Defense Penetration
-	},
-	Spider = {
-		HP = 300,
-		D = 10,
-		DP = 0
 	}
 }
 

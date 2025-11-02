@@ -6,6 +6,16 @@ local RunService = game:GetService("RunService")
 
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
+local MobStatsConfig = require(script.Parent.MobStatsConfig)
+
+-- Try to require MobStatsDisplay module
+local MobStatsDisplay = nil
+local success, displayModule = pcall(function()
+	return require(game.ReplicatedStorage.MobStatsDisplay)
+end)
+if success then
+	MobStatsDisplay = displayModule
+end
 
 -- ========== PROCEDURAL MODULE ==========
 local ProceduralModule = {}
@@ -59,14 +69,30 @@ end
 -- No need for tracking since each model has its own initializer
 
 -- ========== MAIN SPIDER SCRIPT ==========
-local function initializeSpider(enemy)
+local function initializeSpider(enemy, variantName)
+	-- Default variant if not provided
+	variantName = variantName or "Spider_Sand"
+	
+	-- Apply stats to the spider (sets attributes for DynamicHitboxV3 defense system)
+	-- NOTE: Stats are applied BEFORE anything else so defense/health work correctly
+	local statsApplied = MobStatsConfig.applyStats(enemy, variantName)
+	if not statsApplied then
+		warn("Spider: Failed to apply stats for variant:", variantName)
+	end
+	
 	local root = enemy:WaitForChild("HumanoidRootPart")
 	local hum = enemy:WaitForChild("Humanoid")
+	
 	local alignOrientation = root:FindFirstChild("AlignOrientation")
 	local alignmentConnection
 
 	local ikTargets = enemy:WaitForChild("IkTargets")
 	local rayCastParts = enemy:WaitForChild("RayCastParts")
+	
+	-- Create floating stats display GUI (if enabled in config)
+	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
+		MobStatsDisplay.createMobStatsDisplay(enemy)
+	end
 
 	for _, v in ipairs(ikTargets:GetChildren()) do if v:IsA("BasePart") then v.Transparency = 1 end end
 	for _, v in ipairs(rayCastParts:GetChildren()) do if v:IsA("BasePart") then v.Transparency = 1 end end
@@ -105,11 +131,14 @@ local function initializeSpider(enemy)
 				
 				-- Create static hitbox when attack animation plays
 				if _G.createStaticHitbox then
+					-- Get damage from mob's attribute
+					local damage = enemy:GetAttribute("Damage") or 50
+					
 					_G.createStaticHitbox({
 						attachTo = root,
 						offset = CFrame.new(0, 0, -3), -- Hitbox in front of spider
 						size = Vector3.new(6, 6, 6), -- 6x6x6 stud hitbox
-						damage = 50, -- Adjust damage as needed
+						damage = damage,
 						character = enemy, -- Exclude the spider itself
 						name = "SpiderAttack",
 						showVisual = true,
@@ -326,8 +355,8 @@ end
 -- === MODULE EXPORTS ===
 local SpiderAIModule = {}
 
-function SpiderAIModule.initializeSpider(model)
-	initializeSpider(model)
+function SpiderAIModule.initializeSpider(model, variantName)
+	initializeSpider(model, variantName)
 end
 
 function SpiderAIModule.isInitialized(model)

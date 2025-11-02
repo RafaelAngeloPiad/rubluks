@@ -3,6 +3,16 @@
 
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
+local MobStatsConfig = require(script.Parent.MobStatsConfig)
+
+-- Try to require MobStatsDisplay module
+local MobStatsDisplay = nil
+local success, displayModule = pcall(function()
+	return require(game.ReplicatedStorage.MobStatsDisplay)
+end)
+if success then
+	MobStatsDisplay = displayModule
+end
 
 -- === CONFIG ===
 local WALK_ANIMATION_ID = "rbxassetid://107172094908325" -- walk
@@ -62,10 +72,19 @@ local function FindNearestTarget(origin)
 end
 
 -- === GOLEM INITIALIZATION ===
-local function initializeGolem(monster)
+local function initializeGolem(monster, variantName)
 	-- Use model reference as unique identifier
 	local golemId = monster
 	
+	-- Default variant if not provided
+	variantName = variantName or "Golem_Sand"
+	
+	-- Apply stats to the golem (sets attributes for DynamicHitboxV3 defense system)
+	-- NOTE: Stats are applied BEFORE anything else so defense/health work correctly
+	local statsApplied = MobStatsConfig.applyStats(monster, variantName)
+	if not statsApplied then
+		warn("Golem: Failed to apply stats for variant:", variantName)
+	end
 	
 	local humanoid = monster:WaitForChild("Humanoid")
 	local root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart
@@ -73,6 +92,11 @@ local function initializeGolem(monster)
 	if not root then
 		warn("Golem missing HumanoidRootPart:", monster.Name)
 		return
+	end
+	
+	-- Create floating stats display GUI (if enabled in config)
+	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
+		MobStatsDisplay.createMobStatsDisplay(monster)
 	end
 	
 	-- Create animations
@@ -146,11 +170,14 @@ local function initializeGolem(monster)
 					
 					-- Create static hitbox when attack animation plays
 					if _G.createStaticHitbox then
+						-- Get damage from mob's attribute
+						local damage = monster:GetAttribute("Damage") or 25
+						
 						_G.createStaticHitbox({
 							attachTo = root,
 							offset = CFrame.new(0, 0, -4), -- Hitbox in front of golem
 							size = Vector3.new(8, 8, 8), -- 8x8x8 stud hitbox
-							damage = 25, -- Adjust damage as needed
+							damage = damage,
 							character = monster, -- Exclude the golem itself
 							name = "GolemAttack",
 							showVisual = true,
@@ -284,8 +311,8 @@ end
 -- === MODULE EXPORTS ===
 local GolemAIModule = {}
 
-function GolemAIModule.initializeGolem(model)
-	initializeGolem(model)
+function GolemAIModule.initializeGolem(model, variantName)
+	initializeGolem(model, variantName)
 end
 
 function GolemAIModule.isInitialized(model)

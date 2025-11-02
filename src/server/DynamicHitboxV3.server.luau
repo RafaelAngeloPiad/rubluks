@@ -45,6 +45,11 @@ local HitboxExclusions = require(game.ReplicatedStorage:WaitForChild("mobs"):Wai
 -- ========================================
 
 -- Function to get defense stats for a model (player or mob)
+-- Returns: currentDefense, maxDefense
+-- 
+-- FOR PLAYERS: Reads from leaderstats (CurrentDefense, MaxDefense IntValues)
+-- FOR MOBS: Reads from model attributes (CurrentDefense, MaxDefense attributes)
+--            Mob attributes are set by MobStatsConfig.applyStats() based on variant
 local function getDefenseStats(model)
 	if not model then
 		return 0, 0 -- currentDefense, maxDefense
@@ -67,7 +72,7 @@ local function getDefenseStats(model)
 		return currentDefense, maxDefense
 	end
 	
-	-- Check if it's a mob (using attributes)
+	-- Check if it's a mob (using attributes set by MobStatsConfig)
 	if model:IsA("Model") then
 		local currentDefense = model:GetAttribute("CurrentDefense") or 0
 		local maxDefense = model:GetAttribute("MaxDefense") or 0
@@ -105,11 +110,29 @@ local function setDefenseStats(model, currentDefense, maxDefense)
 	end
 end
 
--- Function to calculate damage with defense system
+-- Function to calculate damage with defense system and crit (for mobs)
 -- Returns: damageToHealth, damageToDefense
 local function calculateDamageWithDefense(rawDamage, attacker, target)
 	if not target or not attacker then
 		return rawDamage, 0
+	end
+	
+	-- Check for mob crit (if attacker is a mob)
+	local finalDamage = rawDamage
+	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
+	if not attackerPlayer and attacker:IsA("Model") then
+		-- Attacker is a mob - check for crit
+		local critRate = attacker:GetAttribute("CritRate") or 0
+		local critMult = attacker:GetAttribute("CritMultiplier") or 150
+		
+		if critRate > 0 then
+			-- Roll for crit
+			local roll = math.random() * 100
+			if roll < critRate then
+				-- Crit hit! Multiply damage by crit multiplier (e.g., 150 = 1.5x)
+				finalDamage = math.floor(rawDamage * (critMult / 100))
+			end
+		end
 	end
 	
 	-- Get target's defense
@@ -117,12 +140,15 @@ local function calculateDamageWithDefense(rawDamage, attacker, target)
 	
 	-- Get attacker's defense penetration
 	local defensePenetration = 0
-	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
 	if attackerPlayer and attackerPlayer:FindFirstChild("leaderstats") then
+		-- Attacker is a player - read from leaderstats
 		local attackerStats = attackerPlayer.leaderstats
 		if attackerStats:FindFirstChild("DefensePenetration") then
 			defensePenetration = attackerStats.DefensePenetration.Value
 		end
+	elseif attacker:IsA("Model") then
+		-- Attacker is a mob - read from attributes
+		defensePenetration = attacker:GetAttribute("DefensePenetration") or 0
 	end
 	
 	-- Calculate effective defense after penetration
@@ -135,18 +161,18 @@ local function calculateDamageWithDefense(rawDamage, attacker, target)
 	
 	if effectiveDefense > 0 then
 		-- Defense absorbs damage
-		if rawDamage <= effectiveDefense then
+		if finalDamage <= effectiveDefense then
 			-- All damage goes to defense
-			damageToDefense = rawDamage
+			damageToDefense = finalDamage
 			damageToHealth = 0
 		else
 			-- Defense is depleted, rest goes to health
 			damageToDefense = effectiveDefense
-			damageToHealth = rawDamage - effectiveDefense
+			damageToHealth = finalDamage - effectiveDefense
 		end
 	else
 		-- No defense, all damage goes to health
-		damageToHealth = rawDamage
+		damageToHealth = finalDamage
 		damageToDefense = 0
 	end
 	
