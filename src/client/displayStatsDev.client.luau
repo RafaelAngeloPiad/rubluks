@@ -388,17 +388,25 @@ local function updateStatsDisplay()
 		local classConfig = ConfigModule.Hitboxes.UnifiedAttacks[className]
 		
 		if classConfig and maxAttack > 0 then
+			-- Get CritMultiplier for crit damage calculation
+			local critMultiplier = 150 -- Default
+			if leaderstats:FindFirstChild("CritMultiplier") then
+				critMultiplier = leaderstats.CritMultiplier.Value
+			end
+			
 			-- Normal attack damage
 			local normalMultiplier = classConfig.damage or 0
 			local normalDamage = math.floor(maxAttack * normalMultiplier)
-			statLabels["DamageNormal"] = createStatRow("Normal Attack", normalDamage, Color3.fromRGB(255, 200, 100), layoutOrder)
+			local normalCritDamage = math.floor(normalDamage * (critMultiplier / 100))
+			statLabels["DamageNormal"] = createStatRow("Normal Attack", normalDamage .. " (Crit: " .. normalCritDamage .. ")", Color3.fromRGB(255, 200, 100), layoutOrder)
 			layoutOrder = layoutOrder + 1
 			
 			-- Skill 1 damage
 			if classConfig.skill1Damage then
 				local skill1Multiplier = classConfig.skill1Damage
 				local skill1Damage = math.floor(maxAttack * skill1Multiplier)
-				statLabels["DamageSkill1"] = createStatRow("Skill 1", skill1Damage, Color3.fromRGB(200, 150, 255), layoutOrder)
+				local skill1CritDamage = math.floor(skill1Damage * (critMultiplier / 100))
+				statLabels["DamageSkill1"] = createStatRow("Skill 1", skill1Damage .. " (Crit: " .. skill1CritDamage .. ")", Color3.fromRGB(200, 150, 255), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
 			
@@ -406,7 +414,8 @@ local function updateStatsDisplay()
 			if classConfig.skill2Damage then
 				local skill2Multiplier = classConfig.skill2Damage
 				local skill2Damage = math.floor(maxAttack * skill2Multiplier)
-				statLabels["DamageSkill2"] = createStatRow("Skill 2", skill2Damage, Color3.fromRGB(200, 150, 255), layoutOrder)
+				local skill2CritDamage = math.floor(skill2Damage * (critMultiplier / 100))
+				statLabels["DamageSkill2"] = createStatRow("Skill 2", skill2Damage .. " (Crit: " .. skill2CritDamage .. ")", Color3.fromRGB(200, 150, 255), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
 			
@@ -414,7 +423,8 @@ local function updateStatsDisplay()
 			if classConfig.ultDamage then
 				local ultMultiplier = classConfig.ultDamage
 				local ultDamage = math.floor(maxAttack * ultMultiplier)
-				statLabels["DamageUlt"] = createStatRow("Ultimate", ultDamage, Color3.fromRGB(255, 100, 100), layoutOrder)
+				local ultCritDamage = math.floor(ultDamage * (critMultiplier / 100))
+				statLabels["DamageUlt"] = createStatRow("Ultimate", ultDamage .. " (Crit: " .. ultCritDamage .. ")", Color3.fromRGB(255, 100, 100), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
 		else
@@ -455,32 +465,42 @@ local function updateCalculatedDamage()
 		return
 	end
 	
+	-- Get CritMultiplier for crit damage calculation
+	local critMultiplier = 150 -- Default
+	if leaderstats:FindFirstChild("CritMultiplier") then
+		critMultiplier = leaderstats.CritMultiplier.Value
+	end
+	
 	-- Update Normal Attack damage
 	if statLabels["DamageNormal"] then
 		local normalMultiplier = classConfig.damage or 0
 		local normalDamage = math.floor(maxAttack * normalMultiplier)
-		statLabels["DamageNormal"].Text = tostring(normalDamage)
+		local normalCritDamage = math.floor(normalDamage * (critMultiplier / 100))
+		statLabels["DamageNormal"].Text = normalDamage .. " (Crit: " .. normalCritDamage .. ")"
 	end
 	
 	-- Update Skill 1 damage
 	if statLabels["DamageSkill1"] and classConfig.skill1Damage then
 		local skill1Multiplier = classConfig.skill1Damage
 		local skill1Damage = math.floor(maxAttack * skill1Multiplier)
-		statLabels["DamageSkill1"].Text = tostring(skill1Damage)
+		local skill1CritDamage = math.floor(skill1Damage * (critMultiplier / 100))
+		statLabels["DamageSkill1"].Text = skill1Damage .. " (Crit: " .. skill1CritDamage .. ")"
 	end
 	
 	-- Update Skill 2 damage
 	if statLabels["DamageSkill2"] and classConfig.skill2Damage then
 		local skill2Multiplier = classConfig.skill2Damage
 		local skill2Damage = math.floor(maxAttack * skill2Multiplier)
-		statLabels["DamageSkill2"].Text = tostring(skill2Damage)
+		local skill2CritDamage = math.floor(skill2Damage * (critMultiplier / 100))
+		statLabels["DamageSkill2"].Text = skill2Damage .. " (Crit: " .. skill2CritDamage .. ")"
 	end
 	
 	-- Update Ult damage
 	if statLabels["DamageUlt"] and classConfig.ultDamage then
 		local ultMultiplier = classConfig.ultDamage
 		local ultDamage = math.floor(maxAttack * ultMultiplier)
-		statLabels["DamageUlt"].Text = tostring(ultDamage)
+		local ultCritDamage = math.floor(ultDamage * (critMultiplier / 100))
+		statLabels["DamageUlt"].Text = ultDamage .. " (Crit: " .. ultCritDamage .. ")"
 	end
 end
 
@@ -581,8 +601,8 @@ local function setupStatConnections()
 					statLabels[stat.Name].Text = tostring(stat.Value)
 				end
 				
-				-- Update calculated damage when MaxAttack or Class changes
-				if stat.Name == "MaxAttack" or stat.Name == "Class" then
+				-- Update calculated damage when MaxAttack, CritMultiplier, or Class changes
+				if stat.Name == "MaxAttack" or stat.Name == "CritMultiplier" or stat.Name == "Class" then
 					updateCalculatedDamage()
 				end
 			end)
