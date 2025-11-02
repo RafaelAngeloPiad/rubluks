@@ -143,13 +143,11 @@ local function createDamageNumber(model, damage)
 	-- Check if damage numbers are enabled
 	local damageNumbersConfig = ServerConfigs.Hitbox.damageNumbers
 	if not damageNumbersConfig or not damageNumbersConfig.enabled then
-		warn("[HITBOX] createDamageNumber: Damage numbers disabled")
 		return
 	end
 	
 	-- Validate model exists
 	if not model or not model.Parent then
-		warn("[HITBOX] createDamageNumber: Model invalid or no parent")
 		return
 	end
 	
@@ -158,14 +156,12 @@ local function createDamageNumber(model, damage)
 	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
 	
 	if not head and not humanoidRootPart then
-		warn("[HITBOX] createDamageNumber: No head or HumanoidRootPart found")
 		return
 	end
 	
 	-- Use head if available, otherwise use HumanoidRootPart
 	local attachPart = head or humanoidRootPart
 	if not attachPart then
-		warn("[HITBOX] createDamageNumber: No attach part available")
 		return
 	end
 	
@@ -417,7 +413,6 @@ function _G.createStaticHitbox(config)
 		if attachTo and not cframe then
 			cframe = attachTo.CFrame * offset
 		elseif not cframe then
-			warn("[HITBOX V3] Static hitbox needs either cframe or attachTo")
 			return
 		end
 		
@@ -518,7 +513,6 @@ function _G.createStaticDOTHitbox(config)
 		if attachTo and not cframe then
 			cframe = attachTo.CFrame * offset
 		elseif not cframe then
-			warn("[HITBOX V3] Static DOT hitbox needs either cframe or attachTo")
 			return
 		end
 		
@@ -675,7 +669,6 @@ function _G.createTravelingHitbox(config)
 		local visualColor = config.visualColor
 		
 		if not attachTo then
-			warn("[HITBOX V3] No attachTo part provided for traveling hitbox")
 			return
 		end
 		
@@ -788,7 +781,6 @@ function _G.createProjectileHitbox(config)
 	local preventPhysicsPush = config.preventPhysicsPush ~= false -- Default true
 
 	if not visualPart or not direction then
-		warn("[HITBOX V3] Projectile hitbox needs visualPart and direction")
 		return
 	end
 

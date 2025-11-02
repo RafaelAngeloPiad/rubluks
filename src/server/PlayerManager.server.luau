@@ -355,16 +355,12 @@ game.Players.PlayerAdded:Connect(function(plr)
 			return
 		end
 		
-		print("[XP Debug] CurrentXP changed to: " .. newv .. ", MaximumXP: " .. maxxp.Value .. ", Level: " .. level.Value)
-		
 		-- Check if we should level up (handle multiple level-ups in one go)
 		-- Level increases ONLY when XP reaches MaximumXP threshold
 		isLevelingUp = true
 		while newv >= maxxp.Value and level.Value < BaseStats.XP.maxLevel do
 			local overtop = newv - maxxp.Value
 			local currentLevel = level.Value
-			
-			print("[LEVEL UP] Excess XP: " .. overtop .. ", Current Level: " .. currentLevel .. ", Next Level: " .. (currentLevel + 1))
 			
 			-- Increment level (this will trigger level.Changed which recalculates MaximumXP)
 			level.Value = currentLevel + 1
@@ -395,29 +391,25 @@ game.Players.PlayerAdded:Connect(function(plr)
 	-- Connect this OUTSIDE CharacterAdded so it works even before character spawns
 	level.Changed:Connect(function()
 		local newLevel = level.Value
-		print("[Level Debug] Level changed to: " .. newLevel)
 		
 		-- Recalculate MaximumXP when level changes (always, for resets too)
 		local newMaxXP = calculateMaximumXP(newLevel)
 		maxxp.Value = newMaxXP
-		print("[Level Debug] MaximumXP recalculated to: " .. newMaxXP .. " for level " .. newLevel)
 		
 		-- Only apply multipliers if stats are initialized AND level actually increased (not decreased/reset)
 		-- This prevents applying multipliers during initial load or reset
-		-- Debug: Check why multipliers might not be applying
 		if not statsInitialized then
-			print("[Level Debug] Stats not initialized yet, skipping multiplier application")
+			-- Stats not initialized yet, skipping multiplier application
 		elseif newLevel <= previousLevel then
-			print("[Level Debug] Level did not increase (new: " .. newLevel .. ", prev: " .. previousLevel .. "), skipping multipliers")
+			-- Level did not increase, skipping multipliers
 		else
 			local multipliers = BaseStats.LevelUpMultipliers[class.Value]
 			
 			if not multipliers then
-				warn("[Level Debug] No multipliers found for class: " .. tostring(class.Value))
+				-- No multipliers found for class
 			elseif newLevel > BaseStats.XP.maxLevel then
-				print("[Level Debug] Level exceeds max level (" .. BaseStats.XP.maxLevel .. "), skipping multipliers")
+				-- Level exceeds max level, skipping multipliers
 			else
-				print("[Level Debug] Applying multipliers for class: " .. class.Value .. ", level: " .. newLevel)
 				-- Apply level-up multipliers for all stats
 				leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * multipliers.HP)
 				maxAttack.Value = math.floor(maxAttack.Value * multipliers.ATK)
@@ -427,9 +419,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 				if leaderstats:FindFirstChild("DefensePenetration") and multipliers.DP then
 					local oldDP = leaderstats.DefensePenetration.Value
 					leaderstats.DefensePenetration.Value = math.floor(oldDP * multipliers.DP)
-					if oldDP ~= leaderstats.DefensePenetration.Value then
-						print("[Level Debug] DP: " .. oldDP .. " -> " .. leaderstats.DefensePenetration.Value .. " (mult: " .. multipliers.DP .. ")")
-					end
 				end
 				-- CritRate needs math.ceil because it's a small percentage stat (starts at 5)
 				-- 5 * 1.03 = 5.15, floor(5.15) = 5 (stays same), ceil(5.15) = 6 (increases!)
@@ -438,9 +427,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 					local newCritRate = oldCR * multipliers.CR
 					-- Always use ceil to ensure progression (removes floating point comparison issues)
 					leaderstats.CritRate.Value = math.ceil(newCritRate)
-					if oldCR ~= leaderstats.CritRate.Value then
-						print("[Level Debug] CR: " .. oldCR .. " -> " .. leaderstats.CritRate.Value .. " (mult: " .. multipliers.CR .. ", calc: " .. newCritRate .. ")")
-					end
 				end
 				-- CritMultiplier works fine with floor since it starts at 150 (150 * 1.01 = 151.5, floor = 151 ✓)
 				-- But we use round to ensure it always increases slightly
@@ -450,46 +436,25 @@ game.Players.PlayerAdded:Connect(function(plr)
 					-- Use round to ensure it increases (1.01 multiplier on 150 = 151.5, round = 152)
 					-- math.round might not exist, so use: math.floor(x + 0.5)
 					leaderstats.CritMultiplier.Value = math.floor(newCritMultiplier + 0.5)
-					if oldCM ~= leaderstats.CritMultiplier.Value then
-						print("[Level Debug] CM: " .. oldCM .. " -> " .. leaderstats.CritMultiplier.Value .. " (mult: " .. multipliers.CM .. ", calc: " .. newCritMultiplier .. ")")
-					end
 				end
 				if leaderstats:FindFirstChild("SkillDamage") and multipliers.SD then
 					local oldSD = leaderstats.SkillDamage.Value
 					leaderstats.SkillDamage.Value = math.floor(oldSD * multipliers.SD)
-					if oldSD ~= leaderstats.SkillDamage.Value then
-						print("[Level Debug] SD: " .. oldSD .. " -> " .. leaderstats.SkillDamage.Value .. " (mult: " .. multipliers.SD .. ")")
-					end
 				end
 				
 				-- Apply defense/utility stat multipliers
 				if leaderstats:FindFirstChild("HealthRegen") and multipliers.HR then
 					local oldHR = leaderstats.HealthRegen.Value
 					leaderstats.HealthRegen.Value = math.floor(oldHR * multipliers.HR)
-					if oldHR ~= leaderstats.HealthRegen.Value then
-						print("[Level Debug] HR: " .. oldHR .. " -> " .. leaderstats.HealthRegen.Value .. " (mult: " .. multipliers.HR .. ")")
-					end
 				end
 				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
 					local oldMspd = leaderstats.MovementSpeed.Value
 					leaderstats.MovementSpeed.Value = math.floor(oldMspd * multipliers.Mspd)
-					if oldMspd ~= leaderstats.MovementSpeed.Value then
-						print("[Level Debug] Mspd: " .. oldMspd .. " -> " .. leaderstats.MovementSpeed.Value .. " (mult: " .. multipliers.Mspd .. ")")
-					end
 				end
 				if leaderstats:FindFirstChild("AttackSpeed") and multipliers.Aspd then
 					local oldAspd = leaderstats.AttackSpeed.Value
 					leaderstats.AttackSpeed.Value = math.floor(oldAspd * multipliers.Aspd)
-					if oldAspd ~= leaderstats.AttackSpeed.Value then
-						print("[Level Debug] Aspd: " .. oldAspd .. " -> " .. leaderstats.AttackSpeed.Value .. " (mult: " .. multipliers.Aspd .. ")")
-					end
 				end
-
-				print("[Level Debug] Applied multipliers - HP: " .. leaderstats.MaxHealth.Value .. 
-					", ATK: " .. maxAttack.Value .. 
-					", DEF: " .. maxDefense.Value ..
-					", CR: " .. (leaderstats.CritRate and leaderstats.CritRate.Value or 0) ..
-					", CM: " .. (leaderstats.CritMultiplier and leaderstats.CritMultiplier.Value or 0))
 
 				-- update humanoid din habang buhay pa siya (if character exists)
 				if plr.Character then
@@ -580,7 +545,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Mark stats as initialized when class is set (allows leveling before character spawns)
 		if class.Value and class.Value ~= "Slavkorian" then
 			statsInitialized = true
-			print("[PlayerManager] Stats initialized when class set to: " .. class.Value)
 		else
 			statsInitialized = false
 		end
@@ -592,7 +556,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Mark stats as initialized if class is already set
 		if class.Value and class.Value ~= "Slavkorian" then
 			statsInitialized = true
-			print("[PlayerManager] Stats initialized on initial load for class: " .. class.Value)
 		end
 	end
 
@@ -615,13 +578,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
-		print("[PlayerManager] Stats initialized for " .. plr.Name)
 		
 		-- Also initialize stats immediately when class is set (before character spawns)
 		-- This allows leveling up to work even before character spawns
 		if class.Value and class.Value ~= "Slavkorian" then
 			statsInitialized = true
-			print("[PlayerManager] Stats initialized early for class: " .. class.Value)
 		end
 	end)
 	
@@ -661,9 +622,7 @@ local function savePlayerData(plr)
 
 	local success, err = MainDataStore.SavePlayerData(plr.UserId, dataToSave)
 	if not success then
-		warn("Failed to save data for " .. plr.Name .. ": " .. tostring(err))
-	else
-		print("Saved data for " .. plr.Name .. " - Level: " .. dataToSave.Level .. ", XP: " .. dataToSave.CurrentXP .. "/" .. dataToSave.MaximumXP)
+		-- Failed to save data
 	end
 end
 
@@ -692,17 +651,13 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		return
 	end
 	
-	print("[DevStatEvent] Player " .. plr.Name .. " requested: " .. action .. " = " .. tostring(value))
-	
 	if action == "setCurrentXP" then
 		if leaderstats:FindFirstChild("CurrentXP") then
 			leaderstats.CurrentXP.Value = tonumber(value) or 0
-			print("[DevStatEvent] Set CurrentXP to: " .. leaderstats.CurrentXP.Value)
 		end
 	elseif action == "addCurrentXP" then
 		if leaderstats:FindFirstChild("CurrentXP") then
 			leaderstats.CurrentXP.Value = leaderstats.CurrentXP.Value + (tonumber(value) or 0)
-			print("[DevStatEvent] Added " .. value .. " XP, new CurrentXP: " .. leaderstats.CurrentXP.Value)
 		end
 	elseif action == "setLevel" then
 		if leaderstats:FindFirstChild("Level") then
@@ -710,15 +665,11 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 			-- Recalculate MaximumXP for the new level
 			if leaderstats:FindFirstChild("MaximumXP") then
 				leaderstats.MaximumXP.Value = calculateMaximumXP(leaderstats.Level.Value)
-				print("[DevStatEvent] Set Level to: " .. leaderstats.Level.Value .. ", MaximumXP recalculated to: " .. leaderstats.MaximumXP.Value)
-			else
-				print("[DevStatEvent] Set Level to: " .. leaderstats.Level.Value)
 			end
 		end
 	elseif action == "setClass" then
 		if leaderstats:FindFirstChild("Class") then
 			local newClass = tostring(value) or "Slavkorian"
-			print("[DevStatEvent] Changing class to: " .. newClass .. " - Resetting to level 1 and base stats")
 			
 			-- Reset level to 1
 			if leaderstats:FindFirstChild("Level") then
@@ -761,7 +712,6 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.HealthRegen.Value = baseStats.HR or 0
 				leaderstats.MovementSpeed.Value = baseStats.Mspd or 18
 				leaderstats.AttackSpeed.Value = baseStats.Aspd or 1
-				print("[DevStatEvent] Applied base stats for " .. newClass .. " - HP: " .. baseStats.HP .. ", ATK: " .. baseStats.ATK .. ", DEF: " .. baseStats.D)
 			else
 				-- Default Slavkorian stats if class not found
 				leaderstats.MaxHealth.Value = 1000
@@ -774,20 +724,15 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.HealthRegen.Value = 0
 				leaderstats.MovementSpeed.Value = 18
 				leaderstats.AttackSpeed.Value = 1
-				print("[DevStatEvent] Applied default Slavkorian stats (class " .. newClass .. " not found)")
 			end
-			
-			print("[DevStatEvent] Class change complete - Level: 1, XP: 0/" .. (leaderstats.MaximumXP and leaderstats.MaximumXP.Value or "?") .. ", Class: " .. newClass)
 		end
 	elseif action == "resetStat" then
 		local statName = tostring(value)
 		if leaderstats:FindFirstChild(statName) then
 			leaderstats[statName].Value = 0
-			print("[DevStatEvent] Reset stat: " .. statName)
 		end
 	elseif action == "fullReset" then
 		-- Full reset: Level 1, XP 0, MaximumXP recalculated, Class Slavkorian, all stats reset
-		print("[DevStatEvent] Performing full reset for " .. plr.Name)
 		
 		-- Reset level first (this will recalculate MaximumXP)
 		if leaderstats:FindFirstChild("Level") then
@@ -818,8 +763,6 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats[statName].Value = 0
 			end
 		end
-		
-		print("[DevStatEvent] Full reset complete - Level: 1, XP: 0/" .. (leaderstats.MaximumXP and leaderstats.MaximumXP.Value or "?") .. ", Class: Slavkorian")
 	end
 end)
 

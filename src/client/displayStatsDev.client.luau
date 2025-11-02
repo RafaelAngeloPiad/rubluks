@@ -387,8 +387,6 @@ createButton("Reset", Color3.fromRGB(150, 50, 50), buttonLayoutOrder, function()
 	if DevStatEvent then
 		-- Use fullReset action which handles everything in the correct order
 		DevStatEvent:FireServer("fullReset")
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -398,8 +396,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("+5 XP", Color3.fromRGB(50, 150, 50), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("addCurrentXP", 5)
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -408,8 +404,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("+10 XP", Color3.fromRGB(50, 180, 50), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("addCurrentXP", 10)
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -418,8 +412,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("Knight", Color3.fromRGB(100, 150, 200), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("setClass", "Knight")
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -427,8 +419,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("Samurai", Color3.fromRGB(150, 150, 150), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("setClass", "Samurai")
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -436,8 +426,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("Gladiator", Color3.fromRGB(200, 100, 100), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("setClass", "Gladiator")
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -445,8 +433,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("Brawler", Color3.fromRGB(150, 100, 50), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("setClass", "Brawler")
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -454,8 +440,6 @@ buttonLayoutOrder = buttonLayoutOrder + 1
 createButton("Archer", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("setClass", "Archer")
-	else
-		warn("DevStatEvent not found!")
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
@@ -479,13 +463,6 @@ local function setupStatConnections()
 					statLabels["CurrentXP"].Text = string.format("%d / %d", stat.Value, leaderstats.MaximumXP.Value)
 				elseif statLabels[stat.Name] then
 					statLabels[stat.Name].Text = tostring(stat.Value)
-					-- Debug: Print when stat changes for scaling stats
-					local scalingStats = {"CritRate", "CritMultiplier", "DefensePenetration", "SkillDamage", "HealthRegen", "MovementSpeed", "AttackSpeed"}
-					for _, scalingStat in ipairs(scalingStats) do
-						if stat.Name == scalingStat then
-							print("[Display] " .. scalingStat .. " changed to: " .. stat.Value)
-						end
-					end
 				end
 			end)
 			statConnections[stat] = conn
