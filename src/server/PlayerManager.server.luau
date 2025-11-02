@@ -336,6 +336,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 			return
 		end
 		
+		-- DISABLE LEVELING WHEN CLASS IS SLAVKORIAN
+		if class.Value == "Slavkorian" then
+			return -- Don't allow leveling up when class is Slavkorian
+		end
+		
 		-- Ensure MaximumXP is valid
 		if not maxxp or not maxxp.Value then
 			return
@@ -381,6 +386,12 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Recalculate MaximumXP when level changes (always, for resets too)
 		local newMaxXP = calculateMaximumXP(newLevel)
 		maxxp.Value = newMaxXP
+		
+		-- DISABLE LEVELING WHEN CLASS IS SLAVKORIAN
+		if class.Value == "Slavkorian" then
+			-- Don't apply multipliers when class is Slavkorian
+			return
+		end
 		
 		-- Only apply multipliers if stats are initialized AND level actually increased (not decreased/reset)
 		-- This prevents applying multipliers during initial load or reset
