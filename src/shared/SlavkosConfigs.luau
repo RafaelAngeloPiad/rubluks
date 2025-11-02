@@ -1366,4 +1366,32 @@ ServerConfigs.Client = {
 	}
 }
 
+-- ========================================
+-- MOB BASE STATS CONFIGURATION
+-- ========================================
+
+-- Base stats for different mob types
+ServerConfigs.MobBaseStats = {
+	Golem = {
+		HP = 500,
+		D = 20,    -- Defense
+		DP = 0     -- Defense Penetration
+	},
+	Spider = {
+		HP = 300,
+		D = 10,
+		DP = 0
+	}
+}
+
+-- ========================================
+-- DEFENSE REGENERATION CONFIGURATION
+-- ========================================
+
+ServerConfigs.DefenseRegen = {
+	enabled = true,
+	regenRate = 1,          -- Defense points per second
+	tickInterval = 1        -- Update every second
+}
+
 return ServerConfigs

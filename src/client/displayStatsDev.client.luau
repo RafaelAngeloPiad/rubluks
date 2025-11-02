@@ -253,7 +253,13 @@ local function updateStatsDisplay()
 	end
 	
 	if leaderstats:FindFirstChild("MaxHealth") then
-		statLabels["MaxHealth"] = createStatRow("HP", leaderstats.MaxHealth.Value, getStatColor("MaxHealth"), layoutOrder)
+		local healthText = leaderstats.MaxHealth.Value
+		-- Try to get current health from humanoid
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			local humanoid = player.Character.Humanoid
+			healthText = string.format("%.0f / %.0f", humanoid.Health, humanoid.MaxHealth)
+		end
+		statLabels["MaxHealth"] = createStatRow("HP", healthText, getStatColor("MaxHealth"), layoutOrder)
 		layoutOrder = layoutOrder + 1
 	end
 	
@@ -263,7 +269,12 @@ local function updateStatsDisplay()
 	end
 	
 	if leaderstats:FindFirstChild("MaxDefense") then
-		statLabels["MaxDefense"] = createStatRow("Defense", leaderstats.MaxDefense.Value, getStatColor("MaxDefense"), layoutOrder)
+		local defenseText = leaderstats.MaxDefense.Value
+		-- Add current defense if it exists
+		if leaderstats:FindFirstChild("CurrentDefense") then
+			defenseText = string.format("%.0f / %.0f", leaderstats.CurrentDefense.Value, leaderstats.MaxDefense.Value)
+		end
+		statLabels["MaxDefense"] = createStatRow("Defense", defenseText, getStatColor("MaxDefense"), layoutOrder)
 		layoutOrder = layoutOrder + 1
 	end
 	
@@ -609,25 +620,38 @@ local function setupStatConnections()
 	end
 	statConnections = {}
 	
-	-- Connect to all leaderstats changes
-	for _, stat in ipairs(leaderstats:GetChildren()) do
-		if stat:IsA("ValueBase") then
-			local conn = stat:GetPropertyChangedSignal("Value"):Connect(function()
-				if stat.Name == "CurrentXP" and statLabels["CurrentXP"] and leaderstats:FindFirstChild("MaximumXP") then
-					statLabels["CurrentXP"].Text = string.format("%d / %d", stat.Value, leaderstats.MaximumXP.Value)
-				elseif statLabels[stat.Name] then
-					statLabels[stat.Name].Text = tostring(stat.Value)
-				end
-				
-				-- Update calculated damage when MaxAttack or CritMultiplier changes
-				-- Note: Class changes are handled separately with full display refresh
-				if stat.Name == "MaxAttack" or stat.Name == "CritMultiplier" then
-					updateCalculatedDamage()
+		-- Connect to all leaderstats changes
+		for _, stat in ipairs(leaderstats:GetChildren()) do
+			if stat:IsA("ValueBase") then
+				local conn = stat:GetPropertyChangedSignal("Value"):Connect(function()
+					if stat.Name == "CurrentXP" and statLabels["CurrentXP"] and leaderstats:FindFirstChild("MaximumXP") then
+						statLabels["CurrentXP"].Text = string.format("%d / %d", stat.Value, leaderstats.MaximumXP.Value)
+					elseif stat.Name == "CurrentDefense" and statLabels["MaxDefense"] and leaderstats:FindFirstChild("MaxDefense") then
+						statLabels["MaxDefense"].Text = string.format("%.0f / %.0f", stat.Value, leaderstats.MaxDefense.Value)
+					elseif statLabels[stat.Name] then
+						statLabels[stat.Name].Text = tostring(stat.Value)
+					end
+					
+					-- Update calculated damage when MaxAttack or CritMultiplier changes
+					-- Note: Class changes are handled separately with full display refresh
+					if stat.Name == "MaxAttack" or stat.Name == "CritMultiplier" then
+						updateCalculatedDamage()
+					end
+				end)
+				statConnections[stat] = conn
+			end
+		end
+		
+		-- Connect to humanoid health changes for real-time health display
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			local humanoid = player.Character.Humanoid
+			local conn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+				if statLabels["MaxHealth"] and humanoid.MaxHealth then
+					statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", humanoid.Health, humanoid.MaxHealth)
 				end
 			end)
-			statConnections[stat] = conn
+			statConnections["HumanoidHealth"] = conn
 		end
-	end
 	
 	-- Special handling for class change to refresh base stats
 	if leaderstats:FindFirstChild("Class") then

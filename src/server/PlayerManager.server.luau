@@ -263,6 +263,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local maxDefense = Instance.new("NumberValue", leaderstats)
 	maxDefense.Name = "MaxDefense"
 	maxDefense.Value = 0 -- Will be set based on class
+	
+	local currentDefense = Instance.new("NumberValue", leaderstats)
+	currentDefense.Name = "CurrentDefense"
+	currentDefense.Value = 0 -- Will track current defense (damaged defense)
 
 	local maxHealth = Instance.new("NumberValue", leaderstats)
 	maxHealth.Name = "MaxHealth"
@@ -305,6 +309,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		critRate.Value = convertDataType(data.CritRate, 0)
 		critMultiplier.Value = convertDataType(data.CritMultiplier, 0)
 		maxDefense.Value = convertDataType(data.MaxDefense, 0)
+		currentDefense.Value = convertDataType(data.CurrentDefense, data.MaxDefense or 0) -- Load CurrentDefense, default to MaxDefense if not saved
 		maxHealth.Value = convertDataType(data.MaxHealth, 0)
 		healthRegen.Value = convertDataType(data.HealthRegen, 0)
 		movementSpeed.Value = convertDataType(data.MovementSpeed, 0)
@@ -526,6 +531,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 			leaderstats.MaxDefense.Value = baseStats.D
 		end
 		
+		-- Set CurrentDefense to MaxDefense if not set
+		if leaderstats:FindFirstChild("CurrentDefense") and leaderstats.CurrentDefense.Value == 0 then
+			leaderstats.CurrentDefense.Value = baseStats.D
+		end
+		
 		if leaderstats:FindFirstChild("DefensePenetration").Value == 0 then
 			leaderstats.DefensePenetration.Value = baseStats.DP or 0
 		end
@@ -557,6 +567,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		leaderstats.MaxHealth.Value = 0
 		leaderstats.MaxAttack.Value = 0
 		leaderstats.MaxDefense.Value = 0
+		leaderstats.CurrentDefense.Value = 0
 		leaderstats.DefensePenetration.Value = 0
 		leaderstats.CritRate.Value = 0
 		leaderstats.CritMultiplier.Value = 0
@@ -584,6 +595,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 
 	-- Health regeneration system
 	local healthRegenConnections = {}
+	
+	-- Defense regeneration system
+	local defenseRegenConnections = {}
 	
 	-- Function to start health regeneration for a character
 	local function startHealthRegen(character, humanoid)
@@ -634,6 +648,55 @@ game.Players.PlayerAdded:Connect(function(plr)
 		healthRegenConnections[character] = regenThread
 	end
 	
+	-- Function to start defense regeneration for a character
+	local function startDefenseRegen(character, humanoid)
+		-- Clean up any existing thread for this character
+		if defenseRegenConnections[character] then
+			task.cancel(defenseRegenConnections[character])
+			defenseRegenConnections[character] = nil
+		end
+		
+		-- Get defense regen config
+		local defenseRegenConfig = ServerConfigs.DefenseRegen
+		if not defenseRegenConfig or not defenseRegenConfig.enabled then
+			return
+		end
+		
+		-- Run defense regeneration every tick interval
+		local regenThread = task.spawn(function()
+			while character and character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 do
+				-- Check if character and humanoid still exist before waiting
+				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+					break
+				end
+				
+				task.wait(defenseRegenConfig.tickInterval) -- Wait for tick interval
+				
+				-- Check again after wait
+				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+					break
+				end
+				
+				-- Defense only regenerates when health is full
+				if humanoid.Health >= humanoid.MaxHealth then
+					local currentDef = leaderstats.CurrentDefense.Value
+					local maxDef = leaderstats.MaxDefense.Value
+					
+					-- Only regen if defense is not at max
+					if currentDef < maxDef then
+						local newDef = math.min(currentDef + defenseRegenConfig.regenRate, maxDef)
+						leaderstats.CurrentDefense.Value = newDef
+					end
+				end
+			end
+			
+			-- Clean up when done
+			defenseRegenConnections[character] = nil
+		end)
+		
+		defenseRegenConnections[character] = regenThread
+	end
+	
 	-- Sa spawn
 	plr.CharacterAdded:Connect(function(char)
 		local humanoid = char:WaitForChild("Humanoid")
@@ -653,6 +716,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- Start health regeneration system
 		startHealthRegen(char, humanoid)
+		
+		-- Start defense regeneration system
+		startDefenseRegen(char, humanoid)
 		
 		-- Update health regen when the stat changes
 		local healthRegenStat = leaderstats:FindFirstChild("HealthRegen")
@@ -675,10 +741,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 	end)
 	
-	-- Clean up health regen when player leaves
+	-- Clean up health and defense regen when player leaves
 	plr.CharacterRemoving:Connect(function(char)
 		if healthRegenConnections[char] then
 			healthRegenConnections[char] = nil
+		end
+		if defenseRegenConnections[char] then
+			defenseRegenConnections[char] = nil
 		end
 	end)
 	
@@ -708,6 +777,7 @@ local function savePlayerData(plr)
 		CritRate = tonumber(leaderstats.CritRate.Value) or 0,
 		CritMultiplier = tonumber(leaderstats.CritMultiplier.Value) or 0,
 		MaxDefense = tonumber(leaderstats.MaxDefense.Value) or 0,
+		CurrentDefense = tonumber(leaderstats.CurrentDefense.Value) or 0,
 		MaxHealth = tonumber(leaderstats.MaxHealth.Value) or 0,
 		HealthRegen = tonumber(leaderstats.HealthRegen.Value) or 0,
 		MovementSpeed = tonumber(leaderstats.MovementSpeed.Value) or 0,
@@ -782,7 +852,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 			end
 			
 		-- Reset all stats to 0 first
-		local statsToReset = {"MaxAttack", "MaxDefense", "MaxHealth", "DefensePenetration", 
+		local statsToReset = {"MaxAttack", "MaxDefense", "CurrentDefense", "MaxHealth", "DefensePenetration", 
 			"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
 			
 			for _, statName in ipairs(statsToReset) do
@@ -800,6 +870,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.MaxHealth.Value = baseStats.HP or 0
 				leaderstats.MaxAttack.Value = baseStats.ATK or 0
 				leaderstats.MaxDefense.Value = baseStats.D or 0
+				leaderstats.CurrentDefense.Value = baseStats.D or 0
 				leaderstats.DefensePenetration.Value = baseStats.DP or 0
 				leaderstats.CritRate.Value = baseStats.CR or 5
 				leaderstats.CritMultiplier.Value = baseStats.CM or 150
@@ -811,6 +882,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.MaxHealth.Value = 1000
 				leaderstats.MaxAttack.Value = 100
 				leaderstats.MaxDefense.Value = 0
+				leaderstats.CurrentDefense.Value = 0
 				leaderstats.DefensePenetration.Value = 0
 				leaderstats.CritRate.Value = 5
 				leaderstats.CritMultiplier.Value = 150
@@ -848,7 +920,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		end
 		
 		-- Reset all stats to 0 (base stats will be applied via class.Changed event)
-		local statsToReset = {"MaxAttack", "MaxDefense", "MaxHealth", "DefensePenetration", 
+		local statsToReset = {"MaxAttack", "MaxDefense", "CurrentDefense", "MaxHealth", "DefensePenetration", 
 			"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
 		
 		for _, statName in ipairs(statsToReset) do

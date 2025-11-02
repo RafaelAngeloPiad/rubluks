@@ -40,6 +40,119 @@ end
 -- Import HitboxExclusions for mob detection
 local HitboxExclusions = require(game.ReplicatedStorage:WaitForChild("mobs"):WaitForChild("HitboxExclusions"))
 
+-- ========================================
+-- DEFENSE SYSTEM
+-- ========================================
+
+-- Function to get defense stats for a model (player or mob)
+local function getDefenseStats(model)
+	if not model then
+		return 0, 0 -- currentDefense, maxDefense
+	end
+	
+	-- Check if it's a player
+	local player = Players:GetPlayerFromCharacter(model)
+	if player and player:FindFirstChild("leaderstats") then
+		local leaderstats = player.leaderstats
+		local currentDefense = 0
+		local maxDefense = 0
+		
+		if leaderstats:FindFirstChild("CurrentDefense") then
+			currentDefense = leaderstats.CurrentDefense.Value
+		end
+		if leaderstats:FindFirstChild("MaxDefense") then
+			maxDefense = leaderstats.MaxDefense.Value
+		end
+		
+		return currentDefense, maxDefense
+	end
+	
+	-- Check if it's a mob (using attributes)
+	if model:IsA("Model") then
+		local currentDefense = model:GetAttribute("CurrentDefense") or 0
+		local maxDefense = model:GetAttribute("MaxDefense") or 0
+		return currentDefense, maxDefense
+	end
+	
+	return 0, 0
+end
+
+-- Function to set defense stats for a model
+local function setDefenseStats(model, currentDefense, maxDefense)
+	if not model then
+		return
+	end
+	
+	-- Clamp currentDefense to valid range
+	currentDefense = math.max(0, math.min(currentDefense, maxDefense))
+	
+	-- Check if it's a player
+	local player = Players:GetPlayerFromCharacter(model)
+	if player and player:FindFirstChild("leaderstats") then
+		local leaderstats = player.leaderstats
+		
+		if leaderstats:FindFirstChild("CurrentDefense") then
+			leaderstats.CurrentDefense.Value = currentDefense
+		end
+	end
+	
+	-- Check if it's a mob (using attributes)
+	if model:IsA("Model") then
+		model:SetAttribute("CurrentDefense", currentDefense)
+		if maxDefense then
+			model:SetAttribute("MaxDefense", maxDefense)
+		end
+	end
+end
+
+-- Function to calculate damage with defense system
+-- Returns: damageToHealth, damageToDefense
+local function calculateDamageWithDefense(rawDamage, attacker, target)
+	if not target or not attacker then
+		return rawDamage, 0
+	end
+	
+	-- Get target's defense
+	local currentDefense, maxDefense = getDefenseStats(target)
+	
+	-- Get attacker's defense penetration
+	local defensePenetration = 0
+	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
+	if attackerPlayer and attackerPlayer:FindFirstChild("leaderstats") then
+		local attackerStats = attackerPlayer.leaderstats
+		if attackerStats:FindFirstChild("DefensePenetration") then
+			defensePenetration = attackerStats.DefensePenetration.Value
+		end
+	end
+	
+	-- Calculate effective defense after penetration
+	-- Defense penetrates defense at 1:1 ratio
+	local effectiveDefense = math.max(0, currentDefense - defensePenetration)
+	
+	-- If target has defense, damage goes to defense first, then health
+	local damageToDefense = 0
+	local damageToHealth = 0
+	
+	if effectiveDefense > 0 then
+		-- Defense absorbs damage
+		if rawDamage <= effectiveDefense then
+			-- All damage goes to defense
+			damageToDefense = rawDamage
+			damageToHealth = 0
+		else
+			-- Defense is depleted, rest goes to health
+			damageToDefense = effectiveDefense
+			damageToHealth = rawDamage - effectiveDefense
+		end
+	else
+		-- No defense, all damage goes to health
+		damageToHealth = rawDamage
+		damageToDefense = 0
+	end
+	
+	return damageToHealth, damageToDefense
+end
+
 -- Friendly fire configuration - separate controls for players and mobs
 local PLAYER_FRIENDLY_FIRE = false -- Set to true to allow players to damage each other
 local MOB_FRIENDLY_FIRE = false -- Set to true to allow mobs to damage each other
@@ -448,7 +561,20 @@ function _G.createStaticHitbox(config)
 					-- Check if damage should be applied using new targeting system
 					if shouldApplyDamage(character, model) then
 						hitTargets[humanoid] = true
-						humanoid:TakeDamage(damage)
+						
+						-- Calculate damage with defense system
+						local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
+						
+						-- Apply damage to health
+						if damageToHealth > 0 then
+							humanoid:TakeDamage(damageToHealth)
+						end
+						
+						-- Apply damage to defense
+						if damageToDefense > 0 then
+							local currentDef, maxDef = getDefenseStats(model)
+							setDefenseStats(model, currentDef - damageToDefense, maxDef)
+						end
 						
 						-- Apply knockback to mobs
 						applyKnockback(character, model)
@@ -456,7 +582,7 @@ function _G.createStaticHitbox(config)
 						-- Create damage flash effect on the target
 						createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 						
-						-- Create damage number display
+						-- Create damage number display (show total damage)
 						createDamageNumber(model, damage)
 					end
 				end
@@ -571,7 +697,19 @@ function _G.createStaticDOTHitbox(config)
 					if humanoid then
 						-- Check if damage should be applied using new targeting system
 						if shouldApplyDamage(character, model) then
-							humanoid:TakeDamage(damage)
+							-- Calculate damage with defense system
+							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
+							
+							-- Apply damage to health
+							if damageToHealth > 0 then
+								humanoid:TakeDamage(damageToHealth)
+							end
+							
+							-- Apply damage to defense
+							if damageToDefense > 0 then
+								local currentDef, maxDef = getDefenseStats(model)
+								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							end
 							
 							-- Apply knockback to mobs
 							applyKnockback(character, model)
@@ -579,7 +717,7 @@ function _G.createStaticDOTHitbox(config)
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
-							-- Create damage number display
+							-- Create damage number display (show total damage)
 							createDamageNumber(model, damage)
 						end
 					end
@@ -722,7 +860,20 @@ function _G.createTravelingHitbox(config)
 						-- Check if damage should be applied using new targeting system
 						if shouldApplyDamage(character, model) then
 							hitTargets[humanoid] = true
-							humanoid:TakeDamage(damage)
+							
+							-- Calculate damage with defense system
+							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
+							
+							-- Apply damage to health
+							if damageToHealth > 0 then
+								humanoid:TakeDamage(damageToHealth)
+							end
+							
+							-- Apply damage to defense
+							if damageToDefense > 0 then
+								local currentDef, maxDef = getDefenseStats(model)
+								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							end
 							
 							-- Apply knockback to mobs
 							applyKnockback(character, model)
@@ -730,7 +881,7 @@ function _G.createTravelingHitbox(config)
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
-							-- Create damage number display
+							-- Create damage number display (show total damage)
 							createDamageNumber(model, damage)
 						end
 					end
@@ -877,7 +1028,20 @@ function _G.createProjectileHitbox(config)
 							-- Check if damage should be applied using new targeting system
 							if shouldApplyDamage(character, model) then
 								hitTargets[humanoid] = true
-								humanoid:TakeDamage(damage)
+								
+								-- Calculate damage with defense system
+								local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
+								
+								-- Apply damage to health
+								if damageToHealth > 0 then
+									humanoid:TakeDamage(damageToHealth)
+								end
+								
+								-- Apply damage to defense
+								if damageToDefense > 0 then
+									local currentDef, maxDef = getDefenseStats(model)
+									setDefenseStats(model, currentDef - damageToDefense, maxDef)
+								end
 								
 								-- Apply knockback to mobs
 								applyKnockback(character, model)
@@ -885,7 +1049,7 @@ function _G.createProjectileHitbox(config)
 								-- Create damage flash effect on the target
 								createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 								
-								-- Create damage number display
+								-- Create damage number display (show total damage)
 								createDamageNumber(model, damage)
 								hitSomething = true
 							end
