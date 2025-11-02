@@ -6,6 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local Debris = game:GetService("Debris")
 
 -- ========================================
 -- CONFIGURATION
@@ -91,17 +92,20 @@ end
 
 -- Function to create damage flash effect using Highlight
 local function createDamageFlash(model, duration)
-    duration = duration
+    duration = duration or ServerConfigs.Hitbox.highlighting.damageFlash.duration
+    
+    -- Validate model exists
+    if not model or not model.Parent then
+        return
+    end
     
     -- Get highlighting configuration
     local highlightConfig = ServerConfigs.Hitbox.highlighting.damageFlash
     
-    -- Find or create highlight for the model
-    local highlight = model:FindFirstChildOfClass("Highlight")
-    if not highlight then
-        highlight = Instance.new("Highlight")
-        highlight.Parent = model
-    end
+    -- Create a NEW highlight for EACH flash (don't reuse - each flash gets its own)
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = model
+    highlight.Name = "DamageFlash_" .. tostring(tick() * 1000) -- More unique name
     
     -- Apply configuration values
     highlight.FillColor = highlightConfig.fillColor
@@ -109,10 +113,27 @@ local function createDamageFlash(model, duration)
     highlight.OutlineColor = highlightConfig.outlineColor
     highlight.OutlineTransparency = highlightConfig.outlineTransparency
     
-    -- Destroy highlight after duration
-    task.delay(duration, function()
-        if highlight and highlight.Parent then
-            highlight:Destroy()
+    -- Use Debris service for automatic cleanup - MOST RELIABLE method
+    -- This will destroy the highlight after duration regardless of anything else
+    Debris:AddItem(highlight, duration)
+    
+    -- Also monitor model removal as backup
+    local removalConnection
+    removalConnection = model.AncestryChanged:Connect(function()
+        if not model.Parent then
+            if highlight and highlight.Parent then
+                highlight:Destroy()
+            end
+            if removalConnection then
+                removalConnection:Disconnect()
+            end
+        end
+    end)
+    
+    -- Disconnect after duration to avoid memory leaks
+    task.delay(duration + 0.1, function()
+        if removalConnection then
+            removalConnection:Disconnect()
         end
     end)
 end
@@ -122,6 +143,13 @@ local function createDamageNumber(model, damage)
 	-- Check if damage numbers are enabled
 	local damageNumbersConfig = ServerConfigs.Hitbox.damageNumbers
 	if not damageNumbersConfig or not damageNumbersConfig.enabled then
+		warn("[HITBOX] createDamageNumber: Damage numbers disabled")
+		return
+	end
+	
+	-- Validate model exists
+	if not model or not model.Parent then
+		warn("[HITBOX] createDamageNumber: Model invalid or no parent")
 		return
 	end
 	
@@ -130,18 +158,20 @@ local function createDamageNumber(model, damage)
 	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
 	
 	if not head and not humanoidRootPart then
+		warn("[HITBOX] createDamageNumber: No head or HumanoidRootPart found")
 		return
 	end
 	
 	-- Use head if available, otherwise use HumanoidRootPart
 	local attachPart = head or humanoidRootPart
 	if not attachPart then
+		warn("[HITBOX] createDamageNumber: No attach part available")
 		return
 	end
 	
-	-- Create BillboardGui
+	-- Create BillboardGui with unique name to avoid conflicts
 	local billboardGui = Instance.new("BillboardGui")
-	billboardGui.Name = "DamageNumber"
+	billboardGui.Name = "DamageNumber_" .. tostring(tick() * 1000) -- Unique name for each
 	billboardGui.Size = UDim2.new(0, 200, 0, 100)
 	billboardGui.StudsOffset = Vector3.new(
 		(math.random() - 0.5) * 2 * damageNumbersConfig.randomOffsetX, -- Random horizontal offset
@@ -152,6 +182,9 @@ local function createDamageNumber(model, damage)
 	billboardGui.LightInfluence = 0
 	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	billboardGui.Parent = attachPart
+	
+	-- Use Debris service as ultimate cleanup fallback - will destroy after duration
+	Debris:AddItem(billboardGui, damageNumbersConfig.duration + 0.2)
 	
 	-- Create TextLabel
 	local textLabel = Instance.new("TextLabel")
@@ -170,17 +203,25 @@ local function createDamageNumber(model, damage)
 	-- Animate the damage number (rise and fade)
 	local startTime = tick()
 	local startY = billboardGui.StudsOffset.Y
-	local endY = startY + damageNumbersConfig.riseHeight
 	local connection
 	
+	-- Simple heartbeat animation - Debris will handle cleanup
 	connection = RunService.Heartbeat:Connect(function()
+		-- Safety check - if billboardGui or model was destroyed, disconnect
+		if not billboardGui or not billboardGui.Parent or not model or not model.Parent or not attachPart or not attachPart.Parent then
+			if connection then
+				connection:Disconnect()
+			end
+			return
+		end
+		
 		local currentTime = tick()
 		local elapsed = currentTime - startTime
 		
-		if elapsed >= damageNumbersConfig.duration or not billboardGui.Parent then
-			connection:Disconnect()
-			if billboardGui and billboardGui.Parent then
-				billboardGui:Destroy()
+		-- Stop animation after duration - Debris will clean it up
+		if elapsed >= damageNumbersConfig.duration then
+			if connection then
+				connection:Disconnect()
 			end
 			return
 		end
@@ -188,6 +229,8 @@ local function createDamageNumber(model, damage)
 		-- Calculate rise position
 		local progress = elapsed / damageNumbersConfig.duration
 		local currentY = startY + (damageNumbersConfig.riseHeight * progress)
+		
+		-- Update billboardGui position
 		billboardGui.StudsOffset = Vector3.new(
 			billboardGui.StudsOffset.X,
 			currentY,
@@ -201,18 +244,19 @@ local function createDamageNumber(model, damage)
 			fadeProgress = math.min(fadeProgress, 1)
 		end
 		
-		-- Apply fade to text
-		textLabel.TextTransparency = fadeProgress
-		textLabel.TextStrokeTransparency = math.min(damageNumbersConfig.strokeTransparency + fadeProgress, 1)
+		-- Apply fade to text - use pcall to be safe
+		pcall(function()
+			if textLabel and textLabel.Parent then
+				textLabel.TextTransparency = fadeProgress
+				textLabel.TextStrokeTransparency = math.min(damageNumbersConfig.strokeTransparency + fadeProgress, 1)
+			end
+		end)
 	end)
 	
-	-- Cleanup after duration
-	task.delay(damageNumbersConfig.duration + 0.1, function()
+	-- Disconnect heartbeat after duration to avoid memory leaks
+	task.delay(damageNumbersConfig.duration + 0.2, function()
 		if connection then
 			connection:Disconnect()
-		end
-		if billboardGui and billboardGui.Parent then
-			billboardGui:Destroy()
 		end
 	end)
 end
