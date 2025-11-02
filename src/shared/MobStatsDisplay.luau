@@ -47,6 +47,7 @@ local function createMobStatsDisplay(model)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 1
 	billboardGui.MaxDistance = 50 -- Hide beyond this distance
+	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	billboardGui.Enabled = true
 	billboardGui.Parent = head
 	
@@ -140,6 +141,7 @@ local function createMobStatsDisplay(model)
 	local critRateLabel = createStatRow("Crit: --%", 3)
 	local critMultLabel = createStatRow("Crit Mult: --x", 4)
 	local dmgLabel = createStatRow("Damage: --", 5)
+	local defensePenLabel = createStatRow("DP: --", 6)
 	
 	-- Update function
 	local lastUpdate = 0
@@ -196,6 +198,10 @@ local function createMobStatsDisplay(model)
 		-- Get damage
 		local damage = model:GetAttribute("Damage") or 0
 		dmgLabel.Text = string.format("Damage: %.0f", damage)
+		
+		-- Get defense penetration
+		local defensePen = model:GetAttribute("DefensePenetration") or 0
+		defensePenLabel.Text = string.format("DP: %.0f", defensePen)
 	end
 	
 	-- Initial update

@@ -315,7 +315,7 @@ local function createDamageNumber(model, damage)
 	)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 0
-	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	billboardGui.Parent = attachPart
 	
 	-- Use Debris service as ultimate cleanup fallback - will destroy after duration
