@@ -278,11 +278,6 @@ local function updateStatsDisplay()
 		layoutOrder = layoutOrder + 1
 	end
 	
-	if leaderstats:FindFirstChild("SkillDamage") then
-		statLabels["SkillDamage"] = createStatRow("Skill DMG", leaderstats.SkillDamage.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
-		layoutOrder = layoutOrder + 1
-	end
-	
 	if leaderstats:FindFirstChild("HealthRegen") then
 		statLabels["HealthRegen"] = createStatRow("Health Regen", leaderstats.HealthRegen.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
 		layoutOrder = layoutOrder + 1
@@ -348,9 +343,6 @@ local function updateStatsDisplay()
 			layoutOrder = layoutOrder + 1
 			
 			statLabels["BaseCM"] = createStatRow("Base CM", classStats.CM or 150, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseSD"] = createStatRow("Base SD", classStats.SD or 0, Color3.fromRGB(100, 255, 100), layoutOrder)
 			layoutOrder = layoutOrder + 1
 			
 			statLabels["BaseHR"] = createStatRow("Base HR", classStats.HR or 0, Color3.fromRGB(100, 255, 100), layoutOrder)

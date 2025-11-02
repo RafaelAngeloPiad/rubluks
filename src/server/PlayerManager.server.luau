@@ -41,7 +41,6 @@ local BaseStats = {
 			DP = 1.05,     -- 5% growth - Defense Penetration
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			SD = 1.05,     -- 5% growth - Skill Damage
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
 			Aspd = 1.01    -- 1% growth - Attack Speed
@@ -53,7 +52,6 @@ local BaseStats = {
 			DP = 1.05,     -- 5% growth - Defense Penetration
 			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			SD = 1.05,     -- 5% growth - Skill Damage
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
 			Aspd = 1.01    -- 1% growth - Attack Speed
@@ -65,7 +63,6 @@ local BaseStats = {
 			DP = 1.05,     -- 5% growth - Defense Penetration
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			SD = 1.05,     -- 5% growth - Skill Damage
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
 			Aspd = 1.01    -- 1% growth - Attack Speed
@@ -77,7 +74,6 @@ local BaseStats = {
 			DP = 1.05,     -- 5% growth - Defense Penetration
 			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			SD = 1.05,     -- 5% growth - Skill Damage
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
 			Aspd = 1.01    -- 1% growth - Attack Speed
@@ -89,7 +85,6 @@ local BaseStats = {
 			DP = 1.05,     -- 5% growth - Defense Penetration
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			SD = 1.05,     -- 5% growth - Skill Damage
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
 			Aspd = 1.01    -- 1% growth - Attack Speed
@@ -102,7 +97,6 @@ local BaseStats = {
 		DP = 0,           -- Defense Penetration: Directly affects Defense
 		CR = 5,           -- Crit Rate: Rate of Critical Chance up to 100%
 		CM = 150,         -- Crit Multiplier: Attack Multiplier (percentage)
-		SD = 0,           -- Skill Damage: Damage from Skill Based Attack
 		
 		-- Defense Stats
 		HP = 1200,        -- Health Points: Life pool (dies if ≤ 0)
@@ -118,7 +112,6 @@ local BaseStats = {
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		SD = 0,
 		
 		-- Defense Stats
 		HP = 1600,
@@ -134,7 +127,6 @@ local BaseStats = {
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		SD = 0,
 		
 		-- Defense Stats
 		HP = 1400,
@@ -150,7 +142,6 @@ local BaseStats = {
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		SD = 0,
 		
 		-- Defense Stats
 		HP = 1400,
@@ -166,7 +157,6 @@ local BaseStats = {
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		SD = 0,
 		
 		-- Defense Stats
 		HP = 2000,
@@ -268,9 +258,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 	critMultiplier.Name = "CritMultiplier"
 	critMultiplier.Value = 0
 	
-	local skillDamage = Instance.new("NumberValue", leaderstats)
-	skillDamage.Name = "SkillDamage"
-	skillDamage.Value = 0
 
 	-- Defense Stats
 	local maxDefense = Instance.new("NumberValue", leaderstats)
@@ -317,7 +304,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 		defensePenetration.Value = convertDataType(data.DefensePenetration, 0)
 		critRate.Value = convertDataType(data.CritRate, 0)
 		critMultiplier.Value = convertDataType(data.CritMultiplier, 0)
-		skillDamage.Value = convertDataType(data.SkillDamage, 0)
 		maxDefense.Value = convertDataType(data.MaxDefense, 0)
 		maxHealth.Value = convertDataType(data.MaxHealth, 0)
 		healthRegen.Value = convertDataType(data.HealthRegen, 0)
@@ -437,10 +423,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 					-- math.round might not exist, so use: math.floor(x + 0.5)
 					leaderstats.CritMultiplier.Value = math.floor(newCritMultiplier + 0.5)
 				end
-				if leaderstats:FindFirstChild("SkillDamage") and multipliers.SD then
-					local oldSD = leaderstats.SkillDamage.Value
-					leaderstats.SkillDamage.Value = math.floor(oldSD * multipliers.SD)
-				end
 				
 				-- Apply defense/utility stat multipliers
 				if leaderstats:FindFirstChild("HealthRegen") and multipliers.HR then
@@ -482,7 +464,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- If no base stats found for class, use Slavkorian defaults
 		if not baseStats then
-			baseStats = { HP = 1000, ATK = 100, D = 0, DP = 0, CR = 5, CM = 150, SD = 0, HR = 0, Mspd = 18, Aspd = 1 }
+			baseStats = { HP = 1000, ATK = 100, D = 0, DP = 0, CR = 5, CM = 150, HR = 0, Mspd = 18, Aspd = 1 }
 		end
 		
 		-- Set all base stats if not already set (Value == 0 means uninitialized)
@@ -510,10 +492,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 			leaderstats.CritMultiplier.Value = baseStats.CM or 150
 		end
 		
-		if leaderstats:FindFirstChild("SkillDamage").Value == 0 then
-			leaderstats.SkillDamage.Value = baseStats.SD or 0
-		end
-		
 		if leaderstats:FindFirstChild("HealthRegen").Value == 0 then
 			leaderstats.HealthRegen.Value = baseStats.HR or 0
 		end
@@ -536,7 +514,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 		leaderstats.DefensePenetration.Value = 0
 		leaderstats.CritRate.Value = 0
 		leaderstats.CritMultiplier.Value = 0
-		leaderstats.SkillDamage.Value = 0
 		leaderstats.HealthRegen.Value = 0
 		leaderstats.MovementSpeed.Value = 0
 		leaderstats.AttackSpeed.Value = 0
@@ -611,7 +588,6 @@ local function savePlayerData(plr)
 		DefensePenetration = tonumber(leaderstats.DefensePenetration.Value) or 0,
 		CritRate = tonumber(leaderstats.CritRate.Value) or 0,
 		CritMultiplier = tonumber(leaderstats.CritMultiplier.Value) or 0,
-		SkillDamage = tonumber(leaderstats.SkillDamage.Value) or 0,
 		MaxDefense = tonumber(leaderstats.MaxDefense.Value) or 0,
 		MaxHealth = tonumber(leaderstats.MaxHealth.Value) or 0,
 		HealthRegen = tonumber(leaderstats.HealthRegen.Value) or 0,
@@ -686,9 +662,9 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.MaximumXP.Value = calculateMaximumXP(1)
 			end
 			
-			-- Reset all stats to 0 first
-			local statsToReset = {"MaxAttack", "MaxDefense", "MaxHealth", "DefensePenetration", 
-				"CritRate", "CritMultiplier", "SkillDamage", "HealthRegen", "MovementSpeed", "AttackSpeed"}
+		-- Reset all stats to 0 first
+		local statsToReset = {"MaxAttack", "MaxDefense", "MaxHealth", "DefensePenetration", 
+			"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
 			
 			for _, statName in ipairs(statsToReset) do
 				if leaderstats:FindFirstChild(statName) then
@@ -708,7 +684,6 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.DefensePenetration.Value = baseStats.DP or 0
 				leaderstats.CritRate.Value = baseStats.CR or 5
 				leaderstats.CritMultiplier.Value = baseStats.CM or 150
-				leaderstats.SkillDamage.Value = baseStats.SD or 0
 				leaderstats.HealthRegen.Value = baseStats.HR or 0
 				leaderstats.MovementSpeed.Value = baseStats.Mspd or 18
 				leaderstats.AttackSpeed.Value = baseStats.Aspd or 1
@@ -720,7 +695,6 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.DefensePenetration.Value = 0
 				leaderstats.CritRate.Value = 5
 				leaderstats.CritMultiplier.Value = 150
-				leaderstats.SkillDamage.Value = 0
 				leaderstats.HealthRegen.Value = 0
 				leaderstats.MovementSpeed.Value = 18
 				leaderstats.AttackSpeed.Value = 1
@@ -756,7 +730,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		
 		-- Reset all stats to 0 (base stats will be applied via class.Changed event)
 		local statsToReset = {"MaxAttack", "MaxDefense", "MaxHealth", "DefensePenetration", 
-			"CritRate", "CritMultiplier", "SkillDamage", "HealthRegen", "MovementSpeed", "AttackSpeed"}
+			"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
 		
 		for _, statName in ipairs(statsToReset) do
 			if leaderstats:FindFirstChild(statName) then
