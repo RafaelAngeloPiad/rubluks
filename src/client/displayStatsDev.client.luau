@@ -13,12 +13,14 @@ local leaderstats = player:WaitForChild("leaderstats")
 -- Wait for config (optional, for base stats display)
 local ServerConfigs = ReplicatedStorage:WaitForChild("SlavkosConfigs", 10)
 local BaseStats = nil
+local ConfigModule = nil
 if ServerConfigs then
 	local success, config = pcall(function()
 		return require(ServerConfigs)
 	end)
 	if success then
 		BaseStats = config.BaseStats
+		ConfigModule = config
 	end
 end
 
@@ -356,8 +358,130 @@ local function updateStatsDisplay()
 		end
 	end
 	
+	-- Add divider
+	local divider2 = Instance.new("Frame")
+	divider2.Size = UDim2.new(1, -10, 0, 2)
+	divider2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	divider2.BorderSizePixel = 0
+	divider2.LayoutOrder = layoutOrder
+	divider2.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+	
+	-- Calculated Damage header
+	local damageHeader = Instance.new("TextLabel")
+	damageHeader.Name = "DamageHeader"
+	damageHeader.Size = UDim2.new(1, -10, 0, 25)
+	damageHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	damageHeader.BorderSizePixel = 0
+	damageHeader.Text = "CALCULATED DAMAGE (Current MaxAttack)"
+	damageHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+	damageHeader.TextSize = 11
+	damageHeader.Font = Enum.Font.GothamBold
+	damageHeader.LayoutOrder = layoutOrder
+	damageHeader.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+	
+	-- Display calculated damage values
+	if ConfigModule and ConfigModule.Hitboxes and ConfigModule.Hitboxes.UnifiedAttacks and leaderstats:FindFirstChild("Class") and leaderstats:FindFirstChild("MaxAttack") then
+		local className = leaderstats.Class.Value
+		local maxAttack = leaderstats.MaxAttack.Value
+		local classConfig = ConfigModule.Hitboxes.UnifiedAttacks[className]
+		
+		if classConfig and maxAttack > 0 then
+			-- Normal attack damage
+			local normalMultiplier = classConfig.damage or 0
+			local normalDamage = math.floor(maxAttack * normalMultiplier)
+			statLabels["DamageNormal"] = createStatRow("Normal Attack", normalDamage, Color3.fromRGB(255, 200, 100), layoutOrder)
+			layoutOrder = layoutOrder + 1
+			
+			-- Skill 1 damage
+			if classConfig.skill1Damage then
+				local skill1Multiplier = classConfig.skill1Damage
+				local skill1Damage = math.floor(maxAttack * skill1Multiplier)
+				statLabels["DamageSkill1"] = createStatRow("Skill 1", skill1Damage, Color3.fromRGB(200, 150, 255), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			end
+			
+			-- Skill 2 damage
+			if classConfig.skill2Damage then
+				local skill2Multiplier = classConfig.skill2Damage
+				local skill2Damage = math.floor(maxAttack * skill2Multiplier)
+				statLabels["DamageSkill2"] = createStatRow("Skill 2", skill2Damage, Color3.fromRGB(200, 150, 255), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			end
+			
+			-- Ult damage
+			if classConfig.ultDamage then
+				local ultMultiplier = classConfig.ultDamage
+				local ultDamage = math.floor(maxAttack * ultMultiplier)
+				statLabels["DamageUlt"] = createStatRow("Ultimate", ultDamage, Color3.fromRGB(255, 100, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			end
+		else
+			-- No class selected or no MaxAttack
+			local noDamageLabel = Instance.new("TextLabel")
+			noDamageLabel.Name = "NoDamageLabel"
+			noDamageLabel.Size = UDim2.new(1, -10, 0, 20)
+			noDamageLabel.BackgroundTransparency = 1
+			noDamageLabel.Text = "Select a class to see damage"
+			noDamageLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+			noDamageLabel.TextSize = 11
+			noDamageLabel.Font = Enum.Font.Gotham
+			noDamageLabel.LayoutOrder = layoutOrder
+			noDamageLabel.Parent = scrollFrame
+			layoutOrder = layoutOrder + 1
+		end
+	end
+	
 	-- Update canvas size
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, (layoutOrder - 1) * 27)
+end
+
+-- Function to update calculated damage values without rebuilding entire display
+local function updateCalculatedDamage()
+	if not ConfigModule or not ConfigModule.Hitboxes or not ConfigModule.Hitboxes.UnifiedAttacks then
+		return
+	end
+	
+	if not leaderstats:FindFirstChild("Class") or not leaderstats:FindFirstChild("MaxAttack") then
+		return
+	end
+	
+	local className = leaderstats.Class.Value
+	local maxAttack = leaderstats.MaxAttack.Value
+	local classConfig = ConfigModule.Hitboxes.UnifiedAttacks[className]
+	
+	if not classConfig or maxAttack <= 0 then
+		return
+	end
+	
+	-- Update Normal Attack damage
+	if statLabels["DamageNormal"] then
+		local normalMultiplier = classConfig.damage or 0
+		local normalDamage = math.floor(maxAttack * normalMultiplier)
+		statLabels["DamageNormal"].Text = tostring(normalDamage)
+	end
+	
+	-- Update Skill 1 damage
+	if statLabels["DamageSkill1"] and classConfig.skill1Damage then
+		local skill1Multiplier = classConfig.skill1Damage
+		local skill1Damage = math.floor(maxAttack * skill1Multiplier)
+		statLabels["DamageSkill1"].Text = tostring(skill1Damage)
+	end
+	
+	-- Update Skill 2 damage
+	if statLabels["DamageSkill2"] and classConfig.skill2Damage then
+		local skill2Multiplier = classConfig.skill2Damage
+		local skill2Damage = math.floor(maxAttack * skill2Multiplier)
+		statLabels["DamageSkill2"].Text = tostring(skill2Damage)
+	end
+	
+	-- Update Ult damage
+	if statLabels["DamageUlt"] and classConfig.ultDamage then
+		local ultMultiplier = classConfig.ultDamage
+		local ultDamage = math.floor(maxAttack * ultMultiplier)
+		statLabels["DamageUlt"].Text = tostring(ultDamage)
+	end
 end
 
 -- UI Hidden state
@@ -456,19 +580,18 @@ local function setupStatConnections()
 				elseif statLabels[stat.Name] then
 					statLabels[stat.Name].Text = tostring(stat.Value)
 				end
+				
+				-- Update calculated damage when MaxAttack or Class changes
+				if stat.Name == "MaxAttack" or stat.Name == "Class" then
+					updateCalculatedDamage()
+				end
 			end)
 			statConnections[stat] = conn
 		end
 	end
 	
-	-- Special handling for class change to refresh base stats
-	if leaderstats:FindFirstChild("Class") then
-		local conn = leaderstats.Class:GetPropertyChangedSignal("Value"):Connect(function()
-			task.wait(0.1) -- Small delay to let server update complete
-			updateStatsDisplay()
-		end)
-		statConnections[leaderstats.Class] = conn
-	end
+	-- Special handling for class change to refresh base stats (don't duplicate with stat connection)
+	-- Note: Class changes trigger updateStatsDisplay() which rebuilds everything including damage
 end
 
 -- Reconnect when player respawns

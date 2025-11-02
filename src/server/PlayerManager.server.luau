@@ -398,8 +398,21 @@ game.Players.PlayerAdded:Connect(function(plr)
 			else
 				-- Apply level-up multipliers for all stats
 				leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * multipliers.HP)
-				maxAttack.Value = math.floor(maxAttack.Value * multipliers.ATK)
-				maxDefense.Value = math.floor(maxDefense.Value * multipliers.D)
+				
+				-- For MaxAttack, use round to ensure it always increases (especially important for classes with small multipliers like Gladiator)
+				-- Gladiator: 30 * 1.03 = 30.9, floor = 30 (no increase!), round = 31 (increases!)
+				if leaderstats:FindFirstChild("MaxAttack") and multipliers.ATK then
+					local oldATK = leaderstats.MaxAttack.Value
+					local newATK = oldATK * multipliers.ATK
+					-- Use round to ensure it always increases (math.floor(x + 0.5))
+					local roundedATK = math.floor(newATK + 0.5)
+					-- Ensure it increases by at least 1 (prevents stats from staying the same due to rounding)
+					leaderstats.MaxAttack.Value = math.max(roundedATK, oldATK + 1)
+				end
+				
+				if leaderstats:FindFirstChild("MaxDefense") and multipliers.D then
+					leaderstats.MaxDefense.Value = math.floor(leaderstats.MaxDefense.Value * multipliers.D)
+				end
 				
 				-- Apply offense stat multipliers
 				if leaderstats:FindFirstChild("DefensePenetration") and multipliers.DP then
