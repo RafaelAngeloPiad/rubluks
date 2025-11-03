@@ -383,6 +383,41 @@ game.Players.PlayerAdded:Connect(function(plr)
 	-- Track previous level to detect actual level ups (not initial load)
 	local previousLevel = level.Value
 
+	-- Update MaxHealth in real-time when it changes (works even before character spawns)
+	-- This ensures resets and other changes update the humanoid immediately
+	maxHealth.Changed:Connect(function(newMaxHealth)
+		-- Update humanoid MaxHealth in real-time if character exists
+		if plr.Character then
+			local humanoid = plr.Character:FindFirstChild("Humanoid")
+			if humanoid then
+				-- Store old MaxHealth and old health before changing it
+				local oldMaxHealth = humanoid.MaxHealth
+				local oldHealth = humanoid.Health
+				
+				-- Update MaxHealth first
+				humanoid.MaxHealth = newMaxHealth
+				
+				-- Set health based on new MaxHealth
+				if newMaxHealth > 0 then
+					-- If MaxHealth is increasing or resetting (old was 0 or new >= old), set to full health
+					-- If MaxHealth is decreasing, preserve health percentage (but ensure minimum 50%)
+					if newMaxHealth >= oldMaxHealth or oldMaxHealth == 0 then
+						-- Set to full health when resetting or increasing MaxHealth
+						humanoid.Health = newMaxHealth
+					else
+						-- Preserve health percentage when MaxHealth decreases (but ensure it's not too low)
+						local healthPercentage = oldMaxHealth > 0 and (oldHealth / oldMaxHealth) or 1
+						local newHealth = math.max(newMaxHealth * healthPercentage, newMaxHealth * 0.5)
+						humanoid.Health = newHealth
+					end
+				else
+					-- If MaxHealth is being set to 0 temporarily (during reset), don't change health
+					-- Health will be set when MaxHealth is set to the final value
+				end
+			end
+		end
+	end)
+
 	-- kapag level up, dagdagan at i-store
 	-- Connect this OUTSIDE CharacterAdded so it works even before character spawns
 	level.Changed:Connect(function()
@@ -739,6 +774,40 @@ game.Players.PlayerAdded:Connect(function(plr)
 				-- Restart health regen system with new value
 				if char.Parent and humanoid.Parent then
 					startHealthRegen(char, humanoid)
+				end
+			end)
+		end
+		
+		-- Update MaxHealth in real-time when it changes (so resets work immediately)
+		local maxHealthStat = leaderstats:FindFirstChild("MaxHealth")
+		if maxHealthStat then
+			maxHealthStat.Changed:Connect(function(newMaxHealth)
+				-- Update humanoid MaxHealth in real-time
+				if char.Parent and humanoid.Parent then
+					-- Store old MaxHealth and old health before changing it
+					local oldMaxHealth = humanoid.MaxHealth
+					local oldHealth = humanoid.Health
+					
+					-- Update MaxHealth first
+					humanoid.MaxHealth = newMaxHealth
+					
+					-- Set health based on new MaxHealth
+					if newMaxHealth > 0 then
+						-- If MaxHealth is increasing or resetting (old was 0 or new >= old), set to full health
+						-- If MaxHealth is decreasing, preserve health percentage (but ensure minimum 50%)
+						if newMaxHealth >= oldMaxHealth or oldMaxHealth == 0 then
+							-- Set to full health when resetting or increasing MaxHealth
+							humanoid.Health = newMaxHealth
+						else
+							-- Preserve health percentage when MaxHealth decreases (but ensure it's not too low)
+							local healthPercentage = oldMaxHealth > 0 and (oldHealth / oldMaxHealth) or 1
+							local newHealth = math.max(newMaxHealth * healthPercentage, newMaxHealth * 0.5)
+							humanoid.Health = newHealth
+						end
+					else
+						-- If MaxHealth is being set to 0 temporarily (during reset), don't change health
+						-- Health will be set when MaxHealth is set to the final value
+					end
 				end
 			end)
 		end
