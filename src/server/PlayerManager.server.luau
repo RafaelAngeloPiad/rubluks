@@ -8,8 +8,16 @@ if not success or not MainDataStore then
 	--warn("MainDataStore module not found or failed to load: " .. tostring(err))
 end
 
--- Import centralized configuration
-local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+-- Import centralized configuration (with error handling)
+local ServerConfigs
+local configSuccess, configErr = pcall(function()
+	ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+end)
+if not configSuccess or not ServerConfigs then
+	warn("ServerConfigs (SlavkosConfigs) failed to load: " .. tostring(configErr))
+	-- Create empty table as fallback
+	ServerConfigs = {}
+end
 
 -- Create RemoteEvent for dev stat changes (client->server communication)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -168,7 +176,9 @@ local BaseStats = {
 }
 
 -- Export BaseStats to ServerConfigs so other modules can access it
-ServerConfigs.BaseStats = BaseStats
+if ServerConfigs then
+	ServerConfigs.BaseStats = BaseStats
+end
 
 -- Helper function to calculate MaximumXP based on level
 local function calculateMaximumXP(level)
@@ -201,26 +211,8 @@ end
 
 
 game.Players.PlayerAdded:Connect(function(plr)
-	
-	local teleportData = plr:GetJoinData().TeleportData
-	--print("PlayerAdded: TeleportData =", teleportData)
-	local data
-
-	if teleportData then
-		-- Use TeleportData if present
-		data = teleportData
-		--print("Loaded data from TeleportData:", data)
-	else
-		-- Otherwise, load from MainDataStore
-		if MainDataStore then
-			data = MainDataStore.LoadPlayerData(plr.UserId)
-			--print("Loaded data from MainDataStore:", data)
-		else
-			--warn("MainDataStore not available, cannot load player data.")
-		end
-	end
-
-
+	-- Create leaderstats and all children IMMEDIATELY so other scripts can access them
+	-- This must happen FIRST before any data loading or other operations
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = plr
@@ -287,6 +279,25 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local slavkoins = Instance.new("NumberValue", leaderstats)
 	slavkoins.Name = "Slavkoins"
 	slavkoins.Value = 0
+	
+	-- Load data AFTER creating leaderstats (so scripts can access it immediately)
+	local teleportData = plr:GetJoinData().TeleportData
+	--print("PlayerAdded: TeleportData =", teleportData)
+	local data
+
+	if teleportData then
+		-- Use TeleportData if present
+		data = teleportData
+		--print("Loaded data from TeleportData:", data)
+	else
+		-- Otherwise, load from MainDataStore
+		if MainDataStore then
+			data = MainDataStore.LoadPlayerData(plr.UserId)
+			--print("Loaded data from MainDataStore:", data)
+		else
+			--warn("MainDataStore not available, cannot load player data.")
+		end
+	end
 	
 	-- loads progress data
 	if data then
@@ -584,11 +595,16 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 	end)
 	
-	-- Apply base stats on initial load (if no saved data or if class was selected)
-	if not data or (data and class.Value ~= "Slavkorian") then
+	-- Apply base stats on initial load
+	-- If no saved data, always apply base stats
+	-- If there is saved data but values are 0 (uninitialized), also apply base stats
+	if not data then
+		-- No saved data - apply base stats for Slavkorian
 		applyBaseStats()
-		-- Mark stats as initialized if class is already set
-		if class.Value and class.Value ~= "Slavkorian" then
+	else
+		-- Has saved data - but apply base stats if class is not Slavkorian (to ensure stats are set)
+		if class.Value ~= "Slavkorian" then
+			applyBaseStats()
 			statsInitialized = true
 		end
 	end
@@ -847,7 +863,9 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		end
 	elseif action == "setLevel" then
 		if leaderstats:FindFirstChild("Level") then
-			leaderstats.Level.Value = tonumber(value) or 1
+			local newLevel = tonumber(value) or 1
+			-- LEVEL CAP: Clamp level to max level
+			leaderstats.Level.Value = math.min(math.max(newLevel, 1), BaseStats.XP.maxLevel)
 			-- Recalculate MaximumXP for the new level
 			if leaderstats:FindFirstChild("MaximumXP") then
 				leaderstats.MaximumXP.Value = calculateMaximumXP(leaderstats.Level.Value)

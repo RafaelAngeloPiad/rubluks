@@ -9,13 +9,18 @@ local MobStatsConfig = {}
 -- Golem Stats
 -- ========================================
 
+-- IF you reach a certain level - all xpgains of the cap will only be small
+
 MobStatsConfig.Golem_Sand = {
 	HP = 500,
 	Defense = 3,
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	XPGain = 20,
+	LvlCap = 7,
+	CappedXPGain = 0.5
 }
 
 MobStatsConfig.Golem_Ice = {
