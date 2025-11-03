@@ -1,6 +1,6 @@
 -- ========================================
--- SIMPLE TRAVELING HOMING MOB
--- Very simple mob: shoots homing missiles with traveling hitbox
+-- SIMPLE TRAVELING HOMING DOT MOB
+-- Very simple mob: shoots homing DOT projectiles with traveling DOT hitbox
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,15 +10,16 @@ local RunService = game:GetService("RunService")
 local MOB_STATS = {
 	HP = 500,
 	Defense = 20,
-	Damage = 25,
-	AttackCooldown = 2,      -- Seconds between shots
-	AttackRange = 50,        -- Distance to start shooting
+	Damage = 10,           -- Damage per tick
+	AttackCooldown = 3,    -- Seconds between shots
+	AttackRange = 50,      -- Distance to start shooting
 	WalkSpeed = 14,
-	MissileSpeed = 30,       -- Speed of the missile part
-	MissileLifetime = 5      -- Seconds before missile despawns
+	MissileSpeed = 30,     -- Speed of the missile part
+	MissileLifetime = 5,   -- Seconds before missile despawns
+	DOTTickTime = 0.5      -- Time between damage ticks
 }
 
-local MOB_VARIANT_NAME = "SimpleTravelingHomingMob"
+local MOB_VARIANT_NAME = "SimpleTravelingHomingDOTMob"
 
 -- Get model and parts
 local model = script.Parent
@@ -44,7 +45,7 @@ if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 end
 
 -- Wait for hitbox functions to be available
-while not _G.createTravelingHitbox do
+while not _G.createTravelingDOTHitbox do
 	task.wait(0.1)
 end
 
@@ -79,18 +80,18 @@ task.spawn(function()
 			local dist = (nearest.Position - root.Position).Magnitude
 			
 			if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-				-- Shoot homing missile
+				-- Shoot homing DOT missile
 				lastAttack = tick()
 				
 				-- Create missile part
 				local missile = Instance.new("Part")
-				missile.Name = "HomingMissile"
+				missile.Name = "HomingDOTMissile"
 				missile.Size = Vector3.new(1, 1, 1)
 				missile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
 				missile.Anchored = false
 				missile.CanCollide = false
 				missile.Material = Enum.Material.Neon
-				missile.Color = Color3.new(1, 0.5, 0)
+				missile.Color = Color3.new(1, 0, 1) -- Purple/Magenta color
 				missile.Transparency = 0.3
 				missile.Parent = workspace
 				
@@ -100,16 +101,17 @@ task.spawn(function()
 				bodyVelocity.Velocity = root.CFrame.LookVector * MOB_STATS.MissileSpeed
 				bodyVelocity.Parent = missile
 				
-				-- Create traveling hitbox attached to missile
-				_G.createTravelingHitbox({
+				-- Create traveling DOT hitbox attached to missile
+				_G.createTravelingDOTHitbox({
 					attachTo = missile,
 					offset = CFrame.new(0, 0, 0),
-					size = Vector3.new(6, 6, 6),
+					size = Vector3.new(15, 15, 15), -- Large area for DOT effect
 					damage = MOB_STATS.Damage,
+					damageTickTime = MOB_STATS.DOTTickTime,
 					character = model,
-					name = "HomingMissile",
+					name = "HomingDOTMissile",
 					showVisual = true,
-					visualColor = Color3.new(1, 0.5, 0),
+					visualColor = Color3.new(1, 0, 1), -- Purple/Magenta color
 					delay = 0
 				})
 				
@@ -155,4 +157,3 @@ task.spawn(function()
 		end
 	end
 end)
-

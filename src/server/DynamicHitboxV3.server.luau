@@ -928,6 +928,168 @@ function _G.createTravelingHitbox(config)
 end
 
 --[[
+	TRAVELING DOT HITBOX - Follows a moving part, damage over time
+	
+	SPECIALTY: Moves with attachTo part, damages enemies REPEATEDLY while in range
+	USE CASE: Homing poison clouds, traveling fireballs, moving damage zones
+	DURATION: Lasts until attachTo part is destroyed
+	
+	EXAMPLE:
+	_G.createTravelingDOTHitbox({
+		attachTo = cloudPart,                 -- BasePart to follow (REQUIRED)
+		offset = CFrame.new(0, 0, 0),        -- CFrame offset from attachTo (optional)
+		size = Vector3.new(15, 15, 15),      -- Hitbox dimensions (REQUIRED)
+		damage = 10,                         -- Damage PER TICK (REQUIRED)
+		damageTickTime = 0.5,                -- Seconds between damage ticks (REQUIRED)
+		character = character,               -- Player's character to exclude (REQUIRED)
+		name = "PoisonCloud",                -- Hitbox name for debugging (REQUIRED)
+		showVisual = true,                   -- Show debug visual (optional, default: true)
+		visualColor = Color3.new(0, 1, 0),  -- Debug visual color (REQUIRED)
+		delay = 0,                           -- Delay before activation (optional, default: 0)
+	})
+]]
+function _G.createTravelingDOTHitbox(config)
+	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime
+	local delay = getScaledDelay(config.delay, config.actionType)
+	
+	task.delay(delay, function()
+		local attachTo = config.attachTo
+		local offset = config.offset
+		if not offset then offset = CFrame.new(0, 0, 0) end
+		
+		local size = config.size
+		local damage = config.damage
+		local character = config.character
+		local name = config.name
+		local showVisual = config.showVisual
+		if showVisual == nil then showVisual = true end
+		
+		local visualColor = config.visualColor
+		local damageTickTime = config.damageTickTime
+		-- damageTickTime must be provided in config
+		damageTickTime = getScaledDelay(damageTickTime, config.actionType)
+		
+		if not attachTo then
+			return
+		end
+		
+		-- Create visual
+		local visual = nil
+		if showVisual then
+			visual = Instance.new("Part")
+			visual.Size = size
+			visual.Anchored = true
+			visual.CanCollide = false
+			visual.CanQuery = false
+			visual.CanTouch = false
+			visual.Material = Enum.Material.Neon
+			visual.Transparency = HITBOX_CONFIG.transparency
+			visual.Color = visualColor
+			visual.Name = name .. "TravelingDOTHitboxVisual"
+			visual.Parent = workspace
+		end
+		
+		-- Track last tick time
+		local lastTickTime = tick()
+		local active = true
+		
+		-- Function to apply damage at current position
+		local function damageInArea()
+			if not active then return end
+			
+			-- If attachTo exists, check if it's still valid
+			if attachTo and (not attachTo.Parent) then
+				active = false
+				if visual then
+					visual:Destroy()
+				end
+				return
+			end
+			
+			-- Get current hitbox position with offset
+			local hitboxCFrame = attachTo.CFrame * offset
+			local regionParts = workspace:GetPartBoundsInBox(hitboxCFrame, size)
+			
+			for _, part in regionParts do
+				local model = part:FindFirstAncestorOfClass("Model")
+				if model and model ~= character then
+					local humanoid = model:FindFirstChild("Humanoid")
+					
+					if humanoid then
+						-- Check if damage should be applied using new targeting system
+						if shouldApplyDamage(character, model) then
+							-- Calculate damage with defense system
+							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
+							
+							-- Apply damage to health
+							if damageToHealth > 0 then
+								humanoid:TakeDamage(damageToHealth)
+							end
+							
+							-- Apply damage to defense
+							if damageToDefense > 0 then
+								local currentDef, maxDef = getDefenseStats(model)
+								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							end
+							
+							-- Apply knockback to mobs
+							applyKnockback(character, model)
+							
+							-- Create damage flash effect on the target
+							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
+							
+							-- Create damage number display (show total damage)
+							createDamageNumber(model, damage)
+						end
+					end
+				end
+			end
+		end
+		
+		-- Apply damage every tick
+		local connection
+		connection = RunService.Heartbeat:Connect(function()
+			-- Stop if attachTo part destroyed
+			if attachTo and not attachTo.Parent then
+				active = false
+				connection:Disconnect()
+				if visual then
+					visual:Destroy()
+				end
+				return
+			end
+			
+			-- Update visual position to follow attachTo part with offset
+			if visual and attachTo and attachTo.Parent then
+				visual.CFrame = attachTo.CFrame * offset
+			end
+			
+			local currentTime = tick()
+			local timeSinceLastTick = currentTime - lastTickTime
+			
+			-- Check if it's time for next damage tick
+			if timeSinceLastTick >= damageTickTime then
+				-- Before damaging, check once more if part still exists
+				if attachTo and not attachTo.Parent then
+					active = false
+					connection:Disconnect()
+					if visual then
+						visual:Destroy()
+					end
+					return
+				end
+				
+				damageInArea()
+				lastTickTime = currentTime
+			end
+		end)
+		
+		-- Initial damage tick
+		damageInArea()
+	end)
+end
+
+--[[
 	PROJECTILE HITBOX - Separate visual and hitbox parts with different speeds (Archer arrows)
 	
 	SPECIALTY: Visual part moves at one speed, hitbox detection at another speed
@@ -1183,6 +1345,7 @@ local DynamicHitboxV3 = {}
 DynamicHitboxV3.createStaticHitbox = _G.createStaticHitbox
 DynamicHitboxV3.createStaticDOTHitbox = _G.createStaticDOTHitbox
 DynamicHitboxV3.createTravelingHitbox = _G.createTravelingHitbox
+DynamicHitboxV3.createTravelingDOTHitbox = _G.createTravelingDOTHitbox
 DynamicHitboxV3.createProjectileHitbox = _G.createProjectileHitbox
 
 -- Export friendly fire control functions

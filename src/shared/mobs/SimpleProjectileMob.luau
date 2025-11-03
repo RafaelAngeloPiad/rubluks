@@ -61,7 +61,7 @@ task.spawn(function()
 		
 		-- Find nearest player
 		local nearest = nil
-		local nearestDist = 100
+		local nearestDist = 20
 		
 		for _, player in pairs(game.Players:GetPlayers()) do
 			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
