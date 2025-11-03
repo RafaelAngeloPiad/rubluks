@@ -16,7 +16,7 @@ local MOB_STATS = {
 	AttackCooldown = 3,
 	AttackRange = 12,
 	WalkSpeed = 14,
-	DOTTickTime = 0.5   -- Time between ticks
+	DOTTickTime = 1   -- Time between ticks
 }
 
 -- Radius and return configuration (same as GolemSolo)
@@ -117,7 +117,7 @@ task.spawn(function()
 						dotPart.Anchored = true
 						dotPart.CanCollide = false
 						dotPart.Parent = workspace
-						dotPart.Transparency = 0.5
+						dotPart.Transparency = 1
 						
 						-- Create DOT hitbox
 						_G.createStaticDOTHitbox({

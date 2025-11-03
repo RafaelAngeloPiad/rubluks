@@ -669,7 +669,17 @@ function _G.createStaticDOTHitbox(config)
 		local visualColor = config.visualColor
 		local damageTickTime = config.damageTickTime
 		-- damageTickTime must be provided in config
-		damageTickTime = getScaledDelay(damageTickTime, config.actionType)
+		if not damageTickTime or damageTickTime <= 0 then
+			warn("[createStaticDOTHitbox] ERROR: damageTickTime is invalid! Value:", damageTickTime, "Defaulting to 0.5")
+			damageTickTime = 0.5
+		else
+			local originalTickTime = damageTickTime
+			damageTickTime = getScaledDelay(damageTickTime, config.actionType)
+			if not damageTickTime or damageTickTime <= 0 then
+				warn("[createStaticDOTHitbox] ERROR: damageTickTime became invalid after scaling! Original:", originalTickTime, "Scaled:", damageTickTime, "Defaulting to 0.5")
+				damageTickTime = 0.5
+			end
+		end
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -695,7 +705,7 @@ function _G.createStaticDOTHitbox(config)
 			visual.Parent = workspace
 		end
 		
-		-- Track last tick time
+		-- Track last tick time - initialize BEFORE connection (matches old working version)
 		local lastTickTime = tick()
 		local active = true
 		
@@ -725,14 +735,20 @@ function _G.createStaticDOTHitbox(config)
 			local currentCFrame = getCurrentHitboxCFrame()
 			local regionParts = workspace:GetPartBoundsInBox(currentCFrame, size)
 			
+			-- Track which humanoids have been hit this tick to prevent multiple damage per tick
+			local hitHumanoids = {}
+			
 			for _, part in regionParts do
 				local model = part:FindFirstAncestorOfClass("Model")
 				if model and model ~= character then
 					local humanoid = model:FindFirstChild("Humanoid")
 					
-					if humanoid then
+					if humanoid and not hitHumanoids[humanoid] then
 						-- Check if damage should be applied using new targeting system
 						if shouldApplyDamage(character, model) then
+							-- Mark this humanoid as hit for this tick
+							hitHumanoids[humanoid] = true
+							
 							-- Calculate damage with defense system
 							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 							
@@ -782,7 +798,7 @@ function _G.createStaticDOTHitbox(config)
 			local currentTime = tick()
 			local timeSinceLastTick = currentTime - lastTickTime
 			
-			-- Check if it's time for next damage tick
+			-- Check if it's time for next damage tick (matches old working version exactly)
 			if timeSinceLastTick >= damageTickTime then
 				-- Before damaging, check once more if part still exists
 				if attachTo and not attachTo.Parent then
@@ -799,7 +815,7 @@ function _G.createStaticDOTHitbox(config)
 			end
 		end)
 		
-		-- Initial damage tick
+		-- Initial damage tick - called AFTER connection is created (matches old working version)
 		damageInArea()
 	end)
 end
@@ -1010,14 +1026,20 @@ function _G.createTravelingDOTHitbox(config)
 			local hitboxCFrame = attachTo.CFrame * offset
 			local regionParts = workspace:GetPartBoundsInBox(hitboxCFrame, size)
 			
+			-- Track which humanoids have been hit this tick to prevent multiple damage per tick
+			local hitHumanoids = {}
+			
 			for _, part in regionParts do
 				local model = part:FindFirstAncestorOfClass("Model")
 				if model and model ~= character then
 					local humanoid = model:FindFirstChild("Humanoid")
 					
-					if humanoid then
+					if humanoid and not hitHumanoids[humanoid] then
 						-- Check if damage should be applied using new targeting system
 						if shouldApplyDamage(character, model) then
+							-- Mark this humanoid as hit for this tick
+							hitHumanoids[humanoid] = true
+							
 							-- Calculate damage with defense system
 							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 							

@@ -273,7 +273,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 				offset = CFrame.new(0, 0, 0), -- Center of trail
 				size = Vector3.new(10, 10, 10), -- Smaller size for individual trails
 				damage = trailDamage, -- Scaled damage per tick
-				damageTickTime = ServerConfigs.ArcherSkills.PowerShot.damageTickTime or 0.3,
+				damageTickTime = ServerConfigs.ArcherSkills.PowerShot.damageTickTime or 1,
 				character = character,
 				name = "PowerTrail" .. i,
 				showVisual = true,
