@@ -9,6 +9,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MOB_STATS = {
 	HP = 500,
 	Defense = 20,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
 	Damage = 25,
 	AttackCooldown = 2,      -- Seconds between shots
 	AttackRange = 50,        -- Distance to start shooting
@@ -16,6 +19,13 @@ local MOB_STATS = {
 	ProjectileSpeed = 80,    -- Speed of the hitbox
 	ProjectileVisualSpeed = 100 -- Speed of the visual (can be different for effect)
 }
+
+-- Radius and return configuration (same as GolemSolo)
+local FOLLOW_RANGE = 100
+local MAX_RADIUS = 40
+local RETURN_RADIUS = 60
+local RETURN_WAIT = 2
+local UPDATE_RATE = 0.5
 
 local MOB_VARIANT_NAME = "SimpleProjectileMob"
 
@@ -33,6 +43,9 @@ humanoid.WalkSpeed = MOB_STATS.WalkSpeed
 
 model:SetAttribute("MaxDefense", MOB_STATS.Defense)
 model:SetAttribute("CurrentDefense", MOB_STATS.Defense)
+model:SetAttribute("DefensePenetration", MOB_STATS.DefensePenetration)
+model:SetAttribute("CritRate", MOB_STATS.CritRate)
+model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
 model:SetAttribute("Damage", MOB_STATS.Damage)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
 
@@ -50,8 +63,11 @@ end
 -- Main loop
 task.spawn(function()
 	local lastAttack = 0
+	local spawnPosition = model:GetPivot().Position
+	local timeSinceTarget = 0
+	local returningHome = false
 	
-	while task.wait(0.5) do
+	while task.wait(UPDATE_RATE) do
 		-- Safety check: ensure model, humanoid, and root still exist
 		if not model or not model.Parent or not humanoid or not humanoid.Parent or not root or not root.Parent then
 			break -- Exit loop if model was destroyed
@@ -59,79 +75,108 @@ task.spawn(function()
 		
 		if humanoid.Health <= 0 then break end
 		
-		-- Find nearest player
-		local nearest = nil
-		local nearestDist = 20
+		local position = root.Position
+		local distFromSpawn = (position - spawnPosition).Magnitude
 		
-		for _, player in pairs(game.Players:GetPlayers()) do
-			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-				local dist = (player.Character.HumanoidRootPart.Position - root.Position).Magnitude
-				if dist < nearestDist then
-					nearestDist = dist
-					nearest = player.Character.HumanoidRootPart
-				end
+		-- Return logic
+		if returningHome then
+			if distFromSpawn <= MAX_RADIUS * 0.8 then
+				returningHome = false
+			else
+				humanoid:MoveTo(spawnPosition)
 			end
-		end
-		
-		-- Attack or follow
-		if nearest then
-			local dist = (nearest.Position - root.Position).Magnitude
+		else
+			-- Find nearest player within FOLLOW_RANGE
+			local nearest = nil
+			local nearestDist = FOLLOW_RANGE
 			
-			if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-				-- Shoot projectile
-				lastAttack = tick()
-				
-				-- Calculate direction to target
-				local direction = (nearest.Position - root.Position).Unit
-				
-				-- Create projectile visual (simple model)
-				local projectileModel = Instance.new("Model")
-				projectileModel.Name = "MobProjectile"
-				
-				local projectile = Instance.new("Part")
-				projectile.Name = "Projectile"
-				projectile.Size = Vector3.new(1, 1, 1)
-				projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
-				projectile.Anchored = false
-				projectile.CanCollide = false
-				projectile.Material = Enum.Material.Neon
-				projectile.Color = Color3.new(1, 0, 1) -- Magenta color
-				projectile.Transparency = 0.3
-				projectile.Parent = projectileModel
-				
-				projectileModel.Parent = workspace
-				
-				-- Make all parts non-physical (preventPhysicsPush = true)
-				for _, part in ipairs(projectileModel:GetDescendants()) do
-					if part:IsA("BasePart") then
-						part.CanCollide = false
-						part.CanQuery = false
-						part.CanTouch = false
+			for _, player in pairs(game.Players:GetPlayers()) do
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local dist = (player.Character.HumanoidRootPart.Position - position).Magnitude
+					if dist < nearestDist then
+						nearestDist = dist
+						nearest = player.Character.HumanoidRootPart
 					end
 				end
+			end
+			
+			-- Attack or follow
+			if nearest then
+				local dist = (nearest.Position - position).Magnitude
+				local targetDistFromSpawn = (nearest.Position - spawnPosition).Magnitude
 				
-				-- Use projectile hitbox system (like archer arrows)
-				_G.createProjectileHitbox({
-					visualPart = projectile,
-					direction = direction,
-					size = Vector3.new(6, 6, 6), -- Hitbox size
-					damage = MOB_STATS.Damage,
-					character = model,
-					name = "MobProjectile",
-					visualSpeed = MOB_STATS.ProjectileVisualSpeed, -- Visual speed
-					hitboxSpeed = MOB_STATS.ProjectileSpeed, -- Hitbox speed
-					delay = 0,
-					anchorDelay = 0.03, -- Anchor delay after hit
-					showVisual = true,
-					visualColor = Color3.new(1, 0, 1), -- Magenta color
-					preventPhysicsPush = true -- Prevent physics interactions
-				})
-				
-				-- Auto cleanup
-				game:GetService("Debris"):AddItem(projectileModel, 3)
+				if targetDistFromSpawn <= RETURN_RADIUS then
+					-- Target is within return radius, attack or follow
+					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
+						-- Shoot projectile
+						lastAttack = tick()
+						
+						-- Calculate direction to target
+						local direction = (nearest.Position - root.Position).Unit
+						
+						-- Create projectile visual (simple model)
+						local projectileModel = Instance.new("Model")
+						projectileModel.Name = "MobProjectile"
+						
+						local projectile = Instance.new("Part")
+						projectile.Name = "Projectile"
+						projectile.Size = Vector3.new(1, 1, 1)
+						projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
+						projectile.Anchored = false
+						projectile.CanCollide = false
+						projectile.Material = Enum.Material.Neon
+						projectile.Color = Color3.new(1, 0, 1) -- Magenta color
+						projectile.Transparency = 0.3
+						projectile.Parent = projectileModel
+						
+						projectileModel.Parent = workspace
+						
+						-- Make all parts non-physical (preventPhysicsPush = true)
+						for _, part in ipairs(projectileModel:GetDescendants()) do
+							if part:IsA("BasePart") then
+								part.CanCollide = false
+								part.CanQuery = false
+								part.CanTouch = false
+							end
+						end
+						
+						-- Use projectile hitbox system (like archer arrows)
+						_G.createProjectileHitbox({
+							visualPart = projectile,
+							direction = direction,
+							size = Vector3.new(6, 6, 6), -- Hitbox size
+							damage = MOB_STATS.Damage,
+							character = model,
+							name = "MobProjectile",
+							visualSpeed = MOB_STATS.ProjectileVisualSpeed, -- Visual speed
+							hitboxSpeed = MOB_STATS.ProjectileSpeed, -- Hitbox speed
+							delay = 0,
+							anchorDelay = 0.03, -- Anchor delay after hit
+							showVisual = true,
+							visualColor = Color3.new(1, 0, 1), -- Magenta color
+							preventPhysicsPush = true -- Prevent physics interactions
+						})
+						
+						-- Auto cleanup
+						game:GetService("Debris"):AddItem(projectileModel, 3)
+					else
+						-- Follow
+						humanoid:MoveTo(nearest.Position)
+					end
+					timeSinceTarget = 0
+				else
+					-- Target too far from spawn, return home
+					returningHome = true
+					humanoid:MoveTo(spawnPosition)
+				end
 			else
-				-- Follow
-				humanoid:MoveTo(nearest.Position)
+				-- No target found
+				timeSinceTarget += UPDATE_RATE
+				if timeSinceTarget >= RETURN_WAIT then
+					returningHome = true
+					humanoid:MoveTo(spawnPosition)
+					timeSinceTarget = 0
+				end
 			end
 		end
 	end

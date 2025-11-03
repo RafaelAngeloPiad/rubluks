@@ -10,6 +10,9 @@ local RunService = game:GetService("RunService")
 local MOB_STATS = {
 	HP = 500,
 	Defense = 20,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
 	Damage = 10,           -- Damage per tick
 	AttackCooldown = 3,    -- Seconds between shots
 	AttackRange = 50,      -- Distance to start shooting
@@ -18,6 +21,13 @@ local MOB_STATS = {
 	MissileLifetime = 5,   -- Seconds before missile despawns
 	DOTTickTime = 0.5      -- Time between damage ticks
 }
+
+-- Radius and return configuration (same as GolemSolo)
+local FOLLOW_RANGE = 100
+local MAX_RADIUS = 40
+local RETURN_RADIUS = 60
+local RETURN_WAIT = 2
+local UPDATE_RATE = 0.5
 
 local MOB_VARIANT_NAME = "SimpleTravelingHomingDOTMob"
 
@@ -35,6 +45,9 @@ humanoid.WalkSpeed = MOB_STATS.WalkSpeed
 
 model:SetAttribute("MaxDefense", MOB_STATS.Defense)
 model:SetAttribute("CurrentDefense", MOB_STATS.Defense)
+model:SetAttribute("DefensePenetration", MOB_STATS.DefensePenetration)
+model:SetAttribute("CritRate", MOB_STATS.CritRate)
+model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
 model:SetAttribute("Damage", MOB_STATS.Damage)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
 
@@ -52,8 +65,11 @@ end
 -- Main loop
 task.spawn(function()
 	local lastAttack = 0
+	local spawnPosition = model:GetPivot().Position
+	local timeSinceTarget = 0
+	local returningHome = false
 	
-	while task.wait(0.5) do
+	while task.wait(UPDATE_RATE) do
 		-- Safety check: ensure model, humanoid, and root still exist
 		if not model or not model.Parent or not humanoid or not humanoid.Parent or not root or not root.Parent then
 			break -- Exit loop if model was destroyed
@@ -61,98 +77,127 @@ task.spawn(function()
 		
 		if humanoid.Health <= 0 then break end
 		
-		-- Find nearest player
-		local nearest = nil
-		local nearestDist = 20
+		local position = root.Position
+		local distFromSpawn = (position - spawnPosition).Magnitude
 		
-		for _, player in pairs(game.Players:GetPlayers()) do
-			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-				local dist = (player.Character.HumanoidRootPart.Position - root.Position).Magnitude
-				if dist < nearestDist then
-					nearestDist = dist
-					nearest = player.Character.HumanoidRootPart
+		-- Return logic
+		if returningHome then
+			if distFromSpawn <= MAX_RADIUS * 0.8 then
+				returningHome = false
+			else
+				humanoid:MoveTo(spawnPosition)
+			end
+		else
+			-- Find nearest player within FOLLOW_RANGE
+			local nearest = nil
+			local nearestDist = FOLLOW_RANGE
+			
+			for _, player in pairs(game.Players:GetPlayers()) do
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local dist = (player.Character.HumanoidRootPart.Position - position).Magnitude
+					if dist < nearestDist then
+						nearestDist = dist
+						nearest = player.Character.HumanoidRootPart
+					end
 				end
 			end
-		end
-		
-		-- Attack or follow
-		if nearest then
-			local dist = (nearest.Position - root.Position).Magnitude
 			
-			if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-				-- Shoot homing DOT missile
-				lastAttack = tick()
+			-- Attack or follow
+			if nearest then
+				local dist = (nearest.Position - position).Magnitude
+				local targetDistFromSpawn = (nearest.Position - spawnPosition).Magnitude
 				
-				-- Create missile part
-				local missile = Instance.new("Part")
-				missile.Name = "HomingDOTMissile"
-				missile.Size = Vector3.new(1, 1, 1)
-				missile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
-				missile.Anchored = false
-				missile.CanCollide = false
-				missile.Material = Enum.Material.Neon
-				missile.Color = Color3.new(1, 0, 1) -- Purple/Magenta color
-				missile.Transparency = 0.3
-				missile.Parent = workspace
-				
-				-- Add body velocity to missile
-				local bodyVelocity = Instance.new("BodyVelocity")
-				bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-				bodyVelocity.Velocity = root.CFrame.LookVector * MOB_STATS.MissileSpeed
-				bodyVelocity.Parent = missile
-				
-				-- Create traveling DOT hitbox attached to missile
-				_G.createTravelingDOTHitbox({
-					attachTo = missile,
-					offset = CFrame.new(0, 0, 0),
-					size = Vector3.new(15, 15, 15), -- Large area for DOT effect
-					damage = MOB_STATS.Damage,
-					damageTickTime = MOB_STATS.DOTTickTime,
-					character = model,
-					name = "HomingDOTMissile",
-					showVisual = true,
-					visualColor = Color3.new(1, 0, 1), -- Purple/Magenta color
-					delay = 0
-				})
-				
-				-- Homing behavior - update direction towards target
-				local homingConnection
-				local startTime = tick()
-				homingConnection = RunService.Heartbeat:Connect(function()
-					if not missile or not missile.Parent then
-						homingConnection:Disconnect()
-						return
-					end
-					
-					-- Check lifetime
-					if tick() - startTime >= MOB_STATS.MissileLifetime then
-						homingConnection:Disconnect()
-						missile:Destroy()
-						return
-					end
-					
-					-- Find current target (may have moved)
-					local currentTarget = nil
-					local nearestDist = 100
-					for _, player in pairs(game.Players:GetPlayers()) do
-						if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-							local dist = (player.Character.HumanoidRootPart.Position - missile.Position).Magnitude
-							if dist < nearestDist then
-								nearestDist = dist
-								currentTarget = player.Character.HumanoidRootPart
+				if targetDistFromSpawn <= RETURN_RADIUS then
+					-- Target is within return radius, attack or follow
+					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
+						-- Shoot homing DOT missile
+						lastAttack = tick()
+						
+						-- Create missile part
+						local missile = Instance.new("Part")
+						missile.Name = "HomingDOTMissile"
+						missile.Size = Vector3.new(1, 1, 1)
+						missile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
+						missile.Anchored = false
+						missile.CanCollide = false
+						missile.Material = Enum.Material.Neon
+						missile.Color = Color3.new(1, 0, 1) -- Purple/Magenta color
+						missile.Transparency = 0.3
+						missile.Parent = workspace
+						
+						-- Add body velocity to missile
+						local bodyVelocity = Instance.new("BodyVelocity")
+						bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+						bodyVelocity.Velocity = root.CFrame.LookVector * MOB_STATS.MissileSpeed
+						bodyVelocity.Parent = missile
+						
+						-- Create traveling DOT hitbox attached to missile
+						_G.createTravelingDOTHitbox({
+							attachTo = missile,
+							offset = CFrame.new(0, 0, 0),
+							size = Vector3.new(15, 15, 15), -- Large area for DOT effect
+							damage = MOB_STATS.Damage,
+							damageTickTime = MOB_STATS.DOTTickTime,
+							character = model,
+							name = "HomingDOTMissile",
+							showVisual = true,
+							visualColor = Color3.new(1, 0, 1), -- Purple/Magenta color
+							delay = 0
+						})
+						
+						-- Homing behavior - update direction towards target
+						local homingConnection
+						local startTime = tick()
+						homingConnection = RunService.Heartbeat:Connect(function()
+							if not missile or not missile.Parent then
+								homingConnection:Disconnect()
+								return
 							end
-						end
+							
+							-- Check lifetime
+							if tick() - startTime >= MOB_STATS.MissileLifetime then
+								homingConnection:Disconnect()
+								missile:Destroy()
+								return
+							end
+							
+							-- Find current target (may have moved)
+							local currentTarget = nil
+							local nearestDist = 100
+							for _, player in pairs(game.Players:GetPlayers()) do
+								if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+									local dist = (player.Character.HumanoidRootPart.Position - missile.Position).Magnitude
+									if dist < nearestDist then
+										nearestDist = dist
+										currentTarget = player.Character.HumanoidRootPart
+									end
+								end
+							end
+							
+							if currentTarget then
+								-- Update direction towards target
+								local direction = (currentTarget.Position - missile.Position).Unit
+								bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
+							end
+						end)
+					else
+						-- Follow
+						humanoid:MoveTo(nearest.Position)
 					end
-					
-					if currentTarget then
-						-- Update direction towards target
-						local direction = (currentTarget.Position - missile.Position).Unit
-						bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
-					end
-				end)
+					timeSinceTarget = 0
+				else
+					-- Target too far from spawn, return home
+					returningHome = true
+					humanoid:MoveTo(spawnPosition)
+				end
 			else
-				-- Follow
-				humanoid:MoveTo(nearest.Position)
+				-- No target found
+				timeSinceTarget += UPDATE_RATE
+				if timeSinceTarget >= RETURN_WAIT then
+					returningHome = true
+					humanoid:MoveTo(spawnPosition)
+					timeSinceTarget = 0
+				end
 			end
 		end
 	end

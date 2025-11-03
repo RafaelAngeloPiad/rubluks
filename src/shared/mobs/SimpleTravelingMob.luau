@@ -10,6 +10,9 @@ local RunService = game:GetService("RunService")
 local MOB_STATS = {
 	HP = 500,
 	Defense = 20,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
 	Damage = 25,
 	AttackCooldown = 2,      -- Seconds between shots
 	AttackRange = 50,        -- Distance to start shooting
@@ -17,6 +20,13 @@ local MOB_STATS = {
 	MissileSpeed = 30,       -- Speed of the missile part
 	MissileLifetime = 5      -- Seconds before missile despawns
 }
+
+-- Radius and return configuration (same as GolemSolo)
+local FOLLOW_RANGE = 100
+local MAX_RADIUS = 40
+local RETURN_RADIUS = 60
+local RETURN_WAIT = 2
+local UPDATE_RATE = 0.5
 
 local MOB_VARIANT_NAME = "SimpleTravelingMob"
 
@@ -34,6 +44,9 @@ humanoid.WalkSpeed = MOB_STATS.WalkSpeed
 
 model:SetAttribute("MaxDefense", MOB_STATS.Defense)
 model:SetAttribute("CurrentDefense", MOB_STATS.Defense)
+model:SetAttribute("DefensePenetration", MOB_STATS.DefensePenetration)
+model:SetAttribute("CritRate", MOB_STATS.CritRate)
+model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
 model:SetAttribute("Damage", MOB_STATS.Damage)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
 
@@ -51,8 +64,11 @@ end
 -- Main loop
 task.spawn(function()
 	local lastAttack = 0
+	local spawnPosition = model:GetPivot().Position
+	local timeSinceTarget = 0
+	local returningHome = false
 	
-	while task.wait(0.5) do
+	while task.wait(UPDATE_RATE) do
 		-- Safety check: ensure model, humanoid, and root still exist
 		if not model or not model.Parent or not humanoid or not humanoid.Parent or not root or not root.Parent then
 			break -- Exit loop if model was destroyed
@@ -60,71 +76,100 @@ task.spawn(function()
 		
 		if humanoid.Health <= 0 then break end
 		
-		-- Find nearest player
-		local nearest = nil
-		local nearestDist = 20
+		local position = root.Position
+		local distFromSpawn = (position - spawnPosition).Magnitude
 		
-		for _, player in pairs(game.Players:GetPlayers()) do
-			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-				local dist = (player.Character.HumanoidRootPart.Position - root.Position).Magnitude
-				if dist < nearestDist then
-					nearestDist = dist
-					nearest = player.Character.HumanoidRootPart
+		-- Return logic
+		if returningHome then
+			if distFromSpawn <= MAX_RADIUS * 0.8 then
+				returningHome = false
+			else
+				humanoid:MoveTo(spawnPosition)
+			end
+		else
+			-- Find nearest player within FOLLOW_RANGE
+			local nearest = nil
+			local nearestDist = FOLLOW_RANGE
+			
+			for _, player in pairs(game.Players:GetPlayers()) do
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local dist = (player.Character.HumanoidRootPart.Position - position).Magnitude
+					if dist < nearestDist then
+						nearestDist = dist
+						nearest = player.Character.HumanoidRootPart
+					end
 				end
 			end
-		end
-		
-		-- Attack or follow
-		if nearest then
-			local dist = (nearest.Position - root.Position).Magnitude
 			
-			if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-				-- Shoot straight projectile
-				lastAttack = tick()
+			-- Attack or follow
+			if nearest then
+				local dist = (nearest.Position - position).Magnitude
+				local targetDistFromSpawn = (nearest.Position - spawnPosition).Magnitude
 				
-				-- Calculate direction to target
-				local direction = (nearest.Position - root.Position).Unit
-				
-				-- Create projectile part
-				local projectile = Instance.new("Part")
-				projectile.Name = "StraightProjectile"
-				projectile.Size = Vector3.new(1, 1, 1)
-				projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
-				projectile.Anchored = false
-				projectile.CanCollide = false
-				projectile.Material = Enum.Material.Neon
-				projectile.Color = Color3.new(0, 1, 1) -- Cyan color
-				projectile.Transparency = 0.3
-				projectile.Parent = workspace
-				
-				-- Add body velocity to projectile (straight fire!)
-				local bodyVelocity = Instance.new("BodyVelocity")
-				bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-				bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
-				bodyVelocity.Parent = projectile
-				
-				-- Create traveling hitbox attached to projectile
-				_G.createTravelingHitbox({
-					attachTo = projectile,
-					offset = CFrame.new(0, 0, 0),
-					size = Vector3.new(6, 6, 6),
-					damage = MOB_STATS.Damage,
-					character = model,
-					name = "StraightProjectile",
-					showVisual = true,
-					visualColor = Color3.new(0, 1, 1), -- Cyan color
-					delay = 0
-				})
-				
-				-- Auto-cleanup projectile after lifetime
-				task.delay(MOB_STATS.MissileLifetime, function()
-					if projectile and projectile.Parent then
-						projectile:Destroy()
+				if targetDistFromSpawn <= RETURN_RADIUS then
+					-- Target is within return radius, attack or follow
+					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
+						-- Shoot straight projectile
+						lastAttack = tick()
+						
+						-- Calculate direction to target
+						local direction = (nearest.Position - root.Position).Unit
+						
+						-- Create projectile part
+						local projectile = Instance.new("Part")
+						projectile.Name = "StraightProjectile"
+						projectile.Size = Vector3.new(1, 1, 1)
+						projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
+						projectile.Anchored = false
+						projectile.CanCollide = false
+						projectile.Material = Enum.Material.Neon
+						projectile.Color = Color3.new(0, 1, 1) -- Cyan color
+						projectile.Transparency = 0.3
+						projectile.Parent = workspace
+						
+						-- Add body velocity to projectile (straight fire!)
+						local bodyVelocity = Instance.new("BodyVelocity")
+						bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+						bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
+						bodyVelocity.Parent = projectile
+						
+						-- Create traveling hitbox attached to projectile
+						_G.createTravelingHitbox({
+							attachTo = projectile,
+							offset = CFrame.new(0, 0, 0),
+							size = Vector3.new(6, 6, 6),
+							damage = MOB_STATS.Damage,
+							character = model,
+							name = "StraightProjectile",
+							showVisual = true,
+							visualColor = Color3.new(0, 1, 1), -- Cyan color
+							delay = 0
+						})
+						
+						-- Auto-cleanup projectile after lifetime
+						task.delay(MOB_STATS.MissileLifetime, function()
+							if projectile and projectile.Parent then
+								projectile:Destroy()
+							end
+						end)
+					else
+						-- Follow
+						humanoid:MoveTo(nearest.Position)
 					end
-				end)
+					timeSinceTarget = 0
+				else
+					-- Target too far from spawn, return home
+					returningHome = true
+					humanoid:MoveTo(spawnPosition)
+				end
 			else
-				-- Follow
-				humanoid:MoveTo(nearest.Position)
+				-- No target found
+				timeSinceTarget += UPDATE_RATE
+				if timeSinceTarget >= RETURN_WAIT then
+					returningHome = true
+					humanoid:MoveTo(spawnPosition)
+					timeSinceTarget = 0
+				end
 			end
 		end
 	end

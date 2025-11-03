@@ -10,7 +10,7 @@ local ServerConfigs = {}
 -- ========================================
 
 ServerConfigs.Hitbox = {
-	transparency = 1, -- Global transparency for all hitbox visuals
+	transparency = 0.9, -- Global transparency for all hitbox visuals
 	
 		-- Highlighting Configuration
 		highlighting = {
@@ -320,7 +320,7 @@ ServerConfigs.Hitboxes = {
 		Knight = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 0.171,               -- 17.1% of MaxAttack (base: 70 ATK = 12 damage)
+			damage = 1,               -- 17.1% of MaxAttack (base: 70 ATK = 12 damage)
 			skill1Damage = 0.429,        -- 42.9% of MaxAttack (base: 70 ATK = 30 damage) - SwordDance
 			skill2Damage = 0.357,        -- 35.7% of MaxAttack (base: 70 ATK = 25 damage) - CycloneSlash
 			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
