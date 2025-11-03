@@ -1,22 +1,24 @@
 -- ========================================
--- SIMPLE DOT MOB
--- Very simple mob: follows player, creates DOT field
+-- SIMPLE TRAVELING MOB
+-- Very simple mob: shoots straight projectiles with traveling hitbox
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 -- Configuration
 local MOB_STATS = {
 	HP = 500,
 	Defense = 20,
-	Damage = 10,        -- Damage per tick
-	AttackCooldown = 3,
-	AttackRange = 12,
+	Damage = 25,
+	AttackCooldown = 2,      -- Seconds between shots
+	AttackRange = 50,        -- Distance to start shooting
 	WalkSpeed = 14,
-	DOTTickTime = 0.5   -- Time between ticks
+	MissileSpeed = 30,       -- Speed of the missile part
+	MissileLifetime = 5      -- Seconds before missile despawns
 }
 
-local MOB_VARIANT_NAME = "SimpleDOTMob"
+local MOB_VARIANT_NAME = "SimpleTravelingMob"
 
 -- Get model and parts
 local model = script.Parent
@@ -42,7 +44,7 @@ if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 end
 
 -- Wait for hitbox functions to be available
-while not _G.createStaticDOTHitbox do
+while not _G.createTravelingHitbox do
 	task.wait(0.1)
 end
 
@@ -77,36 +79,47 @@ task.spawn(function()
 			local dist = (nearest.Position - root.Position).Magnitude
 			
 			if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-				-- Create DOT field at target position
+				-- Shoot straight projectile
 				lastAttack = tick()
 				
-				local dotPart = Instance.new("Part")
-				dotPart.Name = "DOTField"
-				dotPart.Size = Vector3.new(15, 15, 15)
-				dotPart.CFrame = CFrame.new(nearest.Position.X, nearest.Position.Y - 2, nearest.Position.Z)
-				dotPart.Anchored = true
-				dotPart.CanCollide = false
-				dotPart.Parent = workspace
-                dotPart.Transparency = 0.5
+				-- Calculate direction to target
+				local direction = (nearest.Position - root.Position).Unit
 				
-				-- Create DOT hitbox
-				_G.createStaticDOTHitbox({
-					attachTo = dotPart,
+				-- Create projectile part
+				local projectile = Instance.new("Part")
+				projectile.Name = "StraightProjectile"
+				projectile.Size = Vector3.new(1, 1, 1)
+				projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
+				projectile.Anchored = false
+				projectile.CanCollide = false
+				projectile.Material = Enum.Material.Neon
+				projectile.Color = Color3.new(0, 1, 1) -- Cyan color
+				projectile.Transparency = 0.3
+				projectile.Parent = workspace
+				
+				-- Add body velocity to projectile (straight fire!)
+				local bodyVelocity = Instance.new("BodyVelocity")
+				bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+				bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
+				bodyVelocity.Parent = projectile
+				
+				-- Create traveling hitbox attached to projectile
+				_G.createTravelingHitbox({
+					attachTo = projectile,
 					offset = CFrame.new(0, 0, 0),
-					size = Vector3.new(15, 15, 15),
+					size = Vector3.new(6, 6, 6),
 					damage = MOB_STATS.Damage,
-					damageTickTime = MOB_STATS.DOTTickTime,
 					character = model,
-					name = "DOTField",
+					name = "StraightProjectile",
 					showVisual = true,
-					visualColor = Color3.new(1, 0.5, 0),
+					visualColor = Color3.new(0, 1, 1), -- Cyan color
 					delay = 0
 				})
 				
-				-- Destroy DOT field after 5 seconds
-				task.delay(5, function()
-					if dotPart then
-						dotPart:Destroy()
+				-- Auto-cleanup projectile after lifetime
+				task.delay(MOB_STATS.MissileLifetime, function()
+					if projectile and projectile.Parent then
+						projectile:Destroy()
 					end
 				end)
 			else
@@ -116,4 +129,3 @@ task.spawn(function()
 		end
 	end
 end)
-

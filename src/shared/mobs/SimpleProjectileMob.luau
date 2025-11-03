@@ -1,6 +1,6 @@
 -- ========================================
--- SIMPLE DOT MOB
--- Very simple mob: follows player, creates DOT field
+-- SIMPLE PROJECTILE MOB
+-- Very simple mob: shoots projectiles using projectile hitbox system (like archer)
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,14 +9,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MOB_STATS = {
 	HP = 500,
 	Defense = 20,
-	Damage = 10,        -- Damage per tick
-	AttackCooldown = 3,
-	AttackRange = 12,
+	Damage = 25,
+	AttackCooldown = 2,      -- Seconds between shots
+	AttackRange = 50,        -- Distance to start shooting
 	WalkSpeed = 14,
-	DOTTickTime = 0.5   -- Time between ticks
+	ProjectileSpeed = 80,    -- Speed of the hitbox
+	ProjectileVisualSpeed = 100 -- Speed of the visual (can be different for effect)
 }
 
-local MOB_VARIANT_NAME = "SimpleDOTMob"
+local MOB_VARIANT_NAME = "SimpleProjectileMob"
 
 -- Get model and parts
 local model = script.Parent
@@ -42,7 +43,7 @@ if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 end
 
 -- Wait for hitbox functions to be available
-while not _G.createStaticDOTHitbox do
+while not _G.createProjectileHitbox do
 	task.wait(0.1)
 end
 
@@ -77,38 +78,57 @@ task.spawn(function()
 			local dist = (nearest.Position - root.Position).Magnitude
 			
 			if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-				-- Create DOT field at target position
+				-- Shoot projectile
 				lastAttack = tick()
 				
-				local dotPart = Instance.new("Part")
-				dotPart.Name = "DOTField"
-				dotPart.Size = Vector3.new(15, 15, 15)
-				dotPart.CFrame = CFrame.new(nearest.Position.X, nearest.Position.Y - 2, nearest.Position.Z)
-				dotPart.Anchored = true
-				dotPart.CanCollide = false
-				dotPart.Parent = workspace
-                dotPart.Transparency = 0.5
+				-- Calculate direction to target
+				local direction = (nearest.Position - root.Position).Unit
 				
-				-- Create DOT hitbox
-				_G.createStaticDOTHitbox({
-					attachTo = dotPart,
-					offset = CFrame.new(0, 0, 0),
-					size = Vector3.new(15, 15, 15),
+				-- Create projectile visual (simple model)
+				local projectileModel = Instance.new("Model")
+				projectileModel.Name = "MobProjectile"
+				
+				local projectile = Instance.new("Part")
+				projectile.Name = "Projectile"
+				projectile.Size = Vector3.new(1, 1, 1)
+				projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
+				projectile.Anchored = false
+				projectile.CanCollide = false
+				projectile.Material = Enum.Material.Neon
+				projectile.Color = Color3.new(1, 0, 1) -- Magenta color
+				projectile.Transparency = 0.3
+				projectile.Parent = projectileModel
+				
+				projectileModel.Parent = workspace
+				
+				-- Make all parts non-physical (preventPhysicsPush = true)
+				for _, part in ipairs(projectileModel:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = false
+						part.CanQuery = false
+						part.CanTouch = false
+					end
+				end
+				
+				-- Use projectile hitbox system (like archer arrows)
+				_G.createProjectileHitbox({
+					visualPart = projectile,
+					direction = direction,
+					size = Vector3.new(6, 6, 6), -- Hitbox size
 					damage = MOB_STATS.Damage,
-					damageTickTime = MOB_STATS.DOTTickTime,
 					character = model,
-					name = "DOTField",
+					name = "MobProjectile",
+					visualSpeed = MOB_STATS.ProjectileVisualSpeed, -- Visual speed
+					hitboxSpeed = MOB_STATS.ProjectileSpeed, -- Hitbox speed
+					delay = 0,
+					anchorDelay = 0.03, -- Anchor delay after hit
 					showVisual = true,
-					visualColor = Color3.new(1, 0.5, 0),
-					delay = 0
+					visualColor = Color3.new(1, 0, 1), -- Magenta color
+					preventPhysicsPush = true -- Prevent physics interactions
 				})
 				
-				-- Destroy DOT field after 5 seconds
-				task.delay(5, function()
-					if dotPart then
-						dotPart:Destroy()
-					end
-				end)
+				-- Auto cleanup
+				game:GetService("Debris"):AddItem(projectileModel, 3)
 			else
 				-- Follow
 				humanoid:MoveTo(nearest.Position)
@@ -116,4 +136,3 @@ task.spawn(function()
 		end
 	end
 end)
-

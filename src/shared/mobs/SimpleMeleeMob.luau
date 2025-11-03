@@ -19,6 +19,8 @@ local MOB_VARIANT_NAME = "SimpleMeleeMob"
 
 -- Get model and parts
 local model = script.Parent
+if not model or not model.Parent then return end -- Safety check: model must exist
+
 local humanoid = model:WaitForChild("Humanoid")
 local root = model:WaitForChild("HumanoidRootPart")
 
@@ -48,6 +50,11 @@ task.spawn(function()
 	local lastAttack = 0
 	
 	while task.wait(0.5) do
+		-- Safety check: ensure model, humanoid, and root still exist
+		if not model or not model.Parent or not humanoid or not humanoid.Parent or not root or not root.Parent then
+			break -- Exit loop if model was destroyed
+		end
+		
 		if humanoid.Health <= 0 then break end
 		
 		-- Find nearest player
