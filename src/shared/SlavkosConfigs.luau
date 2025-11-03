@@ -1392,6 +1392,136 @@ ServerConfigs.Client = {
 }
 
 -- ========================================
+-- BUFF CONFIGURATIONS
+-- ========================================
+
+-- Knight Buffs
+ServerConfigs.KnightBuffs = {
+	Warcry = {
+		-- Buff: Increases Attack and Defense by multipliers
+		levels = {
+			[5] = {
+				attackMultiplier = 1.1,   -- 10% increase
+				defenseMultiplier = 1.1,  -- 10% increase
+				duration = 30,            -- 30 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[15] = {
+				attackMultiplier = 1.15,  -- 15% increase
+				defenseMultiplier = 1.15, -- 15% increase
+				duration = 35,            -- 35 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[25] = {
+				attackMultiplier = 1.2,   -- 20% increase
+				defenseMultiplier = 1.2,  -- 20% increase
+				duration = 40,            -- 40 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[35] = {
+				attackMultiplier = 1.25,  -- 25% increase
+				defenseMultiplier = 1.25, -- 25% increase
+				duration = 45,            -- 45 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[45] = {
+				attackMultiplier = 1.3,   -- 30% increase
+				defenseMultiplier = 1.3,  -- 30% increase
+				duration = 50,            -- 50 seconds
+				cooldown = 30             -- 30 seconds
+			}
+		}
+	},
+	WarriorMight = {
+		-- Buff: Increases HP by flat amount
+		levels = {
+			[1] = {
+				hpIncrease = 100,        -- +100 HP
+				duration = 30,            -- 30 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[11] = {
+				hpIncrease = 200,        -- +200 HP
+				duration = 35,            -- 35 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[21] = {
+				hpIncrease = 400,        -- +400 HP
+				duration = 40,            -- 40 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[31] = {
+				hpIncrease = 800,        -- +800 HP
+				duration = 45,            -- 45 seconds
+				cooldown = 30             -- 30 seconds
+			},
+			[41] = {
+				hpIncrease = 1600,       -- +1600 HP
+				duration = 50,            -- 50 seconds
+				cooldown = 30             -- 30 seconds
+			}
+		}
+	}
+}
+
+-- Function to get buff config for a level
+-- @param buffName: "Warcry" or "WarriorMight"
+-- @param playerLevel: Player's current level
+-- @return: Buff config for that level or nil if not unlocked
+function ServerConfigs.getBuffConfig(buffName, playerLevel)
+	local classBuffs = ServerConfigs.KnightBuffs
+	if not classBuffs or not classBuffs[buffName] then
+		return nil
+	end
+	
+	local buffLevels = classBuffs[buffName].levels
+	if not buffLevels then
+		return nil
+	end
+	
+	-- Find the highest unlocked level for this buff
+	local highestUnlocked = nil
+	for level, config in pairs(buffLevels) do
+		if playerLevel >= level then
+			if not highestUnlocked or level > highestUnlocked then
+				highestUnlocked = level
+			end
+		end
+	end
+	
+	if highestUnlocked then
+		return buffLevels[highestUnlocked]
+	end
+	
+	return nil
+end
+
+-- Function to get minimum required level for a buff
+-- @param buffName: "Warcry" or "WarriorMight"
+-- @return: Minimum level required or nil if buff doesn't exist
+function ServerConfigs.getBuffMinLevel(buffName)
+	local classBuffs = ServerConfigs.KnightBuffs
+	if not classBuffs or not classBuffs[buffName] then
+		return nil
+	end
+	
+	local buffLevels = classBuffs[buffName].levels
+	if not buffLevels then
+		return nil
+	end
+	
+	-- Find the lowest level requirement
+	local minLevel = nil
+	for level, _ in pairs(buffLevels) do
+		if not minLevel or level < minLevel then
+			minLevel = level
+		end
+	end
+	
+	return minLevel
+end
+
+-- ========================================
 -- DEFENSE REGENERATION CONFIGURATION
 -- ========================================
 

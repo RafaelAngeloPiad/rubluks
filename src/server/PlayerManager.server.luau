@@ -1,3 +1,5 @@
+local RunService = game:GetService("RunService")
+
 local MainDataStore
 
 local success, err = pcall(function()
@@ -170,6 +172,338 @@ local BaseStats = {
 -- Export BaseStats to ServerConfigs so other modules can access it
 ServerConfigs.BaseStats = BaseStats
 
+-- ========================================
+-- BUFF MANAGEMENT SYSTEM
+-- ========================================
+
+-- Store active buffs for each player
+local playerBuffs = {} -- player -> { buffName -> { config, startTime, endTime, baseStats } }
+
+-- Function to get base stats before buffs (stored temporarily during buff)
+local function getBaseStatsBeforeBuff(player)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return nil
+	end
+	
+	return {
+		MaxAttack = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0,
+		MaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0,
+		MaxHealth = leaderstats:FindFirstChild("MaxHealth") and leaderstats.MaxHealth.Value or 0,
+		CurrentHealth = player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health or 0
+	}
+end
+
+-- Function to apply a buff to a player
+-- @param player: Player instance
+-- @param buffName: "Warcry" or "WarriorMight"
+-- @param buffConfig: Buff configuration from ServerConfigs.getBuffConfig()
+-- @return: true if buff was applied, false otherwise
+function _G.applyBuff(player, buffName, buffConfig)
+	if not player or not buffName or not buffConfig then
+		return false
+	end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return false
+	end
+	
+	-- Get player's level
+	local level = leaderstats:FindFirstChild("Level")
+	if not level then
+		return false
+	end
+	
+	-- Check if buff config is valid for player's level
+	local config = ServerConfigs.getBuffConfig(buffName, level.Value)
+	if not config then
+		-- Buff not unlocked yet
+		return false
+	end
+	
+	-- Initialize player buffs tracking
+	if not playerBuffs[player] then
+		playerBuffs[player] = {}
+	end
+	
+	-- Remove existing buff if active (stacking prevention)
+	if playerBuffs[player][buffName] then
+		_G.removeBuff(player, buffName)
+	end
+	
+	-- Store base stats before applying buff
+	local baseStats = getBaseStatsBeforeBuff(player)
+	
+	-- Calculate new stats with buff
+	if buffName == "Warcry" then
+		-- Warcry: Multiplies Attack and Defense
+		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		
+		if maxAttack and baseStats then
+			-- Calculate buffed attack (multiply base by multiplier)
+			local buffedAttack = math.floor(baseStats.MaxAttack * config.attackMultiplier)
+			maxAttack.Value = buffedAttack
+		end
+		
+		if maxDefense and baseStats then
+			-- Calculate buffed defense (multiply base by multiplier)
+			local buffedDefense = math.floor(baseStats.MaxDefense * config.defenseMultiplier)
+			maxDefense.Value = buffedDefense
+			
+			-- Also update CurrentDefense to match MaxDefense
+			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+			if currentDefense then
+				currentDefense.Value = buffedDefense
+			end
+		end
+		
+	elseif buffName == "WarriorMight" then
+		-- WarriorMight: Adds flat HP
+		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
+		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+		
+		if maxHealth and baseStats and humanoid then
+			-- Calculate buffed health (base + flat increase)
+			local buffedHealth = baseStats.MaxHealth + config.hpIncrease
+			maxHealth.Value = buffedHealth
+			
+			-- Update humanoid MaxHealth
+			humanoid.MaxHealth = buffedHealth
+			
+			-- Increase current health proportionally or add flat amount (preserve health percentage)
+			local healthPercentage = baseStats.MaxHealth > 0 and (baseStats.CurrentHealth / baseStats.MaxHealth) or 1
+			local newHealth = math.min(buffedHealth * healthPercentage, buffedHealth)
+			humanoid.Health = newHealth
+		end
+	end
+	
+	-- Track buff
+	local startTime = tick()
+	local endTime = startTime + config.duration
+	playerBuffs[player][buffName] = {
+		config = config,
+		startTime = startTime,
+		endTime = endTime,
+		baseStats = baseStats
+	}
+	
+	-- Store base stats in leaderstats for UI display (only for UI, not used in calculations)
+	local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
+	if not baseStatsFolder then
+		baseStatsFolder = Instance.new("Folder", leaderstats)
+		baseStatsFolder.Name = "BaseStats"
+	end
+	
+	if buffName == "Warcry" then
+		-- Store base Attack and Defense for UI
+		if baseStats then
+			local baseAttack = baseStatsFolder:FindFirstChild("BaseMaxAttack")
+			if not baseAttack then
+				baseAttack = Instance.new("NumberValue", baseStatsFolder)
+				baseAttack.Name = "BaseMaxAttack"
+			end
+			baseAttack.Value = baseStats.MaxAttack
+			
+			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+			if not baseDefense then
+				baseDefense = Instance.new("NumberValue", baseStatsFolder)
+				baseDefense.Name = "BaseMaxDefense"
+			end
+			baseDefense.Value = baseStats.MaxDefense
+		end
+	elseif buffName == "WarriorMight" then
+		-- Store base Health for UI
+		if baseStats then
+			local baseHealth = baseStatsFolder:FindFirstChild("BaseMaxHealth")
+			if not baseHealth then
+				baseHealth = Instance.new("NumberValue", baseStatsFolder)
+				baseHealth.Name = "BaseMaxHealth"
+			end
+			baseHealth.Value = baseStats.MaxHealth
+		end
+	end
+	
+	-- Update ActiveBuffs string value
+	local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
+	if activeBuffs then
+		local currentBuffs = activeBuffs.Value
+		if currentBuffs == "" then
+			activeBuffs.Value = buffName
+		else
+			activeBuffs.Value = currentBuffs .. "," .. buffName
+		end
+	end
+	
+	-- Create buff duration tracking value
+	local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+	if buffDurations then
+		local buffDuration = Instance.new("NumberValue", buffDurations)
+		buffDuration.Name = buffName
+		buffDuration.Value = math.ceil(config.duration)
+		
+		-- Update duration countdown
+		local buffStartTime = tick()
+		local connection
+		connection = RunService.Heartbeat:Connect(function()
+			if not buffDuration or not buffDuration.Parent then
+				connection:Disconnect()
+				return
+			end
+			local elapsed = tick() - buffStartTime
+			local remaining = math.max(0, math.ceil(config.duration - elapsed))
+			buffDuration.Value = remaining
+			if remaining <= 0 then
+				connection:Disconnect()
+			end
+		end)
+	end
+	
+	-- Auto-remove buff after duration
+	task.delay(config.duration, function()
+		if playerBuffs[player] and playerBuffs[player][buffName] then
+			_G.removeBuff(player, buffName)
+		end
+	end)
+	
+	return true
+end
+
+-- Function to remove a buff from a player
+-- @param player: Player instance
+-- @param buffName: "Warcry" or "WarriorMight"
+-- @return: true if buff was removed, false otherwise
+function _G.removeBuff(player, buffName)
+	if not player or not buffName then
+		return false
+	end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return false
+	end
+	
+	if not playerBuffs[player] or not playerBuffs[player][buffName] then
+		return false
+	end
+	
+	local buffData = playerBuffs[player][buffName]
+	local baseStats = buffData.baseStats
+	
+	-- Restore base stats
+	if buffName == "Warcry" then
+		-- Warcry: Restore Attack and Defense to base values
+		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		
+		if maxAttack and baseStats then
+			maxAttack.Value = baseStats.MaxAttack
+		end
+		
+		if maxDefense and baseStats then
+			maxDefense.Value = baseStats.MaxDefense
+			
+			-- Also restore CurrentDefense
+			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+			if currentDefense then
+				currentDefense.Value = baseStats.MaxDefense
+			end
+		end
+		
+	elseif buffName == "WarriorMight" then
+		-- WarriorMight: Restore HP to base value
+		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
+		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+		
+		if maxHealth and baseStats and humanoid then
+			-- Restore base health
+			maxHealth.Value = baseStats.MaxHealth
+			humanoid.MaxHealth = baseStats.MaxHealth
+			
+			-- Restore health percentage (cap at max health)
+			local healthPercentage = baseStats.MaxHealth > 0 and (humanoid.Health / (baseStats.MaxHealth + buffData.config.hpIncrease)) or 1
+			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
+			humanoid.Health = newHealth
+		end
+	end
+	
+	-- Remove buff tracking
+	playerBuffs[player][buffName] = nil
+	
+	-- Update ActiveBuffs string value
+	local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
+	if activeBuffs then
+		local currentBuffs = activeBuffs.Value
+		local buffList = {}
+		for buff in string.gmatch(currentBuffs, "([^,]+)") do
+			if buff ~= buffName then
+				table.insert(buffList, buff)
+			end
+		end
+		activeBuffs.Value = table.concat(buffList, ",")
+	end
+	
+	-- Remove buff duration tracking
+	local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+	if buffDurations then
+		local buffDuration = buffDurations:FindFirstChild(buffName)
+		if buffDuration then
+			buffDuration:Destroy()
+		end
+	end
+	
+	-- Remove base stats tracking when buff expires (clean up BaseStats folder)
+	local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
+	if baseStatsFolder then
+		if buffName == "Warcry" then
+			local baseAttack = baseStatsFolder:FindFirstChild("BaseMaxAttack")
+			if baseAttack then
+				baseAttack:Destroy()
+			end
+			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+			if baseDefense then
+				baseDefense:Destroy()
+			end
+		elseif buffName == "WarriorMight" then
+			local baseHealth = baseStatsFolder:FindFirstChild("BaseMaxHealth")
+			if baseHealth then
+				baseHealth:Destroy()
+			end
+		end
+		
+		-- Clean up BaseStats folder if it's empty
+		if #baseStatsFolder:GetChildren() == 0 then
+			baseStatsFolder:Destroy()
+		end
+	end
+	
+	return true
+end
+
+-- Function to get active buffs for a player
+-- @param player: Player instance
+-- @return: Table of active buff names
+function _G.getActiveBuffs(player)
+	if not playerBuffs[player] then
+		return {}
+	end
+	
+	local active = {}
+	for buffName, _ in pairs(playerBuffs[player]) do
+		table.insert(active, buffName)
+	end
+	
+	return active
+end
+
+-- Clean up buffs when player leaves
+game.Players.PlayerRemoving:Connect(function(player)
+	if playerBuffs[player] then
+		playerBuffs[player] = nil
+	end
+end)
+
 -- Helper function to calculate MaximumXP based on level
 local function calculateMaximumXP(level)
 	local startMaxXP = BaseStats.XP.startMaxXP
@@ -287,6 +621,15 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local slavkoins = Instance.new("NumberValue", leaderstats)
 	slavkoins.Name = "Slavkoins"
 	slavkoins.Value = 0
+	
+	-- Buff tracking (stores active buff information)
+	local activeBuffs = Instance.new("StringValue", leaderstats)
+	activeBuffs.Name = "ActiveBuffs"
+	activeBuffs.Value = "" -- Comma-separated list of active buffs (e.g., "Warcry,WarriorMight")
+	
+	-- Buff duration tracking (stores when buffs expire)
+	local buffDurations = Instance.new("Folder", leaderstats)
+	buffDurations.Name = "BuffDurations"
 	
 	-- loads progress data
 	if data then
