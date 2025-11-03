@@ -27,11 +27,14 @@ end
 -- @param player: Player instance
 -- @param classType: Class name (e.g., "Knight")
 -- @param damageMultiplier: Damage multiplier (e.g., 0.171 = 17.1% of MaxAttack)
+-- @param forceCrit: Optional boolean to force a critical hit (default: false)
 -- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
-local function calculateDamageForHitbox(player, classType, damageMultiplier)
+local function calculateDamageForHitbox(player, classType, damageMultiplier, forceCrit)
+	forceCrit = forceCrit or false -- Default to false if not provided
+	
 	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
 	if ServerConfigs.calculateDamageWithCrit then
-		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player, forceCrit)
 	else
 		-- Fallback: if function doesn't exist, use base damage calculation
 		local maxAttack = getPlayerMaxAttack(player)
@@ -842,10 +845,10 @@ local function handleNormalAttack(player)
 				-- Enable trails for combo 3
 				_G.enableKnightTrails(player, "combo3")
 				
-			-- Combo 3 hitbox (most powerful)
+			-- Combo 3 hitbox (most powerful) - FORCED CRIT
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Knight")
 			local damageMultiplier = hitboxConfig.damage
-			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
+			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier, true) -- Force crit for combo3
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,

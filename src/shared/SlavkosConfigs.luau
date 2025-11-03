@@ -965,11 +965,14 @@ end
 -- Function to calculate damage with crit chance (returns damage and isCrit flag)
 -- @param damageMultiplier: The multiplier from UnifiedAttacks (e.g., 0.2 = 20% of MaxAttack)
 -- @param player: Player instance (for getting stats)
+-- @param forceCrit: Optional boolean to force a critical hit (default: false)
 -- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
-function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player, forceCrit)
 	if not damageMultiplier or not player then
 		return 0, false
 	end
+	
+	forceCrit = forceCrit or false -- Default to false if not provided
 	
 	-- Apply mismatched weapon penalty before calculating damage
 	local adjustedMultiplier = ServerConfigs.applyMismatchedWeaponPenalty(player, damageMultiplier)
@@ -982,17 +985,21 @@ function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
 	local isWeaponMatch = ServerConfigs.isWeaponClassMatch(player)
 	local isCrit = false
 	
-	if isWeaponMatch then
+	-- Force crit if requested (still requires weapon match)
+	if forceCrit and isWeaponMatch then
+		isCrit = true
+	elseif isWeaponMatch then
+		-- Normal crit roll
 		local critRate = ServerConfigs.getPlayerCritRate(player)
 		isCrit = ServerConfigs.rollCrit(critRate)
-		
-		if isCrit then
-			-- Apply crit multiplier
-			local critMultiplier = ServerConfigs.getPlayerCritMultiplier(player)
-			-- CritMultiplier is stored as percentage (150 = 1.5x), so divide by 100
-			local finalDamage = math.floor(baseDamage * (critMultiplier / 100))
-			return finalDamage, true
-		end
+	end
+	
+	if isCrit then
+		-- Apply crit multiplier
+		local critMultiplier = ServerConfigs.getPlayerCritMultiplier(player)
+		-- CritMultiplier is stored as percentage (150 = 1.5x), so divide by 100
+		local finalDamage = math.floor(baseDamage * (critMultiplier / 100))
+		return finalDamage, true
 	end
 	
 	-- No crit or mismatched weapon
