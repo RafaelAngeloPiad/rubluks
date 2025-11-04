@@ -125,6 +125,13 @@ local function handleOneLastChanceResurrection(player, character, humanoid, pass
 	local maxHealth = humanoid.MaxHealth
 	local resurrectedHealth = math.floor(maxHealth * resurrectHPPercentage)
 	
+	-- IMPORTANT: Enable invincibility FIRST (before restoring health)
+	-- This prevents ANY damage from being applied during resurrection
+	-- Similar to how ultimates/skills enable invincibility before casting
+	if _G.enablePlayerInvincibility then
+		_G.enablePlayerInvincibility(player)
+	end
+	
 	-- Prevent death by immediately setting health
 	-- This must happen as fast as possible to prevent death
 	-- Set it synchronously first (immediate response)
@@ -160,27 +167,23 @@ local function handleOneLastChanceResurrection(player, character, humanoid, pass
 	-- Show "RESURRECTED" text
 	showResurrectedText(character)
 	
-	-- Enable invincibility for 3 seconds after resurrection (god mode to escape)
-	if _G.enablePlayerInvincibility then
-		_G.enablePlayerInvincibility(player)
+	-- Disable invincibility after 3 seconds (god mode to escape)
+	-- Similar to how ultimates disable invincibility when animation ends
+	task.spawn(function()
+		task.wait(3)
 		
-		-- Disable invincibility after 3 seconds
-		task.spawn(function()
-			task.wait(3)
-			
-			-- Check if character still exists before disabling invincibility
-			if character and character.Parent and humanoid and humanoid.Parent then
-				if _G.disablePlayerInvincibility then
-					_G.disablePlayerInvincibility(player)
-				end
-			else
-				-- Character was removed, disable invincibility anyway (safety cleanup)
-				if _G.disablePlayerInvincibility then
-					_G.disablePlayerInvincibility(player)
-				end
+		-- Check if character still exists before disabling invincibility
+		if character and character.Parent and humanoid and humanoid.Parent then
+			if _G.disablePlayerInvincibility then
+				_G.disablePlayerInvincibility(player)
 			end
-		end)
-	end
+		else
+			-- Character was removed, disable invincibility anyway (safety cleanup)
+			if _G.disablePlayerInvincibility then
+				_G.disablePlayerInvincibility(player)
+			end
+		end
+	end)
 	
 	-- Update ActivePassives tracking
 	local activePassives = leaderstats:FindFirstChild("ActivePassives")
