@@ -158,6 +158,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applySamuraiAnimationSpeed(animTrack, "zantetsuken")
 	
+	-- Enable invincibility (freeze health during ultimate)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Lock input when ultimate starts
 	remote:FireClient(player, "lock_input")
 	_G.setSamuraiWalkingSpeed(player, "blocking") -- Stop movement during ultimate
@@ -167,6 +170,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_input")
 		_G.setSamuraiWalkingSpeed(player, "normal") -- Restore normal movement
 	end)

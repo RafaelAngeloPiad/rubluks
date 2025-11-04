@@ -95,12 +95,18 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyBrawlerAnimationSpeed(animTrack, "brawlersroar")
 	
+	-- Enable invincibility (freeze health during skill)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Lock movement and stop player during skill
 	remote:FireClient(player, "lock_movement")
 	_G.setBrawlerWalkingSpeed(player, "blocking") -- Stop movement completely
 	
 	-- Unlock movement and restore walk speed when animation ends
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_movement")
 		_G.setBrawlerWalkingSpeed(player, "normal") -- Restore normal movement
 	end)

@@ -100,6 +100,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "piercingShot")
 	
+	-- Enable invincibility (freeze health during skill)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Sync aim lock state to client
 	_G.syncAimLockState(player, aimLockEnabled)
 	
@@ -110,6 +113,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	
 	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_movement")
 		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal walking speed
 		-- Restore archer aiming system (will respect current aim lock state)

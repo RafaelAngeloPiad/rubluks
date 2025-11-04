@@ -96,6 +96,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyBrawlerAnimationSpeed(animTrack, "meteordive")
 	
+	-- Enable invincibility (freeze health during ultimate)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Lock movement and stop player during ultimate
 	remote:FireClient(player, "lock_movement")
 	_G.setBrawlerWalkingSpeed(player, "blocking") -- Stop movement completely
@@ -105,6 +108,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	
 	-- Unlock movement and restore walk speed when animation ends
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_movement")
 		_G.setBrawlerWalkingSpeed(player, "normal") -- Restore normal movement
 	end)

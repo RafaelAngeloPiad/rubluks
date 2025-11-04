@@ -125,12 +125,18 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applySamuraiAnimationSpeed(animTrack, "kozuki")
 	
+	-- Enable invincibility (freeze health during skill)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Lock movement only when skill starts (allows camera/aiming)
 	remote:FireClient(player, "lock_movement")
 	_G.setSamuraiWalkingSpeed(player, "slow") -- Set slow walking speed
 	
 	-- Unlock movement when animation ends
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_movement")
 		_G.setSamuraiWalkingSpeed(player, "normal") -- Restore normal walking speed
 	end)

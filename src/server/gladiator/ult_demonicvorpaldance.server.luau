@@ -193,6 +193,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyGladiatorAnimationSpeed(animTrack, "demonicvorpaldance")
 	
+	-- Enable invincibility (freeze health during ultimate)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Lock input for the ultimate
 	remote:FireClient(player, "lock_input")
 	
@@ -201,6 +204,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_input")
 	end)
 

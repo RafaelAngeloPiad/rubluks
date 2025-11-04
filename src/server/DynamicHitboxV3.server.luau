@@ -807,18 +807,29 @@ function _G.createStaticHitbox(config)
 					if shouldApplyDamage(character, model) then
 						hitTargets[humanoid] = true
 						
+						-- Check if target is a player and if they're invincible (during skill/ult)
+						local targetPlayer = Players:GetPlayerFromCharacter(model)
+						local isInvincible = targetPlayer and _G.isPlayerInvincible and _G.isPlayerInvincible(targetPlayer)
+						
 						-- Calculate damage with defense system
 						local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 						
-						-- Apply damage to health
-						if damageToHealth > 0 then
-							humanoid:TakeDamage(damageToHealth)
-						end
-						
-						-- Apply damage to defense
-						if damageToDefense > 0 then
-							local currentDef, maxDef = getDefenseStats(model)
-							setDefenseStats(model, currentDef - damageToDefense, maxDef)
+						-- Skip damage if player is invincible (freezes health)
+						if not isInvincible then
+							-- Apply damage to health
+							if damageToHealth > 0 then
+								humanoid:TakeDamage(damageToHealth)
+							end
+							
+							-- Apply damage to defense
+							if damageToDefense > 0 then
+								local currentDef, maxDef = getDefenseStats(model)
+								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							end
+							
+							-- Create damage number display (show actual damage applied, which includes block reduction)
+							-- Only show damage number if not invincible
+							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 						end
 						
 						-- Apply knockback to mobs
@@ -826,10 +837,6 @@ function _G.createStaticHitbox(config)
 						
 						-- Create damage flash effect on the target
 						createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
-						
-						-- Create damage number display (show actual damage applied, which includes block reduction)
-						-- damageToHealth is the actual damage after block reduction and defense
-						_G.createDamageNumber(model, damageToHealth + damageToDefense)
 						
 						-- Apply status ailments if configured (optional)
 						applyStatusAilmentFromConfig(model, config)
@@ -968,18 +975,29 @@ function _G.createStaticDOTHitbox(config)
 							-- Mark this humanoid as hit for this tick
 							hitHumanoids[humanoid] = true
 							
+							-- Check if target is a player and if they're invincible (during skill/ult)
+							local targetPlayer = Players:GetPlayerFromCharacter(model)
+							local isInvincible = targetPlayer and _G.isPlayerInvincible and _G.isPlayerInvincible(targetPlayer)
+							
 							-- Calculate damage with defense system
 							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 							
-							-- Apply damage to health
-							if damageToHealth > 0 then
-								humanoid:TakeDamage(damageToHealth)
-							end
-							
-							-- Apply damage to defense
-							if damageToDefense > 0 then
-								local currentDef, maxDef = getDefenseStats(model)
-								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							-- Skip damage if player is invincible (freezes health)
+							if not isInvincible then
+								-- Apply damage to health
+								if damageToHealth > 0 then
+									humanoid:TakeDamage(damageToHealth)
+								end
+								
+								-- Apply damage to defense
+								if damageToDefense > 0 then
+									local currentDef, maxDef = getDefenseStats(model)
+									setDefenseStats(model, currentDef - damageToDefense, maxDef)
+								end
+								
+								-- Create damage number display (show actual damage applied, which includes block reduction)
+								-- Only show damage number if not invincible
+								_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							end
 							
 							-- Apply knockback to mobs
@@ -987,9 +1005,6 @@ function _G.createStaticDOTHitbox(config)
 							
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
-							
-							-- Create damage number display (show actual damage applied, which includes block reduction)
-							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1167,18 +1182,29 @@ function _G.createTravelingHitbox(config)
 						if shouldApplyDamage(character, model) then
 							hitTargets[humanoid] = true
 							
+							-- Check if target is a player and if they're invincible (during skill/ult)
+							local targetPlayer = Players:GetPlayerFromCharacter(model)
+							local isInvincible = targetPlayer and _G.isPlayerInvincible and _G.isPlayerInvincible(targetPlayer)
+							
 							-- Calculate damage with defense system
 							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 							
-							-- Apply damage to health
-							if damageToHealth > 0 then
-								humanoid:TakeDamage(damageToHealth)
-							end
-							
-							-- Apply damage to defense
-							if damageToDefense > 0 then
-								local currentDef, maxDef = getDefenseStats(model)
-								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							-- Skip damage if player is invincible (freezes health)
+							if not isInvincible then
+								-- Apply damage to health
+								if damageToHealth > 0 then
+									humanoid:TakeDamage(damageToHealth)
+								end
+								
+								-- Apply damage to defense
+								if damageToDefense > 0 then
+									local currentDef, maxDef = getDefenseStats(model)
+									setDefenseStats(model, currentDef - damageToDefense, maxDef)
+								end
+								
+								-- Create damage number display (show actual damage applied, which includes block reduction)
+								-- Only show damage number if not invincible
+								_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							end
 							
 							-- Apply knockback to mobs
@@ -1186,9 +1212,6 @@ function _G.createTravelingHitbox(config)
 							
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
-							
-							-- Create damage number display (show actual damage applied, which includes block reduction)
-							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1300,18 +1323,29 @@ function _G.createTravelingDOTHitbox(config)
 							-- Mark this humanoid as hit for this tick
 							hitHumanoids[humanoid] = true
 							
+							-- Check if target is a player and if they're invincible (during skill/ult)
+							local targetPlayer = Players:GetPlayerFromCharacter(model)
+							local isInvincible = targetPlayer and _G.isPlayerInvincible and _G.isPlayerInvincible(targetPlayer)
+							
 							-- Calculate damage with defense system
 							local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 							
-							-- Apply damage to health
-							if damageToHealth > 0 then
-								humanoid:TakeDamage(damageToHealth)
-							end
-							
-							-- Apply damage to defense
-							if damageToDefense > 0 then
-								local currentDef, maxDef = getDefenseStats(model)
-								setDefenseStats(model, currentDef - damageToDefense, maxDef)
+							-- Skip damage if player is invincible (freezes health)
+							if not isInvincible then
+								-- Apply damage to health
+								if damageToHealth > 0 then
+									humanoid:TakeDamage(damageToHealth)
+								end
+								
+								-- Apply damage to defense
+								if damageToDefense > 0 then
+									local currentDef, maxDef = getDefenseStats(model)
+									setDefenseStats(model, currentDef - damageToDefense, maxDef)
+								end
+								
+								-- Create damage number display (show actual damage applied, which includes block reduction)
+								-- Only show damage number if not invincible
+								_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							end
 							
 							-- Apply knockback to mobs
@@ -1319,9 +1353,6 @@ function _G.createTravelingDOTHitbox(config)
 							
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
-							
-							-- Create damage number display (show actual damage applied, which includes block reduction)
-							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1515,18 +1546,29 @@ function _G.createProjectileHitbox(config)
 							if shouldApplyDamage(character, model) then
 								hitTargets[humanoid] = true
 								
+								-- Check if target is a player and if they're invincible (during skill/ult)
+								local targetPlayer = Players:GetPlayerFromCharacter(model)
+								local isInvincible = targetPlayer and _G.isPlayerInvincible and _G.isPlayerInvincible(targetPlayer)
+								
 								-- Calculate damage with defense system
 								local damageToHealth, damageToDefense = calculateDamageWithDefense(damage, character, model)
 								
-								-- Apply damage to health
-								if damageToHealth > 0 then
-									humanoid:TakeDamage(damageToHealth)
-								end
-								
-								-- Apply damage to defense
-								if damageToDefense > 0 then
-									local currentDef, maxDef = getDefenseStats(model)
-									setDefenseStats(model, currentDef - damageToDefense, maxDef)
+								-- Skip damage if player is invincible (freezes health)
+								if not isInvincible then
+									-- Apply damage to health
+									if damageToHealth > 0 then
+										humanoid:TakeDamage(damageToHealth)
+									end
+									
+									-- Apply damage to defense
+									if damageToDefense > 0 then
+										local currentDef, maxDef = getDefenseStats(model)
+										setDefenseStats(model, currentDef - damageToDefense, maxDef)
+									end
+									
+									-- Create damage number display (show actual damage applied, which includes block reduction)
+									-- Only show damage number if not invincible
+									_G.createDamageNumber(model, damageToHealth + damageToDefense)
 								end
 								
 								-- Apply knockback to mobs
@@ -1534,9 +1576,6 @@ function _G.createProjectileHitbox(config)
 								
 								-- Create damage flash effect on the target
 								createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
-								
-								-- Create damage number display (show actual damage applied, which includes block reduction)
-								_G.createDamageNumber(model, damageToHealth + damageToDefense)
 								
 								-- Apply status ailments if configured (optional)
 								applyStatusAilmentFromConfig(model, config)

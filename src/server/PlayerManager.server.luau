@@ -741,6 +741,44 @@ game.Players.PlayerRemoving:Connect(function(player)
 	end
 end)
 
+-- ========================================
+-- INVINCIBILITY / GOD MODE SYSTEM
+-- ========================================
+
+-- Track which players are currently invincible (during skill/ult execution)
+-- Key: player, Value: boolean (true = invincible, false/nil = not invincible)
+-- This freezes health - no damage is applied while invincible (health stays the same)
+local playerInvincibility = {}
+
+-- Function to enable invincibility for a player (freezes health, prevents damage)
+-- @param player: Player instance
+function _G.enablePlayerInvincibility(player)
+	if not player then return end
+	playerInvincibility[player] = true
+end
+
+-- Function to disable invincibility for a player (allows damage again)
+-- @param player: Player instance
+function _G.disablePlayerInvincibility(player)
+	if not player then return end
+	playerInvincibility[player] = nil
+end
+
+-- Function to check if player is invincible
+-- @param player: Player instance
+-- @return: true if player is invincible, false otherwise
+function _G.isPlayerInvincible(player)
+	if not player then return false end
+	return playerInvincibility[player] == true
+end
+
+-- Clean up invincibility when player leaves
+game.Players.PlayerRemoving:Connect(function(player)
+	if playerInvincibility[player] then
+		playerInvincibility[player] = nil
+	end
+end)
+
 -- Helper function to calculate MaximumXP based on level
 local function calculateMaximumXP(level)
 	local startMaxXP = BaseStats.XP.startMaxXP

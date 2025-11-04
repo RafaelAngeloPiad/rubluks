@@ -122,6 +122,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	local animTrack = animator:LoadAnimation(leapAnim)
 	local animTrack2 = animator:LoadAnimation(leapAttackAnim)
 	
+	-- Enable invincibility (freeze health during skill)
+	_G.enablePlayerInvincibility(player)
+	
 	animTrack:Play()
 	_G.applyBrawlerAnimationSpeed(animTrack, "feralleap")
 	
@@ -139,6 +142,11 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			
 			-- Tell client to stop leap control
 			remote:FireClient(player, "feralleap_stop")
+			
+			-- Disable invincibility when second animation ends
+			animTrack2.Stopped:Connect(function()
+				_G.disablePlayerInvincibility(player)
+			end)
 			
 			-- Trigger VFX at "ClawMark"
 			animTrack2:GetMarkerReachedSignal("ClawMark"):Once(function()
@@ -214,6 +222,11 @@ remote.OnServerEvent:Connect(function(player, actionName)
 		local animTrack2 = animator:LoadAnimation(leapAttackAnim)
 		animTrack2:Play()
 		_G.applyBrawlerAnimationSpeed(animTrack2, "feralleap")
+		
+		-- Disable invincibility when second animation ends (for early stop)
+		animTrack2.Stopped:Connect(function()
+			_G.disablePlayerInvincibility(player)
+		end)
 		
 		-- Get root part for VFX and hitbox
 		local root = character:FindFirstChild("HumanoidRootPart")

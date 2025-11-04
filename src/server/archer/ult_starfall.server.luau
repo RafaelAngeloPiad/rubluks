@@ -178,6 +178,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "starfall")
 	
+	-- Enable invincibility (freeze health during ultimate)
+	_G.enablePlayerInvincibility(player)
+	
 	-- Input lock (added system)
 	remote:FireClient(player, "lock_input")
 	_G.setArcherWalkingSpeed(player, "blocking")
@@ -187,6 +190,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	
 	-- Unlock when done (added system)
 	animTrack.Stopped:Connect(function()
+		-- Disable invincibility (allow damage again)
+		_G.disablePlayerInvincibility(player)
+		
 		remote:FireClient(player, "unlock_input")
 		_G.setArcherWalkingSpeed(player, "normal")
 		-- Restore archer aiming system (will respect current aim lock state)
