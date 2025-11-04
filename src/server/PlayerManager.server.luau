@@ -454,27 +454,52 @@ function _G.removeBuff(player, buffName)
 	end
 	
 	-- Remove base stats tracking when buff expires (clean up BaseStats folder)
+	-- BUT: Only remove if no other buffs/passives are using it
 	local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
 	if baseStatsFolder then
-		if buffName == "Warcry" then
-			local baseAttack = baseStatsFolder:FindFirstChild("BaseMaxAttack")
-			if baseAttack then
-				baseAttack:Destroy()
-			end
-			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
-			if baseDefense then
-				baseDefense:Destroy()
-			end
-		elseif buffName == "WarriorMight" then
-			local baseHealth = baseStatsFolder:FindFirstChild("BaseMaxHealth")
-			if baseHealth then
-				baseHealth:Destroy()
+		-- Check if other buffs are active that might need these base stats
+		local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
+		local activePassives = leaderstats:FindFirstChild("ActivePassives")
+		local hasOtherBuffs = false
+		local hasPassives = false
+		
+		-- Check for other active buffs
+		if activeBuffs and activeBuffs.Value ~= "" then
+			for buff in string.gmatch(activeBuffs.Value, "([^,]+)") do
+				if buff ~= buffName then
+					hasOtherBuffs = true
+					break
+				end
 			end
 		end
 		
-		-- Clean up BaseStats folder if it's empty
-		if #baseStatsFolder:GetChildren() == 0 then
-			baseStatsFolder:Destroy()
+		-- Check for active passives
+		if activePassives and activePassives.Value ~= "" then
+			hasPassives = true
+		end
+		
+		-- Only remove BaseStats if no other buffs/passives are active
+		if not hasOtherBuffs and not hasPassives then
+			if buffName == "Warcry" then
+				local baseAttack = baseStatsFolder:FindFirstChild("BaseMaxAttack")
+				if baseAttack then
+					baseAttack:Destroy()
+				end
+				local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+				if baseDefense then
+					baseDefense:Destroy()
+				end
+			elseif buffName == "WarriorMight" then
+				local baseHealth = baseStatsFolder:FindFirstChild("BaseMaxHealth")
+				if baseHealth then
+					baseHealth:Destroy()
+				end
+			end
+			
+			-- Clean up BaseStats folder if it's empty
+			if #baseStatsFolder:GetChildren() == 0 then
+				baseStatsFolder:Destroy()
+			end
 		end
 	end
 	
@@ -630,6 +655,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 	-- Buff duration tracking (stores when buffs expire)
 	local buffDurations = Instance.new("Folder", leaderstats)
 	buffDurations.Name = "BuffDurations"
+	
+	-- Passive tracking (stores active passive information)
+	local activePassives = Instance.new("StringValue", leaderstats)
+	activePassives.Name = "ActivePassives"
+	activePassives.Value = "" -- Comma-separated list of active passives (e.g., "Tenacity")
 	
 	-- loads progress data
 	if data then

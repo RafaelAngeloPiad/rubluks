@@ -254,89 +254,38 @@ local function updateStatsDisplay()
 	
 	if leaderstats:FindFirstChild("MaxHealth") then
 		local healthText = leaderstats.MaxHealth.Value
-		local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-		local baseHealth = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxHealth")
 		
 		-- Try to get current health from humanoid
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			local humanoid = player.Character.Humanoid
 			local currentHealth = humanoid.Health
 			local maxHealth = humanoid.MaxHealth
-			
-			-- Format with buff display if active
-			if baseHealth then
-				local baseHP = baseHealth.Value
-				local buffAmount = maxHealth - baseHP
-				if buffAmount > 0 then
-					healthText = string.format("%.0f / %.0f (+%.0f)", currentHealth, maxHealth, buffAmount)
-				else
-					healthText = string.format("%.0f / %.0f", currentHealth, maxHealth)
-				end
-			else
-				healthText = string.format("%.0f / %.0f", currentHealth, maxHealth)
-			end
+			healthText = string.format("%.0f / %.0f", currentHealth, maxHealth)
 		else
-			-- No character yet, but check if buffed
-			if baseHealth then
-				local baseHP = baseHealth.Value
-				local buffAmount = leaderstats.MaxHealth.Value - baseHP
-				if buffAmount > 0 then
-					healthText = string.format("%.0f (+%.0f)", leaderstats.MaxHealth.Value, buffAmount)
-				end
-			end
+			-- No character yet, just show max health
+			healthText = tostring(leaderstats.MaxHealth.Value)
 		end
 		statLabels["MaxHealth"] = createStatRow("HP", healthText, getStatColor("MaxHealth"), layoutOrder)
 		layoutOrder = layoutOrder + 1
 	end
 	
 	if leaderstats:FindFirstChild("MaxAttack") then
-		local attackText = leaderstats.MaxAttack.Value
-		local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-		local baseAttack = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxAttack")
-		
-		-- Format with buff display if active
-		if baseAttack then
-			local baseATK = baseAttack.Value
-			local buffAmount = leaderstats.MaxAttack.Value - baseATK
-			if buffAmount > 0 then
-				attackText = string.format("%.0f (+%.0f)", leaderstats.MaxAttack.Value, buffAmount)
-			end
-		end
+		local attackText = tostring(leaderstats.MaxAttack.Value)
 		statLabels["MaxAttack"] = createStatRow("Attack", attackText, getStatColor("MaxAttack"), layoutOrder)
 		layoutOrder = layoutOrder + 1
 	end
 	
 	if leaderstats:FindFirstChild("MaxDefense") then
 		local defenseText = leaderstats.MaxDefense.Value
-		local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-		local baseDefense = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxDefense")
 		
 		-- Add current defense if it exists
 		if leaderstats:FindFirstChild("CurrentDefense") then
 			local currentDef = leaderstats.CurrentDefense.Value
 			local maxDef = leaderstats.MaxDefense.Value
-			
-			-- Format with buff display if active
-			if baseDefense then
-				local baseDEF = baseDefense.Value
-				local buffAmount = maxDef - baseDEF
-				if buffAmount > 0 then
-					defenseText = string.format("%.0f (+%.0f) / %.0f", currentDef, buffAmount, maxDef)
-				else
-					defenseText = string.format("%.0f / %.0f", currentDef, maxDef)
-				end
-			else
-				defenseText = string.format("%.0f / %.0f", currentDef, maxDef)
-			end
+			defenseText = string.format("%.0f / %.0f", currentDef, maxDef)
 		else
-			-- No current defense, but check if buffed
-			if baseDefense then
-				local baseDEF = baseDefense.Value
-				local buffAmount = leaderstats.MaxDefense.Value - baseDEF
-				if buffAmount > 0 then
-					defenseText = string.format("%.0f (+%.0f)", leaderstats.MaxDefense.Value, buffAmount)
-				end
-			end
+			-- No current defense, just show max
+			defenseText = tostring(leaderstats.MaxDefense.Value)
 		end
 		statLabels["MaxDefense"] = createStatRow("Defense", defenseText, getStatColor("MaxDefense"), layoutOrder)
 		layoutOrder = layoutOrder + 1
@@ -386,67 +335,247 @@ local function updateStatsDisplay()
 	divider.Parent = scrollFrame
 	layoutOrder = layoutOrder + 1
 	
-	-- Active Buffs header
-	local buffsHeader = Instance.new("TextLabel")
-	buffsHeader.Name = "BuffsHeader"
-	buffsHeader.Size = UDim2.new(1, -10, 0, 25)
-	buffsHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	buffsHeader.BorderSizePixel = 0
-	buffsHeader.Text = "ACTIVE BUFFS"
-	buffsHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-	buffsHeader.TextSize = 11
-	buffsHeader.Font = Enum.Font.GothamBold
-	buffsHeader.LayoutOrder = layoutOrder
-	buffsHeader.Parent = scrollFrame
+	-- Buffs and Passives header
+	local buffsPassivesHeader = Instance.new("TextLabel")
+	buffsPassivesHeader.Name = "BuffsPassivesHeader"
+	buffsPassivesHeader.Size = UDim2.new(1, -10, 0, 25)
+	buffsPassivesHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	buffsPassivesHeader.BorderSizePixel = 0
+	buffsPassivesHeader.Text = "BUFFS AND PASSIVES"
+	buffsPassivesHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buffsPassivesHeader.TextSize = 11
+	buffsPassivesHeader.Font = Enum.Font.GothamBold
+	buffsPassivesHeader.LayoutOrder = layoutOrder
+	buffsPassivesHeader.Parent = scrollFrame
 	layoutOrder = layoutOrder + 1
 	
-	-- Display active buffs
-	local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
-	local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+	-- Get base stats folder for calculating bonuses
+	local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
+	local baseMaxAttack = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxAttack")
+	local baseMaxDefense = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxDefense")
+	local baseMaxHealth = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxHealth")
 	
+	-- Get current stats
+	local currentMaxAttack = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0
+	local currentMaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0
+	local currentMaxHealth = leaderstats:FindFirstChild("MaxHealth") and leaderstats.MaxHealth.Value or 0
+	
+	-- Calculate bonuses
+	local baseATK = baseMaxAttack and baseMaxAttack.Value or currentMaxAttack
+	local baseDEF = baseMaxDefense and baseMaxDefense.Value or currentMaxDefense
+	local baseHP = baseMaxHealth and baseMaxHealth.Value or currentMaxHealth
+	
+	local attackBonus = currentMaxAttack - baseATK
+	local defenseBonus = currentMaxDefense - baseDEF
+	local healthBonus = currentMaxHealth - baseHP
+	
+	-- Get active buffs and passives
+	local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
+	local activePassives = leaderstats:FindFirstChild("ActivePassives")
+	local hasBuffsOrPassives = false
+	
+	-- Display active buffs with their contributions
 	if activeBuffs and activeBuffs.Value ~= "" then
-		-- Parse active buffs from comma-separated string
+		-- Parse active buffs
 		for buffName in string.gmatch(activeBuffs.Value, "([^,]+)") do
 			buffName = buffName:match("^%s*(.-)%s*$") -- Trim whitespace
-			local buffDuration = buffDurations and buffDurations:FindFirstChild(buffName)
-			local durationText = ""
 			
-			if buffDuration then
-				local remaining = math.max(0, math.floor(buffDuration.Value))
-				local minutes = math.floor(remaining / 60)
-				local seconds = remaining % 60
-				if minutes > 0 then
-					durationText = string.format("%dm %ds", minutes, seconds)
-				else
-					durationText = string.format("%ds", seconds)
-				end
-			else
-				durationText = "Active"
-			end
-			
-			-- Format buff display name
-			local displayName = buffName
 			if buffName == "Warcry" then
-				displayName = "Warcry (ATK+ DEF+)"
+				hasBuffsOrPassives = true
+				-- Calculate Warcry bonuses
+				local warcryAttackBonus = 0
+				local warcryDefenseBonus = 0
+				
+				-- Get current level to calculate multiplier
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.KnightBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("Warcry", level.Value)
+					if buffConfig then
+						-- Get base attack and defense from BaseStats (if available)
+						if baseMaxAttack and baseMaxDefense then
+							-- Calculate what Warcry adds (multiplier-based)
+							local baseATK = baseMaxAttack.Value
+							local baseDEF = baseMaxDefense.Value
+							warcryAttackBonus = math.floor(baseATK * buffConfig.attackMultiplier) - baseATK
+							warcryDefenseBonus = math.floor(baseDEF * buffConfig.defenseMultiplier) - baseDEF
+						else
+							-- Fallback: Calculate from current stats (if BaseStats not available yet)
+							-- This shouldn't happen normally, but handle it gracefully
+							local currentMaxAttack = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0
+							local currentMaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0
+							-- Estimate base by reversing the multiplier
+							local estimatedBaseATK = math.floor(currentMaxAttack / buffConfig.attackMultiplier)
+							local estimatedBaseDEF = math.floor(currentMaxDefense / buffConfig.defenseMultiplier)
+							warcryAttackBonus = currentMaxAttack - estimatedBaseATK
+							warcryDefenseBonus = currentMaxDefense - estimatedBaseDEF
+						end
+					end
+				end
+				
+				-- Display stat bonus (separate from timer)
+				local buffText = ""
+				if warcryAttackBonus > 0 and warcryDefenseBonus > 0 then
+					buffText = string.format("+%.0f ATK, +%.0f DEF", warcryAttackBonus, warcryDefenseBonus)
+				elseif warcryAttackBonus > 0 then
+					buffText = string.format("+%.0f ATK", warcryAttackBonus)
+				elseif warcryDefenseBonus > 0 then
+					buffText = string.format("+%.0f DEF", warcryDefenseBonus)
+				else
+					buffText = "Active"
+				end
+				
+				statLabels["Buff_Warcry"] = createStatRow("Warcry", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_Warcry_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
 			elseif buffName == "WarriorMight" then
-				displayName = "Knight's Might (HP+)"
+				hasBuffsOrPassives = true
+				-- Calculate WarriorMight bonus
+				local warriorMightHealthBonus = 0
+				
+				-- Get current level to calculate HP increase
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.KnightBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("WarriorMight", level.Value)
+					if buffConfig then
+						-- WarriorMight adds flat HP - use config directly
+						warriorMightHealthBonus = buffConfig.hpIncrease
+					end
+				end
+				
+				-- Display stat bonus (separate from timer)
+				local buffText = ""
+				if warriorMightHealthBonus > 0 then
+					buffText = string.format("+%.0f HP", warriorMightHealthBonus)
+				else
+					buffText = "Active"
+				end
+				
+				statLabels["Buff_WarriorMight"] = createStatRow("Warrior's Might", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_WarriorMight_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
 			end
-			
-			statLabels["Buff_" .. buffName] = createStatRow(displayName, durationText, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
 		end
-	else
-		-- No active buffs
-		local noBuffsLabel = Instance.new("TextLabel")
-		noBuffsLabel.Name = "NoBuffsLabel"
-		noBuffsLabel.Size = UDim2.new(1, -10, 0, 20)
-		noBuffsLabel.BackgroundTransparency = 1
-		noBuffsLabel.Text = "No active buffs"
-		noBuffsLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-		noBuffsLabel.TextSize = 11
-		noBuffsLabel.Font = Enum.Font.Gotham
-		noBuffsLabel.LayoutOrder = layoutOrder
-		noBuffsLabel.Parent = scrollFrame
+	end
+	
+	-- Display active passives with their contributions
+	if activePassives and activePassives.Value ~= "" then
+		-- Parse active passives
+		for passiveName in string.gmatch(activePassives.Value, "([^,]+)") do
+			passiveName = passiveName:match("^%s*(.-)%s*$") -- Trim whitespace
+			
+			if passiveName == "Tenacity" then
+				hasBuffsOrPassives = true
+				-- Calculate Tenacity bonus
+				local tenacityDefenseBonus = 0
+				
+				-- Get current level to get defense increase
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.KnightPassives then
+					local passiveConfig = ConfigModule.getPassiveConfig("Tenacity", level.Value)
+					if passiveConfig then
+						tenacityDefenseBonus = passiveConfig.defenseIncrease
+					end
+				end
+				
+				local passiveText = ""
+				if tenacityDefenseBonus > 0 then
+					passiveText = string.format("+%.0f DEF", tenacityDefenseBonus)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_Tenacity"] = createStatRow("Tenacity", passiveText, Color3.fromRGB(150, 200, 255), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			end
+		end
+	end
+	
+	-- Display unlocked passives (even if not active)
+	if leaderstats:FindFirstChild("Class") and leaderstats:FindFirstChild("Level") then
+		local className = leaderstats.Class.Value
+		local level = leaderstats.Level.Value
+		
+		-- Only show passives for Knight class
+		if className == "Knight" and ConfigModule and ConfigModule.KnightPassives then
+			local passivesConfig = ConfigModule.KnightPassives
+			
+			-- Check Knights Blade passive (unlocks at level 5)
+			if passivesConfig.KnightsBlade then
+				local knightsBladeLevels = passivesConfig.KnightsBlade.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(knightsBladeLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local knightsBladeConfig = knightsBladeLevels[highestUnlocked]
+					local displayName = "Knight's Blade"
+					local statusText = string.format("Unlocked (%d%% chance)", knightsBladeConfig.chance)
+					
+					statLabels["Passive_KnightsBlade"] = createStatRow(displayName, statusText, Color3.fromRGB(150, 200, 255), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+		end
+	end
+	
+	if not hasBuffsOrPassives then
+		-- No active buffs or passives
+		local noBuffsPassivesLabel = Instance.new("TextLabel")
+		noBuffsPassivesLabel.Name = "NoBuffsPassivesLabel"
+		noBuffsPassivesLabel.Size = UDim2.new(1, -10, 0, 20)
+		noBuffsPassivesLabel.BackgroundTransparency = 1
+		noBuffsPassivesLabel.Text = "No active buffs or passives"
+		noBuffsPassivesLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		noBuffsPassivesLabel.TextSize = 11
+		noBuffsPassivesLabel.Font = Enum.Font.Gotham
+		noBuffsPassivesLabel.LayoutOrder = layoutOrder
+		noBuffsPassivesLabel.Parent = scrollFrame
 		layoutOrder = layoutOrder + 1
 	end
 	
@@ -764,74 +893,29 @@ local function setupStatConnections()
 					if stat.Name == "CurrentXP" and statLabels["CurrentXP"] and leaderstats:FindFirstChild("MaximumXP") then
 						statLabels["CurrentXP"].Text = string.format("%d / %d", stat.Value, leaderstats.MaximumXP.Value)
 					elseif stat.Name == "CurrentDefense" and statLabels["MaxDefense"] and leaderstats:FindFirstChild("MaxDefense") then
-						-- Update defense with buff display
-						local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-						local baseDefense = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxDefense")
+						-- Update defense (simple display)
 						local currentDef = stat.Value
 						local maxDef = leaderstats.MaxDefense.Value
-						
-						if baseDefense then
-							local baseDEF = baseDefense.Value
-							local buffAmount = maxDef - baseDEF
-							if buffAmount > 0 then
-								statLabels["MaxDefense"].Text = string.format("%.0f (+%.0f) / %.0f", currentDef, buffAmount, maxDef)
-							else
-								statLabels["MaxDefense"].Text = string.format("%.0f / %.0f", currentDef, maxDef)
-							end
-						else
-							statLabels["MaxDefense"].Text = string.format("%.0f / %.0f", currentDef, maxDef)
-						end
+						statLabels["MaxDefense"].Text = string.format("%.0f / %.0f", currentDef, maxDef)
+					elseif stat.Name == "MaxDefense" and statLabels["MaxDefense"] then
+						-- Update defense (simple display)
+						local currentDef = leaderstats:FindFirstChild("CurrentDefense") and leaderstats.CurrentDefense.Value or stat.Value
+						local maxDef = stat.Value
+						statLabels["MaxDefense"].Text = string.format("%.0f / %.0f", currentDef, maxDef)
 					elseif stat.Name == "MaxAttack" and statLabels["MaxAttack"] then
-						-- Update attack with buff display
-						local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-						local baseAttack = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxAttack")
-						
-						if baseAttack then
-							local baseATK = baseAttack.Value
-							local buffAmount = stat.Value - baseATK
-							if buffAmount > 0 then
-								statLabels["MaxAttack"].Text = string.format("%.0f (+%.0f)", stat.Value, buffAmount)
-							else
-								statLabels["MaxAttack"].Text = tostring(stat.Value)
-							end
-						else
-							statLabels["MaxAttack"].Text = tostring(stat.Value)
-						end
+						-- Update attack (simple display)
+						statLabels["MaxAttack"].Text = tostring(stat.Value)
 						-- Update calculated damage when MaxAttack changes
 						updateCalculatedDamage()
 					elseif stat.Name == "MaxHealth" and statLabels["MaxHealth"] then
-						-- Update health with buff display
-						local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-						local baseHealth = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxHealth")
-						
+						-- Update health (simple display)
 						if player.Character and player.Character:FindFirstChild("Humanoid") then
 							local humanoid = player.Character.Humanoid
 							local currentHealth = humanoid.Health
 							local maxHealth = humanoid.MaxHealth
-							
-							if baseHealth then
-								local baseHP = baseHealth.Value
-								local buffAmount = maxHealth - baseHP
-								if buffAmount > 0 then
-									statLabels["MaxHealth"].Text = string.format("%.0f / %.0f (+%.0f)", currentHealth, maxHealth, buffAmount)
-								else
-									statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
-								end
-							else
-								statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
-							end
+							statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
 						else
-							if baseHealth then
-								local baseHP = baseHealth.Value
-								local buffAmount = stat.Value - baseHP
-								if buffAmount > 0 then
-									statLabels["MaxHealth"].Text = string.format("%.0f (+%.0f)", stat.Value, buffAmount)
-								else
-									statLabels["MaxHealth"].Text = tostring(stat.Value)
-								end
-							else
-								statLabels["MaxHealth"].Text = tostring(stat.Value)
-							end
+							statLabels["MaxHealth"].Text = tostring(stat.Value)
 						end
 					elseif statLabels[stat.Name] then
 						statLabels[stat.Name].Text = tostring(stat.Value)
@@ -851,9 +935,31 @@ local function setupStatConnections()
 		if leaderstats:FindFirstChild("ActiveBuffs") then
 			local conn = leaderstats.ActiveBuffs:GetPropertyChangedSignal("Value"):Connect(function()
 				task.wait(0.1) -- Small delay to let server update complete
-				updateStatsDisplay() -- Refresh display when buffs change
+				updateStatsDisplay() -- Refresh display when buffs change (to update buffs and passives section)
 			end)
 			statConnections["ActiveBuffs"] = conn
+		end
+		
+		-- Connect to ActivePassives changes for real-time passive display updates
+		if leaderstats:FindFirstChild("ActivePassives") then
+			local conn = leaderstats.ActivePassives:GetPropertyChangedSignal("Value"):Connect(function()
+				task.wait(0.1) -- Small delay to let server update complete
+				updateStatsDisplay() -- Refresh display when passives change (to update buffs and passives section)
+			end)
+			statConnections["ActivePassives"] = conn
+		end
+		
+		-- Connect to BaseStats changes (when buffs/passives are applied/removed)
+		local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
+		if baseStatsFolder then
+			baseStatsFolder.ChildAdded:Connect(function()
+				task.wait(0.1) -- Small delay to let server update complete
+				updateStatsDisplay() -- Refresh display when BaseStats change
+			end)
+			baseStatsFolder.ChildRemoved:Connect(function()
+				task.wait(0.1) -- Small delay to let server update complete
+				updateStatsDisplay() -- Refresh display when BaseStats change
+			end)
 		end
 		
 		-- Connect to buff duration changes for real-time countdown updates
@@ -874,9 +980,10 @@ local function setupStatConnections()
 					if buffDuration:IsA("ValueBase") then
 						local conn = buffDuration:GetPropertyChangedSignal("Value"):Connect(function()
 							local buffName = buffDuration.Name
-							local labelKey = "Buff_" .. buffName
+							local timerLabelKey = "Buff_" .. buffName .. "_Timer"
 							
-							if statLabels[labelKey] then
+							-- Update timer label (separate from stat bonus)
+							if statLabels[timerLabelKey] then
 								local remaining = math.max(0, math.floor(buffDuration.Value))
 								local minutes = math.floor(remaining / 60)
 								local seconds = remaining % 60
@@ -888,7 +995,7 @@ local function setupStatConnections()
 									durationText = string.format("%ds", seconds)
 								end
 								
-								statLabels[labelKey].Text = durationText
+								statLabels[timerLabelKey].Text = durationText
 							end
 						end)
 						buffDurationConnections[buffDuration] = conn
@@ -901,6 +1008,8 @@ local function setupStatConnections()
 			-- Reconnect when buffs are added/removed
 			buffDurations.ChildAdded:Connect(function()
 				setupBuffDurationConnections()
+				task.wait(0.1)
+				updateStatsDisplay() -- Refresh display when buff duration is added (to show timer row)
 			end)
 			
 			buffDurations.ChildRemoved:Connect(function()
@@ -921,23 +1030,16 @@ local function setupStatConnections()
 				end
 				local conn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
 					if statLabels["MaxHealth"] and humanoid.MaxHealth then
-						-- Update health with buff display
-						local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
-						local baseHealth = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxHealth")
+						-- Update health (simple display)
 						local currentHealth = humanoid.Health
 						local maxHealth = humanoid.MaxHealth
-						
-						if baseHealth then
-							local baseHP = baseHealth.Value
-							local buffAmount = maxHealth - baseHP
-							if buffAmount > 0 then
-								statLabels["MaxHealth"].Text = string.format("%.0f / %.0f (+%.0f)", currentHealth, maxHealth, buffAmount)
-							else
-								statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
-							end
-						else
-							statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
-						end
+						statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
+					end
+					
+					-- Refresh buffs and passives display when health changes (Tenacity might activate/deactivate)
+					if leaderstats:FindFirstChild("ActivePassives") then
+						task.wait(0.1) -- Small delay to let server update ActivePassives
+						updateStatsDisplay() -- Refresh to show updated passives
 					end
 				end)
 				statConnections["HumanoidHealth"] = conn
@@ -953,6 +1055,15 @@ local function setupStatConnections()
 			updateStatsDisplay() -- Force full refresh when class changes
 		end)
 		statConnections[leaderstats.Class] = conn
+	end
+	
+	-- Special handling for level change to refresh passives (so unlocked passives show up)
+	if leaderstats:FindFirstChild("Level") then
+		local conn = leaderstats.Level:GetPropertyChangedSignal("Value"):Connect(function()
+			task.wait(0.1) -- Small delay to let server update complete
+			updateStatsDisplay() -- Force full refresh when level changes (to show newly unlocked passives)
+		end)
+		statConnections[leaderstats.Level] = conn
 	end
 end
 
@@ -978,3 +1089,4 @@ end)
 
 -- Class switching via Pick Class button prints to console
 -- Use the button to see available classes and follow the printed instructions
+

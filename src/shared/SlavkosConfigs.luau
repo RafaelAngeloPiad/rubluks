@@ -1403,32 +1403,27 @@ ServerConfigs.KnightBuffs = {
 			[5] = {
 				attackMultiplier = 1.1,   -- 10% increase
 				defenseMultiplier = 1.1,  -- 10% increase
-				duration = 30,            -- 30 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 30             -- 30 seconds
 			},
 			[15] = {
 				attackMultiplier = 1.15,  -- 15% increase
 				defenseMultiplier = 1.15, -- 15% increase
-				duration = 35,            -- 35 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 35             -- 35 seconds
 			},
 			[25] = {
 				attackMultiplier = 1.2,   -- 20% increase
 				defenseMultiplier = 1.2,  -- 20% increase
-				duration = 40,            -- 40 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 40             -- 40 seconds
 			},
 			[35] = {
 				attackMultiplier = 1.25,  -- 25% increase
 				defenseMultiplier = 1.25, -- 25% increase
-				duration = 45,            -- 45 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 45             -- 45 seconds
 			},
 			[45] = {
 				attackMultiplier = 1.3,   -- 30% increase
 				defenseMultiplier = 1.3,  -- 30% increase
-				duration = 50,            -- 50 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 50             -- 50 seconds
 			}
 		}
 	},
@@ -1437,28 +1432,23 @@ ServerConfigs.KnightBuffs = {
 		levels = {
 			[1] = {
 				hpIncrease = 100,        -- +100 HP
-				duration = 30,            -- 30 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 30             -- 30 seconds
 			},
 			[11] = {
 				hpIncrease = 200,        -- +200 HP
-				duration = 35,            -- 35 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 35             -- 35 seconds
 			},
 			[21] = {
 				hpIncrease = 400,        -- +400 HP
-				duration = 40,            -- 40 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 40             -- 40 seconds
 			},
 			[31] = {
 				hpIncrease = 800,        -- +800 HP
-				duration = 45,            -- 45 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 45             -- 45 seconds
 			},
 			[41] = {
 				hpIncrease = 1600,       -- +1600 HP
-				duration = 50,            -- 50 seconds
-				cooldown = 30             -- 30 seconds
+				duration = 50             -- 50 seconds
 			}
 		}
 	}
@@ -1513,6 +1503,111 @@ function ServerConfigs.getBuffMinLevel(buffName)
 	-- Find the lowest level requirement
 	local minLevel = nil
 	for level, _ in pairs(buffLevels) do
+		if not minLevel or level < minLevel then
+			minLevel = level
+		end
+	end
+	
+	return minLevel
+end
+
+-- ========================================
+-- KNIGHT PASSIVE CONFIGURATIONS
+-- ========================================
+
+ServerConfigs.KnightPassives = {
+	Tenacity = {
+		-- Passive: Increases Defense when HP < 30%
+		levels = {
+			[1] = {
+				defenseIncrease = 100,  -- +100 Defense
+			},
+			[11] = {
+				defenseIncrease = 200,  -- +200 Defense
+			},
+			[21] = {
+				defenseIncrease = 400,  -- +400 Defense
+			},
+			[31] = {
+				defenseIncrease = 800,  -- +800 Defense
+			},
+			[41] = {
+				defenseIncrease = 1600, -- +1600 Defense
+			}
+		},
+		hpThreshold = 0.3  -- 30% HP threshold
+	},
+	KnightsBlade = {
+		-- Passive: 2nd combo attack has chance to hit twice (double damage)
+		levels = {
+			[5] = {
+				chance = 100,  -- 10% chance
+			},
+			[15] = {
+				chance = 100,  -- 15% chance
+			},
+			[25] = {
+				chance = 100,  -- 20% chance
+			},
+			[35] = {
+				chance = 100,  -- 25% chance
+			},
+			[45] = {
+				chance = 100,  -- 30% chance
+			}
+		}
+	}
+}
+
+-- Function to get passive config for a level
+-- @param passiveName: "Tenacity" or "KnightsBlade"
+-- @param playerLevel: Player's current level
+-- @return: Passive config for that level or nil if not unlocked
+function ServerConfigs.getPassiveConfig(passiveName, playerLevel)
+	local classPassives = ServerConfigs.KnightPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the highest unlocked level for this passive
+	local highestUnlocked = nil
+	for level, config in pairs(passiveLevels) do
+		if playerLevel >= level then
+			if not highestUnlocked or level > highestUnlocked then
+				highestUnlocked = level
+			end
+		end
+	end
+	
+	if highestUnlocked then
+		return passiveLevels[highestUnlocked]
+	end
+	
+	return nil
+end
+
+-- Function to get minimum required level for a passive
+-- @param passiveName: "Tenacity" or "KnightsBlade"
+-- @return: Minimum level required or nil if passive doesn't exist
+function ServerConfigs.getPassiveMinLevel(passiveName)
+	local classPassives = ServerConfigs.KnightPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the lowest level requirement
+	local minLevel = nil
+	for level, _ in pairs(passiveLevels) do
 		if not minLevel or level < minLevel then
 			minLevel = level
 		end

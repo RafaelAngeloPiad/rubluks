@@ -785,6 +785,19 @@ local function handleNormalAttack(player)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Knight")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
+			
+			-- Check for Knights Blade passive (2nd combo attack x2) - BEFORE creating hitbox
+			local knightsBladeTriggered = false
+			if _G.checkKnightsBladePassive then
+				local success, result = pcall(function()
+					return _G.checkKnightsBladePassive(player)
+				end)
+				if success then
+					knightsBladeTriggered = result
+				end
+			end
+			
+			-- Create first hitbox (always)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
@@ -796,6 +809,25 @@ local function handleNormalAttack(player)
 				visualColor = hitboxConfig.visualColor,
 				delay = hitboxConfig.delay
 			})
+			
+			-- If Knights Blade passive triggered, create second hitbox (double damage)
+			-- Mimic crit behavior: create second hitbox with same damage at same position with minimal delay
+			if knightsBladeTriggered then
+				-- Create second hitbox immediately after first (very small delay to ensure both hit)
+				-- Use same position and damage to guarantee double damage (like crit but 2x)
+				local secondHitDelay = hitboxConfig.delay + 0.05 -- Very small delay to ensure it's a separate hit but still hits
+				_G.createStaticHitbox({
+					attachTo = root,
+					offset = hitboxConfig.offset,
+					size = hitboxConfig.size,
+					damage = actualDamage, -- Same damage as first hit (total = 2x)
+					character = char,
+					name = "Combo2_KnightsBlade",
+					showVisual = true,
+					visualColor = Color3.new(1, 0.8, 0), -- Orange/gold color to indicate passive trigger
+					delay = secondHitDelay
+				})
+			end
 			
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
