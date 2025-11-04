@@ -1717,8 +1717,57 @@ ServerConfigs.ArcherBuffs = {
 	}
 }
 
+-- Samurai Buffs
+ServerConfigs.SamuraiBuffs = {
+	Banzai = {
+		-- Buff: Creates static hitbox with small damage on use, provides immunity to damage
+		levels = {
+			[5] = {
+				damageMultiplier = 0.1,  -- 10% of MaxAttack for small damage
+				duration = 10              -- 10 seconds
+			},
+			[15] = {
+				damageMultiplier = 0.1,  -- 10% of MaxAttack for small damage
+				duration = 12              -- 12 seconds
+			},
+			[25] = {
+				damageMultiplier = 0.1,  -- 10% of MaxAttack for small damage
+				duration = 15              -- 15 seconds
+			},
+			[35] = {
+				damageMultiplier = 0.1,  -- 10% of MaxAttack for small damage
+				duration = 18              -- 18 seconds
+			},
+			[45] = {
+				damageMultiplier = 0.1,  -- 10% of MaxAttack for small damage
+				duration = 20              -- 20 seconds
+			}
+		}
+	},
+	Bushido = {
+		-- Buff: Prevents HP from hitting 0 (death prevention)
+		levels = {
+			[1] = {
+				duration = 10              -- 10 seconds
+			},
+			[11] = {
+				duration = 12              -- 12 seconds
+			},
+			[21] = {
+				duration = 15              -- 15 seconds
+			},
+			[31] = {
+				duration = 18              -- 18 seconds
+			},
+			[41] = {
+				duration = 20              -- 20 seconds
+			}
+		}
+	}
+}
+
 -- Function to get buff config for a level
--- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", "ChampionsBlood", "HuntersInstinct", or "HuntersMark"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", "ChampionsBlood", "HuntersInstinct", "HuntersMark", "Banzai", or "Bushido"
 -- @param playerLevel: Player's current level
 -- @return: Buff config for that level or nil if not unlocked
 function ServerConfigs.getBuffConfig(buffName, playerLevel)
@@ -1806,6 +1855,27 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 		end
 	end
 	
+	-- Check Samurai buffs
+	local samuraiBuffs = ServerConfigs.SamuraiBuffs
+	if samuraiBuffs and samuraiBuffs[buffName] then
+		local buffLevels = samuraiBuffs[buffName].levels
+		if buffLevels then
+			-- Find the highest unlocked level for this buff
+			local highestUnlocked = nil
+			for level, config in pairs(buffLevels) do
+				if playerLevel >= level then
+					if not highestUnlocked or level > highestUnlocked then
+						highestUnlocked = level
+					end
+				end
+			end
+			
+			if highestUnlocked then
+				return buffLevels[highestUnlocked]
+			end
+		end
+	end
+	
 	return nil
 end
 
@@ -1865,6 +1935,22 @@ function ServerConfigs.getBuffMinLevel(buffName)
 	local archerBuffs = ServerConfigs.ArcherBuffs
 	if archerBuffs and archerBuffs[buffName] then
 		local buffLevels = archerBuffs[buffName].levels
+		if buffLevels then
+			-- Find the lowest level requirement
+			local minLevel = nil
+			for level, _ in pairs(buffLevels) do
+				if not minLevel or level < minLevel then
+					minLevel = level
+				end
+			end
+			return minLevel
+		end
+	end
+	
+	-- Check Samurai buffs
+	local samuraiBuffs = ServerConfigs.SamuraiBuffs
+	if samuraiBuffs and samuraiBuffs[buffName] then
+		local buffLevels = samuraiBuffs[buffName].levels
 		if buffLevels then
 			-- Find the lowest level requirement
 			local minLevel = nil
@@ -2286,6 +2372,123 @@ end
 -- @return: Minimum level required or nil if passive doesn't exist
 function ServerConfigs.getArcherPassiveMinLevel(passiveName)
 	local classPassives = ServerConfigs.ArcherPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the lowest level requirement
+	local minLevel = nil
+	for level, _ in pairs(passiveLevels) do
+		if not minLevel or level < minLevel then
+			minLevel = level
+		end
+	end
+	
+	return minLevel
+end
+
+-- ========================================
+-- SAMURAI PASSIVE CONFIGURATIONS
+-- ========================================
+
+ServerConfigs.SamuraiPassives = {
+	BladeDance = {
+		-- Passive: Adds Attack stat on attacks (HP-based with different chances, same multiplier)
+		levels = {
+			[1] = {
+				attackIncrease = 100,  -- +100 Attack (same for both HP conditions)
+				chance = 5,            -- 5% chance when HP>30%
+			},
+			[11] = {
+				attackIncrease = 200,  -- +200 Attack (same for both HP conditions)
+				chance = 6,            -- 6% chance when HP>30%
+			},
+			[21] = {
+				attackIncrease = 400,  -- +400 Attack (same for both HP conditions)
+				chance = 7,            -- 7% chance when HP>30%
+			},
+			[31] = {
+				attackIncrease = 800,  -- +800 Attack (same for both HP conditions)
+				chance = 8,            -- 8% chance when HP>30%
+			},
+			[41] = {
+				attackIncrease = 1600, -- +1600 Attack (same for both HP conditions)
+				chance = 10,           -- 10% chance when HP>30%
+			}
+		},
+		hpThreshold = 0.3,  -- 30% HP threshold
+		lowHPChanceMultiplier = 2.0  -- HP<30% gets 2x the base chance (much larger chance)
+	},
+	Burst = {
+		-- Passive: Combo2 attack has chance to deal double damage (x2)
+		levels = {
+			[5] = {
+				chanceHighHP = 5,   -- 5% chance when HP>30%
+				chanceLowHP = 10,   -- 10% chance when HP<30% (much larger chance)
+			},
+			[15] = {
+				chanceHighHP = 6,   -- 6% chance when HP>30%
+				chanceLowHP = 12,   -- 12% chance when HP<30% (much larger chance)
+			},
+			[25] = {
+				chanceHighHP = 7,   -- 7% chance when HP>30%
+				chanceLowHP = 14,   -- 14% chance when HP<30% (much larger chance)
+			},
+			[35] = {
+				chanceHighHP = 8,   -- 8% chance when HP>30%
+				chanceLowHP = 16,   -- 16% chance when HP<30% (much larger chance)
+			},
+			[45] = {
+				chanceHighHP = 10,  -- 10% chance when HP>30%
+				chanceLowHP = 20,   -- 20% chance when HP<30% (much larger chance)
+			}
+		},
+		hpThreshold = 0.3  -- 30% HP threshold
+	}
+}
+
+-- Function to get samurai passive config for a level
+-- @param passiveName: "BladeDance" or "Burst"
+-- @param playerLevel: Player's current level
+-- @return: Passive config for that level or nil if not unlocked
+function ServerConfigs.getSamuraiPassiveConfig(passiveName, playerLevel)
+	local classPassives = ServerConfigs.SamuraiPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the highest unlocked level for this passive
+	local highestUnlocked = nil
+	for level, config in pairs(passiveLevels) do
+		if playerLevel >= level then
+			if not highestUnlocked or level > highestUnlocked then
+				highestUnlocked = level
+			end
+		end
+	end
+	
+	if highestUnlocked then
+		return passiveLevels[highestUnlocked]
+	end
+	
+	return nil
+end
+
+-- Function to get minimum required level for a samurai passive
+-- @param passiveName: "BladeDance" or "Burst"
+-- @return: Minimum level required or nil if passive doesn't exist
+function ServerConfigs.getSamuraiPassiveMinLevel(passiveName)
+	local classPassives = ServerConfigs.SamuraiPassives
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end

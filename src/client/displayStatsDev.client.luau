@@ -811,6 +811,62 @@ local function updateStatsDisplay()
 						layoutOrder = layoutOrder + 1
 					end
 				end
+			elseif buffName == "Banzai" then
+				hasBuffsOrPassives = true
+				-- Banzai provides immunity to damage
+				local buffText = "Immune to Damage"
+				
+				statLabels["Buff_Banzai"] = createStatRow("Banzai", buffText, Color3.fromRGB(255, 200, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_Banzai_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
+			elseif buffName == "Bushido" then
+				hasBuffsOrPassives = true
+				-- Bushido prevents HP from hitting 0
+				local buffText = "HP Cannot Hit 0"
+				
+				statLabels["Buff_Bushido"] = createStatRow("Bushido", buffText, Color3.fromRGB(255, 200, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_Bushido_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
 			end
 		end
 	end
@@ -986,6 +1042,54 @@ local function updateStatsDisplay()
 				end
 				
 				statLabels["Passive_Immobilize"] = createStatRow("Immobilize", passiveText, Color3.fromRGB(255, 200, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "BladeDance" then
+				hasBuffsOrPassives = true
+				-- Calculate Blade Dance attack increase
+				local bladeDanceAttackIncrease = 0
+				
+				-- Get current level to get attack increase
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.SamuraiPassives then
+					local passiveConfig = ConfigModule.getSamuraiPassiveConfig("BladeDance", level.Value)
+					if passiveConfig then
+						bladeDanceAttackIncrease = passiveConfig.attackIncrease or 0
+					end
+				end
+				
+				local passiveText = ""
+				if bladeDanceAttackIncrease > 0 then
+					passiveText = string.format("+%d ATK", bladeDanceAttackIncrease)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_BladeDance"] = createStatRow("Blade Dance", passiveText, Color3.fromRGB(255, 200, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "Burst" then
+				hasBuffsOrPassives = true
+				-- Calculate Burst chance (HP-based)
+				local burstChanceHighHP = 0
+				local burstChanceLowHP = 0
+				
+				-- Get current level to get chance
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.SamuraiPassives then
+					local passiveConfig = ConfigModule.getSamuraiPassiveConfig("Burst", level.Value)
+					if passiveConfig then
+						burstChanceHighHP = passiveConfig.chanceHighHP or 0
+						burstChanceLowHP = passiveConfig.chanceLowHP or 0
+					end
+				end
+				
+				local passiveText = ""
+				if burstChanceHighHP > 0 and burstChanceLowHP > 0 then
+					passiveText = string.format("%d%%/%d%% chance", burstChanceHighHP, burstChanceLowHP)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_Burst"] = createStatRow("Burst", passiveText, Color3.fromRGB(255, 200, 100), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
 		end
@@ -1173,6 +1277,57 @@ local function updateStatsDisplay()
 					local statusText = string.format("Unlocked (%d%% Stun)", immobilizeConfig.stunChance)
 					
 					statLabels["Passive_Immobilize_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+		end
+		
+		-- Only show passives for Samurai class
+		if className == "Samurai" and ConfigModule and ConfigModule.SamuraiPassives then
+			local passivesConfig = ConfigModule.SamuraiPassives
+			
+			-- Check Blade Dance passive (unlocks at level 1)
+			if passivesConfig.BladeDance then
+				local bladeDanceLevels = passivesConfig.BladeDance.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(bladeDanceLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local bladeDanceConfig = bladeDanceLevels[highestUnlocked]
+					local displayName = "Blade Dance"
+					local statusText = string.format("Unlocked (+%d ATK)", bladeDanceConfig.attackIncrease)
+					
+					statLabels["Passive_BladeDance_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+			
+			-- Check Burst passive (unlocks at level 5)
+			if passivesConfig.Burst then
+				local burstLevels = passivesConfig.Burst.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(burstLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local burstConfig = burstLevels[highestUnlocked]
+					local displayName = "Burst"
+					local statusText = string.format("Unlocked (%d%%/%d%% chance)", burstConfig.chanceHighHP, burstConfig.chanceLowHP)
+					
+					statLabels["Passive_Burst_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
 				end
 			end

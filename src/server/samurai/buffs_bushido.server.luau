@@ -89,6 +89,11 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 		
 		Debris:AddItem(vfx, 4.5)
+		
+		-- Apply Bushido buff (prevents HP from hitting 0)
+		if _G.applyBuff then
+			_G.applyBuff(player, "Bushido")
+		end
 	end)
 
 end)

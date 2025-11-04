@@ -7,6 +7,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
+-- Import centralized configuration
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
+-- Helper function to get player's MaxAttack stat
+local function getPlayerMaxAttack(player)
+	if not player then return 0 end
+	
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return 0 end
+	
+	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+	if not maxAttack then return 0 end
+	
+	return maxAttack.Value or 0
+end
+
+-- Helper function to calculate actual damage from multiplier with crit chance
+-- @param player: Player instance
+-- @param damageMultiplier: Damage multiplier (e.g., 0.1 = 10% of MaxAttack)
+-- @return: actualDamage, isCrit - the final damage value and whether it was a critical hit
+local function calculateDamageForHitbox(player, damageMultiplier)
+	-- Check if calculateDamageWithCrit function exists (fallback for module caching issues)
+	if ServerConfigs.calculateDamageWithCrit then
+		return ServerConfigs.calculateDamageWithCrit(damageMultiplier, player)
+	else
+		-- Fallback: if function doesn't exist, use base damage calculation
+		local maxAttack = getPlayerMaxAttack(player)
+		if ServerConfigs.calculateDamage then
+			return ServerConfigs.calculateDamage(damageMultiplier, maxAttack), false
+		else
+			warn("[Banzai] ServerConfigs.calculateDamageWithCrit not found, using fallback.")
+			return math.floor(damageMultiplier * maxAttack), false
+		end
+	end
+end
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -86,6 +122,37 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 
 		Debris:AddItem(vfx, 1.5)
+		
+		-- Apply Banzai buff (provides immunity to damage)
+		if _G.applyBuff then
+			_G.applyBuff(player, "Banzai")
+		end
+		
+		-- Create static hitbox with small damage (upon usage)
+		local leaderstats = player:FindFirstChild("leaderstats")
+		local level = leaderstats and leaderstats:FindFirstChild("Level")
+		if level and ServerConfigs then
+			local buffConfig = ServerConfigs.getBuffConfig("Banzai", level.Value)
+			if buffConfig and buffConfig.damageMultiplier then
+				-- Calculate damage based on player's MaxAttack
+				local actualDamage, isCrit = calculateDamageForHitbox(player, buffConfig.damageMultiplier)
+				
+				-- Create static hitbox around player (small AoE damage)
+				_G.createStaticHitbox({
+					attachTo = root,
+					offset = CFrame.new(0, 0, 0),
+					size = Vector3.new(15, 15, 15), -- Small hitbox around player
+					damage = actualDamage,
+					character = character,
+					name = "Banzai",
+					showVisual = true,
+					visualColor = Color3.new(1, 0.5, 0), -- Orange for Banzai
+					delay = 0,
+					actionType = "banzai",
+					classType = "Samurai"
+				})
+			end
+		end
 	end)
 
 end)

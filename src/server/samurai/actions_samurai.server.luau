@@ -588,15 +588,35 @@ local function handleNormalAttack(player)
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Samurai")
 		local damageMultiplier = hitboxConfig.damage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Samurai", damageMultiplier)
+		
+		-- Check for Blade Dance passive (Atk+) - adds flat Attack to damage
+		local bladeDanceAttackIncrease = 0
+		if _G.checkSamuraiBladeDancePassive then
+			local success, result = pcall(function()
+				return _G.checkSamuraiBladeDancePassive(player)
+			end)
+			if success and result then
+				bladeDanceAttackIncrease = result
+			end
+		end
+		
+		-- Add Blade Dance attack increase to final damage
+		local finalDamage = actualDamage + bladeDanceAttackIncrease
+		local visualColor = hitboxConfig.visualColor
+		if bladeDanceAttackIncrease > 0 then
+			-- Use orange/gold color to indicate Blade Dance triggered
+			visualColor = Color3.new(1, 0.8, 0)
+		end
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = actualDamage,
+			damage = finalDamage,
 			character = char,
 			name = "JumpAttack",
 			showVisual = true,
-			visualColor = hitboxConfig.visualColor,
+			visualColor = visualColor,
 			delay = hitboxConfig.delay,
 			actionType = "jumpAttack",
 			classType = "Samurai"
@@ -626,15 +646,35 @@ local function handleNormalAttack(player)
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Samurai")
 		local damageMultiplier = hitboxConfig.damage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Samurai", damageMultiplier)
+		
+		-- Check for Blade Dance passive (Atk+) - adds flat Attack to damage
+		local bladeDanceAttackIncrease = 0
+		if _G.checkSamuraiBladeDancePassive then
+			local success, result = pcall(function()
+				return _G.checkSamuraiBladeDancePassive(player)
+			end)
+			if success and result then
+				bladeDanceAttackIncrease = result
+			end
+		end
+		
+		-- Add Blade Dance attack increase to final damage
+		local finalDamage = actualDamage + bladeDanceAttackIncrease
+		local visualColor = hitboxConfig.visualColor
+		if bladeDanceAttackIncrease > 0 then
+			-- Use orange/gold color to indicate Blade Dance triggered
+			visualColor = Color3.new(1, 0.8, 0)
+		end
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = hitboxConfig.offset,
 			size = hitboxConfig.size,
-			damage = actualDamage,
+			damage = finalDamage,
 			character = char,
 			name = "MoveAttack",
 			showVisual = true,
-			visualColor = hitboxConfig.visualColor,
+			visualColor = visualColor,
 			delay = hitboxConfig.delay, -- Base delay (auto-scales with animation speed)
 			actionType = "moveAttack",
 			classType = "Samurai"
@@ -667,15 +707,35 @@ local function handleNormalAttack(player)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Samurai")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Samurai", damageMultiplier)
+			
+			-- Check for Blade Dance passive (Atk+) - adds flat Attack to damage
+			local bladeDanceAttackIncrease = 0
+			if _G.checkSamuraiBladeDancePassive then
+				local success, result = pcall(function()
+					return _G.checkSamuraiBladeDancePassive(player)
+				end)
+				if success and result then
+					bladeDanceAttackIncrease = result
+				end
+			end
+			
+			-- Add Blade Dance attack increase to final damage
+			local finalDamage = actualDamage + bladeDanceAttackIncrease
+			local visualColor = hitboxConfig.visualColor
+			if bladeDanceAttackIncrease > 0 then
+				-- Use orange/gold color to indicate Blade Dance triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+			
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = actualDamage,
+				damage = finalDamage,
 				character = char,
 				name = "Combo1",
 				showVisual = true,
-				visualColor = hitboxConfig.visualColor,
+				visualColor = visualColor,
 				delay = hitboxConfig.delay,
 				actionType = "combo1",
 				classType = "Samurai"
@@ -699,15 +759,57 @@ local function handleNormalAttack(player)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Samurai")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Samurai", damageMultiplier)
+			
+			-- Check for Blade Dance passive (Atk+) - adds flat Attack to damage
+			local bladeDanceAttackIncrease = 0
+			if _G.checkSamuraiBladeDancePassive then
+				local success, result = pcall(function()
+					return _G.checkSamuraiBladeDancePassive(player)
+				end)
+				if success and result then
+					bladeDanceAttackIncrease = result
+				end
+			end
+			
+			-- Add Blade Dance attack increase to damage (before Burst check)
+			local damageWithBladeDance = actualDamage + bladeDanceAttackIncrease
+			
+			-- Check for Burst passive (combo2 Atk x2) - BEFORE creating hitbox
+			-- Similar to how crits work: multiply damage by 2 instead of creating two separate hits
+			local burstTriggered = false
+			if _G.checkSamuraiBurstPassive then
+				local success, result = pcall(function()
+					return _G.checkSamuraiBurstPassive(player)
+				end)
+				if success then
+					burstTriggered = result
+				end
+			end
+			
+			-- If Burst passive triggered, multiply damage by 2 (like crit multiplier)
+			-- This creates ONE hit with double damage, not two separate hits
+			local finalDamage = damageWithBladeDance
+			local visualColor = hitboxConfig.visualColor
+			if burstTriggered then
+				-- Double the damage (including Blade Dance bonus)
+				finalDamage = math.floor(damageWithBladeDance * 2)
+				-- Use orange/gold color to indicate Burst triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			elseif bladeDanceAttackIncrease > 0 then
+				-- Only Blade Dance triggered, use orange/gold color
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+			
+			-- Create ONE hitbox with final damage (doubled if Burst triggered)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = actualDamage,
+				damage = finalDamage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
-				visualColor = hitboxConfig.visualColor,
+				visualColor = visualColor,
 				delay = hitboxConfig.delay,
 				actionType = "combo2",
 				classType = "Samurai"
@@ -735,15 +837,35 @@ local function handleNormalAttack(player)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Samurai")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Samurai", damageMultiplier)
+			
+			-- Check for Blade Dance passive (Atk+) - adds flat Attack to damage
+			local bladeDanceAttackIncrease = 0
+			if _G.checkSamuraiBladeDancePassive then
+				local success, result = pcall(function()
+					return _G.checkSamuraiBladeDancePassive(player)
+				end)
+				if success and result then
+					bladeDanceAttackIncrease = result
+				end
+			end
+			
+			-- Add Blade Dance attack increase to final damage
+			local finalDamage = actualDamage + bladeDanceAttackIncrease
+			local visualColor = hitboxConfig.visualColor
+			if bladeDanceAttackIncrease > 0 then
+				-- Use orange/gold color to indicate Blade Dance triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+			
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = actualDamage,
+				damage = finalDamage,
 				character = char,
 				name = "Combo1_Fallback",
 				showVisual = true,
-				visualColor = hitboxConfig.visualColor,
+				visualColor = visualColor,
 				delay = hitboxConfig.delay,
 				actionType = "combo1",
 				classType = "Samurai"
@@ -767,15 +889,35 @@ local function handleNormalAttack(player)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Samurai")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Samurai", damageMultiplier, true) -- Force crit for combo3
+			
+			-- Check for Blade Dance passive (Atk+) - adds flat Attack to damage
+			local bladeDanceAttackIncrease = 0
+			if _G.checkSamuraiBladeDancePassive then
+				local success, result = pcall(function()
+					return _G.checkSamuraiBladeDancePassive(player)
+				end)
+				if success and result then
+					bladeDanceAttackIncrease = result
+				end
+			end
+			
+			-- Add Blade Dance attack increase to final damage
+			local finalDamage = actualDamage + bladeDanceAttackIncrease
+			local visualColor = hitboxConfig.visualColor
+			if bladeDanceAttackIncrease > 0 then
+				-- Use orange/gold color to indicate Blade Dance triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+			
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = actualDamage,
+				damage = finalDamage,
 				character = char,
 				name = "Combo3",
 				showVisual = true,
-				visualColor = hitboxConfig.visualColor,
+				visualColor = visualColor,
 				delay = hitboxConfig.delay, -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
 				actionType = "combo3",
 				classType = "Samurai"

@@ -179,6 +179,9 @@ ServerConfigs.BaseStats = BaseStats
 -- Store active buffs for each player
 local playerBuffs = {} -- player -> { buffName -> { config, startTime, endTime, baseStats } }
 
+-- Store Bushido buff states for death prevention monitoring
+local playerBushidoStates = {} -- player -> { active, character, humanoid, healthConnection, heartbeatConnection }
+
 -- Function to get base stats before buffs (stored temporarily during buff)
 local function getBaseStatsBeforeBuff(player)
 	local leaderstats = player:FindFirstChild("leaderstats")
@@ -422,6 +425,80 @@ function _G.applyBuff(player, buffName, buffConfig)
 			local updateFunc = classFuncs[classType]
 			if updateFunc then
 				updateFunc("attack", attackAnimSpeedMultiplier)
+			end
+		end
+		
+	elseif buffName == "Banzai" then
+		-- Banzai: Provides immunity to damage (no stat modifications needed)
+		-- Enable invincibility for the entire buff duration
+		if _G.enablePlayerInvincibility then
+			_G.enablePlayerInvincibility(player)
+		end
+		-- The static hitbox creation is handled in the buff file when marker is reached
+		
+	elseif buffName == "Bushido" then
+		-- Bushido: Prevents HP from hitting 0 (death prevention)
+		-- No stat modifications needed, death prevention is handled via HealthChanged monitoring
+		-- Set up death prevention monitoring
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChild("Humanoid")
+			if humanoid then
+				-- Store Bushido state for this player
+				if not playerBushidoStates then
+					playerBushidoStates = {}
+				end
+				playerBushidoStates[player] = {
+					active = true,
+					character = character,
+					humanoid = humanoid
+				}
+				
+				-- Monitor health changes to prevent HP from hitting 0
+				local healthConnection
+				healthConnection = humanoid.HealthChanged:Connect(function()
+					if humanoid.Health <= 0 then
+						-- Check if Bushido buff is still active
+						if playerBuffs[player] and playerBuffs[player]["Bushido"] then
+							local buffData = playerBuffs[player]["Bushido"]
+							if buffData and buffData.endTime and tick() < buffData.endTime then
+								-- Buff is still active, prevent death by setting HP to 1
+								humanoid.Health = 1
+							end
+						end
+					end
+				end)
+				
+				-- Also use RunService.Heartbeat as backup (similar to One Last Chance)
+				local RunService = game:GetService("RunService")
+				local heartbeatConnection
+				heartbeatConnection = RunService.Heartbeat:Connect(function()
+					if not character or not character.Parent or not humanoid or not humanoid.Parent then
+						if heartbeatConnection then heartbeatConnection:Disconnect() end
+						return
+					end
+					
+					-- Check if Bushido buff is still active
+					if playerBuffs[player] and playerBuffs[player]["Bushido"] then
+						local buffData = playerBuffs[player]["Bushido"]
+						if buffData and buffData.endTime and tick() < buffData.endTime then
+							-- Buff is active, prevent HP from hitting 0
+							if humanoid.Health <= 0 then
+								humanoid.Health = 1
+							end
+						else
+							-- Buff expired, disconnect
+							if heartbeatConnection then heartbeatConnection:Disconnect() end
+						end
+					else
+						-- Buff removed, disconnect
+						if heartbeatConnection then heartbeatConnection:Disconnect() end
+					end
+				end)
+				
+				-- Store connections for cleanup
+				playerBushidoStates[player].healthConnection = healthConnection
+				playerBushidoStates[player].heartbeatConnection = heartbeatConnection
 			end
 		end
 	end
@@ -1132,6 +1209,25 @@ function _G.removeBuff(player, buffName)
 				updateFunc("attack", attackAnimSpeedMultiplier)
 			end
 		end
+		
+	elseif buffName == "Banzai" then
+		-- Banzai: Disable invincibility (allow damage again)
+		if _G.disablePlayerInvincibility then
+			_G.disablePlayerInvincibility(player)
+		end
+		
+	elseif buffName == "Bushido" then
+		-- Bushido: Clean up death prevention monitoring
+		if playerBushidoStates and playerBushidoStates[player] then
+			local state = playerBushidoStates[player]
+			if state.healthConnection then
+				state.healthConnection:Disconnect()
+			end
+			if state.heartbeatConnection then
+				state.heartbeatConnection:Disconnect()
+			end
+			playerBushidoStates[player] = nil
+		end
 	end
 	
 	-- Remove buff tracking
@@ -1396,6 +1492,18 @@ end
 game.Players.PlayerRemoving:Connect(function(player)
 	if playerInvincibility[player] then
 		playerInvincibility[player] = nil
+	end
+	
+	-- Clean up Bushido states when player leaves
+	if playerBushidoStates and playerBushidoStates[player] then
+		local state = playerBushidoStates[player]
+		if state.healthConnection then
+			state.healthConnection:Disconnect()
+		end
+		if state.heartbeatConnection then
+			state.heartbeatConnection:Disconnect()
+		end
+		playerBushidoStates[player] = nil
 	end
 end)
 
@@ -2067,6 +2175,18 @@ game.Players.PlayerAdded:Connect(function(plr)
 	
 	-- Sa spawn
 	plr.CharacterAdded:Connect(function(char)
+		-- Clean up Bushido states when character is removed/respawned
+		if playerBushidoStates and playerBushidoStates[plr] then
+			local state = playerBushidoStates[plr]
+			if state.healthConnection then
+				state.healthConnection:Disconnect()
+			end
+			if state.heartbeatConnection then
+				state.heartbeatConnection:Disconnect()
+			end
+			playerBushidoStates[plr] = nil
+		end
+		
 		local humanoid = char:WaitForChild("Humanoid")
 
 		-- Apply base stats if not already set
