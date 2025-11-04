@@ -44,8 +44,8 @@ local BaseStats = {
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.03,   -- 1% growth - Movement Speed
-			Aspd = 1.03,   -- 1% growth - Attack Speed
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		},
 		Archer = {
 			HP = 1.06,     -- 6% growth
@@ -55,8 +55,8 @@ local BaseStats = {
 			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.03,   -- 1% growth - Movement Speed
-			Aspd = 1.03    -- 1% growth - Attack Speed
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01    -- 1% growth - Attack Speed
 		},
 		Gladiator = {
 			HP = 1.10,     -- 10% growth
@@ -66,8 +66,8 @@ local BaseStats = {
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.03,   -- 1% growth - Movement Speed
-			Aspd = 1.03,   -- 1% growth - Attack Speed
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		},
 		Brawler = {  -- Berserker in spreadsheet
 			HP = 1.07,     -- 7% growth
@@ -77,8 +77,8 @@ local BaseStats = {
 			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.03,   -- 1% growth - Movement Speed
-			Aspd = 1.03,   -- 1% growth - Attack Speed
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		},
 		Knight = {
 			HP = 1.07,     -- 7% growth
@@ -88,8 +88,8 @@ local BaseStats = {
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.03,   -- 1% growth - Movement Speed
-			Aspd = 1.03,   -- 1% growth - Attack Speed
+			Mspd = 1.01,   -- 1% growth - Movement Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		}
 	},
 	
