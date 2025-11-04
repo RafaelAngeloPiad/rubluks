@@ -286,6 +286,59 @@ function _G.applyBuff(player, buffName, buffConfig)
 		-- LastChance: Provides status immunity and HP regeneration
 		-- Status immunity is checked in StatusAilmentHandler
 		-- HP regeneration is handled in update loop
+		
+	elseif buffName == "ChampionsCheer" then
+		-- ChampionsCheer: Multiplies HP and Defense, adds HP regeneration
+		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
+		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+		
+		if maxHealth and baseStats and humanoid then
+			-- Calculate buffed health (base * (1 + multiplier))
+			local buffedHealth = math.floor(baseStats.MaxHealth * (1 + config.hpMultiplier))
+			maxHealth.Value = buffedHealth
+			
+			-- Update humanoid MaxHealth
+			humanoid.MaxHealth = buffedHealth
+			
+			-- Increase current health proportionally (preserve health percentage)
+			local healthPercentage = baseStats.MaxHealth > 0 and (baseStats.CurrentHealth / baseStats.MaxHealth) or 1
+			local newHealth = math.min(buffedHealth * healthPercentage, buffedHealth)
+			humanoid.Health = newHealth
+		end
+		
+		if maxDefense and baseStats then
+			-- Calculate buffed defense (base * (1 + multiplier))
+			local buffedDefense = math.floor(baseStats.MaxDefense * (1 + config.defenseMultiplier))
+			maxDefense.Value = buffedDefense
+			
+			-- Also update CurrentDefense to match MaxDefense
+			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+			if currentDefense then
+				currentDefense.Value = buffedDefense
+			end
+		end
+		
+		-- HP regeneration is handled in update loop (similar to LastChance)
+		
+	elseif buffName == "ChampionsBlood" then
+		-- ChampionsBlood: Adds flat Defense and provides status immunity
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		
+		if maxDefense and baseStats then
+			-- Calculate buffed defense (base + flat increase)
+			local buffedDefense = baseStats.MaxDefense + config.defenseIncrease
+			maxDefense.Value = buffedDefense
+			
+			-- Also update CurrentDefense to match MaxDefense
+			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+			if currentDefense then
+				currentDefense.Value = buffedDefense
+			end
+		end
+		
+		-- Status immunity is checked in StatusAilmentHandler (similar to LastChance)
 	end
 	
 	-- Track buff
@@ -332,6 +385,33 @@ function _G.applyBuff(player, buffName, buffConfig)
 			end
 			baseHealth.Value = baseStats.MaxHealth
 		end
+	elseif buffName == "ChampionsCheer" then
+		-- Store base Health and Defense for UI
+		if baseStats then
+			local baseHealth = baseStatsFolder:FindFirstChild("BaseMaxHealth")
+			if not baseHealth then
+				baseHealth = Instance.new("NumberValue", baseStatsFolder)
+				baseHealth.Name = "BaseMaxHealth"
+			end
+			baseHealth.Value = baseStats.MaxHealth
+			
+			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+			if not baseDefense then
+				baseDefense = Instance.new("NumberValue", baseStatsFolder)
+				baseDefense.Name = "BaseMaxDefense"
+			end
+			baseDefense.Value = baseStats.MaxDefense
+		end
+	elseif buffName == "ChampionsBlood" then
+		-- Store base Defense for UI
+		if baseStats then
+			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+			if not baseDefense then
+				baseDefense = Instance.new("NumberValue", baseStatsFolder)
+				baseDefense.Name = "BaseMaxDefense"
+			end
+			baseDefense.Value = baseStats.MaxDefense
+		end
 	end
 	
 	-- Update ActiveBuffs string value
@@ -367,6 +447,60 @@ function _G.applyBuff(player, buffName, buffConfig)
 				connection:Disconnect()
 			end
 		end)
+	end
+	
+	-- Start HP regeneration for ChampionsCheer buff
+	if buffName == "ChampionsCheer" then
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				-- Start HP regeneration loop
+				local regenThread = task.spawn(function()
+					while character and character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 do
+						-- Check if buff is still active
+						if not playerBuffs[player] or not playerBuffs[player]["ChampionsCheer"] then
+							break
+						end
+						
+						local buffData = playerBuffs[player]["ChampionsCheer"]
+						if not buffData or not buffData.config then
+							break
+						end
+						
+						-- Check if buff expired
+						local currentTime = tick()
+						if currentTime >= buffData.endTime then
+							break
+						end
+						
+						-- Wait 1 second before next regeneration
+						task.wait(1)
+						
+						-- Check again after wait (character might have been removed or buff expired)
+						if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+							break
+						end
+						
+						if not playerBuffs[player] or not playerBuffs[player]["ChampionsCheer"] then
+							break
+						end
+						
+						-- Get HP regen percentage from buff config
+						local hpRegenPercentage = buffData.config.hpRegenPercentage or 0
+						if hpRegenPercentage > 0 then
+							-- Calculate healing amount (percentage of Max HP)
+							local maxHealth = humanoid.MaxHealth
+							local healingAmount = maxHealth * hpRegenPercentage
+							
+							-- Regenerate health (cap at MaxHealth)
+							local newHealth = math.min(humanoid.Health + healingAmount, maxHealth)
+							humanoid.Health = newHealth
+						end
+					end
+				end)
+			end
+		end
 	end
 	
 	-- Start HP regeneration and status immunity display for LastChance buff
@@ -507,6 +641,96 @@ function _G.applyBuff(player, buffName, buffConfig)
 		end
 	end
 	
+	-- Start status immunity display for ChampionsBlood buff
+	if buffName == "ChampionsBlood" then
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local head = character:FindFirstChild("Head")
+			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+			local attachPart = head or humanoidRootPart
+			
+			if attachPart then
+				-- Create "Immune" text above head during immunity duration
+				local RunService = game:GetService("RunService")
+				local billboardGui = Instance.new("BillboardGui")
+				billboardGui.Name = "ImmuneText_" .. tostring(tick() * 1000)
+				billboardGui.Size = UDim2.new(0, 200, 0, 50)
+				billboardGui.StudsOffset = Vector3.new(0, 3.5, 0) -- Above head, higher than ailment text
+				billboardGui.AlwaysOnTop = true
+				billboardGui.LightInfluence = 0
+				billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+				billboardGui.Parent = attachPart
+				
+				-- Create TextLabel
+				local textLabel = Instance.new("TextLabel")
+				textLabel.Size = UDim2.new(1, 0, 1, 0)
+				textLabel.BackgroundTransparency = 1
+				textLabel.Text = "IMMUNE"
+				textLabel.TextColor3 = Color3.new(0, 1, 0) -- Green
+				textLabel.TextSize = 24
+				textLabel.Font = Enum.Font.GothamBold
+				textLabel.TextStrokeTransparency = 0
+				textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+				textLabel.TextXAlignment = Enum.TextXAlignment.Center
+				textLabel.TextYAlignment = Enum.TextYAlignment.Center
+				textLabel.Parent = billboardGui
+				
+				-- Monitor immunity status and remove text when immunity expires
+				local connection
+				connection = RunService.Heartbeat:Connect(function()
+					if not character or not character.Parent or not humanoid or not humanoid.Parent or humanoid.Health <= 0 then
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+					
+					if not playerBuffs[player] or not playerBuffs[player]["ChampionsBlood"] then
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+					
+					local buffData = playerBuffs[player]["ChampionsBlood"]
+					if not buffData or not buffData.config then
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+					
+					local currentTime = tick()
+					local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
+					
+					if currentTime >= immunityEndTime then
+						-- Immunity expired, remove text
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+				end)
+				
+				-- Clean up when done (safety cleanup)
+				local buffData = playerBuffs[player]["ChampionsBlood"]
+				if buffData and buffData.config then
+					task.delay(buffData.config.immunityDuration + 0.1, function()
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+					end)
+				end
+			end
+		end
+	end
+	
 	-- Auto-remove buff after duration
 	task.delay(config.duration, function()
 		if playerBuffs[player] and playerBuffs[player][buffName] then
@@ -580,6 +804,52 @@ function _G.removeBuff(player, buffName)
 	elseif buffName == "LastChance" then
 		-- LastChance: No stat restoration needed (no stat modifications)
 		-- Status immunity and HP regen are handled automatically
+		
+	elseif buffName == "ChampionsCheer" then
+		-- ChampionsCheer: Restore HP and Defense to base values
+		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+		
+		if maxHealth and baseStats and humanoid then
+			-- Restore base health
+			maxHealth.Value = baseStats.MaxHealth
+			humanoid.MaxHealth = baseStats.MaxHealth
+			
+			-- Restore health percentage (cap at max health)
+			local buffedMaxHealth = baseStats.MaxHealth * (1 + buffData.config.hpMultiplier)
+			local healthPercentage = buffedMaxHealth > 0 and (humanoid.Health / buffedMaxHealth) or 1
+			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
+			humanoid.Health = newHealth
+		end
+		
+		if maxDefense and baseStats then
+			-- Restore base defense
+			maxDefense.Value = baseStats.MaxDefense
+			
+			-- Also restore CurrentDefense
+			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+			if currentDefense then
+				currentDefense.Value = baseStats.MaxDefense
+			end
+		end
+		
+	elseif buffName == "ChampionsBlood" then
+		-- ChampionsBlood: Restore Defense to base value
+		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+		
+		if maxDefense and baseStats then
+			-- Restore base defense
+			maxDefense.Value = baseStats.MaxDefense
+			
+			-- Also restore CurrentDefense
+			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+			if currentDefense then
+				currentDefense.Value = baseStats.MaxDefense
+			end
+		end
+		
+		-- Status immunity is handled automatically
 	end
 	
 	-- Remove buff tracking
@@ -648,6 +918,20 @@ function _G.removeBuff(player, buffName)
 				if baseHealth then
 					baseHealth:Destroy()
 				end
+			elseif buffName == "ChampionsCheer" then
+				local baseHealth = baseStatsFolder:FindFirstChild("BaseMaxHealth")
+				if baseHealth then
+					baseHealth:Destroy()
+				end
+				local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+				if baseDefense then
+					baseDefense:Destroy()
+				end
+			elseif buffName == "ChampionsBlood" then
+				local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
+				if baseDefense then
+					baseDefense:Destroy()
+				end
 			end
 			
 			-- Clean up BaseStats folder if it's empty
@@ -703,7 +987,7 @@ function _G.getPlayerLifestealPercentage(player)
 	return nil
 end
 
--- Function to check if player has status immunity (from LastChance buff)
+-- Function to check if player has status immunity (from LastChance or ChampionsBlood buff)
 -- @param player: Player instance
 -- @return: true if player has status immunity, false otherwise
 function _G.hasStatusImmunity(player)
@@ -727,6 +1011,26 @@ function _G.hasStatusImmunity(player)
 			else
 				-- Buff expired, remove it (safety cleanup)
 				playerBuffs[player]["LastChance"] = nil
+			end
+		end
+	end
+	
+	-- Check for ChampionsBlood buff
+	if playerBuffs[player]["ChampionsBlood"] then
+		local buffData = playerBuffs[player]["ChampionsBlood"]
+		-- Check if buff is still active (not expired)
+		if buffData and buffData.config and buffData.endTime then
+			local currentTime = tick()
+			if currentTime < buffData.endTime then
+				-- Check if immunity duration is still active
+				local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
+				if currentTime < immunityEndTime then
+					-- Player has status immunity
+					return true
+				end
+			else
+				-- Buff expired, remove it (safety cleanup)
+				playerBuffs[player]["ChampionsBlood"] = nil
 			end
 		end
 	end

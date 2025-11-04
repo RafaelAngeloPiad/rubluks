@@ -815,15 +815,40 @@ local function handleNormalAttack(player)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Gladiator")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Gladiator", damageMultiplier)
+			
+			-- Check for Champion's Rebuke passive (2nd combo attack x2) - BEFORE creating hitbox
+			-- Similar to how crits work: multiply damage by 2 instead of creating two separate hits
+			local championsRebukeTriggered = false
+			if _G.checkChampionsRebukePassive then
+				local success, result = pcall(function()
+					return _G.checkChampionsRebukePassive(player)
+				end)
+				if success then
+					championsRebukeTriggered = result
+				end
+			end
+			
+			-- If Champion's Rebuke passive triggered, multiply damage by 2 (like crit multiplier)
+			-- This creates ONE hit with double damage, not two separate hits
+			local finalDamage = actualDamage
+			local visualColor = hitboxConfig.visualColor
+			if championsRebukeTriggered then
+				-- Double the damage (like crits multiply by critMultiplier/100, but we multiply by 2)
+				finalDamage = math.floor(actualDamage * 2)
+				-- Use orange/gold color to indicate Champion's Rebuke triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+			
+			-- Create ONE hitbox with final damage (doubled if Champion's Rebuke triggered)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = actualDamage,
+				damage = finalDamage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
-				visualColor = hitboxConfig.visualColor,
+				visualColor = visualColor,
 				delay = hitboxConfig.delay,
 				actionType = "combo2",
 				classType = "Gladiator"

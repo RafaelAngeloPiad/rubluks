@@ -1584,8 +1584,77 @@ ServerConfigs.BrawlerBuffs = {
 	}
 }
 
+-- Gladiator Buffs
+ServerConfigs.GladiatorBuffs = {
+	ChampionsCheer = {
+		-- Buff: Increases HP, Defense, and Health Regeneration by multipliers
+		levels = {
+			[5] = {
+				hpMultiplier = 0.1,        -- 10% of Max HP
+				defenseMultiplier = 0.1,    -- 10% of base Defense
+				hpRegenPercentage = 0.01,  -- 1% of Max HP per second
+				duration = 60               -- 60 seconds
+			},
+			[15] = {
+				hpMultiplier = 0.15,       -- 15% of Max HP
+				defenseMultiplier = 0.15,   -- 15% of base Defense
+				hpRegenPercentage = 0.015, -- 1.5% of Max HP per second
+				duration = 80               -- 80 seconds
+			},
+			[25] = {
+				hpMultiplier = 0.2,        -- 20% of Max HP
+				defenseMultiplier = 0.2,    -- 20% of base Defense
+				hpRegenPercentage = 0.02,  -- 2% of Max HP per second
+				duration = 100              -- 100 seconds
+			},
+			[35] = {
+				hpMultiplier = 0.25,       -- 25% of Max HP
+				defenseMultiplier = 0.25,   -- 25% of base Defense
+				hpRegenPercentage = 0.025, -- 2.5% of Max HP per second
+				duration = 120              -- 120 seconds
+			},
+			[45] = {
+				hpMultiplier = 0.3,        -- 30% of Max HP
+				defenseMultiplier = 0.3,    -- 30% of base Defense
+				hpRegenPercentage = 0.03,  -- 3% of Max HP per second
+				duration = 180              -- 180 seconds
+			}
+		}
+	},
+	ChampionsBlood = {
+		-- Buff: Increases Defense by flat amount and provides status immunity
+		levels = {
+			[1] = {
+				defenseIncrease = 100,     -- +100 Defense
+				immunityDuration = 10,      -- 10 seconds of status immunity
+				duration = 30               -- 30 seconds
+			},
+			[11] = {
+				defenseIncrease = 200,     -- +200 Defense
+				immunityDuration = 12,      -- 12 seconds of status immunity
+				duration = 40               -- 40 seconds
+			},
+			[21] = {
+				defenseIncrease = 400,     -- +400 Defense
+				immunityDuration = 15,      -- 15 seconds of status immunity
+				duration = 50               -- 50 seconds
+			},
+			[31] = {
+				defenseIncrease = 800,     -- +800 Defense
+				immunityDuration = 18,      -- 18 seconds of status immunity
+				duration = 60               -- 60 seconds
+			},
+			[41] = {
+				defenseIncrease = 1600,    -- +1600 Defense
+				immunityDuration = 20,      -- 20 seconds of status immunity
+				duration = 80               -- 80 seconds
+			}
+		}
+	}
+}
+
 -- Function to get buff config for a level
--- @param buffName: "Warcry", "WarriorMight", "BloodThirst", or "LastChance"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", or "ChampionsBlood"
 -- @param playerLevel: Player's current level
 -- @return: Buff config for that level or nil if not unlocked
 function ServerConfigs.getBuffConfig(buffName, playerLevel)
@@ -1631,11 +1700,32 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 		end
 	end
 	
+	-- Check Gladiator buffs
+	local gladiatorBuffs = ServerConfigs.GladiatorBuffs
+	if gladiatorBuffs and gladiatorBuffs[buffName] then
+		local buffLevels = gladiatorBuffs[buffName].levels
+		if buffLevels then
+			-- Find the highest unlocked level for this buff
+			local highestUnlocked = nil
+			for level, config in pairs(buffLevels) do
+				if playerLevel >= level then
+					if not highestUnlocked or level > highestUnlocked then
+						highestUnlocked = level
+					end
+				end
+			end
+			
+			if highestUnlocked then
+				return buffLevels[highestUnlocked]
+			end
+		end
+	end
+	
 	return nil
 end
 
 -- Function to get minimum required level for a buff
--- @param buffName: "Warcry", "WarriorMight", "BloodThirst", or "LastChance"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", or "ChampionsBlood"
 -- @return: Minimum level required or nil if buff doesn't exist
 function ServerConfigs.getBuffMinLevel(buffName)
 	-- Check Knight buffs first
@@ -1658,6 +1748,22 @@ function ServerConfigs.getBuffMinLevel(buffName)
 	local brawlerBuffs = ServerConfigs.BrawlerBuffs
 	if brawlerBuffs and brawlerBuffs[buffName] then
 		local buffLevels = brawlerBuffs[buffName].levels
+		if buffLevels then
+			-- Find the lowest level requirement
+			local minLevel = nil
+			for level, _ in pairs(buffLevels) do
+				if not minLevel or level < minLevel then
+					minLevel = level
+				end
+			end
+			return minLevel
+		end
+	end
+	
+	-- Check Gladiator buffs
+	local gladiatorBuffs = ServerConfigs.GladiatorBuffs
+	if gladiatorBuffs and gladiatorBuffs[buffName] then
+		local buffLevels = gladiatorBuffs[buffName].levels
 		if buffLevels then
 			-- Find the lowest level requirement
 			local minLevel = nil
@@ -1870,6 +1976,110 @@ end
 -- @return: Minimum level required or nil if passive doesn't exist
 function ServerConfigs.getBrawlerPassiveMinLevel(passiveName)
 	local classPassives = ServerConfigs.BrawlerPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the lowest level requirement
+	local minLevel = nil
+	for level, _ in pairs(passiveLevels) do
+		if not minLevel or level < minLevel then
+			minLevel = level
+		end
+	end
+	
+	return minLevel
+end
+
+-- ========================================
+-- GLADIATOR PASSIVE CONFIGURATIONS
+-- ========================================
+
+ServerConfigs.GladiatorPassives = {
+	ChampionsRebuke = {
+		-- Passive: 2nd combo attack has chance to hit twice (double damage)
+		levels = {
+			[5] = {
+				chance = 10,  -- 10% chance
+			},
+			[15] = {
+				chance = 15,  -- 15% chance
+			},
+			[25] = {
+				chance = 20,  -- 20% chance
+			},
+			[35] = {
+				chance = 25,  -- 25% chance
+			},
+			[45] = {
+				chance = 30,  -- 30% chance
+			}
+		}
+	},
+	OneLastChance = {
+		-- Passive: Resurrects player when HP reaches 0
+		levels = {
+			[1] = {
+				resurrectHPPercentage = 0.1,  -- 10% of Max HP
+			},
+			[11] = {
+				resurrectHPPercentage = 0.15, -- 15% of Max HP
+			},
+			[21] = {
+				resurrectHPPercentage = 0.2,  -- 20% of Max HP
+			},
+			[31] = {
+				resurrectHPPercentage = 0.25,  -- 25% of Max HP
+			},
+			[41] = {
+				resurrectHPPercentage = 0.3,   -- 30% of Max HP
+			}
+		}
+	}
+}
+
+-- Function to get gladiator passive config for a level
+-- @param passiveName: "ChampionsRebuke" or "OneLastChance"
+-- @param playerLevel: Player's current level
+-- @return: Passive config for that level or nil if not unlocked
+function ServerConfigs.getGladiatorPassiveConfig(passiveName, playerLevel)
+	local classPassives = ServerConfigs.GladiatorPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the highest unlocked level for this passive
+	local highestUnlocked = nil
+	for level, config in pairs(passiveLevels) do
+		if playerLevel >= level then
+			if not highestUnlocked or level > highestUnlocked then
+				highestUnlocked = level
+			end
+		end
+	end
+	
+	if highestUnlocked then
+		return passiveLevels[highestUnlocked]
+	end
+	
+	return nil
+end
+
+-- Function to get minimum required level for a gladiator passive
+-- @param passiveName: "ChampionsRebuke" or "OneLastChance"
+-- @return: Minimum level required or nil if passive doesn't exist
+function ServerConfigs.getGladiatorPassiveMinLevel(passiveName)
+	local classPassives = ServerConfigs.GladiatorPassives
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end

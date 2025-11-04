@@ -578,6 +578,132 @@ local function updateStatsDisplay()
 						end
 					end
 				end
+			elseif buffName == "ChampionsCheer" then
+				hasBuffsOrPassives = true
+				-- Calculate ChampionsCheer bonuses
+				local championsCheerHpBonus = 0
+				local championsCheerDefBonus = 0
+				local championsCheerHpRegen = 0
+				
+				-- Get current level to calculate bonuses
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.GladiatorBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("ChampionsCheer", level.Value)
+					if buffConfig then
+						-- Get base stats from BaseStats (if available)
+						local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
+						local baseMaxHealth = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxHealth")
+						local baseMaxDefense = baseStatsFolder and baseStatsFolder:FindFirstChild("BaseMaxDefense")
+						
+						if baseMaxHealth and baseMaxDefense then
+							-- Calculate what ChampionsCheer adds (multiplier-based)
+							local baseHP = baseMaxHealth.Value
+							local baseDEF = baseMaxDefense.Value
+							championsCheerHpBonus = math.floor(baseHP * buffConfig.hpMultiplier)
+							championsCheerDefBonus = math.floor(baseDEF * buffConfig.defenseMultiplier)
+							championsCheerHpRegen = buffConfig.hpRegenPercentage or 0
+						else
+							-- Fallback: Calculate from current stats
+							local currentMaxHealth = leaderstats:FindFirstChild("MaxHealth") and leaderstats.MaxHealth.Value or 0
+							local currentMaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0
+							-- Estimate base by reversing the multiplier
+							local estimatedBaseHP = math.floor(currentMaxHealth / (1 + buffConfig.hpMultiplier))
+							local estimatedBaseDEF = math.floor(currentMaxDefense / (1 + buffConfig.defenseMultiplier))
+							championsCheerHpBonus = currentMaxHealth - estimatedBaseHP
+							championsCheerDefBonus = currentMaxDefense - estimatedBaseDEF
+							championsCheerHpRegen = buffConfig.hpRegenPercentage or 0
+						end
+					end
+				end
+				
+				-- Display stat bonuses (separate from timer)
+				local buffText = ""
+				local hpRegenPercent = math.floor(championsCheerHpRegen * 100)
+				if championsCheerHpBonus > 0 and championsCheerDefBonus > 0 and hpRegenPercent > 0 then
+					buffText = string.format("+%.0f HP, +%.0f DEF, %d%% HP/s", championsCheerHpBonus, championsCheerDefBonus, hpRegenPercent)
+				elseif championsCheerHpBonus > 0 and championsCheerDefBonus > 0 then
+					buffText = string.format("+%.0f HP, +%.0f DEF", championsCheerHpBonus, championsCheerDefBonus)
+				elseif championsCheerHpBonus > 0 then
+					buffText = string.format("+%.0f HP", championsCheerHpBonus)
+				elseif championsCheerDefBonus > 0 then
+					buffText = string.format("+%.0f DEF", championsCheerDefBonus)
+				else
+					buffText = "Active"
+				end
+				
+				statLabels["Buff_ChampionsCheer"] = createStatRow("Champion's Cheer", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_ChampionsCheer_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
+			elseif buffName == "ChampionsBlood" then
+				hasBuffsOrPassives = true
+				-- Calculate ChampionsBlood bonus
+				local championsBloodDefenseBonus = 0
+				local immunityDuration = 0
+				
+				-- Get current level to calculate Defense increase
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.GladiatorBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("ChampionsBlood", level.Value)
+					if buffConfig then
+						-- ChampionsBlood adds flat Defense
+						championsBloodDefenseBonus = buffConfig.defenseIncrease
+						immunityDuration = buffConfig.immunityDuration or 0
+					end
+				end
+				
+				-- Display stat bonus (separate from timer)
+				local buffText = ""
+				if championsBloodDefenseBonus > 0 and immunityDuration > 0 then
+					buffText = string.format("+%.0f DEF, %ds Immunity", championsBloodDefenseBonus, immunityDuration)
+				elseif championsBloodDefenseBonus > 0 then
+					buffText = string.format("+%.0f DEF", championsBloodDefenseBonus)
+				else
+					buffText = "Active"
+				end
+				
+				statLabels["Buff_ChampionsBlood"] = createStatRow("Champion's Blood", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_ChampionsBlood_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
 			end
 		end
 	end
@@ -660,6 +786,53 @@ local function updateStatsDisplay()
 				end
 				
 				statLabels["Passive_Madness"] = createStatRow("Madness", passiveText, Color3.fromRGB(200, 100, 255), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "ChampionsRebuke" then
+				hasBuffsOrPassives = true
+				-- Calculate Champion's Rebuke chance
+				local championsRebukeChance = 0
+				
+				-- Get current level to get chance
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.GladiatorPassives then
+					local passiveConfig = ConfigModule.getGladiatorPassiveConfig("ChampionsRebuke", level.Value)
+					if passiveConfig then
+						championsRebukeChance = passiveConfig.chance
+					end
+				end
+				
+				local passiveText = ""
+				if championsRebukeChance > 0 then
+					passiveText = string.format("%d%% Double Damage", championsRebukeChance)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_ChampionsRebuke"] = createStatRow("Champion's Rebuke", passiveText, Color3.fromRGB(255, 200, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "OneLastChance" then
+				hasBuffsOrPassives = true
+				-- Calculate One Last Chance resurrect HP
+				local oneLastChanceHPPercent = 0
+				
+				-- Get current level to get resurrect HP percentage
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.GladiatorPassives then
+					local passiveConfig = ConfigModule.getGladiatorPassiveConfig("OneLastChance", level.Value)
+					if passiveConfig then
+						oneLastChanceHPPercent = passiveConfig.resurrectHPPercentage or 0
+					end
+				end
+				
+				local passiveText = ""
+				if oneLastChanceHPPercent > 0 then
+					local hpPercent = math.floor(oneLastChanceHPPercent * 100)
+					passiveText = string.format("%d%% HP on Resurrect", hpPercent)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_OneLastChance"] = createStatRow("One Last Chance", passiveText, Color3.fromRGB(255, 150, 150), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
 		end
@@ -744,6 +917,58 @@ local function updateStatsDisplay()
 					local statusText = string.format("Unlocked (%d%% stun)", madnessConfig.stunChance)
 					
 					statLabels["Passive_Madness_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(200, 150, 255), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+		end
+		
+		-- Only show passives for Gladiator class
+		if className == "Gladiator" and ConfigModule and ConfigModule.GladiatorPassives then
+			local passivesConfig = ConfigModule.GladiatorPassives
+			
+			-- Check Champion's Rebuke passive (unlocks at level 5)
+			if passivesConfig.ChampionsRebuke then
+				local championsRebukeLevels = passivesConfig.ChampionsRebuke.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(championsRebukeLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local championsRebukeConfig = championsRebukeLevels[highestUnlocked]
+					local displayName = "Champion's Rebuke"
+					local statusText = string.format("Unlocked (%d%% double damage)", championsRebukeConfig.chance)
+					
+					statLabels["Passive_ChampionsRebuke_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+			
+			-- Check One Last Chance passive (unlocks at level 1)
+			if passivesConfig.OneLastChance then
+				local oneLastChanceLevels = passivesConfig.OneLastChance.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(oneLastChanceLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local oneLastChanceConfig = oneLastChanceLevels[highestUnlocked]
+					local displayName = "One Last Chance"
+					local hpPercent = math.floor(oneLastChanceConfig.resurrectHPPercentage * 100)
+					local statusText = string.format("Unlocked (%d%% HP on resurrect)", hpPercent)
+					
+					statLabels["Passive_OneLastChance_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 150, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
 				end
 			end
