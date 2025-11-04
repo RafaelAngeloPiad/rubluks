@@ -1,9 +1,10 @@
 -- ========================================
--- SIMPLE MELEE MOB WITH STUN
--- Same as SimpleMeleeMob but with stun status ailment
+-- SIMPLE TRAVELING MOB WITH ICE
+-- Shoots projectiles with traveling hitbox that can freeze (slow + damage)
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
 -- Configuration
@@ -13,17 +14,22 @@ local MOB_STATS = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 30,
-	AttackCooldown = 1.5,
-	AttackRange = 8,
-	WalkSpeed = 16
+	Damage = 25,
+	AttackCooldown = 2,      -- Seconds between shots
+	AttackRange = 50,        -- Distance to start shooting
+	WalkSpeed = 14,
+	MissileSpeed = 30,       -- Speed of the missile part
+	MissileLifetime = 5      -- Seconds before missile despawns
 }
 
--- Stun configuration
-local STUN_CONFIG = {
-	type = "stun",           -- Status ailment type
-	chance = 50,             -- 30% chance to stun on hit
-	duration = 2.0           -- Stun duration in seconds
+-- Ice configuration
+local ICE_CONFIG = {
+	type = "ice",            -- Status ailment type
+	chance = 50,             -- 50% chance to freeze on hit
+	duration = 3.0,          -- Ice duration in seconds
+	dps = 3,                 -- Damage per second
+	tickInterval = 1.0,      -- Seconds between damage ticks
+	slowMultiplier = 0.3     -- 30% movement speed
 }
 
 -- Radius and return configuration (same as GolemSolo)
@@ -33,7 +39,7 @@ local RETURN_RADIUS = 60
 local RETURN_WAIT = 2
 local UPDATE_RATE = 0.5
 
-local MOB_VARIANT_NAME = "SimpleMeleeWithStun"
+local MOB_VARIANT_NAME = "TravelingWithIce"
 
 -- Get model and parts
 local model = script.Parent
@@ -65,7 +71,7 @@ if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 end
 
 -- Wait for hitbox functions to be available
-while not _G.createStaticHitbox do
+while not _G.createTravelingHitbox do
 	task.wait(0.1)
 end
 
@@ -117,24 +123,52 @@ task.spawn(function()
 				if targetDistFromSpawn <= RETURN_RADIUS then
 					-- Target is within return radius, attack or follow
 					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-						-- Attack
+						-- Shoot straight projectile
 						lastAttack = tick()
-						-- Note: actionType and classType are nil for mobs (no animation speed scaling)
-						-- Include statusAilment in hitbox config for stun chance
-						_G.createStaticHitbox({
-							attachTo = root,
-							offset = CFrame.new(0, 0, -4),
-							size = Vector3.new(8, 8, 8),
+						
+						-- Calculate direction to target
+						local direction = (nearest.Position - root.Position).Unit
+						
+						-- Create projectile part
+						local projectile = Instance.new("Part")
+						projectile.Name = "IceProjectile"
+						projectile.Size = Vector3.new(1, 1, 1)
+						projectile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
+						projectile.Anchored = false
+						projectile.CanCollide = false
+						projectile.Material = Enum.Material.Neon
+						projectile.Color = Color3.new(0, 0.5, 1) -- Blue color for ice
+						projectile.Transparency = 0.3
+						projectile.Parent = workspace
+						
+						-- Add body velocity to projectile
+						local bodyVelocity = Instance.new("BodyVelocity")
+						bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+						bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
+						bodyVelocity.Parent = projectile
+						
+						-- Create traveling hitbox attached to projectile with ice
+						_G.createTravelingHitbox({
+							attachTo = projectile,
+							offset = CFrame.new(0, 0, 0),
+							size = Vector3.new(6, 6, 6),
 							damage = MOB_STATS.Damage,
 							character = model,
-							name = "MeleeAttack",
+							name = "IceProjectile",
 							showVisual = true,
-							visualColor = Color3.new(1, 0, 0),
+							visualColor = Color3.new(0, 0.5, 1), -- Blue color
 							delay = 0,
 							actionType = nil, -- Mobs don't have animation speeds
 							classType = nil, -- Mobs don't have classes
-							statusAilment = STUN_CONFIG -- Add stun status ailment
+							statusAilment = ICE_CONFIG -- Add ice status ailment
 						})
+						
+						-- Auto-cleanup projectile after lifetime
+						task.delay(MOB_STATS.MissileLifetime, function()
+							if projectile and projectile.Parent then
+								projectile:Destroy()
+							end
+						end)
 					else
 						-- Follow
 						humanoid:MoveTo(nearest.Position)

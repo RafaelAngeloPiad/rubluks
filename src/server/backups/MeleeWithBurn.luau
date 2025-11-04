@@ -1,6 +1,6 @@
 -- ========================================
--- SIMPLE MELEE MOB WITH STUN
--- Same as SimpleMeleeMob but with stun status ailment
+-- SIMPLE MELEE MOB WITH BURN
+-- Same as SimpleMeleeMob but with burn status ailment
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,11 +19,13 @@ local MOB_STATS = {
 	WalkSpeed = 16
 }
 
--- Stun configuration
-local STUN_CONFIG = {
-	type = "stun",           -- Status ailment type
-	chance = 50,             -- 30% chance to stun on hit
-	duration = 2.0           -- Stun duration in seconds
+-- Burn configuration
+local BURN_CONFIG = {
+	type = "burn",           -- Status ailment type
+	chance = 50,             -- 50% chance to burn on hit
+	duration = 5.0,          -- Burn duration in seconds
+	dps = 5,                 -- Damage per second
+	tickInterval = 1.0       -- Seconds between damage ticks
 }
 
 -- Radius and return configuration (same as GolemSolo)
@@ -33,7 +35,7 @@ local RETURN_RADIUS = 60
 local RETURN_WAIT = 2
 local UPDATE_RATE = 0.5
 
-local MOB_VARIANT_NAME = "SimpleMeleeWithStun"
+local MOB_VARIANT_NAME = "MeleeWithBurn"
 
 -- Get model and parts
 local model = script.Parent
@@ -119,8 +121,7 @@ task.spawn(function()
 					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
 						-- Attack
 						lastAttack = tick()
-						-- Note: actionType and classType are nil for mobs (no animation speed scaling)
-						-- Include statusAilment in hitbox config for stun chance
+						-- Include statusAilment in hitbox config for burn chance
 						_G.createStaticHitbox({
 							attachTo = root,
 							offset = CFrame.new(0, 0, -4),
@@ -133,7 +134,7 @@ task.spawn(function()
 							delay = 0,
 							actionType = nil, -- Mobs don't have animation speeds
 							classType = nil, -- Mobs don't have classes
-							statusAilment = STUN_CONFIG -- Add stun status ailment
+							statusAilment = BURN_CONFIG -- Add burn status ailment
 						})
 					else
 						-- Follow
