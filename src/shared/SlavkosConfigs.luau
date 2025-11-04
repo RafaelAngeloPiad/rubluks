@@ -1541,19 +1541,19 @@ ServerConfigs.KnightPassives = {
 		-- Passive: 2nd combo attack has chance to hit twice (double damage)
 		levels = {
 			[5] = {
-				chance = 100,  -- 10% chance
+				chance = 10,  -- 10% chance
 			},
 			[15] = {
-				chance = 100,  -- 15% chance
+				chance = 15,  -- 15% chance
 			},
 			[25] = {
-				chance = 100,  -- 20% chance
+				chance = 20,  -- 20% chance
 			},
 			[35] = {
-				chance = 100,  -- 25% chance
+				chance = 25,  -- 25% chance
 			},
 			[45] = {
-				chance = 100,  -- 30% chance
+				chance = 30,  -- 30% chance
 			}
 		}
 	}
