@@ -21,6 +21,9 @@ local activeAilments = {} -- {model: {[ailmentType]: {duration, startTime, confi
 -- Store original stats to restore after ailments expire
 local originalStats = {} -- {model: {walkSpeed, jumpPower, platformStand}}
 
+-- Track status text displays per character
+local statusTextDisplays = {} -- {model: {[textType]: billboardGui}}
+
 -- ========================================
 -- AILMENT TYPES
 -- ========================================
@@ -111,6 +114,75 @@ local function saveOriginalStats(model)
 	end
 end
 
+-- Function to create or update status text above character head
+local function createOrUpdateStatusText(model, ailmentType, text, textColor, startTime, duration)
+	if not model or not model.Parent then return nil end
+	
+	-- Get character's head or HumanoidRootPart
+	local head = model:FindFirstChild("Head")
+	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
+	
+	if not head and not humanoidRootPart then
+		return nil
+	end
+	
+	-- Use head if available, otherwise use HumanoidRootPart
+	local attachPart = head or humanoidRootPart
+	if not attachPart then
+		return nil
+	end
+	
+	-- Check if status text already exists for this ailment type
+	if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+		local existingText = statusTextDisplays[model][ailmentType]
+		if existingText and existingText.Parent then
+			-- Text already exists, just return it (duration will be monitored by heartbeat loop)
+			return existingText
+		else
+			-- Text exists but was destroyed, remove from tracking
+			statusTextDisplays[model][ailmentType] = nil
+		end
+	end
+	
+	-- Create new BillboardGui
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.Name = "StatusText_" .. ailmentType .. "_" .. tostring(tick() * 1000)
+	billboardGui.Size = UDim2.new(0, 200, 0, 50)
+	billboardGui.StudsOffset = Vector3.new(0, 3, 0) -- Above head
+	billboardGui.AlwaysOnTop = true
+	billboardGui.LightInfluence = 0
+	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+	billboardGui.Parent = attachPart
+	
+	-- Create TextLabel
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = text
+	textLabel.TextColor3 = textColor or Color3.new(1, 1, 1)
+	textLabel.TextSize = 20
+	textLabel.Font = Enum.Font.GothamBold
+	textLabel.TextStrokeTransparency = 0
+	textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+	textLabel.TextXAlignment = Enum.TextXAlignment.Center
+	textLabel.TextYAlignment = Enum.TextYAlignment.Center
+	textLabel.Parent = billboardGui
+	
+	-- Initialize status text tracking for this model
+	if not statusTextDisplays[model] then
+		statusTextDisplays[model] = {}
+	end
+	
+	-- Store text display with start time and duration for monitoring
+	statusTextDisplays[model][ailmentType] = {
+		billboardGui = billboardGui,
+		startTime = startTime,
+		duration = duration
+	}
+	
+	return billboardGui
+end
+
 -- Function to create ailment highlight
 local function createAilmentHighlight(model, ailmentType)
 	if not model or not model.Parent then return end
@@ -179,6 +251,41 @@ local function applyAilmentEffects(model, ailmentType, config)
 	
 	-- Create visual highlight
 	createAilmentHighlight(model, ailmentType)
+	
+	-- Create status text above head (only for players, not mobs)
+	local player = getPlayer(model)
+	if player then
+		-- Check if player has status immunity (defensive check)
+		local hasImmunity = false
+		if _G.hasStatusImmunity then
+			hasImmunity = _G.hasStatusImmunity(player)
+		end
+		
+		-- Only show ailment text if player is NOT immune
+		if not hasImmunity then
+			-- Map ailment types to display text and colors
+			local ailmentTexts = {
+				[AilmentTypes.STUN] = {text = "STUNNED", color = Color3.new(0.5, 0.5, 0.5)}, -- Gray
+				[AilmentTypes.POISON] = {text = "POISONED", color = Color3.new(0.5, 0, 0.5)}, -- Purple
+				[AilmentTypes.BURN] = {text = "BURNED", color = Color3.new(1, 0.5, 0)}, -- Orange
+				[AilmentTypes.ICE] = {text = "FROZEN", color = Color3.new(0, 0.5, 1)}, -- Blue
+				[AilmentTypes.SLOW] = {text = "SLOWED", color = Color3.new(0.5, 0.5, 1)} -- Light Blue
+			}
+			
+			local ailmentInfo = ailmentTexts[ailmentType]
+			if ailmentInfo then
+				-- Get ailment data to get start time and duration
+				local ailmentData = activeAilments[model] and activeAilments[model][ailmentType]
+				if ailmentData then
+					local startTime = ailmentData.startTime
+					local duration = ailmentData.duration or config.duration or 5.0
+					
+					-- Create or update status text
+					createOrUpdateStatusText(model, ailmentType, ailmentInfo.text, ailmentInfo.color, startTime, duration)
+				end
+			end
+		end
+	end
 end
 
 -- Function to remove ailment effects
@@ -189,6 +296,19 @@ local function removeAilmentEffects(model, ailmentType)
 	local highlight = model:FindFirstChild("StatusAilment_" .. ailmentType)
 	if highlight then
 		highlight:Destroy()
+	end
+	
+	-- Remove status text for this ailment
+	if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+		local statusTextData = statusTextDisplays[model][ailmentType]
+		if statusTextData then
+			-- Handle both old format (just billboardGui) and new format (table with billboardGui)
+			local billboardGui = statusTextData.billboardGui or statusTextData
+			if billboardGui and billboardGui.Parent then
+				billboardGui:Destroy()
+			end
+		end
+		statusTextDisplays[model][ailmentType] = nil
 	end
 	
 	-- Check if there are other active ailments
@@ -447,12 +567,34 @@ RunService.Heartbeat:Connect(function()
 			-- Clean up
 			activeAilments[model] = nil
 			originalStats[model] = nil
+			-- Clean up status text displays
+			if statusTextDisplays[model] then
+				for _, textData in pairs(statusTextDisplays[model]) do
+					-- Handle both old format (just billboardGui) and new format (table with billboardGui)
+					local billboardGui = textData.billboardGui or textData
+					if billboardGui and billboardGui.Parent then
+						billboardGui:Destroy()
+					end
+				end
+				statusTextDisplays[model] = nil
+			end
 		else
 			local humanoid = getHumanoid(model)
 			if not humanoid or humanoid.Health <= 0 then
 				-- Character is dead, clean up
 				activeAilments[model] = nil
 				restoreOriginalStats(model)
+				-- Clean up status text displays
+				if statusTextDisplays[model] then
+					for _, textData in pairs(statusTextDisplays[model]) do
+						-- Handle both old format (just billboardGui) and new format (table with billboardGui)
+						local billboardGui = textData.billboardGui or textData
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+					end
+					statusTextDisplays[model] = nil
+				end
 			else
 				-- Process each ailment
 				for ailmentType, ailmentData in pairs(ailments) do
@@ -463,6 +605,55 @@ RunService.Heartbeat:Connect(function()
 					if elapsed >= ailmentData.duration then
 						removeAilmentEffects(model, ailmentType)
 					else
+						-- Update status text if it exists (refresh duration)
+						local player = getPlayer(model)
+						if player then
+							-- Check if player has status immunity
+							local hasImmunity = false
+							if _G.hasStatusImmunity then
+								hasImmunity = _G.hasStatusImmunity(player)
+							end
+							
+							-- Only show/update text if player is NOT immune
+							if not hasImmunity then
+								local ailmentTexts = {
+									[AilmentTypes.STUN] = {text = "STUNNED", color = Color3.new(0.5, 0.5, 0.5)},
+									[AilmentTypes.POISON] = {text = "POISONED", color = Color3.new(0.5, 0, 0.5)},
+									[AilmentTypes.BURN] = {text = "BURNED", color = Color3.new(1, 0.5, 0)},
+									[AilmentTypes.ICE] = {text = "FROZEN", color = Color3.new(0, 0.5, 1)},
+									[AilmentTypes.SLOW] = {text = "SLOWED", color = Color3.new(0.5, 0.5, 1)}
+								}
+								
+								local ailmentInfo = ailmentTexts[ailmentType]
+								if ailmentInfo then
+									-- Update status text display with current duration
+									if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+										local textData = statusTextDisplays[model][ailmentType]
+										if textData then
+											-- Update duration if it's a table format
+											if type(textData) == "table" and textData.billboardGui then
+												textData.startTime = ailmentData.startTime
+												textData.duration = ailmentData.duration
+											end
+										end
+									else
+										-- Create new status text if it doesn't exist
+										createOrUpdateStatusText(model, ailmentType, ailmentInfo.text, ailmentInfo.color, ailmentData.startTime, ailmentData.duration)
+									end
+								end
+							else
+								-- Player has immunity, remove any existing ailment text
+								if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+									local textData = statusTextDisplays[model][ailmentType]
+									local billboardGui = textData.billboardGui or textData
+									if billboardGui and billboardGui.Parent then
+										billboardGui:Destroy()
+									end
+									statusTextDisplays[model][ailmentType] = nil
+								end
+							end
+						end
+						
 						-- Process DPS ailments
 						if ailmentType == AilmentTypes.POISON or ailmentType == AilmentTypes.BURN or ailmentType == AilmentTypes.ICE then
 							local dps = ailmentData.dps or 0
@@ -473,6 +664,24 @@ RunService.Heartbeat:Connect(function()
 								-- Apply DPS damage
 								applyDPSDamage(model, ailmentType, dps, tickInterval)
 								ailmentData.lastDPS = currentTime
+							end
+						end
+						
+						-- Check if status text should be removed (ailment expired)
+						if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+							local textData = statusTextDisplays[model][ailmentType]
+							if textData then
+								local billboardGui = textData.billboardGui or textData
+								local textStartTime = (type(textData) == "table" and textData.startTime) or ailmentData.startTime
+								local textDuration = (type(textData) == "table" and textData.duration) or ailmentData.duration
+								
+								if currentTime >= (textStartTime + textDuration) then
+									-- Text should be removed (ailment expired)
+									if billboardGui and billboardGui.Parent then
+										billboardGui:Destroy()
+									end
+									statusTextDisplays[model][ailmentType] = nil
+								end
 							end
 						end
 					end

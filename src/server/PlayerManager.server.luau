@@ -369,7 +369,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 		end)
 	end
 	
-	-- Start HP regeneration for LastChance buff
+	-- Start HP regeneration and status immunity display for LastChance buff
 	if buffName == "LastChance" then
 		local character = player.Character
 		if character then
@@ -419,6 +419,90 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 					end
 				end)
+				
+				-- Show "Immune" text above head during immunity duration
+				local RunService = game:GetService("RunService")
+				local head = character:FindFirstChild("Head")
+				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+				local attachPart = head or humanoidRootPart
+				
+				if attachPart then
+					-- Create "Immune" text
+					local billboardGui = Instance.new("BillboardGui")
+					billboardGui.Name = "ImmuneText_" .. tostring(tick() * 1000)
+					billboardGui.Size = UDim2.new(0, 200, 0, 50)
+					billboardGui.StudsOffset = Vector3.new(0, 3.5, 0) -- Above head, higher than ailment text
+					billboardGui.AlwaysOnTop = true
+					billboardGui.LightInfluence = 0
+					billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+					billboardGui.Parent = attachPart
+					
+					-- Create TextLabel
+					local textLabel = Instance.new("TextLabel")
+					textLabel.Size = UDim2.new(1, 0, 1, 0)
+					textLabel.BackgroundTransparency = 1
+					textLabel.Text = "IMMUNE"
+					textLabel.TextColor3 = Color3.new(0, 1, 0) -- Green
+					textLabel.TextSize = 24
+					textLabel.Font = Enum.Font.GothamBold
+					textLabel.TextStrokeTransparency = 0
+					textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+					textLabel.TextXAlignment = Enum.TextXAlignment.Center
+					textLabel.TextYAlignment = Enum.TextYAlignment.Center
+					textLabel.Parent = billboardGui
+					
+					-- Monitor immunity status and remove text when immunity expires
+					local connection
+					connection = RunService.Heartbeat:Connect(function()
+						if not character or not character.Parent or not humanoid or not humanoid.Parent or humanoid.Health <= 0 then
+							if connection then connection:Disconnect() end
+							if billboardGui and billboardGui.Parent then
+								billboardGui:Destroy()
+							end
+							return
+						end
+						
+						if not playerBuffs[player] or not playerBuffs[player]["LastChance"] then
+							if connection then connection:Disconnect() end
+							if billboardGui and billboardGui.Parent then
+								billboardGui:Destroy()
+							end
+							return
+						end
+						
+						local buffData = playerBuffs[player]["LastChance"]
+						if not buffData or not buffData.config then
+							if connection then connection:Disconnect() end
+							if billboardGui and billboardGui.Parent then
+								billboardGui:Destroy()
+							end
+							return
+						end
+						
+						local currentTime = tick()
+						local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
+						
+						if currentTime >= immunityEndTime then
+							-- Immunity expired, remove text
+							if connection then connection:Disconnect() end
+							if billboardGui and billboardGui.Parent then
+								billboardGui:Destroy()
+							end
+							return
+						end
+					end)
+					
+					-- Clean up when done (safety cleanup)
+					local buffData = playerBuffs[player]["LastChance"]
+					if buffData and buffData.config then
+						task.delay(buffData.config.immunityDuration + 0.1, function()
+							if connection then connection:Disconnect() end
+							if billboardGui and billboardGui.Parent then
+								billboardGui:Destroy()
+							end
+						end)
+					end
+				end
 			end
 		end
 	end
