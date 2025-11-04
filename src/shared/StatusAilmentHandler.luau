@@ -346,6 +346,19 @@ function _G.applyStatusAilment(model, ailmentType, config)
 	if not model or not model.Parent then return end
 	if not ailmentType or not ServerConfigs.Hitbox.statusAilments[ailmentType] then return end
 	
+	-- Check for status immunity (LastChance buff) - only for players
+	local player = getPlayer(model)
+	if player then
+		-- Check if function exists (defensive check)
+		if _G.hasStatusImmunity then
+			local hasImmunity = _G.hasStatusImmunity(player)
+			if hasImmunity then
+				-- Player has status immunity, don't apply ailment
+				return
+			end
+		end
+	end
+	
 	-- Validate config
 	config = config or {}
 	local duration = config.duration or ServerConfigs.Hitbox.statusAilments[ailmentType].defaultDuration

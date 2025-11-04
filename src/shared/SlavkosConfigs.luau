@@ -292,8 +292,8 @@ ServerConfigs.Hitboxes = {
 			cooldowns = {
 				feralleap = 5,
 				brawlersroar = 5,
-				bloodthirst = 5,
-				lastchance = 5,
+				bloodthirst = 30,  -- 30 seconds cooldown
+				lastchance = 30,   -- 30 seconds cooldown
 				meteordive = 5
 			},
 			-- Combo configuration
@@ -1551,11 +1551,41 @@ ServerConfigs.BrawlerBuffs = {
 				duration = 180                -- 180 seconds
 			}
 		}
+	},
+	LastChance = {
+		-- Buff: Provides status immunity and HP regeneration
+		levels = {
+			[1] = {
+				hpRegenPercentage = 0.01,  -- 1% of Max HP healed per second
+				immunityDuration = 11,      -- 11 seconds of status immunity
+				duration = 11                -- 11 seconds total
+			},
+			[11] = {
+				hpRegenPercentage = 0.02,  -- 2% of Max HP healed per second
+				immunityDuration = 12,      -- 12 seconds of status immunity
+				duration = 12                -- 12 seconds total
+			},
+			[21] = {
+				hpRegenPercentage = 0.03,  -- 3% of Max HP healed per second
+				immunityDuration = 13,      -- 13 seconds of status immunity
+				duration = 13                -- 13 seconds total
+			},
+			[31] = {
+				hpRegenPercentage = 0.04,  -- 4% of Max HP healed per second
+				immunityDuration = 14,      -- 14 seconds of status immunity
+				duration = 14                -- 14 seconds total
+			},
+			[41] = {
+				hpRegenPercentage = 0.05,  -- 5% of Max HP healed per second
+				immunityDuration = 15,      -- 15 seconds of status immunity
+				duration = 15                -- 15 seconds total
+			}
+		}
 	}
 }
 
 -- Function to get buff config for a level
--- @param buffName: "Warcry", "WarriorMight", or "BloodThirst"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", or "LastChance"
 -- @param playerLevel: Player's current level
 -- @return: Buff config for that level or nil if not unlocked
 function ServerConfigs.getBuffConfig(buffName, playerLevel)
@@ -1605,7 +1635,7 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 end
 
 -- Function to get minimum required level for a buff
--- @param buffName: "Warcry", "WarriorMight", or "BloodThirst"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", or "LastChance"
 -- @return: Minimum level required or nil if buff doesn't exist
 function ServerConfigs.getBuffMinLevel(buffName)
 	-- Check Knight buffs first

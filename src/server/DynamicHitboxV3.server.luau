@@ -499,6 +499,19 @@ local function applyStatusAilmentFromConfig(model, config)
 	local statusAilment = config.statusAilment
 	if not statusAilment then return end
 	
+	-- Check for status immunity (LastChance buff) - only for players
+	local targetPlayer = Players:GetPlayerFromCharacter(model)
+	if targetPlayer then
+		-- Check if function exists (defensive check)
+		if _G.hasStatusImmunity then
+			local hasImmunity = _G.hasStatusImmunity(targetPlayer)
+			if hasImmunity then
+				-- Player has status immunity, don't apply ailment
+				return
+			end
+		end
+	end
+	
 	-- Validate ailment type (accept lowercase string like "stun", "poison", etc.)
 	local ailmentType = statusAilment.type
 	if not ailmentType then return end

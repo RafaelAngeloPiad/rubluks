@@ -540,6 +540,44 @@ local function updateStatsDisplay()
 						layoutOrder = layoutOrder + 1
 					end
 				end
+			elseif buffName == "LastChance" then
+				hasBuffsOrPassives = true
+				-- Calculate LastChance status immunity and HP regen
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.BrawlerBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("LastChance", level.Value)
+					if buffConfig then
+						-- LastChance provides status immunity and HP regen
+						local hpRegenPercentage = buffConfig.hpRegenPercentage or 0
+						local immunityDuration = buffConfig.immunityDuration or 0
+						local hpRegenPercent = math.floor(hpRegenPercentage * 100)
+						local buffText = string.format("%d%% HP/s, %ds Immunity", hpRegenPercent, immunityDuration)
+						
+						statLabels["Buff_LastChance"] = createStatRow("Last Chance", buffText, Color3.fromRGB(255, 200, 100), layoutOrder)
+						layoutOrder = layoutOrder + 1
+						
+						-- Display timer separately (if available)
+						local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+						if buffDurations then
+							local buffDuration = buffDurations:FindFirstChild(buffName)
+							if buffDuration then
+								local remaining = math.max(0, math.floor(buffDuration.Value))
+								local minutes = math.floor(remaining / 60)
+								local seconds = remaining % 60
+								local durationText = ""
+								
+								if minutes > 0 then
+									durationText = string.format("%dm %ds", minutes, seconds)
+								else
+									durationText = string.format("%ds", seconds)
+								end
+								
+								statLabels["Buff_LastChance_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+								layoutOrder = layoutOrder + 1
+							end
+						end
+					end
+				end
 			end
 		end
 	end

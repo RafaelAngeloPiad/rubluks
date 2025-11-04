@@ -281,6 +281,11 @@ function _G.applyBuff(player, buffName, buffConfig)
 	elseif buffName == "BloodThirst" then
 		-- BloodThirst: Provides lifesteal (no stat modifications, just tracking)
 		-- Lifesteal is applied automatically in hitbox creation
+		
+	elseif buffName == "LastChance" then
+		-- LastChance: Provides status immunity and HP regeneration
+		-- Status immunity is checked in StatusAilmentHandler
+		-- HP regeneration is handled in update loop
 	end
 	
 	-- Track buff
@@ -364,6 +369,60 @@ function _G.applyBuff(player, buffName, buffConfig)
 		end)
 	end
 	
+	-- Start HP regeneration for LastChance buff
+	if buffName == "LastChance" then
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				-- Start HP regeneration loop
+				local regenThread = task.spawn(function()
+					while character and character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 do
+						-- Check if buff is still active
+						if not playerBuffs[player] or not playerBuffs[player]["LastChance"] then
+							break
+						end
+						
+						local buffData = playerBuffs[player]["LastChance"]
+						if not buffData or not buffData.config then
+							break
+						end
+						
+						-- Check if buff expired
+						local currentTime = tick()
+						if currentTime >= buffData.endTime then
+							break
+						end
+						
+						-- Wait 1 second before next regeneration
+						task.wait(1)
+						
+						-- Check again after wait (character might have been removed or buff expired)
+						if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+							break
+						end
+						
+						if not playerBuffs[player] or not playerBuffs[player]["LastChance"] then
+							break
+						end
+						
+						-- Get HP regen percentage from buff config
+						local hpRegenPercentage = buffData.config.hpRegenPercentage or 0
+						if hpRegenPercentage > 0 then
+							-- Calculate healing amount (percentage of Max HP)
+							local maxHealth = humanoid.MaxHealth
+							local healingAmount = maxHealth * hpRegenPercentage
+							
+							-- Regenerate health (cap at MaxHealth)
+							local newHealth = math.min(humanoid.Health + healingAmount, maxHealth)
+							humanoid.Health = newHealth
+						end
+					end
+				end)
+			end
+		end
+	end
+	
 	-- Auto-remove buff after duration
 	task.delay(config.duration, function()
 		if playerBuffs[player] and playerBuffs[player][buffName] then
@@ -433,6 +492,10 @@ function _G.removeBuff(player, buffName)
 		
 	elseif buffName == "BloodThirst" then
 		-- BloodThirst: No stat restoration needed (no stat modifications)
+		
+	elseif buffName == "LastChance" then
+		-- LastChance: No stat restoration needed (no stat modifications)
+		-- Status immunity and HP regen are handled automatically
 	end
 	
 	-- Remove buff tracking
@@ -554,6 +617,37 @@ function _G.getPlayerLifestealPercentage(player)
 	end
 	
 	return nil
+end
+
+-- Function to check if player has status immunity (from LastChance buff)
+-- @param player: Player instance
+-- @return: true if player has status immunity, false otherwise
+function _G.hasStatusImmunity(player)
+	if not player or not playerBuffs[player] then
+		return false
+	end
+	
+	-- Check for LastChance buff
+	if playerBuffs[player]["LastChance"] then
+		local buffData = playerBuffs[player]["LastChance"]
+		-- Check if buff is still active (not expired)
+		if buffData and buffData.config and buffData.endTime then
+			local currentTime = tick()
+			if currentTime < buffData.endTime then
+				-- Check if immunity duration is still active
+				local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
+				if currentTime < immunityEndTime then
+					-- Player has status immunity
+					return true
+				end
+			else
+				-- Buff expired, remove it (safety cleanup)
+				playerBuffs[player]["LastChance"] = nil
+			end
+		end
+	end
+	
+	return false
 end
 
 -- Clean up buffs when player leaves
