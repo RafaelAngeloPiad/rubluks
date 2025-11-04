@@ -535,6 +535,47 @@ local function applyStatusAilmentFromConfig(model, config)
 	StatusAilmentHandler.apply(model, ailmentTypeConstant, ailmentConfig)
 end
 
+-- Function to apply lifesteal from hitbox config
+-- @param attacker: The attacker model (character) that will be healed
+-- @param config: Hitbox config that may contain lifesteal field
+-- @param totalDamage: Total damage dealt (damageToHealth + damageToDefense)
+local function applyLifestealFromConfig(attacker, config, totalDamage)
+	if not attacker or not config or not totalDamage or totalDamage <= 0 then return end
+	
+	-- Check if lifesteal is configured
+	local lifesteal = config.lifesteal
+	if not lifesteal then return end
+	
+	-- Get attacker's humanoid
+	local attackerHumanoid = attacker:FindFirstChildOfClass("Humanoid")
+	if not attackerHumanoid or attackerHumanoid.Health <= 0 then return end
+	
+	-- Calculate healing amount
+	local healingAmount = 0
+	
+	-- Percentage-based lifesteal (e.g., 0.5 = 50% of damage dealt)
+	if lifesteal.percentage then
+		healingAmount = healingAmount + (totalDamage * lifesteal.percentage)
+	end
+	
+	-- Flat amount lifesteal (e.g., 10 = flat 10 HP healed)
+	if lifesteal.flatAmount then
+		healingAmount = healingAmount + lifesteal.flatAmount
+	end
+	
+	-- Round to integer
+	healingAmount = math.floor(healingAmount)
+	
+	-- Apply healing if amount is positive
+	if healingAmount > 0 then
+		-- Clamp healing to not exceed max health
+		local currentHealth = attackerHumanoid.Health
+		local maxHealth = attackerHumanoid.MaxHealth
+		local newHealth = math.min(currentHealth + healingAmount, maxHealth)
+		attackerHumanoid.Health = newHealth
+	end
+end
+
 -- Function to apply knockback to mobs when hit by players
 local function applyKnockback(attacker, target)
 	-- Only apply knockback when player attacks mob
@@ -663,6 +704,11 @@ end
 		visualColor = Color3.new(1, 0, 0),  -- Debug visual color (REQUIRED)
 		visualDuration = 0.5,               -- How long visual stays (optional, default: 0.5)
 		delay = 0,                          -- Delay before activation (optional, default: 0)
+		statusAilment = {...},              -- Optional: Status ailment config (stun, poison, etc.)
+		lifesteal = {                       -- Optional: Lifesteal config (heal attacker when dealing damage)
+			percentage = 0.5,               -- Heal for % of damage dealt (e.g., 0.5 = 50%)
+			flatAmount = 10                 -- Optional: Flat HP healed per hit
+		}
 	})
 ]]
 function _G.createStaticHitbox(config)
@@ -753,6 +799,9 @@ function _G.createStaticHitbox(config)
 						
 						-- Apply status ailments if configured (optional)
 						applyStatusAilmentFromConfig(model, config)
+						
+						-- Apply lifesteal if configured (optional)
+						applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)
 					end
 				end
 			end
@@ -907,6 +956,9 @@ function _G.createStaticDOTHitbox(config)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
+							
+							-- Apply lifesteal if configured (optional)
+							applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)
 						end
 					end
 				end
@@ -1074,6 +1126,9 @@ function _G.createTravelingHitbox(config)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
+							
+							-- Apply lifesteal if configured (optional)
+							applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)
 						end
 					end
 				end
@@ -1204,6 +1259,9 @@ function _G.createTravelingDOTHitbox(config)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
+							
+							-- Apply lifesteal if configured (optional)
+							applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)
 						end
 					end
 				end
@@ -1416,6 +1474,9 @@ function _G.createProjectileHitbox(config)
 								
 								-- Apply status ailments if configured (optional)
 								applyStatusAilmentFromConfig(model, config)
+								
+								-- Apply lifesteal if configured (optional)
+								applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)
 								
 								hitSomething = true
 							end
