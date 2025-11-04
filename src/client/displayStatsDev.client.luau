@@ -913,7 +913,7 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if tenacityDefenseBonus > 0 then
-					passiveText = string.format("+%.0f DEF", tenacityDefenseBonus)
+					passiveText = string.format("When HP<30%%: +%.0f DEF", tenacityDefenseBonus)
 				else
 					passiveText = "Active"
 				end
@@ -938,9 +938,9 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if rageAttackBonus > 0 and rageAttackSpeedBonus > 0 then
-					passiveText = string.format("+%.0f ATK, +%.1f Aspd", rageAttackBonus, rageAttackSpeedBonus)
+					passiveText = string.format("When HP<30%%: +%.0f ATK, +%.1f Aspd", rageAttackBonus, rageAttackSpeedBonus)
 				elseif rageAttackBonus > 0 then
-					passiveText = string.format("+%.0f ATK", rageAttackBonus)
+					passiveText = string.format("When HP<30%%: +%.0f ATK", rageAttackBonus)
 				else
 					passiveText = "Active"
 				end
@@ -963,7 +963,7 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if madnessStunChance > 0 then
-					passiveText = string.format("%d%% Stun Chance", madnessStunChance)
+					passiveText = string.format("When HP<30%%: %d%% chance to stun on attacks", madnessStunChance)
 				else
 					passiveText = "Active"
 				end
@@ -986,7 +986,7 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if championsRebukeChance > 0 then
-					passiveText = string.format("%d%% Double Damage", championsRebukeChance)
+					passiveText = string.format("Combo2: %d%% chance for double damage", championsRebukeChance)
 				else
 					passiveText = "Active"
 				end
@@ -1010,7 +1010,7 @@ local function updateStatsDisplay()
 				local passiveText = ""
 				if oneLastChanceHPPercent > 0 then
 					local hpPercent = math.floor(oneLastChanceHPPercent * 100)
-					passiveText = string.format("%d%% HP on Resurrect", hpPercent)
+					passiveText = string.format("Resurrects with %d%% HP when HP=0", hpPercent)
 				else
 					passiveText = "Active"
 				end
@@ -1033,7 +1033,7 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if headshotChance > 0 then
-					passiveText = string.format("%d%% chance", headshotChance)
+					passiveText = string.format("%d%% chance for 2x damage on attacks", headshotChance)
 				else
 					passiveText = "Active"
 				end
@@ -1056,7 +1056,7 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if immobilizeStunChance > 0 then
-					passiveText = string.format("%d%% Stun", immobilizeStunChance)
+					passiveText = string.format("%d%% chance to stun on attacks", immobilizeStunChance)
 				else
 					passiveText = "Active"
 				end
@@ -1065,20 +1065,35 @@ local function updateStatsDisplay()
 				layoutOrder = layoutOrder + 1
 			elseif passiveName == "BladeDance" then
 				hasBuffsOrPassives = true
-				-- Calculate Blade Dance attack increase
+				-- Calculate Blade Dance attack increase and chance
 				local bladeDanceAttackIncrease = 0
+				local bladeDanceChance = 0
+				local bladeDanceChanceLowHP = 0
 				
-				-- Get current level to get attack increase
+				-- Get current level to get attack increase and chance
 				local level = leaderstats:FindFirstChild("Level")
 				if level and ConfigModule and ConfigModule.SamuraiPassives then
 					local passiveConfig = ConfigModule.getSamuraiPassiveConfig("BladeDance", level.Value)
 					if passiveConfig then
 						bladeDanceAttackIncrease = passiveConfig.attackIncrease or 0
+						bladeDanceChance = passiveConfig.chance or 0
+						-- Calculate low HP chance (2x multiplier)
+						if bladeDanceChance > 0 then
+							local bladeDanceConfig = ConfigModule.SamuraiPassives.BladeDance
+							local lowHPChanceMultiplier = bladeDanceConfig and bladeDanceConfig.lowHPChanceMultiplier or 2.0
+							bladeDanceChanceLowHP = math.floor(bladeDanceChance * lowHPChanceMultiplier)
+						end
 					end
 				end
 				
 				local passiveText = ""
-				if bladeDanceAttackIncrease > 0 then
+				if bladeDanceAttackIncrease > 0 and bladeDanceChance > 0 then
+					if bladeDanceChanceLowHP > 0 then
+						passiveText = string.format("%d%% (HP>30%%) / %d%% (HP<30%%) chance of +%d ATK on attacks", bladeDanceChance, bladeDanceChanceLowHP, bladeDanceAttackIncrease)
+					else
+						passiveText = string.format("%d%% chance of +%d ATK on attacks", bladeDanceChance, bladeDanceAttackIncrease)
+					end
+				elseif bladeDanceAttackIncrease > 0 then
 					passiveText = string.format("+%d ATK", bladeDanceAttackIncrease)
 				else
 					passiveText = "Active"
@@ -1104,7 +1119,7 @@ local function updateStatsDisplay()
 				
 				local passiveText = ""
 				if burstChanceHighHP > 0 and burstChanceLowHP > 0 then
-					passiveText = string.format("%d%%/%d%% chance", burstChanceHighHP, burstChanceLowHP)
+					passiveText = string.format("Combo2: %d%% (HP>30%%) / %d%% (HP<30%%) chance for 2x damage", burstChanceHighHP, burstChanceLowHP)
 				else
 					passiveText = "Active"
 				end
@@ -1140,7 +1155,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local knightsBladeConfig = knightsBladeLevels[highestUnlocked]
 					local displayName = "Knight's Blade"
-					local statusText = string.format("Unlocked (%d%% chance)", knightsBladeConfig.chance)
+					local statusText = string.format("Unlocked (Combo2: %d%% chance for double damage)", knightsBladeConfig.chance)
 					
 					statLabels["Passive_KnightsBlade"] = createStatRow(displayName, statusText, Color3.fromRGB(150, 200, 255), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1168,7 +1183,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local rageConfig = rageLevels[highestUnlocked]
 					local displayName = "Rage"
-					local statusText = string.format("Unlocked (+%d ATK, +%.1f Aspd)", rageConfig.attackIncrease, rageConfig.attackSpeedIncrease)
+					local statusText = string.format("Unlocked (When HP<30%%: +%d ATK, +%.1f Aspd)", rageConfig.attackIncrease, rageConfig.attackSpeedIncrease)
 					
 					statLabels["Passive_Rage_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 150, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1191,7 +1206,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local madnessConfig = madnessLevels[highestUnlocked]
 					local displayName = "Madness"
-					local statusText = string.format("Unlocked (%d%% stun)", madnessConfig.stunChance)
+					local statusText = string.format("Unlocked (When HP<30%%: %d%% chance to stun on attacks)", madnessConfig.stunChance)
 					
 					statLabels["Passive_Madness_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(200, 150, 255), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1219,7 +1234,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local championsRebukeConfig = championsRebukeLevels[highestUnlocked]
 					local displayName = "Champion's Rebuke"
-					local statusText = string.format("Unlocked (%d%% double damage)", championsRebukeConfig.chance)
+					local statusText = string.format("Unlocked (Combo2: %d%% chance for double damage)", championsRebukeConfig.chance)
 					
 					statLabels["Passive_ChampionsRebuke_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1243,7 +1258,7 @@ local function updateStatsDisplay()
 					local oneLastChanceConfig = oneLastChanceLevels[highestUnlocked]
 					local displayName = "One Last Chance"
 					local hpPercent = math.floor(oneLastChanceConfig.resurrectHPPercentage * 100)
-					local statusText = string.format("Unlocked (%d%% HP on resurrect)", hpPercent)
+					local statusText = string.format("Unlocked (Resurrects with %d%% HP when HP=0)", hpPercent)
 					
 					statLabels["Passive_OneLastChance_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 150, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1271,7 +1286,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local headshotConfig = headshotLevels[highestUnlocked]
 					local displayName = "Headshot"
-					local statusText = string.format("Unlocked (%d%% chance)", headshotConfig.chance)
+					local statusText = string.format("Unlocked (%d%% chance for 2x damage on attacks)", headshotConfig.chance)
 					
 					statLabels["Passive_Headshot_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1294,7 +1309,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local immobilizeConfig = immobilizeLevels[highestUnlocked]
 					local displayName = "Immobilize"
-					local statusText = string.format("Unlocked (%d%% Stun)", immobilizeConfig.stunChance)
+					local statusText = string.format("Unlocked (%d%% chance to stun on attacks)", immobilizeConfig.stunChance)
 					
 					statLabels["Passive_Immobilize_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1322,7 +1337,10 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local bladeDanceConfig = bladeDanceLevels[highestUnlocked]
 					local displayName = "Blade Dance"
-					local statusText = string.format("Unlocked (+%d ATK)", bladeDanceConfig.attackIncrease)
+					local bladeDanceConfigFull = ConfigModule.SamuraiPassives.BladeDance
+					local lowHPChanceMultiplier = bladeDanceConfigFull and bladeDanceConfigFull.lowHPChanceMultiplier or 2.0
+					local lowHPChance = math.floor(bladeDanceConfig.chance * lowHPChanceMultiplier)
+					local statusText = string.format("Unlocked (%d%% (HP>30%%) / %d%% (HP<30%%) chance of +%d ATK on attacks)", bladeDanceConfig.chance, lowHPChance, bladeDanceConfig.attackIncrease)
 					
 					statLabels["Passive_BladeDance_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
@@ -1345,7 +1363,7 @@ local function updateStatsDisplay()
 					hasBuffsOrPassives = true
 					local burstConfig = burstLevels[highestUnlocked]
 					local displayName = "Burst"
-					local statusText = string.format("Unlocked (%d%%/%d%% chance)", burstConfig.chanceHighHP, burstConfig.chanceLowHP)
+					local statusText = string.format("Unlocked (Combo2: %d%% (HP>30%%) / %d%% (HP<30%%) chance for 2x damage)", burstConfig.chanceHighHP, burstConfig.chanceLowHP)
 					
 					statLabels["Passive_Burst_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
