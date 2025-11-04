@@ -321,7 +321,7 @@ local function updateStatsDisplay()
 				local baseDEF = baseDefense.Value
 				local buffAmount = maxDef - baseDEF
 				if buffAmount > 0 then
-					defenseText = string.format("%.0f / %.0f (+%.0f)", currentDef, maxDef, buffAmount)
+					defenseText = string.format("%.0f (+%.0f) / %.0f", currentDef, buffAmount, maxDef)
 				else
 					defenseText = string.format("%.0f / %.0f", currentDef, maxDef)
 				end
@@ -774,7 +774,7 @@ local function setupStatConnections()
 							local baseDEF = baseDefense.Value
 							local buffAmount = maxDef - baseDEF
 							if buffAmount > 0 then
-								statLabels["MaxDefense"].Text = string.format("%.0f / %.0f (+%.0f)", currentDef, maxDef, buffAmount)
+								statLabels["MaxDefense"].Text = string.format("%.0f (+%.0f) / %.0f", currentDef, buffAmount, maxDef)
 							else
 								statLabels["MaxDefense"].Text = string.format("%.0f / %.0f", currentDef, maxDef)
 							end
