@@ -1653,8 +1653,72 @@ ServerConfigs.GladiatorBuffs = {
 	}
 }
 
+-- Archer Buffs
+ServerConfigs.ArcherBuffs = {
+	HuntersInstinct = {
+		-- Buff: Increases Movement Speed and provides Status Immunity
+		levels = {
+			[5] = {
+				mspdMultiplier = 0.06,    -- 6% movement speed increase
+				immunityDuration = 10,     -- 10 seconds of status immunity
+				duration = 30              -- 30 seconds
+			},
+			[15] = {
+				mspdMultiplier = 0.07,     -- 7% movement speed increase
+				immunityDuration = 12,     -- 12 seconds of status immunity
+				duration = 35              -- 35 seconds
+			},
+			[25] = {
+				mspdMultiplier = 0.08,     -- 8% movement speed increase
+				immunityDuration = 15,     -- 15 seconds of status immunity
+				duration = 40              -- 40 seconds
+			},
+			[35] = {
+				mspdMultiplier = 0.09,     -- 9% movement speed increase
+				immunityDuration = 18,     -- 18 seconds of status immunity
+				duration = 45              -- 45 seconds
+			},
+			[45] = {
+				mspdMultiplier = 0.1,      -- 10% movement speed increase
+				immunityDuration = 20,     -- 20 seconds of status immunity
+				duration = 50              -- 50 seconds
+			}
+		}
+	},
+	HuntersMark = {
+		-- Buff: Increases Attack and Attack Speed
+		levels = {
+			[1] = {
+				attackIncrease = 50,      -- +50 Attack
+				attackSpeedIncrease = 0.5, -- +0.5 hit/s
+				duration = 30              -- 30 seconds
+			},
+			[11] = {
+				attackIncrease = 130,     -- +130 Attack
+				attackSpeedIncrease = 0.5, -- +0.5 hit/s
+				duration = 40              -- 40 seconds
+			},
+			[21] = {
+				attackIncrease = 350,     -- +350 Attack
+				attackSpeedIncrease = 0.5, -- +0.5 hit/s
+				duration = 50              -- 50 seconds
+			},
+			[31] = {
+				attackIncrease = 850,     -- +850 Attack
+				attackSpeedIncrease = 1.0, -- +1 hit/s
+				duration = 60              -- 60 seconds
+			},
+			[41] = {
+				attackIncrease = 2300,    -- +2300 Attack
+				attackSpeedIncrease = 1.0, -- +1 hit/s
+				duration = 80              -- 80 seconds
+			}
+		}
+	}
+}
+
 -- Function to get buff config for a level
--- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", or "ChampionsBlood"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", "ChampionsBlood", "HuntersInstinct", or "HuntersMark"
 -- @param playerLevel: Player's current level
 -- @return: Buff config for that level or nil if not unlocked
 function ServerConfigs.getBuffConfig(buffName, playerLevel)
@@ -1721,11 +1785,32 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 		end
 	end
 	
+	-- Check Archer buffs
+	local archerBuffs = ServerConfigs.ArcherBuffs
+	if archerBuffs and archerBuffs[buffName] then
+		local buffLevels = archerBuffs[buffName].levels
+		if buffLevels then
+			-- Find the highest unlocked level for this buff
+			local highestUnlocked = nil
+			for level, config in pairs(buffLevels) do
+				if playerLevel >= level then
+					if not highestUnlocked or level > highestUnlocked then
+						highestUnlocked = level
+					end
+				end
+			end
+			
+			if highestUnlocked then
+				return buffLevels[highestUnlocked]
+			end
+		end
+	end
+	
 	return nil
 end
 
 -- Function to get minimum required level for a buff
--- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", or "ChampionsBlood"
+-- @param buffName: "Warcry", "WarriorMight", "BloodThirst", "LastChance", "ChampionsCheer", "ChampionsBlood", "HuntersInstinct", or "HuntersMark"
 -- @return: Minimum level required or nil if buff doesn't exist
 function ServerConfigs.getBuffMinLevel(buffName)
 	-- Check Knight buffs first
@@ -1764,6 +1849,22 @@ function ServerConfigs.getBuffMinLevel(buffName)
 	local gladiatorBuffs = ServerConfigs.GladiatorBuffs
 	if gladiatorBuffs and gladiatorBuffs[buffName] then
 		local buffLevels = gladiatorBuffs[buffName].levels
+		if buffLevels then
+			-- Find the lowest level requirement
+			local minLevel = nil
+			for level, _ in pairs(buffLevels) do
+				if not minLevel or level < minLevel then
+					minLevel = level
+				end
+			end
+			return minLevel
+		end
+	end
+	
+	-- Check Archer buffs
+	local archerBuffs = ServerConfigs.ArcherBuffs
+	if archerBuffs and archerBuffs[buffName] then
+		local buffLevels = archerBuffs[buffName].levels
 		if buffLevels then
 			-- Find the lowest level requirement
 			local minLevel = nil
@@ -2080,6 +2181,111 @@ end
 -- @return: Minimum level required or nil if passive doesn't exist
 function ServerConfigs.getGladiatorPassiveMinLevel(passiveName)
 	local classPassives = ServerConfigs.GladiatorPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the lowest level requirement
+	local minLevel = nil
+	for level, _ in pairs(passiveLevels) do
+		if not minLevel or level < minLevel then
+			minLevel = level
+		end
+	end
+	
+	return minLevel
+end
+
+-- ========================================
+-- ARCHER PASSIVE CONFIGURATIONS
+-- ========================================
+
+ServerConfigs.ArcherPassives = {
+	Headshot = {
+		-- Passive: Attacks have chance to deal double damage (x2)
+		levels = {
+			[1] = {
+				chance = 10,  -- 10% chance
+			},
+			[11] = {
+				chance = 12,  -- 12% chance
+			},
+			[21] = {
+				chance = 15,  -- 15% chance
+			},
+			[31] = {
+				chance = 18,  -- 18% chance
+			},
+			[41] = {
+				chance = 20,  -- 20% chance
+			}
+		}
+	},
+	Immobilize = {
+		-- Passive: Attacks have chance to stun targets
+		levels = {
+			[5] = {
+				stunChance = 5,  -- 5% chance to stun
+			},
+			[15] = {
+				stunChance = 8,  -- 8% chance to stun
+			},
+			[25] = {
+				stunChance = 10, -- 10% chance to stun
+			},
+			[35] = {
+				stunChance = 13, -- 13% chance to stun
+			},
+			[45] = {
+				stunChance = 15, -- 15% chance to stun
+			}
+		},
+		stunDuration = 2.0  -- 2 seconds stun duration
+	}
+}
+
+-- Function to get archer passive config for a level
+-- @param passiveName: "Headshot" or "Immobilize"
+-- @param playerLevel: Player's current level
+-- @return: Passive config for that level or nil if not unlocked
+function ServerConfigs.getArcherPassiveConfig(passiveName, playerLevel)
+	local classPassives = ServerConfigs.ArcherPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the highest unlocked level for this passive
+	local highestUnlocked = nil
+	for level, config in pairs(passiveLevels) do
+		if playerLevel >= level then
+			if not highestUnlocked or level > highestUnlocked then
+				highestUnlocked = level
+			end
+		end
+	end
+	
+	if highestUnlocked then
+		return passiveLevels[highestUnlocked]
+	end
+	
+	return nil
+end
+
+-- Function to get minimum required level for an archer passive
+-- @param passiveName: "Headshot" or "Immobilize"
+-- @return: Minimum level required or nil if passive doesn't exist
+function ServerConfigs.getArcherPassiveMinLevel(passiveName)
+	local classPassives = ServerConfigs.ArcherPassives
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end

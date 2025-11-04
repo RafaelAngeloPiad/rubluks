@@ -67,6 +67,33 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	-- Aura marker (from original HunterMark.lua)
 	animTrack:GetMarkerReachedSignal("Aura"):Connect(function()
+		-- Apply buff when aura starts
+		local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			local level = leaderstats:FindFirstChild("Level")
+			if level then
+				local buffConfig = ServerConfigs.getBuffConfig("HuntersMark", level.Value)
+				if buffConfig then
+					-- Apply buff using global function
+					_G.applyBuff(player, "HuntersMark", buffConfig)
+				else
+					-- Buff not unlocked - send warning to client
+					local minLevel = ServerConfigs.getBuffMinLevel("HuntersMark")
+					if minLevel then
+						-- Use StarterGui to show notification
+						local StarterGui = game:GetService("StarterGui")
+						StarterGui:SetCore("SendNotification", {
+							Title = "Hunter's Mark Not Unlocked",
+							Text = string.format("Hunter's Mark requires Level %d. You are Level %d.", minLevel, level.Value),
+							Duration = 5,
+							Button1 = "OK"
+						})
+					end
+				end
+			end
+		end
+		
 		local vfx = ReplicatedStorage.HunterMark:WaitForChild("Aura"):Clone()
 		vfx.Parent = workspace
 

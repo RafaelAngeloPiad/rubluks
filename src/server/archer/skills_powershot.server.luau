@@ -206,16 +206,39 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skill2Damage or 0.4
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
 		
+		-- Check for Headshot passive (attack x2) - BEFORE creating hitbox
+		-- Similar to how crits work: multiply damage by 2 instead of creating two separate hits
+		local headshotTriggered = false
+		if _G.checkHeadshotPassive then
+			local success, result = pcall(function()
+				return _G.checkHeadshotPassive(player)
+			end)
+			if success then
+				headshotTriggered = result
+			end
+		end
+		
+		-- If Headshot passive triggered, multiply damage by 2 (like crit multiplier)
+		-- This creates ONE hit with double damage, not two separate hits
+		local finalDamage = actualDamage
+		local visualColor = Color3.new(1, 1, 0) -- Yellow for power arrow
+		if headshotTriggered then
+			-- Double the damage (like crits multiply by critMultiplier/100, but we multiply by 2)
+			finalDamage = math.floor(actualDamage * 2)
+			-- Use orange/gold color to indicate Headshot triggered
+			visualColor = Color3.new(1, 0.8, 0)
+		end
+		
 		-- Use projectile hitbox system for power arrow
 		_G.createTravelingHitbox({
 			attachTo = arrowPart,
 			offset = CFrame.new(0, 0, 0),
 			size = ServerConfigs.ArcherSkills.PowerShot.hitboxSize,
-			damage = actualDamage, -- Use calculated damage based on MaxAttack
+			damage = finalDamage, -- Use final damage (doubled if Headshot triggered)
 			character = character,
 			name = "PowerArrow",
 			showVisual = true,
-			visualColor = Color3.new(1, 1, 0), -- Yellow for power arrow
+			visualColor = visualColor, -- Use color based on Headshot trigger
 			delay = ServerConfigs.ArcherSkills.PowerShot.hitboxDelay,
 			actionType = "powerShot",
 			classType = "Archer"

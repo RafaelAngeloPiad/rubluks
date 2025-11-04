@@ -704,6 +704,113 @@ local function updateStatsDisplay()
 						layoutOrder = layoutOrder + 1
 					end
 				end
+			elseif buffName == "HuntersInstinct" then
+				hasBuffsOrPassives = true
+				-- Calculate HuntersInstinct bonuses
+				local immunityDuration = 0
+				
+				-- Get current level to calculate Movement Speed increase and immunity duration
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.ArcherBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("HuntersInstinct", level.Value)
+					if buffConfig then
+						-- HuntersInstinct provides Movement Speed multiplier and immunity duration
+						-- mspdMultiplier is already a percentage (0.06 = 6%)
+						local mspdMultiplier = buffConfig.mspdMultiplier or 0
+						immunityDuration = buffConfig.immunityDuration or 0
+						
+						-- Convert multiplier to percentage for display
+						local mspdPercent = math.floor(mspdMultiplier * 100)
+						
+						-- Display stat bonuses (separate from timer)
+						local buffText = ""
+						if mspdPercent > 0 and immunityDuration > 0 then
+							buffText = string.format("%d%% Mspd, %ds Immunity", mspdPercent, immunityDuration)
+						elseif mspdPercent > 0 then
+							buffText = string.format("%d%% Mspd", mspdPercent)
+						elseif immunityDuration > 0 then
+							buffText = string.format("%ds Immunity", immunityDuration)
+						else
+							buffText = "Active"
+						end
+						
+						statLabels["Buff_HuntersInstinct"] = createStatRow("Hunter's Instinct", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+						layoutOrder = layoutOrder + 1
+						
+						-- Display timer separately (if available)
+						local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+						if buffDurations then
+							local buffDuration = buffDurations:FindFirstChild(buffName)
+							if buffDuration then
+								local remaining = math.max(0, math.floor(buffDuration.Value))
+								local minutes = math.floor(remaining / 60)
+								local seconds = remaining % 60
+								local durationText = ""
+								
+								if minutes > 0 then
+									durationText = string.format("%dm %ds", minutes, seconds)
+								else
+									durationText = string.format("%ds", seconds)
+								end
+								
+								statLabels["Buff_HuntersInstinct_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+								layoutOrder = layoutOrder + 1
+							end
+						end
+					end
+				end
+			elseif buffName == "HuntersMark" then
+				hasBuffsOrPassives = true
+				-- Calculate HuntersMark bonuses
+				local huntersMarkAttackBonus = 0
+				local huntersMarkAttackSpeedBonus = 0
+				
+				-- Get current level to calculate Attack and Attack Speed increase
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.ArcherBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("HuntersMark", level.Value)
+					if buffConfig then
+						-- HuntersMark adds flat Attack and Attack Speed
+						huntersMarkAttackBonus = buffConfig.attackIncrease or 0
+						huntersMarkAttackSpeedBonus = buffConfig.attackSpeedIncrease or 0
+					end
+				end
+				
+				-- Display stat bonuses (separate from timer)
+				local buffText = ""
+				if huntersMarkAttackBonus > 0 and huntersMarkAttackSpeedBonus > 0 then
+					buffText = string.format("+%.0f ATK, +%.1f Aspd", huntersMarkAttackBonus, huntersMarkAttackSpeedBonus)
+				elseif huntersMarkAttackBonus > 0 then
+					buffText = string.format("+%.0f ATK", huntersMarkAttackBonus)
+				elseif huntersMarkAttackSpeedBonus > 0 then
+					buffText = string.format("+%.1f Aspd", huntersMarkAttackSpeedBonus)
+				else
+					buffText = "Active"
+				end
+				
+				statLabels["Buff_HuntersMark"] = createStatRow("Hunter's Mark", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_HuntersMark_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
 			end
 		end
 	end
@@ -833,6 +940,52 @@ local function updateStatsDisplay()
 				end
 				
 				statLabels["Passive_OneLastChance"] = createStatRow("One Last Chance", passiveText, Color3.fromRGB(255, 150, 150), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "Headshot" then
+				hasBuffsOrPassives = true
+				-- Calculate Headshot chance
+				local headshotChance = 0
+				
+				-- Get current level to get chance
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.ArcherPassives then
+					local passiveConfig = ConfigModule.getArcherPassiveConfig("Headshot", level.Value)
+					if passiveConfig then
+						headshotChance = passiveConfig.chance or 0
+					end
+				end
+				
+				local passiveText = ""
+				if headshotChance > 0 then
+					passiveText = string.format("%d%% chance", headshotChance)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_Headshot"] = createStatRow("Headshot", passiveText, Color3.fromRGB(255, 200, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "Immobilize" then
+				hasBuffsOrPassives = true
+				-- Calculate Immobilize stun chance
+				local immobilizeStunChance = 0
+				
+				-- Get current level to get stun chance
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.ArcherPassives then
+					local passiveConfig = ConfigModule.getArcherPassiveConfig("Immobilize", level.Value)
+					if passiveConfig then
+						immobilizeStunChance = passiveConfig.stunChance or 0
+					end
+				end
+				
+				local passiveText = ""
+				if immobilizeStunChance > 0 then
+					passiveText = string.format("%d%% Stun", immobilizeStunChance)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_Immobilize"] = createStatRow("Immobilize", passiveText, Color3.fromRGB(255, 200, 100), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
 		end
@@ -969,6 +1122,57 @@ local function updateStatsDisplay()
 					local statusText = string.format("Unlocked (%d%% HP on resurrect)", hpPercent)
 					
 					statLabels["Passive_OneLastChance_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 150, 150), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+		end
+		
+		-- Only show passives for Archer class
+		if className == "Archer" and ConfigModule and ConfigModule.ArcherPassives then
+			local passivesConfig = ConfigModule.ArcherPassives
+			
+			-- Check Headshot passive (unlocks at level 1)
+			if passivesConfig.Headshot then
+				local headshotLevels = passivesConfig.Headshot.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(headshotLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local headshotConfig = headshotLevels[highestUnlocked]
+					local displayName = "Headshot"
+					local statusText = string.format("Unlocked (%d%% chance)", headshotConfig.chance)
+					
+					statLabels["Passive_Headshot_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+			
+			-- Check Immobilize passive (unlocks at level 5)
+			if passivesConfig.Immobilize then
+				local immobilizeLevels = passivesConfig.Immobilize.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(immobilizeLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local immobilizeConfig = immobilizeLevels[highestUnlocked]
+					local displayName = "Immobilize"
+					local statusText = string.format("Unlocked (%d%% Stun)", immobilizeConfig.stunChance)
+					
+					statLabels["Passive_Immobilize_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 200, 150), layoutOrder)
 					layoutOrder = layoutOrder + 1
 				end
 			end

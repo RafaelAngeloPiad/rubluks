@@ -190,7 +190,9 @@ local function getBaseStatsBeforeBuff(player)
 		MaxAttack = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0,
 		MaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0,
 		MaxHealth = leaderstats:FindFirstChild("MaxHealth") and leaderstats.MaxHealth.Value or 0,
-		CurrentHealth = player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health or 0
+		CurrentHealth = player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health or 0,
+		MovementSpeed = leaderstats:FindFirstChild("MovementSpeed") and leaderstats.MovementSpeed.Value or 1.0,
+		AttackSpeed = leaderstats:FindFirstChild("AttackSpeed") and leaderstats.AttackSpeed.Value or 1.0
 	}
 end
 
@@ -339,6 +341,89 @@ function _G.applyBuff(player, buffName, buffConfig)
 		end
 		
 		-- Status immunity is checked in StatusAilmentHandler (similar to LastChance)
+		
+	elseif buffName == "HuntersInstinct" then
+		-- HuntersInstinct: Multiplies Movement Speed and provides status immunity
+		local movementSpeed = leaderstats:FindFirstChild("MovementSpeed")
+		
+		if movementSpeed and baseStats then
+			-- Calculate buffed movement speed (base * (1 + multiplier))
+			local buffedMovementSpeed = baseStats.MovementSpeed * (1 + config.mspdMultiplier)
+			movementSpeed.Value = buffedMovementSpeed
+			
+			-- Update unified movement animation speed in ServerConfigs
+			local movementAnimSpeedMultiplier = movementSpeed.Value
+			local classType = ServerConfigs.getPlayerClass(player)
+			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+				ServerConfigs.Hitboxes.UnifiedAttacks[classType].movementSpeed = movementAnimSpeedMultiplier
+			end
+			if classType and ServerConfigs[classType] then
+				ServerConfigs[classType].MovementSpeed = movementAnimSpeedMultiplier
+			end
+			
+			-- Update humanoid walk speed
+			local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+			if humanoid and classType then
+				local baseStatsConfig = BaseStats[classType]
+				local baseMspd = baseStatsConfig and baseStatsConfig.Mspd or 18
+				humanoid.WalkSpeed = baseMspd * movementAnimSpeedMultiplier
+			end
+			
+			-- Sync animation speeds with action files
+			local classFuncs = {
+				Archer = _G.updateArcherAnimationSpeed,
+				Samurai = _G.updateSamuraiAnimationSpeed,
+				Brawler = _G.updateBrawlerAnimationSpeed,
+				Knight = _G.updateKnightAnimationSpeed,
+				Gladiator = _G.updateGladiatorAnimationSpeed
+			}
+			local updateFunc = classFuncs[classType]
+			if updateFunc then
+				updateFunc("movement", movementAnimSpeedMultiplier)
+			end
+		end
+		
+		-- Status immunity is checked in StatusAilmentHandler (similar to LastChance/ChampionsBlood)
+		
+	elseif buffName == "HuntersMark" then
+		-- HuntersMark: Adds flat Attack and Attack Speed
+		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+		local attackSpeed = leaderstats:FindFirstChild("AttackSpeed")
+		
+		if maxAttack and baseStats then
+			-- Calculate buffed attack (base + flat increase)
+			local buffedAttack = baseStats.MaxAttack + config.attackIncrease
+			maxAttack.Value = buffedAttack
+		end
+		
+		if attackSpeed and baseStats then
+			-- Calculate buffed attack speed (base + flat increase)
+			local buffedAttackSpeed = baseStats.AttackSpeed + config.attackSpeedIncrease
+			attackSpeed.Value = buffedAttackSpeed
+			
+			-- Update unified attack animation speed in ServerConfigs
+			local attackAnimSpeedMultiplier = attackSpeed.Value
+			local classType = ServerConfigs.getPlayerClass(player)
+			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+				ServerConfigs.Hitboxes.UnifiedAttacks[classType].attackSpeed = attackAnimSpeedMultiplier
+			end
+			if classType and ServerConfigs[classType] then
+				ServerConfigs[classType].AttackSpeed = attackAnimSpeedMultiplier
+			end
+			
+			-- Sync animation speeds with action files
+			local classFuncs = {
+				Archer = _G.updateArcherAnimationSpeed,
+				Samurai = _G.updateSamuraiAnimationSpeed,
+				Brawler = _G.updateBrawlerAnimationSpeed,
+				Knight = _G.updateKnightAnimationSpeed,
+				Gladiator = _G.updateGladiatorAnimationSpeed
+			}
+			local updateFunc = classFuncs[classType]
+			if updateFunc then
+				updateFunc("attack", attackAnimSpeedMultiplier)
+			end
+		end
 	end
 	
 	-- Track buff
@@ -411,6 +496,33 @@ function _G.applyBuff(player, buffName, buffConfig)
 				baseDefense.Name = "BaseMaxDefense"
 			end
 			baseDefense.Value = baseStats.MaxDefense
+		end
+	elseif buffName == "HuntersInstinct" then
+		-- Store base MovementSpeed for UI
+		if baseStats then
+			local baseMovementSpeed = baseStatsFolder:FindFirstChild("BaseMovementSpeed")
+			if not baseMovementSpeed then
+				baseMovementSpeed = Instance.new("NumberValue", baseStatsFolder)
+				baseMovementSpeed.Name = "BaseMovementSpeed"
+			end
+			baseMovementSpeed.Value = baseStats.MovementSpeed
+		end
+	elseif buffName == "HuntersMark" then
+		-- Store base Attack and AttackSpeed for UI
+		if baseStats then
+			local baseAttack = baseStatsFolder:FindFirstChild("BaseMaxAttack")
+			if not baseAttack then
+				baseAttack = Instance.new("NumberValue", baseStatsFolder)
+				baseAttack.Name = "BaseMaxAttack"
+			end
+			baseAttack.Value = baseStats.MaxAttack
+			
+			local baseAttackSpeed = baseStatsFolder:FindFirstChild("BaseAttackSpeed")
+			if not baseAttackSpeed then
+				baseAttackSpeed = Instance.new("NumberValue", baseStatsFolder)
+				baseAttackSpeed.Name = "BaseAttackSpeed"
+			end
+			baseAttackSpeed.Value = baseStats.AttackSpeed
 		end
 	end
 	
@@ -641,6 +753,96 @@ function _G.applyBuff(player, buffName, buffConfig)
 		end
 	end
 	
+	-- Start status immunity display for HuntersInstinct buff
+	if buffName == "HuntersInstinct" then
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local head = character:FindFirstChild("Head")
+			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+			local attachPart = head or humanoidRootPart
+			
+			if attachPart then
+				-- Create "Immune" text above head during immunity duration
+				local RunService = game:GetService("RunService")
+				local billboardGui = Instance.new("BillboardGui")
+				billboardGui.Name = "ImmuneText_" .. tostring(tick() * 1000)
+				billboardGui.Size = UDim2.new(0, 200, 0, 50)
+				billboardGui.StudsOffset = Vector3.new(0, 3.5, 0) -- Above head, higher than ailment text
+				billboardGui.AlwaysOnTop = true
+				billboardGui.LightInfluence = 0
+				billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+				billboardGui.Parent = attachPart
+				
+				-- Create TextLabel
+				local textLabel = Instance.new("TextLabel")
+				textLabel.Size = UDim2.new(1, 0, 1, 0)
+				textLabel.BackgroundTransparency = 1
+				textLabel.Text = "IMMUNE"
+				textLabel.TextColor3 = Color3.new(0, 1, 0) -- Green
+				textLabel.TextSize = 24
+				textLabel.Font = Enum.Font.GothamBold
+				textLabel.TextStrokeTransparency = 0
+				textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+				textLabel.TextXAlignment = Enum.TextXAlignment.Center
+				textLabel.TextYAlignment = Enum.TextYAlignment.Center
+				textLabel.Parent = billboardGui
+				
+				-- Monitor immunity status and remove text when immunity expires
+				local connection
+				connection = RunService.Heartbeat:Connect(function()
+					if not character or not character.Parent or not humanoid or not humanoid.Parent or humanoid.Health <= 0 then
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+					
+					if not playerBuffs[player] or not playerBuffs[player]["HuntersInstinct"] then
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+					
+					local buffData = playerBuffs[player]["HuntersInstinct"]
+					if not buffData or not buffData.config then
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+					
+					local currentTime = tick()
+					local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
+					
+					if currentTime >= immunityEndTime then
+						-- Immunity expired, remove text
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+						return
+					end
+				end)
+				
+				-- Clean up when done (safety cleanup)
+				local buffData = playerBuffs[player]["HuntersInstinct"]
+				if buffData and buffData.config then
+					task.delay(buffData.config.immunityDuration + 0.1, function()
+						if connection then connection:Disconnect() end
+						if billboardGui and billboardGui.Parent then
+							billboardGui:Destroy()
+						end
+					end)
+				end
+			end
+		end
+	end
+	
 	-- Start status immunity display for ChampionsBlood buff
 	if buffName == "ChampionsBlood" then
 		local character = player.Character
@@ -850,6 +1052,86 @@ function _G.removeBuff(player, buffName)
 		end
 		
 		-- Status immunity is handled automatically
+		
+	elseif buffName == "HuntersInstinct" then
+		-- HuntersInstinct: Restore Movement Speed to base value
+		local movementSpeed = leaderstats:FindFirstChild("MovementSpeed")
+		
+		if movementSpeed and baseStats then
+			-- Restore base movement speed
+			movementSpeed.Value = baseStats.MovementSpeed
+			
+			-- Update unified movement animation speed in ServerConfigs
+			local movementAnimSpeedMultiplier = movementSpeed.Value
+			local classType = ServerConfigs.getPlayerClass(player)
+			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+				ServerConfigs.Hitboxes.UnifiedAttacks[classType].movementSpeed = movementAnimSpeedMultiplier
+			end
+			if classType and ServerConfigs[classType] then
+				ServerConfigs[classType].MovementSpeed = movementAnimSpeedMultiplier
+			end
+			
+			-- Update humanoid walk speed
+			local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+			if humanoid and classType then
+				local baseStatsConfig = BaseStats[classType]
+				local baseMspd = baseStatsConfig and baseStatsConfig.Mspd or 18
+				humanoid.WalkSpeed = baseMspd * movementAnimSpeedMultiplier
+			end
+			
+			-- Sync animation speeds with action files
+			local classFuncs = {
+				Archer = _G.updateArcherAnimationSpeed,
+				Samurai = _G.updateSamuraiAnimationSpeed,
+				Brawler = _G.updateBrawlerAnimationSpeed,
+				Knight = _G.updateKnightAnimationSpeed,
+				Gladiator = _G.updateGladiatorAnimationSpeed
+			}
+			local updateFunc = classFuncs[classType]
+			if updateFunc then
+				updateFunc("movement", movementAnimSpeedMultiplier)
+			end
+		end
+		
+		-- Status immunity is handled automatically
+		
+	elseif buffName == "HuntersMark" then
+		-- HuntersMark: Restore Attack and Attack Speed to base values
+		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
+		local attackSpeed = leaderstats:FindFirstChild("AttackSpeed")
+		
+		if maxAttack and baseStats then
+			-- Restore base attack
+			maxAttack.Value = baseStats.MaxAttack
+		end
+		
+		if attackSpeed and baseStats then
+			-- Restore base attack speed
+			attackSpeed.Value = baseStats.AttackSpeed
+			
+			-- Update unified attack animation speed in ServerConfigs
+			local attackAnimSpeedMultiplier = attackSpeed.Value
+			local classType = ServerConfigs.getPlayerClass(player)
+			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+				ServerConfigs.Hitboxes.UnifiedAttacks[classType].attackSpeed = attackAnimSpeedMultiplier
+			end
+			if classType and ServerConfigs[classType] then
+				ServerConfigs[classType].AttackSpeed = attackAnimSpeedMultiplier
+			end
+			
+			-- Sync animation speeds with action files
+			local classFuncs = {
+				Archer = _G.updateArcherAnimationSpeed,
+				Samurai = _G.updateSamuraiAnimationSpeed,
+				Brawler = _G.updateBrawlerAnimationSpeed,
+				Knight = _G.updateKnightAnimationSpeed,
+				Gladiator = _G.updateGladiatorAnimationSpeed
+			}
+			local updateFunc = classFuncs[classType]
+			if updateFunc then
+				updateFunc("attack", attackAnimSpeedMultiplier)
+			end
+		end
 	end
 	
 	-- Remove buff tracking
@@ -932,6 +1214,20 @@ function _G.removeBuff(player, buffName)
 				if baseDefense then
 					baseDefense:Destroy()
 				end
+			elseif buffName == "HuntersInstinct" then
+				local baseMovementSpeed = baseStatsFolder:FindFirstChild("BaseMovementSpeed")
+				if baseMovementSpeed then
+					baseMovementSpeed:Destroy()
+				end
+			elseif buffName == "HuntersMark" then
+				local baseAttack = baseStatsFolder:FindFirstChild("BaseMaxAttack")
+				if baseAttack then
+					baseAttack:Destroy()
+				end
+				local baseAttackSpeed = baseStatsFolder:FindFirstChild("BaseAttackSpeed")
+				if baseAttackSpeed then
+					baseAttackSpeed:Destroy()
+				end
 			end
 			
 			-- Clean up BaseStats folder if it's empty
@@ -987,7 +1283,7 @@ function _G.getPlayerLifestealPercentage(player)
 	return nil
 end
 
--- Function to check if player has status immunity (from LastChance or ChampionsBlood buff)
+-- Function to check if player has status immunity (from LastChance, ChampionsBlood, or HuntersInstinct buff)
 -- @param player: Player instance
 -- @return: true if player has status immunity, false otherwise
 function _G.hasStatusImmunity(player)
@@ -1031,6 +1327,26 @@ function _G.hasStatusImmunity(player)
 			else
 				-- Buff expired, remove it (safety cleanup)
 				playerBuffs[player]["ChampionsBlood"] = nil
+			end
+		end
+	end
+	
+	-- Check for HuntersInstinct buff
+	if playerBuffs[player]["HuntersInstinct"] then
+		local buffData = playerBuffs[player]["HuntersInstinct"]
+		-- Check if buff is still active (not expired)
+		if buffData and buffData.config and buffData.endTime then
+			local currentTime = tick()
+			if currentTime < buffData.endTime then
+				-- Check if immunity duration is still active
+				local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
+				if currentTime < immunityEndTime then
+					-- Player has status immunity
+					return true
+				end
+			else
+				-- Buff expired, remove it (safety cleanup)
+				playerBuffs[player]["HuntersInstinct"] = nil
 			end
 		end
 	end

@@ -576,12 +576,35 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage or 0.2
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
 
+			-- Check for Headshot passive (attack x2) - BEFORE creating hitbox
+			-- Similar to how crits work: multiply damage by 2 instead of creating two separate hits
+			local headshotTriggered = false
+			if _G.checkHeadshotPassive then
+				local success, result = pcall(function()
+					return _G.checkHeadshotPassive(player)
+				end)
+				if success then
+					headshotTriggered = result
+				end
+			end
+			
+			-- If Headshot passive triggered, multiply damage by 2 (like crit multiplier)
+			-- This creates ONE hit with double damage, not two separate hits
+			local finalDamage = actualDamage
+			local visualColor = Color3.new(0, 1, 0) -- Green for arrow
+			if headshotTriggered then
+				-- Double the damage (like crits multiply by critMultiplier/100, but we multiply by 2)
+				finalDamage = math.floor(actualDamage * 2)
+				-- Use orange/gold color to indicate Headshot triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+
 			-- Use DynamicHitbox V3 projectile hitbox system (visual and hitbox can have different speeds)
 			_G.createProjectileHitbox({
 				visualPart = arrow,
 				direction = shootDirection,
 				size = _G.ARCHER_ARROW_HITBOX.size,
-				damage = actualDamage, -- Use calculated damage based on MaxAttack
+				damage = finalDamage, -- Use final damage (doubled if Headshot triggered)
 				character = char,
 				name = "JumpArrow",
 				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
@@ -589,7 +612,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 				delay = _G.ARCHER_ARROW_HITBOX.delay,
 				anchorDelay = _G.ARCHER_ARROW_HITBOX.anchorDelay,
 				showVisual = true,
-				visualColor = Color3.new(0, 1, 0), -- Green for arrow
+				visualColor = visualColor, -- Use color based on Headshot trigger
 				preventPhysicsPush = _G.ARCHER_ARROW_HITBOX.preventPhysicsPush
 			})
 
@@ -642,12 +665,35 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 			local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.damage or 0.2
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
 
+			-- Check for Headshot passive (attack x2) - BEFORE creating hitbox
+			-- Similar to how crits work: multiply damage by 2 instead of creating two separate hits
+			local headshotTriggered = false
+			if _G.checkHeadshotPassive then
+				local success, result = pcall(function()
+					return _G.checkHeadshotPassive(player)
+				end)
+				if success then
+					headshotTriggered = result
+				end
+			end
+			
+			-- If Headshot passive triggered, multiply damage by 2 (like crit multiplier)
+			-- This creates ONE hit with double damage, not two separate hits
+			local finalDamage = actualDamage
+			local visualColor = Color3.new(0, 1, 0) -- Green for arrow
+			if headshotTriggered then
+				-- Double the damage (like crits multiply by critMultiplier/100, but we multiply by 2)
+				finalDamage = math.floor(actualDamage * 2)
+				-- Use orange/gold color to indicate Headshot triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+
 			-- Use DynamicHitbox V3 projectile hitbox system (visual and hitbox can have different speeds)
 			_G.createProjectileHitbox({
 				visualPart = arrow,
 				direction = shootDirection,
 				size = _G.ARCHER_ARROW_HITBOX.size,
-				damage = actualDamage, -- Use calculated damage based on MaxAttack
+				damage = finalDamage, -- Use final damage (doubled if Headshot triggered)
 				character = char,
 				name = "NormalArrow",
 				visualSpeed = _G.ARCHER_ARROW_HITBOX.visualSpeed,
@@ -655,7 +701,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 				delay = _G.ARCHER_ARROW_HITBOX.delay,
 				anchorDelay = _G.ARCHER_ARROW_HITBOX.anchorDelay,
 				showVisual = true,
-				visualColor = Color3.new(0, 1, 0), -- Green for arrow
+				visualColor = visualColor, -- Use color based on Headshot trigger
 				preventPhysicsPush = _G.ARCHER_ARROW_HITBOX.preventPhysicsPush
 			})
 

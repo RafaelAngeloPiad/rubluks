@@ -62,6 +62,33 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	-- AuraStart marker (from original HunterInstinct.lua)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
+		-- Apply buff when aura starts
+		local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			local level = leaderstats:FindFirstChild("Level")
+			if level then
+				local buffConfig = ServerConfigs.getBuffConfig("HuntersInstinct", level.Value)
+				if buffConfig then
+					-- Apply buff using global function
+					_G.applyBuff(player, "HuntersInstinct", buffConfig)
+				else
+					-- Buff not unlocked - send warning to client
+					local minLevel = ServerConfigs.getBuffMinLevel("HuntersInstinct")
+					if minLevel then
+						-- Use StarterGui to show notification
+						local StarterGui = game:GetService("StarterGui")
+						StarterGui:SetCore("SendNotification", {
+							Title = "Hunter's Instinct Not Unlocked",
+							Text = string.format("Hunter's Instinct requires Level %d. You are Level %d.", minLevel, level.Value),
+							Duration = 5,
+							Button1 = "OK"
+						})
+					end
+				end
+			end
+		end
+		
 		local vfx = ReplicatedStorage.Banzai:WaitForChild("Aura"):Clone()
 		vfx.Parent = workspace
 

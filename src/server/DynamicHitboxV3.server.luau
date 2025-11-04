@@ -639,6 +639,35 @@ local function applyMadnessPassiveStun(attacker, target)
 	})
 end
 
+-- Function to apply Immobilize passive stun chance from Archer passive
+-- @param attacker: The attacker model (character) that has Immobilize passive
+-- @param target: The target model to potentially stun
+local function applyImmobilizePassiveStun(attacker, target)
+	if not attacker or not target or not target.Parent then return end
+	
+	-- Check if attacker is a player (for passive stun)
+	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
+	if not attackerPlayer then return end
+	
+	-- Get Immobilize stun chance from passive (only for Archer players)
+	local stunChance = nil
+	if _G.getArcherImmobilizeStunChance then
+		stunChance = _G.getArcherImmobilizeStunChance(attackerPlayer)
+	end
+	
+	-- If no Immobilize passive active, return
+	if not stunChance or stunChance <= 0 then return end
+	
+	-- Get stun duration from config
+	local stunDuration = ServerConfigs.ArcherPassives.Immobilize.stunDuration or 2.0
+	
+	-- Apply stun with chance
+	StatusAilmentHandler.apply(target, StatusAilmentHandler.AilmentTypes.STUN, {
+		duration = stunDuration,
+		chance = stunChance
+	})
+end
+
 -- Function to apply knockback to mobs when hit by players
 local function applyKnockback(attacker, target)
 	-- Only apply knockback when player attacks mob
@@ -872,6 +901,9 @@ function _G.createStaticHitbox(config)
 						
 						-- Apply Madness passive stun chance (Brawler passive)
 						applyMadnessPassiveStun(character, model)
+						
+						-- Apply Immobilize passive stun chance (Archer passive)
+						applyImmobilizePassiveStun(character, model)
 						
 						-- Apply lifesteal if configured (optional)
 						applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)
