@@ -31,10 +31,15 @@ function ProceduralModule:getRotationBetween(u, v)
 	return CFrame.fromAxisAngle(u:Cross(v), math.acos(dot))
 end
 
-function ProceduralModule:IkLegStep(ikTarget, ikRayPart, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams)
+function ProceduralModule:IkLegStep(ikTarget, ikRayPart, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, isSteppingRef)
 	stepWait = stepWait or 0.05
 	stepForward = stepForward or 0
 	stepHeight = stepHeight or 2
+
+	-- Safety: Prevent overlapping steps on the same leg
+	if isSteppingRef and isSteppingRef.Value then
+		return false -- Leg is already stepping
+	end
 
 	local rayCast = workspace:Raycast(ikRayPart.Position, Vector3.new(0, -1000, 0), rayCastParams)
 
@@ -46,22 +51,72 @@ function ProceduralModule:IkLegStep(ikTarget, ikRayPart, root, stepDistance, ste
 
 	if rayCast then
 		local groundPos = rayCast.Position
-		local diff = (groundPos - previousFootPos).Magnitude
+		-- Calculate distance from previous position to new ground position
+		-- Account for body movement by using relative position
+		local bodyOffset = root.CFrame:PointToObjectSpace(groundPos)
+		local prevBodyOffset = root.CFrame:PointToObjectSpace(previousFootPos)
+		local diff = (bodyOffset - prevBodyOffset).Magnitude
+
+		-- Also check absolute distance as fallback
+		local absoluteDiff = (groundPos - previousFootPos).Magnitude
+		diff = math.max(diff, absoluteDiff)
 
 		if diff > stepDistance then
-			local finalFootPos = groundPos + root.CFrame.LookVector * stepForward
+			-- Mark leg as stepping
+			if isSteppingRef then
+				isSteppingRef.Value = true
+			end
+
+			-- Predictive stepping: Step in direction of movement
+			local rootVelocity = root.AssemblyLinearVelocity or Vector3.new(0, 0, 0)
+			local movementDirection = rootVelocity.Magnitude > 0.1 and rootVelocity.Unit or root.CFrame.LookVector
+			local finalFootPos = groundPos + movementDirection * stepForward
+			
+			-- Ensure final position is on ground
+			local groundCheck = workspace:Raycast(finalFootPos + Vector3.new(0, 1, 0), Vector3.new(0, -10, 0), rayCastParams)
+			if groundCheck then
+				finalFootPos = groundCheck.Position
+			end
+
 			local middleFootPos = ((finalFootPos - previousFootPos) * 0.5 + previousFootPos) + Vector3.new(0, stepHeight, 0)
 
 			coroutine.wrap(function()
+				-- Set initial position
 				ikTarget.Position = middleFootPos
+				local startTime = tick()
+				
+				-- Smooth step animation
 				task.wait(stepWait)
+				
+				-- Verify step completed in reasonable time (only warn if significantly delayed)
+				local elapsed = tick() - startTime
+				if elapsed > stepWait * 10 then -- Only warn if step takes 10x longer than expected
+					-- Step took too long, might be stuck
+					warn("Spider leg step took too long:", elapsed, "expected:", stepWait)
+				end
+				
+				-- Final position
 				ikTarget.Position = finalFootPos
 				ikTarget:SetAttribute("PreviousPos", ikTarget.Position)
+				
+				-- Mark step as complete
+				if isSteppingRef then
+					isSteppingRef.Value = false
+				end
 			end)()
+			
+			return true -- Step initiated
+		else
+			-- No step needed, but update position slightly to follow body
+			ikTarget.Position = groundPos
 		end
 	else
+		-- No ground found, keep leg at previous position
 		ikTarget.Position = previousFootPos
+		return false
 	end
+	
+	return false
 end
 
 
@@ -316,8 +371,80 @@ local function initializeSpider(enemy, variantName)
 		end
 	end)
 
+	-- === Step tracking for each leg (prevents overlapping steps) ===
+	local legSteppingStates = {
+		LeftLeg1 = {Value = false},
+		LeftLeg2 = {Value = false},
+		LeftLeg3 = {Value = false},
+		LeftLeg4 = {Value = false},
+		RightLeg1 = {Value = false},
+		RightLeg2 = {Value = false},
+		RightLeg3 = {Value = false},
+		RightLeg4 = {Value = false},
+	}
+
+	-- Initialize all leg positions before starting cycle
+	local function initializeLegs()
+		for _, legName in ipairs({"LeftLeg1", "LeftLeg2", "LeftLeg3", "LeftLeg4", "RightLeg1", "RightLeg2", "RightLeg3", "RightLeg4"}) do
+			local ikTarget = ikTargets:FindFirstChild("IkTarget_" .. legName)
+			local rayPart = rayCastParts:FindFirstChild("RayCastPart_" .. legName)
+			if ikTarget and rayPart then
+				local rayCast = workspace:Raycast(rayPart.Position, Vector3.new(0, -1000, 0), rayCastParams)
+				if rayCast then
+					ikTarget.Position = rayCast.Position
+					ikTarget:SetAttribute("PreviousPos", rayCast.Position)
+				end
+			end
+		end
+	end
+	
+	-- Initialize legs immediately
+	initializeLegs()
+	task.wait(0.1) -- Small delay to ensure initialization
+
+	-- === Continuous leg position update (keeps legs aligned with body) ===
+	coroutine.wrap(function()
+		while true do
+			if not enemy.Parent or enemy.Parent ~= workspace then
+				return
+			end
+			
+			-- Only update if not paused and legs exist
+			if not ikPaused then
+				for _, legName in ipairs({"LeftLeg1", "LeftLeg2", "LeftLeg3", "LeftLeg4", "RightLeg1", "RightLeg2", "RightLeg3", "RightLeg4"}) do
+					local legState = legSteppingStates[legName]
+					-- Only update legs that aren't currently stepping
+					if legState and not legState.Value then
+						local ikTarget = ikTargets:FindFirstChild("IkTarget_" .. legName)
+						local rayPart = rayCastParts:FindFirstChild("RayCastPart_" .. legName)
+						if ikTarget and rayPart then
+							local rayCast = workspace:Raycast(rayPart.Position, Vector3.new(0, -1000, 0), rayCastParams)
+							if rayCast then
+								-- Small adjustment to follow body without triggering a step
+								local currentPos = ikTarget.Position
+								local groundPos = rayCast.Position
+								local distance = (currentPos - groundPos).Magnitude
+								
+								-- Only make small adjustments (less than 0.5 studs) to prevent dragging
+								if distance > 0.5 and distance < 1.0 then
+									-- Smoothly adjust position to follow body
+									ikTarget.Position = currentPos:Lerp(groundPos, 0.3)
+								end
+							end
+						end
+					end
+				end
+			end
+			
+			task.wait(0.1) -- Update every 0.1 seconds
+		end
+	end)()
+
 	-- === Manual stepping cycle with proper grouping (skips when attacking) ===
 	coroutine.wrap(function()
+		local lastRootPosition = root.Position
+		local lastPositionUpdateTime = tick()
+		
 		while true do
 			-- Check if model still exists in workspace
 			if not enemy.Parent or enemy.Parent ~= workspace then
@@ -326,26 +453,107 @@ local function initializeSpider(enemy, variantName)
 			end
 			
 			if not ikPaused then
-				-- Group 1: LeftLeg1 + RightLeg4
-				ProceduralModule:IkLegStep(Ik_LeftLeg1, Ray_LeftLeg1, root, 2, 2, 1, 0.01, rayCastParams)
-				ProceduralModule:IkLegStep(Ik_RightLeg4, Ray_RightLeg4, root, 2, 2, 1, 0.01, rayCastParams)
-				task.wait(0.1)
-
-				-- Group 2: LeftLeg4 + RightLeg1
-				ProceduralModule:IkLegStep(Ik_LeftLeg4, Ray_LeftLeg4, root, 2, 2, 1, 0.01, rayCastParams)
-				ProceduralModule:IkLegStep(Ik_RightLeg1, Ray_RightLeg1, root, 2, 2, 1, 0.01, rayCastParams)
-				task.wait(0.1)
-
-				-- Group 3: LeftLeg2 + RightLeg3
-				ProceduralModule:IkLegStep(Ik_LeftLeg2, Ray_LeftLeg2, root, 2, 2, 1, 0.01, rayCastParams)
-				ProceduralModule:IkLegStep(Ik_RightLeg3, Ray_RightLeg3, root, 2, 2, 1, 0.01, rayCastParams)
-				task.wait(0.1)
-
-				-- Group 4: LeftLeg3 + RightLeg2
-				ProceduralModule:IkLegStep(Ik_LeftLeg3, Ray_LeftLeg3, root, 2, 2, 1, 0.01, rayCastParams)
-				ProceduralModule:IkLegStep(Ik_RightLeg2, Ray_RightLeg2, root, 2, 2, 1, 0.01, rayCastParams)
-				task.wait(0.1)
+				-- Calculate body velocity for adaptive stepping
+				local currentTime = tick()
+				local timeDelta = math.max(currentTime - lastPositionUpdateTime, 0.016) -- Minimum 16ms
+				local currentRootPos = root.Position
+				local bodyVelocity = (currentRootPos - lastRootPosition) / timeDelta
+				local bodySpeed = bodyVelocity.Magnitude
+				
+				-- Update position tracking
+				lastRootPosition = currentRootPos
+				lastPositionUpdateTime = currentTime
+				
+				-- Adaptive step distance: smaller when moving fast, larger when slow
+				-- Base step distance of 1.5, reduces to 1.0 when moving fast, increases to 2.5 when stationary
+				local baseStepDistance = 1.5
+				local stepDistance = baseStepDistance
+				if bodySpeed > 5 then
+					-- Moving fast: reduce step distance to trigger steps more frequently
+					stepDistance = math.max(0.8, baseStepDistance - (bodySpeed - 5) * 0.1)
+				elseif bodySpeed < 0.5 then
+					-- Moving slow/stationary: increase step distance
+					stepDistance = baseStepDistance + 1.0
+				end
+				
+				-- Adaptive step forward: more when moving fast
+				local stepForward = 2
+				if bodySpeed > 5 then
+					stepForward = 2 + math.min(bodySpeed * 0.2, 2) -- Max 4 studs forward
+				end
+				
+				-- Adaptive step height: Higher lift for more visible spider-like movement
+				local stepHeight = 2.5 -- Increased from 1 to make legs lift more noticeably
+				if bodySpeed > 5 then
+					stepHeight = 2.0 -- Slightly lower when moving fast
+				elseif bodySpeed < 0.5 then
+					stepHeight = 3.0 -- Higher when stationary/slow
+				end
+				
+				-- Adaptive wait time: Slower, more deliberate steps
+				local stepWait = 0.08 -- Increased from 0.01 for slower, more visible steps
+				if bodySpeed > 5 then
+					stepWait = 0.06 -- Faster steps when moving, but still slower than before
+				elseif bodySpeed < 0.5 then
+					stepWait = 0.12 -- Slower steps when stationary
+				end
+				
+				-- Natural spider gait: Alternating tripod pattern with staggered timing
+				-- This creates a more organic, less mechanical movement
+				-- Base timing between individual leg steps (longer delays for more spider-like movement)
+				local baseStepDelay = 0.15 -- Increased delay between legs
+				if bodySpeed > 5 then
+					baseStepDelay = 0.12 -- Faster when moving
+				elseif bodySpeed < 0.5 then
+					baseStepDelay = 0.20 -- Slower when stationary
+				end
+				
+				-- Add random variation to make it less mechanical (0-25% variation)
+				local randomVariation = math.random() * 0.25
+				local stepDelay = baseStepDelay * (1 + randomVariation)
+				
+				-- Alternating tripod gait pattern:
+				-- Tripod 1: LeftLeg1, RightLeg2, LeftLeg3, RightLeg4 (3 legs alternating)
+				-- Tripod 2: RightLeg1, LeftLeg2, RightLeg3, LeftLeg4 (opposite 3 legs)
+				-- Stagger each leg slightly to create natural flow
+				
+				-- Step 1: Front Left
+				ProceduralModule:IkLegStep(Ik_LeftLeg1, Ray_LeftLeg1, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.LeftLeg1)
+				task.wait(stepDelay * 0.4) -- Longer delay for more deliberate movement
+				
+				-- Step 2: Mid-Right Front
+				ProceduralModule:IkLegStep(Ik_RightLeg2, Ray_RightLeg2, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.RightLeg2)
+				task.wait(stepDelay * 0.5)
+				
+				-- Step 3: Mid-Left Back
+				ProceduralModule:IkLegStep(Ik_LeftLeg3, Ray_LeftLeg3, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.LeftLeg3)
+				task.wait(stepDelay * 0.4)
+				
+				-- Step 4: Back Right
+				ProceduralModule:IkLegStep(Ik_RightLeg4, Ray_RightLeg4, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.RightLeg4)
+				task.wait(stepDelay * 0.7) -- Longer pause before opposite tripod
+				
+				-- Opposite tripod starts
+				-- Step 5: Front Right
+				ProceduralModule:IkLegStep(Ik_RightLeg1, Ray_RightLeg1, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.RightLeg1)
+				task.wait(stepDelay * 0.4)
+				
+				-- Step 6: Mid-Left Front
+				ProceduralModule:IkLegStep(Ik_LeftLeg2, Ray_LeftLeg2, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.LeftLeg2)
+				task.wait(stepDelay * 0.5)
+				
+				-- Step 7: Mid-Right Back
+				ProceduralModule:IkLegStep(Ik_RightLeg3, Ray_RightLeg3, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.RightLeg3)
+				task.wait(stepDelay * 0.4)
+				
+				-- Step 8: Back Left
+				ProceduralModule:IkLegStep(Ik_LeftLeg4, Ray_LeftLeg4, root, stepDistance, stepForward, stepHeight, stepWait, rayCastParams, legSteppingStates.LeftLeg4)
+				
+				-- Wait before next cycle starts (ensures all legs have time to complete)
+				local cycleWait = stepWait * 1.5 + stepDelay * 0.8
+				task.wait(cycleWait)
 			else
+				-- IK paused (during attack), just wait
 				task.wait(0.05)
 			end
 		end
