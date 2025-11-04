@@ -835,9 +835,14 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 	   actionType == "sworddance" or actionType == "cyclone_slash" or actionType == "warcry" or actionType == "warriormight" or actionType == "mightyblade" or
 	   actionType == "shieldbash" or actionType == "dragoonjump" or actionType == "championsblood" or actionType == "championscheer" or actionType == "demonicvorpaldance" then
 		isAttack = true
-	-- Movement actions (idle, run, jump)
-	elseif actionType == "idle" or actionType == "run" or actionType == "jump" then
+	-- Movement actions (run, jump) - NOTE: idle and block are NOT affected by movement speed (always 1.0)
+	elseif actionType == "run" or actionType == "jump" then
 		isMovement = true
+	end
+	
+	-- Block and idle animations always use 1.0 (not affected by animation speeds)
+	if actionType == "block" or actionType == "idle" then
+		return baseDelay / 1.0 -- Always 1.0 speed
 	end
 	
 	-- Get animation speed based on action type and class

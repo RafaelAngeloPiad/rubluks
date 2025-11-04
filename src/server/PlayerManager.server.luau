@@ -44,8 +44,8 @@ local BaseStats = {
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			Mspd = 1.03,   -- 1% growth - Movement Speed
+			Aspd = 1.03,   -- 1% growth - Attack Speed
 		},
 		Archer = {
 			HP = 1.06,     -- 6% growth
@@ -55,8 +55,8 @@ local BaseStats = {
 			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			Mspd = 1.03,   -- 1% growth - Movement Speed
+			Aspd = 1.03    -- 1% growth - Attack Speed
 		},
 		Gladiator = {
 			HP = 1.10,     -- 10% growth
@@ -66,8 +66,8 @@ local BaseStats = {
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			Mspd = 1.03,   -- 1% growth - Movement Speed
+			Aspd = 1.03,   -- 1% growth - Attack Speed
 		},
 		Brawler = {  -- Berserker in spreadsheet
 			HP = 1.07,     -- 7% growth
@@ -77,8 +77,8 @@ local BaseStats = {
 			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			Mspd = 1.03,   -- 1% growth - Movement Speed
+			Aspd = 1.03,   -- 1% growth - Attack Speed
 		},
 		Knight = {
 			HP = 1.07,     -- 7% growth
@@ -88,8 +88,8 @@ local BaseStats = {
 			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			Mspd = 1.03,   -- 1% growth - Movement Speed
+			Aspd = 1.03,   -- 1% growth - Attack Speed
 		}
 	},
 	
@@ -685,8 +685,34 @@ game.Players.PlayerAdded:Connect(function(plr)
 		currentDefense.Value = convertDataType(data.CurrentDefense, data.MaxDefense or 0) -- Load CurrentDefense, default to MaxDefense if not saved
 		maxHealth.Value = convertDataType(data.MaxHealth, 0)
 		healthRegen.Value = convertDataType(data.HealthRegen, 0)
-		movementSpeed.Value = convertDataType(data.MovementSpeed, 0)
-		attackSpeed.Value = convertDataType(data.AttackSpeed, 0)
+		
+		-- Load MovementSpeed and AttackSpeed, but convert if they're old format (walk speed values > 1.5)
+		-- MovementSpeed and AttackSpeed should be animation multipliers starting at 1.0
+		local loadedMovementSpeed = convertDataType(data.MovementSpeed, 0)
+		if loadedMovementSpeed > 1.5 then
+			-- Old format: This is likely the walk speed (18), convert to animation multiplier
+			-- Reverse-engineer: divide by base Mspd (18) to get the multiplier
+			local baseMspd = 18 -- Base walk speed
+			local calculatedMultiplier = loadedMovementSpeed / baseMspd
+			-- Clamp to reasonable range (between 1.0 and 2.0 for safety)
+			movementSpeed.Value = math.max(1.0, math.min(2.0, calculatedMultiplier))
+		else
+			movementSpeed.Value = loadedMovementSpeed == 0 and 0 or loadedMovementSpeed
+		end
+		
+		local loadedAttackSpeed = convertDataType(data.AttackSpeed, 0)
+		-- AttackSpeed should be animation multiplier (1.0)
+		-- Old data might have it as 1 (which is correct) or > 1.5 (invalid)
+		if loadedAttackSpeed > 1.5 then
+			-- Invalid value, reset to 1.0
+			attackSpeed.Value = 1.0
+		elseif loadedAttackSpeed > 0 and loadedAttackSpeed < 0.5 then
+			-- Invalid value, reset to 1.0
+			attackSpeed.Value = 1.0
+		else
+			attackSpeed.Value = loadedAttackSpeed == 0 and 0 or loadedAttackSpeed
+		end
+		
 		slavkoins.Value = convertDataType(data.Slavkoins, 0)
 		
 		-- Ensure CurrentXP doesn't exceed MaximumXP
@@ -890,10 +916,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
 					local oldMspd = leaderstats.MovementSpeed.Value
-					leaderstats.MovementSpeed.Value = math.floor(oldMspd * multipliers.Mspd)
+					-- MovementSpeed is the animation speed multiplier, scale it with Mspd multiplier
+					leaderstats.MovementSpeed.Value = oldMspd * multipliers.Mspd
 					
-					-- Update unified movement animation speed in ServerConfigs (normalize Mspd to multiplier: Mspd/18)
-					local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+					-- Update unified movement animation speed in ServerConfigs (MovementSpeed is already the multiplier)
+					local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
 						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
 					end
@@ -916,9 +943,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 				if leaderstats:FindFirstChild("AttackSpeed") and multipliers.Aspd then
 					local oldAspd = leaderstats.AttackSpeed.Value
-					leaderstats.AttackSpeed.Value = math.floor(oldAspd * multipliers.Aspd)
+					-- AttackSpeed is the animation speed multiplier, scale it with Aspd multiplier
+					leaderstats.AttackSpeed.Value = oldAspd * multipliers.Aspd
 					
-					-- Update unified attack animation speed in ServerConfigs (Aspd used directly as multiplier)
+					-- Update unified attack animation speed in ServerConfigs (AttackSpeed is already the multiplier)
 					local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
 						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
@@ -947,9 +975,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 					if humanoid then
 						humanoid.MaxHealth = leaderstats.MaxHealth.Value
 						humanoid.Health = humanoid.MaxHealth
-						-- Update movement speed if applicable
+						-- Update walk speed: base Mspd (18) * MovementSpeed animation multiplier
 						if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
-							humanoid.WalkSpeed = leaderstats.MovementSpeed.Value
+							local baseStats = BaseStats[class.Value]
+							local baseMspd = baseStats and baseStats.Mspd or 18
+							humanoid.WalkSpeed = baseMspd * leaderstats.MovementSpeed.Value
 						end
 					end
 				end
@@ -1005,22 +1035,24 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 		
 		if leaderstats:FindFirstChild("MovementSpeed").Value == 0 then
-			leaderstats.MovementSpeed.Value = baseStats.Mspd or 18
+			-- MovementSpeed in leaderstats is the animation speed multiplier, should start at 1.0
+			leaderstats.MovementSpeed.Value = 1.0
 		end
 		
 		if leaderstats:FindFirstChild("AttackSpeed").Value == 0 then
-			leaderstats.AttackSpeed.Value = baseStats.Aspd or 1
+			-- AttackSpeed in leaderstats is the animation speed multiplier, should start at 1.0
+			leaderstats.AttackSpeed.Value = 1.0
 		end
 		
-		-- Initialize animation speeds in ServerConfigs based on Mspd and Aspd
+		-- Initialize animation speeds in ServerConfigs based on MovementSpeed and AttackSpeed (animation multipliers)
 		if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
-			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
 			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
 			ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
 			ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
 		end
 		if ServerConfigs and ServerConfigs[class.Value] then
-			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
 			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
 			ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
 			ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
@@ -1186,9 +1218,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 			newCurrentDefense.Value = maxDefense.Value
 		end
 		
-		-- Apply Movement Speed if configured
+		-- Apply Movement Speed: base Mspd (18) * MovementSpeed animation multiplier
 		if leaderstats:FindFirstChild("MovementSpeed") then
-			humanoid.WalkSpeed = leaderstats.MovementSpeed.Value
+			local baseStats = BaseStats[class.Value]
+			local baseMspd = baseStats and baseStats.Mspd or 18
+			humanoid.WalkSpeed = baseMspd * leaderstats.MovementSpeed.Value
 		end
 		
 		-- Start health regeneration system
@@ -1197,9 +1231,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Start defense regeneration system
 		startDefenseRegen(char, humanoid)
 		
-		-- Initialize animation speeds based on Mspd and Aspd
+		-- Initialize animation speeds based on MovementSpeed and AttackSpeed (animation multipliers)
 		if class.Value and class.Value ~= "Slavkorian" then
-			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
 			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
 			if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
 				ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
@@ -1230,12 +1264,18 @@ game.Players.PlayerAdded:Connect(function(plr)
 		if movementSpeedStat then
 			movementSpeedStat.Changed:Connect(function()
 				if class.Value and class.Value ~= "Slavkorian" then
-					local movementAnimSpeedMultiplier = movementSpeedStat.Value / 18.0
+					local movementAnimSpeedMultiplier = movementSpeedStat.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
 						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
 					end
 					if ServerConfigs and ServerConfigs[class.Value] then
 						ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
+					end
+					-- Update humanoid walk speed when MovementSpeed changes
+					if humanoid then
+						local baseStats = BaseStats[class.Value]
+						local baseMspd = baseStats and baseStats.Mspd or 18
+						humanoid.WalkSpeed = baseMspd * movementAnimSpeedMultiplier
 					end
 					local classFuncs = {
 						Archer = _G.updateArcherAnimationSpeed,
@@ -1478,8 +1518,9 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.CritRate.Value = baseStats.CR or 5
 				leaderstats.CritMultiplier.Value = baseStats.CM or 150
 				leaderstats.HealthRegen.Value = baseStats.HR or 0
-				leaderstats.MovementSpeed.Value = baseStats.Mspd or 18
-				leaderstats.AttackSpeed.Value = baseStats.Aspd or 1
+				-- MovementSpeed and AttackSpeed are animation speed multipliers, should start at 1.0
+				leaderstats.MovementSpeed.Value = 1.0
+				leaderstats.AttackSpeed.Value = 1.0
 			else
 				-- Default Slavkorian stats if class not found
 				leaderstats.MaxHealth.Value = 1000
@@ -1490,8 +1531,9 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.CritRate.Value = 5
 				leaderstats.CritMultiplier.Value = 150
 				leaderstats.HealthRegen.Value = 0
-				leaderstats.MovementSpeed.Value = 18
-				leaderstats.AttackSpeed.Value = 1
+				-- MovementSpeed and AttackSpeed are animation speed multipliers, should start at 1.0
+				leaderstats.MovementSpeed.Value = 1.0
+				leaderstats.AttackSpeed.Value = 1.0
 			end
 		end
 	elseif action == "resetStat" then

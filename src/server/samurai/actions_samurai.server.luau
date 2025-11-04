@@ -59,23 +59,22 @@ local playerAttackData = {}
 
 -- Unified animation speeds (attack and movement)
 -- Attack actions: combo1, combo2, combo3, moveAttack, jumpAttack, kozuki, wakizashi, banzai, bushido, zantetsuken
--- Movement actions: idle, run, jump
--- Block animations: block (always 1.0, not affected by these speeds)
+-- Movement actions: run, jump (idle and block are NOT affected - always 1.0)
 
 -- Helper function to get animation speed for an action type
 local function getAnimationSpeed(actionType)
 	if not actionType then return 1.0 end
 	
+	-- Block and idle animations always use 1.0 (not affected by animation speeds)
+	if actionType == "block" or actionType == "idle" then
+		return 1.0
+	end
+	
 	-- Determine if this is an attack or movement action
 	local isAttack = actionType == "combo1" or actionType == "combo2" or actionType == "combo3" or actionType == "moveAttack" or actionType == "jumpAttack" or
 	                 actionType == "kozuki" or actionType == "wakizashi" or actionType == "banzai" or actionType == "bushido" or actionType == "zantetsuken"
 	
-	local isMovement = actionType == "idle" or actionType == "run" or actionType == "jump"
-	
-	-- Block animations always use 1.0
-	if actionType == "block" then
-		return 1.0
-	end
+	local isMovement = actionType == "run" or actionType == "jump"
 	
 	-- Return appropriate unified speed
 	if isAttack then
@@ -141,7 +140,7 @@ function _G.updateSamuraiAnimationSpeed(speedType, newSpeed)
 	if speedType == "attack" then
 		actionTypes = {"combo1", "combo2", "combo3", "moveAttack", "jumpAttack", "kozuki", "wakizashi", "banzai", "bushido", "zantetsuken"}
 	elseif speedType == "movement" then
-		actionTypes = {"idle", "run", "jump"}
+		actionTypes = {"run", "jump"} -- Note: idle is NOT affected by movement speed (always 1.0)
 	end
 	
 	for _, player in pairs(Players:GetPlayers()) do
@@ -167,9 +166,19 @@ function _G.setSamuraiWalkingSpeed(player, speedType)
 	
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then return end
-	
-	local speed = _G.SAMURAI_WALKING_SPEED[speedType] or _G.SAMURAI_WALKING_SPEED.normal
-	humanoid.WalkSpeed = speed
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local movementSpeedMultiplier = 1.0
+	if leaderstats then
+		local movementSpeedStat = leaderstats:FindFirstChild("MovementSpeed")
+		if movementSpeedStat then
+			movementSpeedMultiplier = movementSpeedStat.Value
+		end
+	end
+
+	local baseSpeed = _G.SAMURAI_WALKING_SPEED[speedType] or _G.SAMURAI_WALKING_SPEED.normal
+	-- Walk speed = base speed * MovementSpeed multiplier from leaderstats
+	humanoid.WalkSpeed = baseSpeed * movementSpeedMultiplier
 end
 
 -- Combo system configuration
