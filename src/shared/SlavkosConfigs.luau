@@ -1779,6 +1779,118 @@ function ServerConfigs.getPassiveMinLevel(passiveName)
 end
 
 -- ========================================
+-- BRAWLER PASSIVE CONFIGURATIONS
+-- ========================================
+
+ServerConfigs.BrawlerPassives = {
+	Rage = {
+		-- Passive: Increases Attack and Attack Speed when HP < 30%
+		levels = {
+			[1] = {
+				attackIncrease = 45,      -- +45 Attack
+				attackSpeedIncrease = 0.5 -- +0.5 hit/s
+			},
+			[11] = {
+				attackIncrease = 100,     -- +100 Attack
+				attackSpeedIncrease = 0.5  -- +0.5 hit/s
+			},
+			[21] = {
+				attackIncrease = 250,      -- +250 Attack
+				attackSpeedIncrease = 0.5  -- +0.5 hit/s
+			},
+			[31] = {
+				attackIncrease = 600,      -- +600 Attack
+				attackSpeedIncrease = 1.0  -- +1 hit/s
+			},
+			[41] = {
+				attackIncrease = 1200,     -- +1200 Attack
+				attackSpeedIncrease = 1.0  -- +1 hit/s
+			}
+		},
+		hpThreshold = 0.3  -- 30% HP threshold
+	},
+	Madness = {
+		-- Passive: Provides chance to stun on attacks when HP < 30%
+		levels = {
+			[5] = {
+				stunChance = 3,  -- 3% chance to stun
+			},
+			[15] = {
+				stunChance = 5,  -- 5% chance to stun
+			},
+			[25] = {
+				stunChance = 10, -- 10% chance to stun
+			},
+			[35] = {
+				stunChance = 13, -- 13% chance to stun
+			},
+			[45] = {
+				stunChance = 15, -- 15% chance to stun
+			}
+		},
+		hpThreshold = 0.3,  -- 30% HP threshold
+		stunDuration = 2.0  -- 2 seconds stun duration
+	}
+}
+
+-- Function to get brawler passive config for a level
+-- @param passiveName: "Rage" or "Madness"
+-- @param playerLevel: Player's current level
+-- @return: Passive config for that level or nil if not unlocked
+function ServerConfigs.getBrawlerPassiveConfig(passiveName, playerLevel)
+	local classPassives = ServerConfigs.BrawlerPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the highest unlocked level for this passive
+	local highestUnlocked = nil
+	for level, config in pairs(passiveLevels) do
+		if playerLevel >= level then
+			if not highestUnlocked or level > highestUnlocked then
+				highestUnlocked = level
+			end
+		end
+	end
+	
+	if highestUnlocked then
+		return passiveLevels[highestUnlocked]
+	end
+	
+	return nil
+end
+
+-- Function to get minimum required level for a brawler passive
+-- @param passiveName: "Rage" or "Madness"
+-- @return: Minimum level required or nil if passive doesn't exist
+function ServerConfigs.getBrawlerPassiveMinLevel(passiveName)
+	local classPassives = ServerConfigs.BrawlerPassives
+	if not classPassives or not classPassives[passiveName] then
+		return nil
+	end
+	
+	local passiveLevels = classPassives[passiveName].levels
+	if not passiveLevels then
+		return nil
+	end
+	
+	-- Find the lowest level requirement
+	local minLevel = nil
+	for level, _ in pairs(passiveLevels) do
+		if not minLevel or level < minLevel then
+			minLevel = level
+		end
+	end
+	
+	return minLevel
+end
+
+-- ========================================
 -- DEFENSE REGENERATION CONFIGURATION
 -- ========================================
 

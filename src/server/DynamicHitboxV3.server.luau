@@ -610,6 +610,35 @@ local function applyLifestealFromConfig(attacker, config, totalDamage)
 	end
 end
 
+-- Function to apply Madness passive stun chance from Brawler passive
+-- @param attacker: The attacker model (character) that has Madness passive
+-- @param target: The target model to potentially stun
+local function applyMadnessPassiveStun(attacker, target)
+	if not attacker or not target or not target.Parent then return end
+	
+	-- Check if attacker is a player (for passive stun)
+	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
+	if not attackerPlayer then return end
+	
+	-- Get Madness stun chance from passive (only for Brawler players)
+	local stunChance = nil
+	if _G.getBrawlerMadnessStunChance then
+		stunChance = _G.getBrawlerMadnessStunChance(attackerPlayer)
+	end
+	
+	-- If no Madness passive active, return
+	if not stunChance or stunChance <= 0 then return end
+	
+	-- Get stun duration from config
+	local stunDuration = ServerConfigs.BrawlerPassives.Madness.stunDuration or 2.0
+	
+	-- Apply stun with chance
+	StatusAilmentHandler.apply(target, StatusAilmentHandler.AilmentTypes.STUN, {
+		duration = stunDuration,
+		chance = stunChance
+	})
+end
+
 -- Function to apply knockback to mobs when hit by players
 local function applyKnockback(attacker, target)
 	-- Only apply knockback when player attacks mob
@@ -840,6 +869,9 @@ function _G.createStaticHitbox(config)
 						
 						-- Apply status ailments if configured (optional)
 						applyStatusAilmentFromConfig(model, config)
+						
+						-- Apply Madness passive stun chance (Brawler passive)
+						applyMadnessPassiveStun(character, model)
 						
 						-- Apply lifesteal if configured (optional)
 						applyLifestealFromConfig(character, config, damageToHealth + damageToDefense)

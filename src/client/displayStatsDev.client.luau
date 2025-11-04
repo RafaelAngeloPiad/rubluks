@@ -611,6 +611,56 @@ local function updateStatsDisplay()
 				
 				statLabels["Passive_Tenacity"] = createStatRow("Tenacity", passiveText, Color3.fromRGB(150, 200, 255), layoutOrder)
 				layoutOrder = layoutOrder + 1
+			elseif passiveName == "Rage" then
+				hasBuffsOrPassives = true
+				-- Calculate Rage bonuses
+				local rageAttackBonus = 0
+				local rageAttackSpeedBonus = 0
+				
+				-- Get current level to get bonuses
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.BrawlerPassives then
+					local passiveConfig = ConfigModule.getBrawlerPassiveConfig("Rage", level.Value)
+					if passiveConfig then
+						rageAttackBonus = passiveConfig.attackIncrease
+						rageAttackSpeedBonus = passiveConfig.attackSpeedIncrease
+					end
+				end
+				
+				local passiveText = ""
+				if rageAttackBonus > 0 and rageAttackSpeedBonus > 0 then
+					passiveText = string.format("+%.0f ATK, +%.1f Aspd", rageAttackBonus, rageAttackSpeedBonus)
+				elseif rageAttackBonus > 0 then
+					passiveText = string.format("+%.0f ATK", rageAttackBonus)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_Rage"] = createStatRow("Rage", passiveText, Color3.fromRGB(255, 100, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			elseif passiveName == "Madness" then
+				hasBuffsOrPassives = true
+				-- Calculate Madness stun chance
+				local madnessStunChance = 0
+				
+				-- Get current level to get stun chance
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.BrawlerPassives then
+					local passiveConfig = ConfigModule.getBrawlerPassiveConfig("Madness", level.Value)
+					if passiveConfig then
+						madnessStunChance = passiveConfig.stunChance
+					end
+				end
+				
+				local passiveText = ""
+				if madnessStunChance > 0 then
+					passiveText = string.format("%d%% Stun Chance", madnessStunChance)
+				else
+					passiveText = "Active"
+				end
+				
+				statLabels["Passive_Madness"] = createStatRow("Madness", passiveText, Color3.fromRGB(200, 100, 255), layoutOrder)
+				layoutOrder = layoutOrder + 1
 			end
 		end
 	end
@@ -643,6 +693,57 @@ local function updateStatsDisplay()
 					local statusText = string.format("Unlocked (%d%% chance)", knightsBladeConfig.chance)
 					
 					statLabels["Passive_KnightsBlade"] = createStatRow(displayName, statusText, Color3.fromRGB(150, 200, 255), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+		end
+		
+		-- Only show passives for Brawler class
+		if className == "Brawler" and ConfigModule and ConfigModule.BrawlerPassives then
+			local passivesConfig = ConfigModule.BrawlerPassives
+			
+			-- Check Rage passive (unlocks at level 1)
+			if passivesConfig.Rage then
+				local rageLevels = passivesConfig.Rage.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(rageLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local rageConfig = rageLevels[highestUnlocked]
+					local displayName = "Rage"
+					local statusText = string.format("Unlocked (+%d ATK, +%.1f Aspd)", rageConfig.attackIncrease, rageConfig.attackSpeedIncrease)
+					
+					statLabels["Passive_Rage_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(255, 150, 150), layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+			
+			-- Check Madness passive (unlocks at level 5)
+			if passivesConfig.Madness then
+				local madnessLevels = passivesConfig.Madness.levels
+				local highestUnlocked = nil
+				for passiveLevel, config in pairs(madnessLevels) do
+					if level >= passiveLevel then
+						if not highestUnlocked or passiveLevel > highestUnlocked then
+							highestUnlocked = passiveLevel
+						end
+					end
+				end
+				
+				if highestUnlocked then
+					hasBuffsOrPassives = true
+					local madnessConfig = madnessLevels[highestUnlocked]
+					local displayName = "Madness"
+					local statusText = string.format("Unlocked (%d%% stun)", madnessConfig.stunChance)
+					
+					statLabels["Passive_Madness_Unlocked"] = createStatRow(displayName, statusText, Color3.fromRGB(200, 150, 255), layoutOrder)
 					layoutOrder = layoutOrder + 1
 				end
 			end
