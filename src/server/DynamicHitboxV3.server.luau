@@ -370,7 +370,8 @@ local function createDamageFlash(model, duration)
 end
 
 -- Function to create damage number display above character head
-local function createDamageNumber(model, damage)
+-- Exported as global function so StatusAilmentHandler can use it
+function _G.createDamageNumber(model, damage)
 	-- Check if damage numbers are enabled
 	local damageNumbersConfig = ServerConfigs.Hitbox.damageNumbers
 	if not damageNumbersConfig or not damageNumbersConfig.enabled then
@@ -748,7 +749,7 @@ function _G.createStaticHitbox(config)
 						
 						-- Create damage number display (show actual damage applied, which includes block reduction)
 						-- damageToHealth is the actual damage after block reduction and defense
-						createDamageNumber(model, damageToHealth + damageToDefense)
+						_G.createDamageNumber(model, damageToHealth + damageToDefense)
 						
 						-- Apply status ailments if configured (optional)
 						applyStatusAilmentFromConfig(model, config)
@@ -902,7 +903,7 @@ function _G.createStaticDOTHitbox(config)
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
 							-- Create damage number display (show actual damage applied, which includes block reduction)
-							createDamageNumber(model, damageToHealth + damageToDefense)
+							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1069,7 +1070,7 @@ function _G.createTravelingHitbox(config)
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
 							-- Create damage number display (show actual damage applied, which includes block reduction)
-							createDamageNumber(model, damageToHealth + damageToDefense)
+							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1199,7 +1200,7 @@ function _G.createTravelingDOTHitbox(config)
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
 							-- Create damage number display (show actual damage applied, which includes block reduction)
-							createDamageNumber(model, damageToHealth + damageToDefense)
+							_G.createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1411,7 +1412,7 @@ function _G.createProjectileHitbox(config)
 								createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 								
 								-- Create damage number display (show actual damage applied, which includes block reduction)
-								createDamageNumber(model, damageToHealth + damageToDefense)
+								_G.createDamageNumber(model, damageToHealth + damageToDefense)
 								
 								-- Apply status ailments if configured (optional)
 								applyStatusAilmentFromConfig(model, config)

@@ -324,6 +324,14 @@ local function applyDPSDamage(model, ailmentType, damage, tickInterval)
 			model:SetAttribute("CurrentDefense", math.max(0, currentDefense - damageToDefense))
 		end
 	end
+	
+	-- Create damage number display (show total damage: health + defense)
+	-- Only show if there's actual damage dealt
+	if (damageToHealth + damageToDefense) > 0 then
+		if _G.createDamageNumber then
+			_G.createDamageNumber(model, damageToHealth + damageToDefense)
+		end
+	end
 end
 
 -- ========================================
