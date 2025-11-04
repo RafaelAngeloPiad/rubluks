@@ -499,6 +499,10 @@ ServerConfigs.Archer = {
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.walkingSpeed,
 	
+	-- Block damage reduction (percentage of damage reduced when blocking)
+	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
+	blockDamageReduction = 0.5,
+	
 	-- Archer Arrow Configuration (references UnifiedAttacks.Archer)
 	-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 	ArrowHitbox = {
@@ -524,6 +528,11 @@ ServerConfigs.Samurai = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.walkingSpeed,
+	
+	-- Block damage reduction (percentage of damage reduced when blocking)
+	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
+	blockDamageReduction = 0.5,
+	
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.comboTimeout,
 		combo3Cooldown = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.combo3Cooldown
@@ -541,6 +550,11 @@ ServerConfigs.Brawler = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.walkingSpeed,
+	
+	-- Block damage reduction (percentage of damage reduced when blocking)
+	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
+	blockDamageReduction = 0.5,
+	
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.comboTimeout
 	},
@@ -557,6 +571,11 @@ ServerConfigs.Knight = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.walkingSpeed,
+	
+	-- Block damage reduction (percentage of damage reduced when blocking)
+	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
+	blockDamageReduction = 0.5,
+	
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.comboTimeout,
 		combo3Cooldown = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.combo3Cooldown
@@ -574,6 +593,11 @@ ServerConfigs.Gladiator = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.walkingSpeed,
+	
+	-- Block damage reduction (percentage of damage reduced when blocking)
+	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
+	blockDamageReduction = 0.5,
+	
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.comboTimeout
 	},

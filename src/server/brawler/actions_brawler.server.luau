@@ -623,6 +623,11 @@ local function cleanupAttackAnimations(player, tool)
 		end
 	end
 	
+	-- Clear blocking state when weapon is unequipped
+	if _G.setPlayerBlockingState then
+		_G.setPlayerBlockingState(player, false)
+	end
+	
 	-- Disable trails when weapon is unequipped
 	_G.disableBrawlerTrails(player)
 	
@@ -854,11 +859,19 @@ local function handleBlock(player, isBlocking)
 		data.blockTrack:Play()
 		_G.applyBrawlerAnimationSpeed(data.blockTrack, "block")
 		_G.setBrawlerWalkingSpeed(player, "blocking") -- Stop movement while blocking
+		-- Update global blocking state for damage reduction
+		if _G.setPlayerBlockingState then
+			_G.setPlayerBlockingState(player, true)
+		end
 	else
 		-- Stop blocking
 		data.isBlocking = false
 		data.blockTrack:Stop()
 		_G.setBrawlerWalkingSpeed(player, "normal") -- Restore normal movement
+		-- Update global blocking state for damage reduction
+		if _G.setPlayerBlockingState then
+			_G.setPlayerBlockingState(player, false)
+		end
 	end
 end
 

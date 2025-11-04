@@ -621,6 +621,11 @@ local function cleanupAttackAnimations(player, tool)
 		data.comboTimer = nil
 	end
 	
+	-- Clear blocking state when weapon is unequipped
+	if _G.setPlayerBlockingState then
+		_G.setPlayerBlockingState(player, false)
+	end
+	
 	-- Reset walk speed
 	local char = player.Character
 	if char then
@@ -854,11 +859,19 @@ local function handleBlock(player, isBlocking)
 		data.blockTrack:Play()
 		_G.applyGladiatorAnimationSpeed(data.blockTrack, "block")
 		_G.setGladiatorWalkingSpeed(player, "blocking") -- Stop movement while blocking
+		-- Update global blocking state for damage reduction
+		if _G.setPlayerBlockingState then
+			_G.setPlayerBlockingState(player, true)
+		end
 	else
 		-- Stop blocking
 		data.isBlocking = false
 		data.blockTrack:Stop()
 		_G.setGladiatorWalkingSpeed(player, "normal") -- Restore normal movement
+		-- Update global blocking state for damage reduction
+		if _G.setPlayerBlockingState then
+			_G.setPlayerBlockingState(player, false)
+		end
 	end
 end
 

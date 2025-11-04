@@ -20,6 +20,44 @@ local HITBOX_CONFIG = {
 }
 
 -- ========================================
+-- GLOBAL BLOCKING STATE TRACKER
+-- ========================================
+
+-- Track which players are currently blocking (by UserId)
+-- Key: player.UserId, Value: boolean (true = blocking, false/nil = not blocking)
+local playerBlockingState = {}
+
+-- Function to set player blocking state
+function _G.setPlayerBlockingState(player, isBlocking)
+	if not player then return end
+	local userId = player.UserId
+	if isBlocking then
+		playerBlockingState[userId] = true
+	else
+		playerBlockingState[userId] = false
+	end
+end
+
+-- Function to get player blocking state
+function _G.getPlayerBlockingState(player)
+	if not player then return false end
+	local userId = player.UserId
+	return playerBlockingState[userId] == true
+end
+
+-- Function to clear player blocking state (called when player leaves)
+function _G.clearPlayerBlockingState(player)
+	if not player then return end
+	local userId = player.UserId
+	playerBlockingState[userId] = nil
+end
+
+-- Clean up blocking state when player leaves
+Players.PlayerRemoving:Connect(function(player)
+	_G.clearPlayerBlockingState(player)
+end)
+
+-- ========================================
 -- DELAY SCALING SYSTEM
 -- ========================================
 
@@ -145,6 +183,46 @@ local function calculateDamageWithDefense(rawDamage, attacker, target)
 			if roll < critRate then
 				-- Crit hit! Multiply damage by crit multiplier (e.g., 150 = 1.5x)
 				finalDamage = math.floor(rawDamage * (critMult / 100))
+			end
+		end
+	end
+	
+	-- Check if target is a player and is blocking
+	local targetPlayer = Players:GetPlayerFromCharacter(target)
+	if targetPlayer then
+		-- Check if blocking state function exists (defensive check)
+		if _G.getPlayerBlockingState then
+			local isBlocking = _G.getPlayerBlockingState(targetPlayer)
+			if isBlocking then
+				-- Determine player class to get block damage reduction
+				local playerClass = nil
+				local leaderstats = targetPlayer:FindFirstChild("leaderstats")
+				if leaderstats then
+					local classStat = leaderstats:FindFirstChild("Class")
+					if classStat then
+						playerClass = classStat.Value
+					end
+				end
+				
+				-- Get block damage reduction from config based on class
+				local blockReduction = 0
+				if playerClass == "Archer" and ServerConfigs.Archer then
+					blockReduction = ServerConfigs.Archer.blockDamageReduction or 0
+				elseif playerClass == "Samurai" and ServerConfigs.Samurai then
+					blockReduction = ServerConfigs.Samurai.blockDamageReduction or 0
+				elseif playerClass == "Brawler" and ServerConfigs.Brawler then
+					blockReduction = ServerConfigs.Brawler.blockDamageReduction or 0
+				elseif playerClass == "Knight" and ServerConfigs.Knight then
+					blockReduction = ServerConfigs.Knight.blockDamageReduction or 0
+				elseif playerClass == "Gladiator" and ServerConfigs.Gladiator then
+					blockReduction = ServerConfigs.Gladiator.blockDamageReduction or 0
+				end
+				
+				-- Apply block damage reduction (reduce damage by the percentage)
+				-- Example: blockReduction = 0.5 means 50% reduction, so damage becomes 50% of original
+				if blockReduction > 0 then
+					finalDamage = math.floor(finalDamage * (1 - blockReduction))
+				end
 			end
 		end
 	end
@@ -668,8 +746,9 @@ function _G.createStaticHitbox(config)
 						-- Create damage flash effect on the target
 						createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 						
-						-- Create damage number display (show total damage)
-						createDamageNumber(model, damage)
+						-- Create damage number display (show actual damage applied, which includes block reduction)
+						-- damageToHealth is the actual damage after block reduction and defense
+						createDamageNumber(model, damageToHealth + damageToDefense)
 						
 						-- Apply status ailments if configured (optional)
 						applyStatusAilmentFromConfig(model, config)
@@ -822,8 +901,8 @@ function _G.createStaticDOTHitbox(config)
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
-							-- Create damage number display (show total damage)
-							createDamageNumber(model, damage)
+							-- Create damage number display (show actual damage applied, which includes block reduction)
+							createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -989,8 +1068,8 @@ function _G.createTravelingHitbox(config)
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
-							-- Create damage number display (show total damage)
-							createDamageNumber(model, damage)
+							-- Create damage number display (show actual damage applied, which includes block reduction)
+							createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1119,8 +1198,8 @@ function _G.createTravelingDOTHitbox(config)
 							-- Create damage flash effect on the target
 							createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 							
-							-- Create damage number display (show total damage)
-							createDamageNumber(model, damage)
+							-- Create damage number display (show actual damage applied, which includes block reduction)
+							createDamageNumber(model, damageToHealth + damageToDefense)
 							
 							-- Apply status ailments if configured (optional)
 							applyStatusAilmentFromConfig(model, config)
@@ -1331,8 +1410,8 @@ function _G.createProjectileHitbox(config)
 								-- Create damage flash effect on the target
 								createDamageFlash(model, ServerConfigs.Hitbox.highlighting.damageFlash.duration)
 								
-								-- Create damage number display (show total damage)
-								createDamageNumber(model, damage)
+								-- Create damage number display (show actual damage applied, which includes block reduction)
+								createDamageNumber(model, damageToHealth + damageToDefense)
 								
 								-- Apply status ailments if configured (optional)
 								applyStatusAilmentFromConfig(model, config)

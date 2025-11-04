@@ -472,6 +472,11 @@ local function cleanupAttackAnimations(player, tool)
 	if data.idleTrack then data.idleTrack:Stop() end
 	if data.runTrack then data.runTrack:Stop() end
 
+	-- Clear blocking state when weapon is unequipped
+	if _G.setPlayerBlockingState then
+		_G.setPlayerBlockingState(player, false)
+	end
+
 	-- Reset walk speed
 	local char = player.Character
 	if char then
@@ -682,11 +687,19 @@ local function handleBlock(player, isBlocking)
 		data.blockTrack:Play()
 		_G.applyArcherAnimationSpeed(data.blockTrack, "block")
 		_G.setArcherWalkingSpeed(player, "blocking") -- Stop movement while blocking
+		-- Update global blocking state for damage reduction
+		if _G.setPlayerBlockingState then
+			_G.setPlayerBlockingState(player, true)
+		end
 	else
 		-- Stop blocking
 		data.isBlocking = false
 		data.blockTrack:Stop()
 		_G.setArcherWalkingSpeed(player, "normal") -- Restore normal movement
+		-- Update global blocking state for damage reduction
+		if _G.setPlayerBlockingState then
+			_G.setPlayerBlockingState(player, false)
+		end
 	end
 end
 
