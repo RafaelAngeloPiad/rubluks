@@ -45,7 +45,7 @@ local BaseStats = {
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		},
 		Archer = {
 			HP = 1.06,     -- 6% growth
@@ -67,7 +67,7 @@ local BaseStats = {
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		},
 		Brawler = {  -- Berserker in spreadsheet
 			HP = 1.07,     -- 7% growth
@@ -78,7 +78,7 @@ local BaseStats = {
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		},
 		Knight = {
 			HP = 1.07,     -- 7% growth
@@ -89,7 +89,7 @@ local BaseStats = {
 			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
 			HR = 1.05,     -- 5% growth - Health Regeneration
 			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			Aspd = 1.01,   -- 1% growth - Attack Speed
 		}
 	},
 	
@@ -104,8 +104,8 @@ local BaseStats = {
 		HP = 1200,        -- Health Points: Life pool (dies if ≤ 0)
 		D = 50,           -- Defense: Reduces Penetration
 		HR = 0,           -- Health Regeneration: Health Points gained per second
-		Mspd = 18,        -- Movement Speed: Displacement per second
-		Aspd = 1,         -- Attack Speed: Amount of hits per second
+		Mspd = 18,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
+		Aspd = 1,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
 	},
 	
 	Samurai = {
@@ -891,10 +891,54 @@ game.Players.PlayerAdded:Connect(function(plr)
 				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
 					local oldMspd = leaderstats.MovementSpeed.Value
 					leaderstats.MovementSpeed.Value = math.floor(oldMspd * multipliers.Mspd)
+					
+					-- Update unified movement animation speed in ServerConfigs (normalize Mspd to multiplier: Mspd/18)
+					local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
+					end
+					if ServerConfigs and ServerConfigs[class.Value] then
+						ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
+					end
+					
+					-- Sync animation speeds with action files for all players of this class
+					local classFuncs = {
+						Archer = _G.updateArcherAnimationSpeed,
+						Samurai = _G.updateSamuraiAnimationSpeed,
+						Brawler = _G.updateBrawlerAnimationSpeed,
+						Knight = _G.updateKnightAnimationSpeed,
+						Gladiator = _G.updateGladiatorAnimationSpeed
+					}
+					local updateFunc = classFuncs[class.Value]
+					if updateFunc then
+						updateFunc("movement", movementAnimSpeedMultiplier)
+					end
 				end
 				if leaderstats:FindFirstChild("AttackSpeed") and multipliers.Aspd then
 					local oldAspd = leaderstats.AttackSpeed.Value
 					leaderstats.AttackSpeed.Value = math.floor(oldAspd * multipliers.Aspd)
+					
+					-- Update unified attack animation speed in ServerConfigs (Aspd used directly as multiplier)
+					local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
+					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
+					end
+					if ServerConfigs and ServerConfigs[class.Value] then
+						ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
+					end
+					
+					-- Sync animation speeds with action files for all players of this class
+					local classFuncs = {
+						Archer = _G.updateArcherAnimationSpeed,
+						Samurai = _G.updateSamuraiAnimationSpeed,
+						Brawler = _G.updateBrawlerAnimationSpeed,
+						Knight = _G.updateKnightAnimationSpeed,
+						Gladiator = _G.updateGladiatorAnimationSpeed
+					}
+					local updateFunc = classFuncs[class.Value]
+					if updateFunc then
+						updateFunc("attack", attackAnimSpeedMultiplier)
+					end
 				end
 
 				-- update humanoid din habang buhay pa siya (if character exists)
@@ -966,6 +1010,20 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		if leaderstats:FindFirstChild("AttackSpeed").Value == 0 then
 			leaderstats.AttackSpeed.Value = baseStats.Aspd or 1
+		end
+		
+		-- Initialize animation speeds in ServerConfigs based on Mspd and Aspd
+		if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
+			ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
+			ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
+		end
+		if ServerConfigs and ServerConfigs[class.Value] then
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
+			ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
+			ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
 		end
 	end
 	
@@ -1129,9 +1187,8 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 		
 		-- Apply Movement Speed if configured
-		local baseStats = BaseStats[class.Value]
-		if baseStats and baseStats.Mspd then
-			humanoid.WalkSpeed = baseStats.Mspd
+		if leaderstats:FindFirstChild("MovementSpeed") then
+			humanoid.WalkSpeed = leaderstats.MovementSpeed.Value
 		end
 		
 		-- Start health regeneration system
@@ -1139,6 +1196,87 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- Start defense regeneration system
 		startDefenseRegen(char, humanoid)
+		
+		-- Initialize animation speeds based on Mspd and Aspd
+		if class.Value and class.Value ~= "Slavkorian" then
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value / 18.0
+			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
+			if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+				ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
+				ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
+			end
+			if ServerConfigs and ServerConfigs[class.Value] then
+				ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
+				ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
+			end
+			
+			-- Sync animation speeds with action files
+			local classFuncs = {
+				Archer = _G.updateArcherAnimationSpeed,
+				Samurai = _G.updateSamuraiAnimationSpeed,
+				Brawler = _G.updateBrawlerAnimationSpeed,
+				Knight = _G.updateKnightAnimationSpeed,
+				Gladiator = _G.updateGladiatorAnimationSpeed
+			}
+			local updateFunc = classFuncs[class.Value]
+			if updateFunc then
+				updateFunc("movement", movementAnimSpeedMultiplier)
+				updateFunc("attack", attackAnimSpeedMultiplier)
+			end
+		end
+		
+		-- Update animation speeds when MovementSpeed or AttackSpeed change
+		local movementSpeedStat = leaderstats:FindFirstChild("MovementSpeed")
+		if movementSpeedStat then
+			movementSpeedStat.Changed:Connect(function()
+				if class.Value and class.Value ~= "Slavkorian" then
+					local movementAnimSpeedMultiplier = movementSpeedStat.Value / 18.0
+					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
+					end
+					if ServerConfigs and ServerConfigs[class.Value] then
+						ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
+					end
+					local classFuncs = {
+						Archer = _G.updateArcherAnimationSpeed,
+						Samurai = _G.updateSamuraiAnimationSpeed,
+						Brawler = _G.updateBrawlerAnimationSpeed,
+						Knight = _G.updateKnightAnimationSpeed,
+						Gladiator = _G.updateGladiatorAnimationSpeed
+					}
+					local updateFunc = classFuncs[class.Value]
+					if updateFunc then
+						updateFunc("movement", movementAnimSpeedMultiplier)
+					end
+				end
+			end)
+		end
+		
+		local attackSpeedStat = leaderstats:FindFirstChild("AttackSpeed")
+		if attackSpeedStat then
+			attackSpeedStat.Changed:Connect(function()
+				if class.Value and class.Value ~= "Slavkorian" then
+					local attackAnimSpeedMultiplier = attackSpeedStat.Value
+					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+						ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
+					end
+					if ServerConfigs and ServerConfigs[class.Value] then
+						ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
+					end
+					local classFuncs = {
+						Archer = _G.updateArcherAnimationSpeed,
+						Samurai = _G.updateSamuraiAnimationSpeed,
+						Brawler = _G.updateBrawlerAnimationSpeed,
+						Knight = _G.updateKnightAnimationSpeed,
+						Gladiator = _G.updateGladiatorAnimationSpeed
+					}
+					local updateFunc = classFuncs[class.Value]
+					if updateFunc then
+						updateFunc("attack", attackAnimSpeedMultiplier)
+					end
+				end
+			end)
+		end
 		
 		-- Update health regen when the stat changes
 		local healthRegenStat = leaderstats:FindFirstChild("HealthRegen")

@@ -51,58 +51,102 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local playerAttackData = {}
 
 -- ========================================
--- SEPARATE ANIMATION SPEED CONFIGURATION
+-- UNIFIED ANIMATION SPEED CONFIGURATION
 -- ========================================
 
--- Individual animation speed multipliers for each action type
--- Each action can now have its own speed independent of others
--- 
--- HOW TO USE:
--- 1. Change values here to adjust animation speeds
--- 2. Camera speeds will automatically sync with these values
--- 3. Use _G.updateArcherAnimationSpeed(actionType, newSpeed) to update at runtime
---
-_G.ARCHER_ANIMATION_SPEEDS = ServerConfigs.Archer.AnimationSpeeds
+-- Unified animation speeds (attack and movement)
+-- Attack actions: normalAttack, jumpAttack, piercingShot, powerShot, hunterInstinct, hunterMark, starfall
+-- Movement actions: idle, run, jump
+-- Block animations: block (always 1.0, not affected by these speeds)
+
+-- Helper function to get animation speed for an action type
+local function getAnimationSpeed(actionType)
+	if not actionType then return 1.0 end
+	
+	-- Determine if this is an attack or movement action
+	local isAttack = actionType == "normalAttack" or actionType == "jumpAttack" or
+	                 actionType == "piercingShot" or actionType == "powerShot" or
+	                 actionType == "hunterInstinct" or actionType == "hunterMark" or actionType == "starfall"
+	
+	local isMovement = actionType == "idle" or actionType == "run" or actionType == "jump"
+	
+	-- Block animations always use 1.0
+	if actionType == "block" then
+		return 1.0
+	end
+	
+	-- Return appropriate unified speed
+	if isAttack then
+		return ServerConfigs.Archer.AttackSpeed or 1.0
+	elseif isMovement then
+		return ServerConfigs.Archer.MovementSpeed or 1.0
+	end
+	
+	-- Default to 1.0 for unknown action types
+	return 1.0
+end
 
 -- Function to apply specific speed to animation track
 function _G.applyArcherAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
 
-	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType]
+	local speed = getAnimationSpeed(actionType)
 	animTrack:AdjustSpeed(speed)
 end
 
 -- Function to sync specific animation speed with client
 local function syncAnimationSpeedWithClient(player, actionType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local speed = _G.ARCHER_ANIMATION_SPEEDS[actionType]
+	local speed = getAnimationSpeed(actionType)
 	remote:FireClient(player, "update_animation_speed", speed, actionType)
 end
 
 -- Function to sync all animation speeds with client
 local function syncAllAnimationSpeedsWithClient(player)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	for actionType, speed in pairs(_G.ARCHER_ANIMATION_SPEEDS) do
+	-- Sync all known action types
+	local actionTypes = {"idle", "run", "jump", "normalAttack", "jumpAttack", "block",
+	                     "piercingShot", "powerShot", "hunterInstinct", "hunterMark", "starfall"}
+	for _, actionType in ipairs(actionTypes) do
+		local speed = getAnimationSpeed(actionType)
 		remote:FireClient(player, "update_animation_speed", speed, actionType)
 	end
 end
 
 -- Function to update animation speed and sync with all clients
-function _G.updateArcherAnimationSpeed(actionType, newSpeed)
-	if not actionType or not newSpeed then
-		warn("Invalid parameters for updateArcherAnimationSpeed")
+-- Note: Now updates the unified speed in ServerConfigs, not individual action types
+function _G.updateArcherAnimationSpeed(speedType, newSpeed)
+	if not speedType or not newSpeed then
+		warn("Invalid parameters for updateArcherAnimationSpeed. Use 'attack' or 'movement' as speedType.")
 		return
 	end
 
-	-- Update the speed
-	_G.ARCHER_ANIMATION_SPEEDS[actionType] = newSpeed
-
-	-- Sync with all players
-	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	for _, player in pairs(Players:GetPlayers()) do
-		remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
+	-- Update the unified speed in config
+	if speedType == "attack" then
+		ServerConfigs.Archer.AttackSpeed = newSpeed
+		ServerConfigs.Hitboxes.UnifiedAttacks.Archer.attackSpeed = newSpeed
+	elseif speedType == "movement" then
+		ServerConfigs.Archer.MovementSpeed = newSpeed
+		ServerConfigs.Hitboxes.UnifiedAttacks.Archer.movementSpeed = newSpeed
+	else
+		warn("Invalid speedType. Use 'attack' or 'movement'.")
+		return
 	end
 
+	-- Sync with all players (sync all action types affected by this change)
+	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+	local actionTypes = {}
+	if speedType == "attack" then
+		actionTypes = {"normalAttack", "jumpAttack", "piercingShot", "powerShot", "hunterInstinct", "hunterMark", "starfall"}
+	elseif speedType == "movement" then
+		actionTypes = {"idle", "run", "jump"}
+	end
+	
+	for _, player in pairs(Players:GetPlayers()) do
+		for _, actionType in ipairs(actionTypes) do
+			remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
+		end
+	end
 end
 
 
@@ -112,7 +156,7 @@ end
 
 -- Fixed walking speed settings (no longer dependent on animation speed)
 -- These are the actual speeds used, not multiplied by anything
-_G.ARCHER_WALKING_SPEED = ServerConfigs.Archer.AnimationSpeeds.walking
+_G.ARCHER_WALKING_SPEED = ServerConfigs.Archer.walking
 
 -- Function to set player walking speed
 function _G.setArcherWalkingSpeed(player, speedType)

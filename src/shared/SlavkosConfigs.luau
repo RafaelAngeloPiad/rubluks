@@ -101,25 +101,15 @@ ServerConfigs.Hitboxes = {
 			},
 			-- Arrow trail color (RGB 0-255)
 			arrowTrailColor = {255, 255, 255},  -- White
-			-- Animation speeds
-			animSpeed = {
-				idle = 1.0,
-				run = 1.0,
-				jump = 1.0,
-				normalAttack = 1.0,
-				jumpAttack = 1.0,
-				block = 1.0,
-				piercingShot = 1.0,
-				powerShot = 1.0,
-				hunterInstinct = 1.0,
-				hunterMark = 1.0,
-				starfall = 1.0,
-				-- Walking speeds (fixed values, not affected by animation speed)
-				walking = {
-					normal = 18,    -- Fixed normal walking speed
-					slow = 3,       -- Fixed speed during skills
-					blocking = 0    -- Fixed speed while blocking
-				}
+			-- Unified animation speeds
+			attackSpeed = 1.0,     -- Unified speed for all attack animations (normalAttack, jumpAttack, piercingShot, powerShot, hunterInstinct, hunterMark, starfall)
+			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
+			-- Note: block animations remain at 1.0 (not affected by these speeds)
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walking = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills -- NO TOUCH
+				blocking = 0    -- Fixed speed while blocking -- NO TOUCH
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
@@ -158,28 +148,15 @@ ServerConfigs.Hitboxes = {
 			skill1Damage = 0.5,           -- 50% of MaxAttack (base: 50 ATK = 25 damage) - Wakizashi
 			skill2Damage = 0.6,           -- 60% of MaxAttack (base: 50 ATK = 30 damage) - Kozuki
 			ultDamage = 1.0,              -- 100% of MaxAttack (base: 50 ATK = 50 damage) - Zantetsuken
-			-- Animation speeds
-			animSpeed = {
-				idle = 1.0,
-				run = 1.0,
-				jump = 1.0,
-				combo1 = 1,
-				combo2 = 1,
-				combo3 = 1,
-				moveAttack = 1,
-				jumpAttack = 1,
-				block = 1.0,
-				kozuki = 1,
-				wakizashi = 1,
-				banzai = 1,
-				bushido = 1,
-				zantetsuken = 1,
-				-- Walking speeds (fixed values, not affected by animation speed)
-				walking = {
-					normal = 18,    -- Fixed normal walking speed
-					slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
-					blocking = 0    -- Fixed speed while blocking
-				}
+			-- Unified animation speeds
+			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, combo3, moveAttack, jumpAttack, kozuki, wakizashi, banzai, bushido, zantetsuken)
+			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
+			-- Note: block animations remain at 1.0 (not affected by these speeds)
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walking = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
+				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
@@ -238,27 +215,15 @@ ServerConfigs.Hitboxes = {
 			skill2Damage = 0.389,        -- 38.9% of MaxAttack (base: 90 ATK = 35 damage) - FeralLeap
 			ultDamage = 0.089,           -- 8.9% of MaxAttack (base: 90 ATK = 8 damage) - MeteorDive
 			ultTickTime = 0.5,           -- MeteorDive DOT tick time
-			-- Animation speeds
-			animSpeed = {
-				idle = 1.0,
-				run = 1.0,
-				jump = 1.0,
-				combo1 = 1.0,
-				combo2 = 1.0,
-				moveAttack = 1.0,
-				jumpAttack = 1.0,
-				block = 1.0,
-				feralleap = 1.0,
-				brawlersroar = 1.0,
-				bloodthirst = 1.0,
-				lastchance = 1.0,
-				meteordive = 1.0,
-				-- Walking speeds (fixed values, not affected by animation speed)
-				walking = {
-					normal = 18,    -- Fixed normal walking speed
-					slow = 3,       -- Fixed speed during skills
-					blocking = 0    -- Fixed speed while blocking
-				}
+			-- Unified animation speeds
+			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, moveAttack, jumpAttack, feralleap, brawlersroar, bloodthirst, lastchance, meteordive)
+			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
+			-- Note: block animations remain at 1.0 (not affected by these speeds)
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walking = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills
+				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
@@ -326,28 +291,15 @@ ServerConfigs.Hitboxes = {
 			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
 			ultDamage = 0.143,           -- 14.3% of MaxAttack (base: 70 ATK = 10 damage) - MightyBlade
 			ultTickTime = 0.5,           -- MightyBlade DOT tick time
-			-- Animation speeds
-			animSpeed = {
-				idle = 1.0,
-				run = 1.0,
-				jump = 1.0,
-				combo1 = 1.0,
-				combo2 = 1.0,
-				combo3 = 1.0,
-				moveAttack = 1.0,
-				jumpAttack = 1.0,
-				block = 1.0,
-				sworddance = 1.0,
-				cyclone_slash = 1.0,
-				warcry = 1.0,
-				warriormight = 1.0,
-				mightyblade = 1.0,
-				-- Walking speeds (fixed values, not affected by animation speed)
-				walking = {
-					normal = 18,    -- Fixed normal walking speed
-					slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
-					blocking = 0    -- Fixed speed while blocking
-				}
+			-- Unified animation speeds
+			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, combo3, moveAttack, jumpAttack, sworddance, cyclone_slash, warcry, warriormight, mightyblade)
+			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
+			-- Note: block animations remain at 1.0 (not affected by these speeds)
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walking = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
+				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
@@ -409,27 +361,15 @@ ServerConfigs.Hitboxes = {
 			skill2Damage = 0.5,          -- 50% of MaxAttack (base: 30 ATK = 15 damage) - DragoonJump
 			ultDamage = 0.167,           -- 16.7% of MaxAttack (base: 30 ATK = 5 damage) - DemonicVorpalDance
 			ultTickTime = 0.5,           -- DemonicVorpalDance DOT tick time
-			-- Animation speeds
-			animSpeed = {
-				idle = 1.0,
-				run = 1.0,
-				jump = 1.0,
-				combo1 = 1.0,
-				combo2 = 1.0,
-				moveAttack = 1.0,
-				jumpAttack = 1.0,
-				block = 1.0,
-				shieldbash = 1.0,
-				dragoonjump = 1.0,
-				championsblood = 1.0,
-				championscheer = 1.0,
-				demonicvorpaldance = 1.0,
-				-- Walking speeds (fixed values, not affected by animation speed)
-				walking = {
-					normal = 18,    -- Fixed normal walking speed
-					slow = 3,       -- Fixed speed during skills
-					blocking = 0    -- Fixed speed while blocking
-				}
+			-- Unified animation speeds
+			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, moveAttack, jumpAttack, shieldbash, dragoonjump, championsblood, championscheer, demonicvorpaldance)
+			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
+			-- Note: block animations remain at 1.0 (not affected by these speeds)
+			-- Walking speeds (fixed values, not affected by animation speed)
+			walking = {
+				normal = 18,    -- Fixed normal walking speed
+				slow = 3,       -- Fixed speed during skills
+				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
@@ -497,7 +437,8 @@ ServerConfigs.Hitboxes = {
 
 -- Archer Configuration (references UnifiedAttacks.Archer)
 ServerConfigs.Archer = {
-	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.animSpeed,
+	AttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.attackSpeed,
+	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.walkingSpeed,
 	
@@ -522,7 +463,8 @@ ServerConfigs.Archer = {
 
 -- Samurai Configuration (references UnifiedAttacks.Samurai)
 ServerConfigs.Samurai = {
-	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.animSpeed,
+	AttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.attackSpeed,
+	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.walkingSpeed,
 	ComboConfig = {
@@ -538,7 +480,8 @@ ServerConfigs.Samurai = {
 
 -- Brawler Configuration (references UnifiedAttacks.Brawler)
 ServerConfigs.Brawler = {
-	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.animSpeed,
+	AttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.attackSpeed,
+	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.walkingSpeed,
 	ComboConfig = {
@@ -553,7 +496,8 @@ ServerConfigs.Brawler = {
 
 -- Knight Configuration (references UnifiedAttacks.Knight)
 ServerConfigs.Knight = {
-	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.animSpeed,
+	AttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.attackSpeed,
+	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.walkingSpeed,
 	ComboConfig = {
@@ -569,7 +513,8 @@ ServerConfigs.Knight = {
 
 -- Gladiator Configuration (references UnifiedAttacks.Gladiator)
 ServerConfigs.Gladiator = {
-	AnimationSpeeds = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.animSpeed,
+	AttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.attackSpeed,
+	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.walkingSpeed,
 	ComboConfig = {
@@ -876,15 +821,41 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 	
 	local animationSpeed = 1.0 -- Default speed
 	
-	-- Get specific animation speed for the action type and class
-	-- Try direct lookup first (most reliable - accesses source table directly)
+	-- Determine if this is an attack or movement action
+	local isAttack = false
+	local isMovement = false
+	
+	-- Attack actions (combo attacks, skills, etc.)
+	if actionType == "normalAttack" or actionType == "jumpAttack" or
+	   actionType == "combo1" or actionType == "combo2" or actionType == "combo3" or
+	   actionType == "moveAttack" or
+	   actionType == "piercingShot" or actionType == "powerShot" or actionType == "hunterInstinct" or actionType == "hunterMark" or actionType == "starfall" or
+	   actionType == "kozuki" or actionType == "wakizashi" or actionType == "banzai" or actionType == "bushido" or actionType == "zantetsuken" or
+	   actionType == "feralleap" or actionType == "brawlersroar" or actionType == "bloodthirst" or actionType == "lastchance" or actionType == "meteordive" or
+	   actionType == "sworddance" or actionType == "cyclone_slash" or actionType == "warcry" or actionType == "warriormight" or actionType == "mightyblade" or
+	   actionType == "shieldbash" or actionType == "dragoonjump" or actionType == "championsblood" or actionType == "championscheer" or actionType == "demonicvorpaldance" then
+		isAttack = true
+	-- Movement actions (idle, run, jump)
+	elseif actionType == "idle" or actionType == "run" or actionType == "jump" then
+		isMovement = true
+	end
+	
+	-- Get animation speed based on action type and class
 	if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and 
-	   ServerConfigs.Hitboxes.UnifiedAttacks[classType] and 
-	   ServerConfigs.Hitboxes.UnifiedAttacks[classType].animSpeed then
-		animationSpeed = ServerConfigs.Hitboxes.UnifiedAttacks[classType].animSpeed[actionType] or 1.0
+	   ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+		local classConfig = ServerConfigs.Hitboxes.UnifiedAttacks[classType]
+		if isAttack then
+			animationSpeed = classConfig.attackSpeed or 1.0
+		elseif isMovement then
+			animationSpeed = classConfig.movementSpeed or 1.0
+		end
 	-- Fallback to reference lookup (for backward compatibility)
-	elseif classType and ServerConfigs[classType] and ServerConfigs[classType].AnimationSpeeds then
-		animationSpeed = ServerConfigs[classType].AnimationSpeeds[actionType] or 1.0
+	elseif classType and ServerConfigs[classType] then
+		if isAttack and ServerConfigs[classType].AttackSpeed then
+			animationSpeed = ServerConfigs[classType].AttackSpeed
+		elseif isMovement and ServerConfigs[classType].MovementSpeed then
+			animationSpeed = ServerConfigs[classType].MovementSpeed
+		end
 	end
 	
 	-- Scale delay inversely with animation speed

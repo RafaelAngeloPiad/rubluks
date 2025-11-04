@@ -54,58 +54,101 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local playerAttackData = {}
 
 -- ========================================
--- SEPARATE ANIMATION SPEED CONFIGURATION
+-- UNIFIED ANIMATION SPEED CONFIGURATION
 -- ========================================
 
--- Individual animation speed multipliers for each action type
--- Each action can now have its own speed independent of others
--- 
--- HOW TO USE:
--- 1. Change values here to adjust animation speeds
--- 2. Camera speeds will automatically sync with these values
--- 3. Use _G.updateKnightAnimationSpeed(actionType, newSpeed) to update at runtime
---
-_G.KNIGHT_ANIMATION_SPEEDS = ServerConfigs.Knight.AnimationSpeeds
+-- Unified animation speeds (attack and movement)
+-- Attack actions: combo1, combo2, combo3, moveAttack, jumpAttack, sworddance, cyclone_slash, warcry, warriormight, mightyblade
+-- Movement actions: idle, run, jump
+-- Block animations: block (always 1.0, not affected by these speeds)
+
+-- Helper function to get animation speed for an action type
+local function getAnimationSpeed(actionType)
+	if not actionType then return 1.0 end
+	
+	-- Determine if this is an attack or movement action
+	local isAttack = actionType == "combo1" or actionType == "combo2" or actionType == "combo3" or actionType == "moveAttack" or actionType == "jumpAttack" or
+	                 actionType == "sworddance" or actionType == "cyclone_slash" or actionType == "warcry" or actionType == "warriormight" or actionType == "mightyblade"
+	
+	local isMovement = actionType == "idle" or actionType == "run" or actionType == "jump"
+	
+	-- Block animations always use 1.0
+	if actionType == "block" then
+		return 1.0
+	end
+	
+	-- Return appropriate unified speed
+	if isAttack then
+		return ServerConfigs.Knight.AttackSpeed or 1.0
+	elseif isMovement then
+		return ServerConfigs.Knight.MovementSpeed or 1.0
+	end
+	
+	-- Default to 1.0 for unknown action types
+	return 1.0
+end
 
 -- Function to apply specific speed to animation track
 function _G.applyKnightAnimationSpeed(animTrack, actionType)
 	if not animTrack or not actionType then return end
-	
-	local speed = _G.KNIGHT_ANIMATION_SPEEDS[actionType]
+
+	local speed = getAnimationSpeed(actionType)
 	animTrack:AdjustSpeed(speed)
 end
 
 -- Function to sync specific animation speed with client
 local function syncAnimationSpeedWithClient(player, actionType)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	local speed = _G.KNIGHT_ANIMATION_SPEEDS[actionType]
+	local speed = getAnimationSpeed(actionType)
 	remote:FireClient(player, "update_animation_speed", speed, actionType)
 end
 
 -- Function to sync all animation speeds with client
 local function syncAllAnimationSpeedsWithClient(player)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	for actionType, speed in pairs(_G.KNIGHT_ANIMATION_SPEEDS) do
+	-- Sync all known action types
+	local actionTypes = {"idle", "run", "jump", "combo1", "combo2", "combo3", "moveAttack", "jumpAttack", "block",
+	                     "sworddance", "cyclone_slash", "warcry", "warriormight", "mightyblade"}
+	for _, actionType in ipairs(actionTypes) do
+		local speed = getAnimationSpeed(actionType)
 		remote:FireClient(player, "update_animation_speed", speed, actionType)
 	end
 end
 
 -- Function to update animation speed and sync with all clients
-function _G.updateKnightAnimationSpeed(actionType, newSpeed)
-	if not actionType or not newSpeed then
-		warn("Invalid parameters for updateKnightAnimationSpeed")
+-- Note: Now updates the unified speed in ServerConfigs, not individual action types
+function _G.updateKnightAnimationSpeed(speedType, newSpeed)
+	if not speedType or not newSpeed then
+		warn("Invalid parameters for updateKnightAnimationSpeed. Use 'attack' or 'movement' as speedType.")
 		return
 	end
-	
-	-- Update the speed
-	_G.KNIGHT_ANIMATION_SPEEDS[actionType] = newSpeed
-	
-	-- Sync with all players
+
+	-- Update the unified speed in config
+	if speedType == "attack" then
+		ServerConfigs.Knight.AttackSpeed = newSpeed
+		ServerConfigs.Hitboxes.UnifiedAttacks.Knight.attackSpeed = newSpeed
+	elseif speedType == "movement" then
+		ServerConfigs.Knight.MovementSpeed = newSpeed
+		ServerConfigs.Hitboxes.UnifiedAttacks.Knight.movementSpeed = newSpeed
+	else
+		warn("Invalid speedType. Use 'attack' or 'movement'.")
+		return
+	end
+
+	-- Sync with all players (sync all action types affected by this change)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
-	for _, player in pairs(Players:GetPlayers()) do
-		remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
+	local actionTypes = {}
+	if speedType == "attack" then
+		actionTypes = {"combo1", "combo2", "combo3", "moveAttack", "jumpAttack", "sworddance", "cyclone_slash", "warcry", "warriormight", "mightyblade"}
+	elseif speedType == "movement" then
+		actionTypes = {"idle", "run", "jump"}
 	end
 	
+	for _, player in pairs(Players:GetPlayers()) do
+		for _, actionType in ipairs(actionTypes) do
+			remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
+		end
+	end
 end
 
 
@@ -115,7 +158,7 @@ end
 
 -- Fixed walking speed settings (no longer dependent on animation speed)
 -- These are the actual speeds used, not multiplied by anything
-_G.KNIGHT_WALKING_SPEED = ServerConfigs.Knight.AnimationSpeeds.walking
+_G.KNIGHT_WALKING_SPEED = ServerConfigs.Knight.walking
 
 -- Function to set player walking speed
 function _G.setKnightWalkingSpeed(player, speedType)
