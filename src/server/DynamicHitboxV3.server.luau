@@ -537,8 +537,8 @@ end
 	})
 ]]
 function _G.createStaticHitbox(config)
-	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, visualDuration
-	local delay = getScaledDelay(config.delay, config.actionType)
+	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, visualDuration, actionType, classType
+	local delay = getScaledDelay(config.delay, config.actionType, config.classType)
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
@@ -556,7 +556,7 @@ function _G.createStaticHitbox(config)
 		local visualColor = config.visualColor
 		local visualDuration = config.visualDuration
 		if not visualDuration then visualDuration = 0.5 end
-		visualDuration = getScaledDelay(visualDuration, config.actionType)
+		visualDuration = getScaledDelay(visualDuration, config.actionType, config.classType)
 		
 		-- If attachTo is provided, use its CFrame with offset
 		if attachTo and not cframe then
@@ -650,8 +650,8 @@ end
 	})
 ]]
 function _G.createStaticDOTHitbox(config)
-	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime
-	local delay = getScaledDelay(config.delay, config.actionType)
+	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime, actionType, classType
+	local delay = getScaledDelay(config.delay, config.actionType, config.classType)
 	
 	task.delay(delay, function()
 		local cframe = config.cframe
@@ -674,7 +674,7 @@ function _G.createStaticDOTHitbox(config)
 			damageTickTime = 0.5
 		else
 			local originalTickTime = damageTickTime
-			damageTickTime = getScaledDelay(damageTickTime, config.actionType)
+			damageTickTime = getScaledDelay(damageTickTime, config.actionType, config.classType)
 			if not damageTickTime or damageTickTime <= 0 then
 				warn("[createStaticDOTHitbox] ERROR: damageTickTime became invalid after scaling! Original:", originalTickTime, "Scaled:", damageTickTime, "Defaulting to 0.5")
 				damageTickTime = 0.5
@@ -841,8 +841,8 @@ end
 	})
 ]]
 function _G.createTravelingHitbox(config)
-	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay
-	local delay = getScaledDelay(config.delay, config.actionType)
+	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay, actionType, classType
+	local delay = getScaledDelay(config.delay, config.actionType, config.classType)
 	
 	task.delay(delay, function()
 		local attachTo = config.attachTo
@@ -965,8 +965,8 @@ end
 	})
 ]]
 function _G.createTravelingDOTHitbox(config)
-	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime
-	local delay = getScaledDelay(config.delay, config.actionType)
+	-- config: attachTo (BasePart), size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime, actionType, classType
+	local delay = getScaledDelay(config.delay, config.actionType, config.classType)
 	
 	task.delay(delay, function()
 		local attachTo = config.attachTo
@@ -983,7 +983,7 @@ function _G.createTravelingDOTHitbox(config)
 		local visualColor = config.visualColor
 		local damageTickTime = config.damageTickTime
 		-- damageTickTime must be provided in config
-		damageTickTime = getScaledDelay(damageTickTime, config.actionType)
+		damageTickTime = getScaledDelay(damageTickTime, config.actionType, config.classType)
 		
 		if not attachTo then
 			return

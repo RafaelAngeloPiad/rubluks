@@ -210,7 +210,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 			name = "PowerArrow",
 			showVisual = true,
 			visualColor = Color3.new(1, 1, 0), -- Yellow for power arrow
-			delay = ServerConfigs.ArcherSkills.PowerShot.hitboxDelay
+			delay = ServerConfigs.ArcherSkills.PowerShot.hitboxDelay,
+			actionType = "powerShot",
+			classType = "Archer"
 		})
 
 		-- Auto cleanup
@@ -272,6 +274,8 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 				cframe = CFrame.lookAt(trailPosition, trailPosition + shootDirection),
 				offset = CFrame.new(0, 0, 0), -- Center of trail
 				size = Vector3.new(10, 10, 10), -- Smaller size for individual trails
+				actionType = "powerShot",
+				classType = "Archer",
 				damage = trailDamage, -- Scaled damage per tick
 				damageTickTime = ServerConfigs.ArcherSkills.PowerShot.damageTickTime or 1,
 				character = character,

@@ -258,7 +258,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "Starfall Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(1, 0, 0),
-			delay = ServerConfigs.ArcherSkills.Starfall.hitboxDelay or 0.2
+			delay = ServerConfigs.ArcherSkills.Starfall.hitboxDelay or 0.2,
+			actionType = "starfall",
+			classType = "Archer"
 		})
 	end)
 

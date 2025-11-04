@@ -4,6 +4,7 @@
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 -- Configuration
 local MOB_STATS = {
@@ -47,6 +48,9 @@ model:SetAttribute("CritRate", MOB_STATS.CritRate)
 model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
 model:SetAttribute("Damage", MOB_STATS.Damage)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
+
+-- Add exclusion tag so mobs don't damage each other
+CollectionService:AddTag(model, "simple_entity")
 
 -- Create floating stats display
 local MobStatsDisplay = require(ReplicatedStorage:WaitForChild("MobStatsDisplay"))
@@ -120,6 +124,7 @@ task.spawn(function()
 						dotPart.Transparency = 1
 						
 						-- Create DOT hitbox
+						-- Note: actionType and classType are nil for mobs (no animation speed scaling)
 						_G.createStaticDOTHitbox({
 							attachTo = dotPart,
 							offset = CFrame.new(0, 0, 0),
@@ -130,7 +135,9 @@ task.spawn(function()
 							name = "DOTField",
 							showVisual = true,
 							visualColor = Color3.new(1, 0.5, 0),
-							delay = 0
+							delay = 0,
+							actionType = nil, -- Mobs don't have animation speeds
+							classType = nil   -- Mobs don't have classes
 						})
 						
 						-- Destroy DOT field after 5 seconds

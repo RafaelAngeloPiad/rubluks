@@ -144,7 +144,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "BrawlersRoar",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.3, 0),
-			delay = ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxDelay
+			delay = ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxDelay,
+			actionType = "brawlersroar",
+			classType = "Brawler"
 		})
 	end)
 

@@ -9,6 +9,7 @@ local HitboxExclusions = {}
 HitboxExclusions.EXCLUDE_TAGS = {
     "golem_entity",
     "spider_entity",
+    "simple_entity"
 }
 
 -- Function to check if a model has any excluded tags

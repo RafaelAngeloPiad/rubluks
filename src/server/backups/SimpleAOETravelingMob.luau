@@ -1,6 +1,6 @@
 -- ========================================
--- SIMPLE TRAVELING HOMING MOB
--- Very simple mob: shoots homing missiles with traveling hitbox
+-- SIMPLE AOE TRAVELING MOB
+-- Very simple mob: shoots 360 projectiles in all directions (boss attack pattern)
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,11 +15,12 @@ local MOB_STATS = {
 	CritRate = 0,
 	CritMultiplier = 150,
 	Damage = 25,
-	AttackCooldown = 2,      -- Seconds between shots
+	AttackCooldown = 4,      -- Seconds between shots (longer cooldown for boss attack)
 	AttackRange = 50,        -- Distance to start shooting
 	WalkSpeed = 14,
-	MissileSpeed = 30,       -- Speed of the missile part
-	MissileLifetime = 5      -- Seconds before missile despawns
+	MissileSpeed = 30,       -- Speed of the missile parts
+	MissileLifetime = 5,     -- Seconds before missile despawns
+	NumProjectiles = 360     -- Number of projectiles to fire (360 for full circle)
 }
 
 -- Radius and return configuration (same as GolemSolo)
@@ -29,7 +30,7 @@ local RETURN_RADIUS = 60
 local RETURN_WAIT = 2
 local UPDATE_RATE = 0.5
 
-local MOB_VARIANT_NAME = "SimpleTravelingHomingMob"
+local MOB_VARIANT_NAME = "SimpleAOETravelingMob"
 
 -- Get model and parts
 local model = script.Parent
@@ -113,78 +114,59 @@ task.spawn(function()
 				if targetDistFromSpawn <= RETURN_RADIUS then
 					-- Target is within return radius, attack or follow
 					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
-						-- Shoot homing missile
+						-- Fire 360 projectiles in all directions
 						lastAttack = tick()
 						
-						-- Create missile part
-						local missile = Instance.new("Part")
-						missile.Name = "HomingMissile"
-						missile.Size = Vector3.new(1, 1, 1)
-						missile.CFrame = root.CFrame * CFrame.new(0, 1, -2)
-						missile.Anchored = false
-						missile.CanCollide = false
-						missile.Material = Enum.Material.Neon
-						missile.Color = Color3.new(1, 0.5, 0)
-						missile.Transparency = 0.3
-						missile.Parent = workspace
+						-- Calculate angle step for 360 projectiles
+						local angleStep = (360 / MOB_STATS.NumProjectiles) * (math.pi / 180) -- Convert to radians
 						
-						-- Add body velocity to missile
-						local bodyVelocity = Instance.new("BodyVelocity")
-						bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-						bodyVelocity.Velocity = root.CFrame.LookVector * MOB_STATS.MissileSpeed
-						bodyVelocity.Parent = missile
-						
-						-- Create traveling hitbox attached to missile
-						-- Note: actionType and classType are nil for mobs (no animation speed scaling)
-						_G.createTravelingHitbox({
-							attachTo = missile,
-							offset = CFrame.new(0, 0, 0),
-							size = Vector3.new(6, 6, 6),
-							damage = MOB_STATS.Damage,
-							character = model,
-							name = "HomingMissile",
-							showVisual = true,
-							visualColor = Color3.new(1, 0.5, 0),
-							delay = 0,
-							actionType = nil, -- Mobs don't have animation speeds
-							classType = nil   -- Mobs don't have classes
-						})
-						
-						-- Homing behavior - update direction towards target
-						local homingConnection
-						local startTime = tick()
-						homingConnection = RunService.Heartbeat:Connect(function()
-							if not missile or not missile.Parent then
-								homingConnection:Disconnect()
-								return
-							end
+						-- Fire projectiles in a circle (horizontal plane only)
+						for i = 0, MOB_STATS.NumProjectiles - 1 do
+							-- Calculate direction for this projectile
+							local angle = i * angleStep
+							local direction = Vector3.new(math.cos(angle), 0, math.sin(angle)) -- Horizontal circle
 							
-							-- Check lifetime
-							if tick() - startTime >= MOB_STATS.MissileLifetime then
-								homingConnection:Disconnect()
-								missile:Destroy()
-								return
-							end
+							-- Create projectile part
+							local projectile = Instance.new("Part")
+							projectile.Name = "AOETraveling" .. i
+							projectile.Size = Vector3.new(1, 1, 1)
+							projectile.CFrame = root.CFrame * CFrame.new(0, 1, 0) * CFrame.lookAt(Vector3.new(0, 0, 0), direction)
+							projectile.Anchored = false
+							projectile.CanCollide = false
+							projectile.Material = Enum.Material.Neon
+							projectile.Color = Color3.new(1, 0, 1) -- Magenta color for AOE attack
+							projectile.Transparency = 0.3
+							projectile.Parent = workspace
 							
-							-- Find current target (may have moved)
-							local currentTarget = nil
-							local nearestDist = 100
-							for _, player in pairs(game.Players:GetPlayers()) do
-								if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-									local dist = (player.Character.HumanoidRootPart.Position - missile.Position).Magnitude
-									if dist < nearestDist then
-										nearestDist = dist
-										currentTarget = player.Character.HumanoidRootPart
-									end
+							-- Add body velocity to projectile
+							local bodyVelocity = Instance.new("BodyVelocity")
+							bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+							bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
+							bodyVelocity.Parent = projectile
+							
+							-- Create traveling hitbox attached to projectile
+							-- Note: actionType and classType are nil for mobs (no animation speed scaling)
+							_G.createTravelingHitbox({
+								attachTo = projectile,
+								offset = CFrame.new(0, 0, 0),
+								size = Vector3.new(6, 6, 6),
+								damage = MOB_STATS.Damage,
+								character = model,
+								name = "AOETraveling" .. i,
+								showVisual = true,
+								visualColor = Color3.new(1, 0, 1), -- Magenta color
+								delay = 0,
+								actionType = nil, -- Mobs don't have animation speeds
+								classType = nil   -- Mobs don't have classes
+							})
+							
+							-- Auto-cleanup projectile after lifetime
+							task.delay(MOB_STATS.MissileLifetime, function()
+								if projectile and projectile.Parent then
+									projectile:Destroy()
 								end
-							end
-							
-							if currentTarget then
-								-- Update direction towards target
-								local direction = (currentTarget.Position - missile.Position).Unit
-								bodyVelocity.Velocity = direction * MOB_STATS.MissileSpeed
-							end
-						end)
+							end)
+						end
 					else
 						-- Follow
 						humanoid:MoveTo(nearest.Position)
@@ -207,4 +189,5 @@ task.spawn(function()
 		end
 	end
 end)
+
 

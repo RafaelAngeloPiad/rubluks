@@ -106,7 +106,9 @@ local function createSlash(player, character, angle)
 		character = character,
 		name = "Zantetsuken",
 		showVisual = true,
-		visualColor = Color3.new(1, 0, 1) -- Purple
+		visualColor = Color3.new(1, 0, 1), -- Purple
+		actionType = "zantetsuken",
+		classType = "Samurai"
 	})
 
 	-- Cleanup

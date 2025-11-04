@@ -4,6 +4,7 @@
 -- ========================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 -- Configuration
 local MOB_STATS = {
@@ -46,6 +47,9 @@ model:SetAttribute("CritRate", MOB_STATS.CritRate)
 model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
 model:SetAttribute("Damage", MOB_STATS.Damage)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
+
+-- Add exclusion tag so mobs don't damage each other
+CollectionService:AddTag(model, "simple_entity")
 
 -- Create floating stats display
 local MobStatsDisplay = require(ReplicatedStorage:WaitForChild("MobStatsDisplay"))
@@ -108,6 +112,7 @@ task.spawn(function()
 					if dist <= MOB_STATS.AttackRange and tick() - lastAttack >= MOB_STATS.AttackCooldown then
 						-- Attack
 						lastAttack = tick()
+						-- Note: actionType and classType are nil for mobs (no animation speed scaling)
 						_G.createStaticHitbox({
 							attachTo = root,
 							offset = CFrame.new(0, 0, -4),
@@ -117,7 +122,9 @@ task.spawn(function()
 							name = "MeleeAttack",
 							showVisual = true,
 							visualColor = Color3.new(1, 0, 0),
-							delay = 0
+							delay = 0,
+							actionType = nil, -- Mobs don't have animation speeds
+							classType = nil   -- Mobs don't have classes
 						})
 					else
 						-- Follow

@@ -540,7 +540,9 @@ local function handleNormalAttack(player)
 			name = "JumpAttack",
 			showVisual = true,
 			visualColor = hitboxConfig.visualColor,
-			delay = hitboxConfig.delay
+			delay = hitboxConfig.delay,
+			actionType = "jumpAttack",
+			classType = "Samurai"
 		})
 		
 		data.jumpTrack.Stopped:Once(function()
@@ -576,7 +578,9 @@ local function handleNormalAttack(player)
 			name = "MoveAttack",
 			showVisual = true,
 			visualColor = hitboxConfig.visualColor,
-			delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed)
+			delay = hitboxConfig.delay, -- Base delay (auto-scales with animation speed)
+			actionType = "moveAttack",
+			classType = "Samurai"
 		})
 		
 		data.moveSlashTrack.Stopped:Once(function()
@@ -615,7 +619,9 @@ local function handleNormalAttack(player)
 				name = "Combo1",
 				showVisual = true,
 				visualColor = hitboxConfig.visualColor,
-				delay = hitboxConfig.delay
+				delay = hitboxConfig.delay,
+				actionType = "combo1",
+				classType = "Samurai"
 			})
 			
 			data.animTrack1.Stopped:Once(function() 
@@ -645,7 +651,9 @@ local function handleNormalAttack(player)
 				name = "Combo2",
 				showVisual = true,
 				visualColor = hitboxConfig.visualColor,
-				delay = hitboxConfig.delay
+				delay = hitboxConfig.delay,
+				actionType = "combo2",
+				classType = "Samurai"
 			})
 			
 			data.animTrack2.Stopped:Once(function() 
@@ -679,7 +687,9 @@ local function handleNormalAttack(player)
 				name = "Combo1_Fallback",
 				showVisual = true,
 				visualColor = hitboxConfig.visualColor,
-				delay = hitboxConfig.delay
+				delay = hitboxConfig.delay,
+				actionType = "combo1",
+				classType = "Samurai"
 			})
 				
 				data.animTrack1.Stopped:Once(function() 
@@ -709,7 +719,9 @@ local function handleNormalAttack(player)
 				name = "Combo3",
 				showVisual = true,
 				visualColor = hitboxConfig.visualColor,
-				delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
+				delay = hitboxConfig.delay, -- Base delay (auto-scales with animation speed: 2s at 1x speed, 1s at 2x speed)
+				actionType = "combo3",
+				classType = "Samurai"
 			})
 				
 				data.animTrack3.Stopped:Once(function() 

@@ -261,7 +261,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "DemonicVorpalDance Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(1, 0, 0.5), -- Pink/red color
-			delay = DEMONICVORPALDANCE_CONFIG.hitboxDelay
+			delay = DEMONICVORPALDANCE_CONFIG.hitboxDelay,
+			actionType = "demonicvorpaldance",
+			classType = "Gladiator"
 		})
 	end)
 

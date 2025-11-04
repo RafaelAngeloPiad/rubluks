@@ -656,7 +656,9 @@ local function handleNormalAttack(player)
 			name = "JumpAttack",
 			showVisual = true,
 			visualColor = hitboxConfig.visualColor,
-			delay = hitboxConfig.delay
+			delay = hitboxConfig.delay,
+			actionType = "jumpAttack",
+			classType = "Gladiator"
 		})
 		
 		data.jumpTrack.Stopped:Once(function()
@@ -692,7 +694,9 @@ local function handleNormalAttack(player)
 			name = "MoveAttack",
 			showVisual = true,
 			visualColor = hitboxConfig.visualColor,
-			delay = hitboxConfig.delay -- Base delay (auto-scales with animation speed)
+			delay = hitboxConfig.delay, -- Base delay (auto-scales with animation speed)
+			actionType = "moveAttack",
+			classType = "Gladiator"
 		})
 		
 		data.moveSlashTrack.Stopped:Once(function()
@@ -731,7 +735,9 @@ local function handleNormalAttack(player)
 				name = "Combo1",
 				showVisual = true,
 				visualColor = hitboxConfig.visualColor,
-				delay = hitboxConfig.delay
+				delay = hitboxConfig.delay,
+				actionType = "combo1",
+				classType = "Gladiator"
 			})
 			
 			data.animTrack1.Stopped:Once(function() 
@@ -761,7 +767,9 @@ local function handleNormalAttack(player)
 				name = "Combo2",
 				showVisual = true,
 				visualColor = hitboxConfig.visualColor,
-				delay = hitboxConfig.delay
+				delay = hitboxConfig.delay,
+				actionType = "combo2",
+				classType = "Gladiator"
 			})
 			
 			data.animTrack2.Stopped:Once(function() 

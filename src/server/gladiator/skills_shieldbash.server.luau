@@ -148,7 +148,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "ShieldBash",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.5, 0),
-			delay = SHIELDBASH_CONFIG.hitboxDelay
+			delay = SHIELDBASH_CONFIG.hitboxDelay,
+			actionType = "shieldbash",
+			classType = "Gladiator"
 		})
 
 	end)

@@ -148,7 +148,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "DragoonJump1",
 			showVisual = true,
 			visualColor = Color3.new(0, 1, 1),
-			delay = DRAGOONJUMP_CONFIG.hitboxDelay
+			delay = DRAGOONJUMP_CONFIG.hitboxDelay,
+			actionType = "dragoonjump",
+			classType = "Gladiator"
 		})
 
 	end)
@@ -195,7 +197,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "DragoonJump2",
 			showVisual = true,
 			visualColor = Color3.new(0, 1, 1),
-			delay = DRAGOONJUMP_CONFIG.hitboxDelay
+			delay = DRAGOONJUMP_CONFIG.hitboxDelay,
+			actionType = "dragoonjump",
+			classType = "Gladiator"
 		})
 
 	end)
@@ -242,7 +246,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "DragoonJump3",
 			showVisual = true,
 			visualColor = Color3.new(0, 1, 1),
-			delay = DRAGOONJUMP_CONFIG.hitboxDelay
+			delay = DRAGOONJUMP_CONFIG.hitboxDelay,
+			actionType = "dragoonjump",
+			classType = "Gladiator"
 		})
 
 	end)
@@ -289,7 +295,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "DragoonJump4",
 			showVisual = true,
 			visualColor = Color3.new(0, 1, 1),
-			delay = DRAGOONJUMP_CONFIG.hitboxDelay
+			delay = DRAGOONJUMP_CONFIG.hitboxDelay,
+			actionType = "dragoonjump",
+			classType = "Gladiator"
 		})
 
 	end)
@@ -336,7 +344,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "DragoonJump5",
 			showVisual = true,
 			visualColor = Color3.new(0, 1, 1),
-			delay = DRAGOONJUMP_CONFIG.hitboxDelay
+			delay = DRAGOONJUMP_CONFIG.hitboxDelay,
+			actionType = "dragoonjump",
+			classType = "Gladiator"
 		})
 
 	end)

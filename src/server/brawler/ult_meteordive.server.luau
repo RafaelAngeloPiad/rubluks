@@ -149,7 +149,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "MeteorDive Center DOT",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.5, 0), -- Orange color
-			delay = ServerConfigs.BrawlerSkills.MeteorDive.hitboxDelay
+			delay = ServerConfigs.BrawlerSkills.MeteorDive.hitboxDelay,
+			actionType = "meteordive",
+			classType = "Brawler"
 		})
 	end)
 	

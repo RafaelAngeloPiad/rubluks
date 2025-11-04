@@ -172,7 +172,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "CycloneSlashSmall",
 			showVisual = true,
 			visualColor = Color3.new(0.3, 0, 0.6), -- Darker purple
-			delay = CYCLONE_CONFIG.smallHitboxDelay
+			delay = CYCLONE_CONFIG.smallHitboxDelay,
+			actionType = "cyclone_slash",
+			classType = "Knight"
 		})
 		
 		-- After duration, spawn big hitbox
@@ -189,7 +191,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				name = "CycloneSlashBig",
 				showVisual = true,
 				visualColor = Color3.new(0.8, 0, 1), -- Brighter purple
-				delay = CYCLONE_CONFIG.bigHitboxDelay
+				delay = CYCLONE_CONFIG.bigHitboxDelay,
+				actionType = "cyclone_slash",
+				classType = "Knight"
 			})
 		end)
 

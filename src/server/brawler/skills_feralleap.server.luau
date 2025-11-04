@@ -168,7 +168,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 					name = "FeralLeapClaw",
 					showVisual = true,
 					visualColor = Color3.new(1, 0, 0),
-					delay = ServerConfigs.BrawlerSkills.FeralLeap.hitboxDelay
+					delay = ServerConfigs.BrawlerSkills.FeralLeap.hitboxDelay,
+					actionType = "feralleap",
+					classType = "Brawler"
 				})
 			end)
 		end
@@ -245,7 +247,9 @@ remote.OnServerEvent:Connect(function(player, actionName)
 				name = "FeralLeapClaw",
 				showVisual = true,
 				visualColor = Color3.new(1, 0, 0),
-				delay = ServerConfigs.BrawlerSkills.FeralLeap.hitboxDelay
+				delay = ServerConfigs.BrawlerSkills.FeralLeap.hitboxDelay,
+				actionType = "feralleap",
+				classType = "Brawler"
 			})
 		end)
 		

@@ -236,7 +236,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 			name = "PiercingArrow",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.5, 0), -- Orange for flaming arrow
-			delay = ServerConfigs.ArcherSkills.PiercingShot.hitboxDelay
+			delay = ServerConfigs.ArcherSkills.PiercingShot.hitboxDelay,
+			actionType = "piercingShot",
+			classType = "Archer"
 		})
 
 		-- Auto cleanup

@@ -199,7 +199,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			character = character,
 			name = "Wakizashi",
 			showVisual = true,
-			visualColor = Color3.new(0, 0.5, 1) -- Light blue
+			visualColor = Color3.new(0, 0.5, 1), -- Light blue
+			actionType = "wakizashi",
+			classType = "Samurai"
 		})
 
 		-- Auto cleanup

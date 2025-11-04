@@ -163,17 +163,17 @@ ServerConfigs.Hitboxes = {
 				idle = 1.0,
 				run = 1.0,
 				jump = 1.0,
-				combo1 = 1.0,
-				combo2 = 1.0,
-				combo3 = 1.0,
-				moveAttack = 1.0,
-				jumpAttack = 1.0,
+				combo1 = 1,
+				combo2 = 1,
+				combo3 = 1,
+				moveAttack = 1,
+				jumpAttack = 1,
 				block = 1.0,
-				kozuki = 1.0,
-				wakizashi = 1.0,
-				banzai = 1.0,
-				bushido = 1.0,
-				zantetsuken = 1.0,
+				kozuki = 1,
+				wakizashi = 1,
+				banzai = 1,
+				bushido = 1,
+				zantetsuken = 1,
 				-- Walking speeds (fixed values, not affected by animation speed)
 				walking = {
 					normal = 18,    -- Fixed normal walking speed
@@ -320,7 +320,7 @@ ServerConfigs.Hitboxes = {
 		Knight = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 1,               -- 17.1% of MaxAttack (base: 70 ATK = 12 damage)
+			damage = 0.2,               -- 17.1% of MaxAttack (base: 70 ATK = 12 damage)
 			skill1Damage = 0.429,        -- 42.9% of MaxAttack (base: 70 ATK = 30 damage) - SwordDance
 			skill2Damage = 0.357,        -- 35.7% of MaxAttack (base: 70 ATK = 25 damage) - CycloneSlash
 			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
@@ -877,14 +877,28 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 	local animationSpeed = 1.0 -- Default speed
 	
 	-- Get specific animation speed for the action type and class
-	if classType and ServerConfigs[classType] and ServerConfigs[classType].AnimationSpeeds then
+	-- Try direct lookup first (most reliable - accesses source table directly)
+	if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and 
+	   ServerConfigs.Hitboxes.UnifiedAttacks[classType] and 
+	   ServerConfigs.Hitboxes.UnifiedAttacks[classType].animSpeed then
+		animationSpeed = ServerConfigs.Hitboxes.UnifiedAttacks[classType].animSpeed[actionType] or 1.0
+	-- Fallback to reference lookup (for backward compatibility)
+	elseif classType and ServerConfigs[classType] and ServerConfigs[classType].AnimationSpeeds then
 		animationSpeed = ServerConfigs[classType].AnimationSpeeds[actionType] or 1.0
 	end
 	
 	-- Scale delay inversely with animation speed
-	-- If animation is 2x faster, delays should be 0.5x (half the time)
-	-- If animation is 0.5x slower, delays should be 2x (double the time)
-	return baseDelay / animationSpeed
+	-- If animation is 2x faster, delays should be 0.5x (half the time) - hitbox appears EARLIER
+	-- If animation is 0.5x slower, delays should be 2x (double the time) - hitbox appears LATER
+	local scaledDelay = baseDelay / animationSpeed
+	
+	-- Debug: verify lookup and calculation (uncomment to debug)
+	-- if actionType == "wakizashi" then
+	-- 	print(string.format("[getScaledDelay] classType=%s, actionType=%s, animationSpeed=%s, baseDelay=%s, scaledDelay=%s", 
+	-- 		tostring(classType), tostring(actionType), tostring(animationSpeed), tostring(baseDelay), tostring(scaledDelay)))
+	-- end
+	
+	return scaledDelay
 end
 
 -- ========================================

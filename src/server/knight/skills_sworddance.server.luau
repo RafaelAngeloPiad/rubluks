@@ -175,7 +175,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "SwordDanceSword1",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
-			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
+			actionType = "sworddance",
+			classType = "Knight"
 		})
 
 		-- Cleanup after ilang segundo (just in case)
@@ -214,7 +216,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "SwordDanceSword2",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
-			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
+			actionType = "sworddance",
+			classType = "Knight"
 		})
 
 		-- Cleanup after ilang segundo (just in case)
@@ -253,7 +257,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "SwordDanceSword3",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
-			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
+			actionType = "sworddance",
+			classType = "Knight"
 		})
 
 		-- Cleanup after ilang segundo (just in case)
@@ -292,7 +298,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			name = "SwordDanceSword4",
 			showVisual = true,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
-			delay = SWORDDANCE_CONFIG.swordHitboxDelay
+			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
+			actionType = "sworddance",
+			classType = "Knight"
 		})
 
 		-- Cleanup after ilang segundo (just in case)
