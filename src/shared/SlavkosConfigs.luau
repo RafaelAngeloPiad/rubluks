@@ -64,6 +64,63 @@ ServerConfigs.Hitbox = {
 			headerColor = Color3.new(1, 0.8, 0), -- Header text color
 			headerSize = 14, -- Header font size
 			updateRate = 0.1 -- Update frequency in seconds
+		},
+		
+		-- Status Ailment Configuration
+		statusAilments = {
+			stun = {
+				defaultDuration = 2.0, -- Default duration in seconds
+				highlightColor = {
+					fillColor = Color3.new(0.5, 0.5, 0.5), -- Grey
+					fillTransparency = 0.7,
+					outlineColor = Color3.new(0.5, 0.5, 0.5), -- Grey
+					outlineTransparency = 0
+				}
+			},
+			poison = {
+				defaultDuration = 5.0, -- Default duration in seconds
+				defaultDPS = 5, -- Default damage per second
+				defaultTickInterval = 1.0, -- Default tick interval in seconds
+				highlightColor = {
+					fillColor = Color3.new(0.5, 0, 0.5), -- Purple
+					fillTransparency = 0.7,
+					outlineColor = Color3.new(0.5, 0, 0.5), -- Purple
+					outlineTransparency = 0
+				}
+			},
+			burn = {
+				defaultDuration = 5.0, -- Default duration in seconds
+				defaultDPS = 5, -- Default damage per second
+				defaultTickInterval = 1.0, -- Default tick interval in seconds
+				highlightColor = {
+					fillColor = Color3.new(1, 0.5, 0), -- Orange
+					fillTransparency = 0.7,
+					outlineColor = Color3.new(1, 0.5, 0), -- Orange
+					outlineTransparency = 0
+				}
+			},
+			ice = {
+				defaultDuration = 3.0, -- Default duration in seconds
+				defaultDPS = 3, -- Default damage per second
+				defaultTickInterval = 1.0, -- Default tick interval in seconds
+				slowMultiplier = 0.3, -- 30% movement speed
+				highlightColor = {
+					fillColor = Color3.new(0, 0.5, 1), -- Blue
+					fillTransparency = 0.7,
+					outlineColor = Color3.new(0, 0.5, 1), -- Blue
+					outlineTransparency = 0
+				}
+			},
+			slow = {
+				defaultDuration = 3.0, -- Default duration in seconds
+				slowMultiplier = 0.5, -- 50% movement speed
+				highlightColor = {
+					fillColor = Color3.new(0.5, 0.5, 0.5), -- Gray
+					fillTransparency = 0.7,
+					outlineColor = Color3.new(0.5, 0.5, 0.5), -- Gray
+					outlineTransparency = 0
+				}
+			}
 		}
 }
 

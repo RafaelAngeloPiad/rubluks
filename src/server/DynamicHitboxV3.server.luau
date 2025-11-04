@@ -40,6 +40,10 @@ end
 -- Import HitboxExclusions for mob detection
 local HitboxExclusions = require(game.ReplicatedStorage:WaitForChild("mobs"):WaitForChild("HitboxExclusions"))
 
+-- Import StatusAilmentHandler for status ailments
+-- StatusAilmentHandler is in ReplicatedStorage (from src/shared/)
+local StatusAilmentHandler = require(game.ReplicatedStorage:WaitForChild("StatusAilmentHandler"))
+
 -- ========================================
 -- DEFENSE SYSTEM
 -- ========================================
@@ -406,6 +410,52 @@ local function createDamageNumber(model, damage)
 	end)
 end
 
+-- Function to apply status ailments from hitbox config
+-- @param model: Target model to apply ailment to
+-- @param config: Hitbox config that may contain statusAilment field
+local function applyStatusAilmentFromConfig(model, config)
+	if not model or not config then return end
+	
+	-- Check if status ailment is configured
+	local statusAilment = config.statusAilment
+	if not statusAilment then return end
+	
+	-- Validate ailment type (accept lowercase string like "stun", "poison", etc.)
+	local ailmentType = statusAilment.type
+	if not ailmentType then return end
+	
+	-- Convert to lowercase for lookup
+	local ailmentTypeLower = string.lower(ailmentType)
+	
+	-- Map to AilmentTypes constant (handles both "stun" and "STUN" input)
+	local ailmentTypeConstant = nil
+	if ailmentTypeLower == "stun" then
+		ailmentTypeConstant = StatusAilmentHandler.AilmentTypes.STUN
+	elseif ailmentTypeLower == "poison" then
+		ailmentTypeConstant = StatusAilmentHandler.AilmentTypes.POISON
+	elseif ailmentTypeLower == "burn" then
+		ailmentTypeConstant = StatusAilmentHandler.AilmentTypes.BURN
+	elseif ailmentTypeLower == "ice" then
+		ailmentTypeConstant = StatusAilmentHandler.AilmentTypes.ICE
+	elseif ailmentTypeLower == "slow" then
+		ailmentTypeConstant = StatusAilmentHandler.AilmentTypes.SLOW
+	end
+	
+	if not ailmentTypeConstant then return end
+	
+	-- Build ailment config
+	local ailmentConfig = {
+		duration = statusAilment.duration,
+		chance = statusAilment.chance or 100, -- Default 100% chance
+		dps = statusAilment.dps,
+		tickInterval = statusAilment.tickInterval,
+		slowMultiplier = statusAilment.slowMultiplier
+	}
+	
+	-- Apply the ailment
+	StatusAilmentHandler.apply(model, ailmentTypeConstant, ailmentConfig)
+end
+
 -- Function to apply knockback to mobs when hit by players
 local function applyKnockback(attacker, target)
 	-- Only apply knockback when player attacks mob
@@ -620,6 +670,9 @@ function _G.createStaticHitbox(config)
 						
 						-- Create damage number display (show total damage)
 						createDamageNumber(model, damage)
+						
+						-- Apply status ailments if configured (optional)
+						applyStatusAilmentFromConfig(model, config)
 					end
 				end
 			end
@@ -771,6 +824,9 @@ function _G.createStaticDOTHitbox(config)
 							
 							-- Create damage number display (show total damage)
 							createDamageNumber(model, damage)
+							
+							-- Apply status ailments if configured (optional)
+							applyStatusAilmentFromConfig(model, config)
 						end
 					end
 				end
@@ -935,6 +991,9 @@ function _G.createTravelingHitbox(config)
 							
 							-- Create damage number display (show total damage)
 							createDamageNumber(model, damage)
+							
+							-- Apply status ailments if configured (optional)
+							applyStatusAilmentFromConfig(model, config)
 						end
 					end
 				end
@@ -1062,6 +1121,9 @@ function _G.createTravelingDOTHitbox(config)
 							
 							-- Create damage number display (show total damage)
 							createDamageNumber(model, damage)
+							
+							-- Apply status ailments if configured (optional)
+							applyStatusAilmentFromConfig(model, config)
 						end
 					end
 				end
@@ -1271,6 +1333,10 @@ function _G.createProjectileHitbox(config)
 								
 								-- Create damage number display (show total damage)
 								createDamageNumber(model, damage)
+								
+								-- Apply status ailments if configured (optional)
+								applyStatusAilmentFromConfig(model, config)
+								
 								hitSomething = true
 							end
 						end
