@@ -277,6 +277,10 @@ function _G.applyBuff(player, buffName, buffConfig)
 			local newHealth = math.min(buffedHealth * healthPercentage, buffedHealth)
 			humanoid.Health = newHealth
 		end
+		
+	elseif buffName == "BloodThirst" then
+		-- BloodThirst: Provides lifesteal (no stat modifications, just tracking)
+		-- Lifesteal is applied automatically in hitbox creation
 	end
 	
 	-- Track buff
@@ -426,6 +430,9 @@ function _G.removeBuff(player, buffName)
 			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
 			humanoid.Health = newHealth
 		end
+		
+	elseif buffName == "BloodThirst" then
+		-- BloodThirst: No stat restoration needed (no stat modifications)
 	end
 	
 	-- Remove buff tracking
@@ -520,6 +527,33 @@ function _G.getActiveBuffs(player)
 	end
 	
 	return active
+end
+
+-- Function to get player's active lifesteal percentage from buffs
+-- @param player: Player instance
+-- @return: Lifesteal percentage (0.03 = 3%) or nil if no lifesteal buff active
+function _G.getPlayerLifestealPercentage(player)
+	if not player or not playerBuffs[player] then
+		return nil
+	end
+	
+	-- Check for BloodThirst buff
+	if playerBuffs[player]["BloodThirst"] then
+		local buffData = playerBuffs[player]["BloodThirst"]
+		-- Check if buff is still active (not expired)
+		if buffData and buffData.config and buffData.endTime then
+			local currentTime = tick()
+			if currentTime < buffData.endTime then
+				-- Buff is still active
+				return buffData.config.lifestealPercentage
+			else
+				-- Buff expired, remove it (safety cleanup)
+				playerBuffs[player]["BloodThirst"] = nil
+			end
+		end
+	end
+	
+	return nil
 end
 
 -- Clean up buffs when player leaves

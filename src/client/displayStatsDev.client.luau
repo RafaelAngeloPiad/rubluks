@@ -493,6 +493,53 @@ local function updateStatsDisplay()
 						layoutOrder = layoutOrder + 1
 					end
 				end
+			elseif buffName == "BloodThirst" then
+				hasBuffsOrPassives = true
+				-- Calculate BloodThirst lifesteal percentage
+				local bloodThirstLifesteal = 0
+				
+				-- Get current level to get lifesteal percentage
+				local level = leaderstats:FindFirstChild("Level")
+				if level and ConfigModule and ConfigModule.BrawlerBuffs then
+					local buffConfig = ConfigModule.getBuffConfig("BloodThirst", level.Value)
+					if buffConfig then
+						-- BloodThirst provides lifesteal percentage
+						bloodThirstLifesteal = buffConfig.lifestealPercentage
+					end
+				end
+				
+				-- Display lifesteal percentage (separate from timer)
+				local buffText = ""
+				if bloodThirstLifesteal > 0 then
+					local lifestealPercent = math.floor(bloodThirstLifesteal * 100)
+					buffText = string.format("%d%% Lifesteal", lifestealPercent)
+				else
+					buffText = "Active"
+				end
+				
+				statLabels["Buff_BloodThirst"] = createStatRow("Blood Thirst", buffText, Color3.fromRGB(100, 255, 100), layoutOrder)
+				layoutOrder = layoutOrder + 1
+				
+				-- Display timer separately (if available)
+				local buffDurations = leaderstats:FindFirstChild("BuffDurations")
+				if buffDurations then
+					local buffDuration = buffDurations:FindFirstChild(buffName)
+					if buffDuration then
+						local remaining = math.max(0, math.floor(buffDuration.Value))
+						local minutes = math.floor(remaining / 60)
+						local seconds = remaining % 60
+						local durationText = ""
+						
+						if minutes > 0 then
+							durationText = string.format("%dm %ds", minutes, seconds)
+						else
+							durationText = string.format("%ds", seconds)
+						end
+						
+						statLabels["Buff_BloodThirst_Timer"] = createStatRow("  └ Timer", durationText, Color3.fromRGB(150, 200, 255), layoutOrder)
+						layoutOrder = layoutOrder + 1
+					end
+				end
 			end
 		end
 	end

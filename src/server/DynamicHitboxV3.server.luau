@@ -535,16 +535,30 @@ local function applyStatusAilmentFromConfig(model, config)
 	StatusAilmentHandler.apply(model, ailmentTypeConstant, ailmentConfig)
 end
 
--- Function to apply lifesteal from hitbox config
+-- Function to apply lifesteal from hitbox config or active buffs
 -- @param attacker: The attacker model (character) that will be healed
 -- @param config: Hitbox config that may contain lifesteal field
 -- @param totalDamage: Total damage dealt (damageToHealth + damageToDefense)
 local function applyLifestealFromConfig(attacker, config, totalDamage)
 	if not attacker or not config or not totalDamage or totalDamage <= 0 then return end
 	
-	-- Check if lifesteal is configured
+	-- Check if attacker is a player (for buff lifesteal)
+	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
+	
+	-- Get lifesteal percentage from active buffs (BloodThirst) - only for players
+	local buffLifestealPercentage = nil
+	if attackerPlayer then
+		-- Check if function exists (defensive check)
+		if _G.getPlayerLifestealPercentage then
+			buffLifestealPercentage = _G.getPlayerLifestealPercentage(attackerPlayer)
+		end
+	end
+	
+	-- Check if lifesteal is configured in hitbox config
 	local lifesteal = config.lifesteal
-	if not lifesteal then return end
+	
+	-- If no lifesteal from config or buff, return
+	if not lifesteal and not buffLifestealPercentage then return end
 	
 	-- Get attacker's humanoid
 	local attackerHumanoid = attacker:FindFirstChildOfClass("Humanoid")
@@ -553,13 +567,20 @@ local function applyLifestealFromConfig(attacker, config, totalDamage)
 	-- Calculate healing amount
 	local healingAmount = 0
 	
-	-- Percentage-based lifesteal (e.g., 0.5 = 50% of damage dealt)
-	if lifesteal.percentage then
+	-- Percentage-based lifesteal from hitbox config (e.g., 0.5 = 50% of damage dealt)
+	-- Works for both players and mobs
+	if lifesteal and lifesteal.percentage then
 		healingAmount = healingAmount + (totalDamage * lifesteal.percentage)
 	end
 	
-	-- Flat amount lifesteal (e.g., 10 = flat 10 HP healed)
-	if lifesteal.flatAmount then
+	-- Percentage-based lifesteal from active buff (BloodThirst) - only for players
+	if buffLifestealPercentage then
+		healingAmount = healingAmount + (totalDamage * buffLifestealPercentage)
+	end
+	
+	-- Flat amount lifesteal from hitbox config (e.g., 10 = flat 10 HP healed)
+	-- Works for both players and mobs
+	if lifesteal and lifesteal.flatAmount then
 		healingAmount = healingAmount + lifesteal.flatAmount
 	end
 	

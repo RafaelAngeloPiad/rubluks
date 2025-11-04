@@ -60,6 +60,32 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	-- AURA marker (from original Bloodthirst.lua)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
+		-- Apply buff when aura starts
+		local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			local level = leaderstats:FindFirstChild("Level")
+			if level then
+				local buffConfig = ServerConfigs.getBuffConfig("BloodThirst", level.Value)
+				if buffConfig then
+					-- Apply buff using global function
+					_G.applyBuff(player, "BloodThirst", buffConfig)
+				else
+					-- Buff not unlocked - send warning to client
+					local minLevel = ServerConfigs.getBuffMinLevel("BloodThirst")
+					if minLevel then
+						-- Use StarterGui to show notification
+						local StarterGui = game:GetService("StarterGui")
+						StarterGui:SetCore("SendNotification", {
+							Title = "Blood Thirst Not Unlocked",
+							Text = string.format("Blood Thirst requires Level %d. You are Level %d.", minLevel, level.Value),
+							Duration = 5,
+							Button1 = "OK"
+						})
+					end
+				end
+			end
+		end
 
 		local vfx = ReplicatedStorage.Bloodthirst:WaitForChild("Bloodthirst"):Clone()
 		vfx.Parent = workspace

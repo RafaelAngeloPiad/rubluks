@@ -1525,61 +1525,122 @@ ServerConfigs.KnightBuffs = {
 	}
 }
 
+-- Brawler Buffs
+ServerConfigs.BrawlerBuffs = {
+	BloodThirst = {
+		-- Buff: Provides lifesteal based on Attack percentage
+		levels = {
+			[5] = {
+				lifestealPercentage = 0.03,  -- 3% of Attack as lifesteal (ATK*0.03)
+				duration = 60                 -- 60 seconds
+			},
+			[15] = {
+				lifestealPercentage = 0.05,  -- 5% of Attack as lifesteal (ATK*0.05)
+				duration = 80                 -- 80 seconds
+			},
+			[25] = {
+				lifestealPercentage = 0.08,  -- 8% of Attack as lifesteal (ATK*0.08)
+				duration = 100                -- 100 seconds
+			},
+			[35] = {
+				lifestealPercentage = 0.1,   -- 10% of Attack as lifesteal (ATK*0.1)
+				duration = 120                -- 120 seconds
+			},
+			[45] = {
+				lifestealPercentage = 0.12,  -- 12% of Attack as lifesteal (ATK*0.12)
+				duration = 180                -- 180 seconds
+			}
+		}
+	}
+}
+
 -- Function to get buff config for a level
--- @param buffName: "Warcry" or "WarriorMight"
+-- @param buffName: "Warcry", "WarriorMight", or "BloodThirst"
 -- @param playerLevel: Player's current level
 -- @return: Buff config for that level or nil if not unlocked
 function ServerConfigs.getBuffConfig(buffName, playerLevel)
+	-- Check Knight buffs first
 	local classBuffs = ServerConfigs.KnightBuffs
-	if not classBuffs or not classBuffs[buffName] then
-		return nil
-	end
-	
-	local buffLevels = classBuffs[buffName].levels
-	if not buffLevels then
-		return nil
-	end
-	
-	-- Find the highest unlocked level for this buff
-	local highestUnlocked = nil
-	for level, config in pairs(buffLevels) do
-		if playerLevel >= level then
-			if not highestUnlocked or level > highestUnlocked then
-				highestUnlocked = level
+	if classBuffs and classBuffs[buffName] then
+		local buffLevels = classBuffs[buffName].levels
+		if buffLevels then
+			-- Find the highest unlocked level for this buff
+			local highestUnlocked = nil
+			for level, config in pairs(buffLevels) do
+				if playerLevel >= level then
+					if not highestUnlocked or level > highestUnlocked then
+						highestUnlocked = level
+					end
+				end
+			end
+			
+			if highestUnlocked then
+				return buffLevels[highestUnlocked]
 			end
 		end
 	end
 	
-	if highestUnlocked then
-		return buffLevels[highestUnlocked]
+	-- Check Brawler buffs
+	local brawlerBuffs = ServerConfigs.BrawlerBuffs
+	if brawlerBuffs and brawlerBuffs[buffName] then
+		local buffLevels = brawlerBuffs[buffName].levels
+		if buffLevels then
+			-- Find the highest unlocked level for this buff
+			local highestUnlocked = nil
+			for level, config in pairs(buffLevels) do
+				if playerLevel >= level then
+					if not highestUnlocked or level > highestUnlocked then
+						highestUnlocked = level
+					end
+				end
+			end
+			
+			if highestUnlocked then
+				return buffLevels[highestUnlocked]
+			end
+		end
 	end
 	
 	return nil
 end
 
 -- Function to get minimum required level for a buff
--- @param buffName: "Warcry" or "WarriorMight"
+-- @param buffName: "Warcry", "WarriorMight", or "BloodThirst"
 -- @return: Minimum level required or nil if buff doesn't exist
 function ServerConfigs.getBuffMinLevel(buffName)
+	-- Check Knight buffs first
 	local classBuffs = ServerConfigs.KnightBuffs
-	if not classBuffs or not classBuffs[buffName] then
-		return nil
-	end
-	
-	local buffLevels = classBuffs[buffName].levels
-	if not buffLevels then
-		return nil
-	end
-	
-	-- Find the lowest level requirement
-	local minLevel = nil
-	for level, _ in pairs(buffLevels) do
-		if not minLevel or level < minLevel then
-			minLevel = level
+	if classBuffs and classBuffs[buffName] then
+		local buffLevels = classBuffs[buffName].levels
+		if buffLevels then
+			-- Find the lowest level requirement
+			local minLevel = nil
+			for level, _ in pairs(buffLevels) do
+				if not minLevel or level < minLevel then
+					minLevel = level
+				end
+			end
+			return minLevel
 		end
 	end
 	
-	return minLevel
+	-- Check Brawler buffs
+	local brawlerBuffs = ServerConfigs.BrawlerBuffs
+	if brawlerBuffs and brawlerBuffs[buffName] then
+		local buffLevels = brawlerBuffs[buffName].levels
+		if buffLevels then
+			-- Find the lowest level requirement
+			local minLevel = nil
+			for level, _ in pairs(buffLevels) do
+				if not minLevel or level < minLevel then
+					minLevel = level
+				end
+			end
+			return minLevel
+		end
+	end
+	
+	return nil
 end
 
 -- ========================================
