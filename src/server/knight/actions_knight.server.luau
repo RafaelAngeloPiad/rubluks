@@ -787,6 +787,7 @@ local function handleNormalAttack(player)
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
 			
 			-- Check for Knights Blade passive (2nd combo attack x2) - BEFORE creating hitbox
+			-- Similar to how crits work: multiply damage by 2 instead of creating two separate hits
 			local knightsBladeTriggered = false
 			if _G.checkKnightsBladePassive then
 				local success, result = pcall(function()
@@ -797,37 +798,29 @@ local function handleNormalAttack(player)
 				end
 			end
 			
-			-- Create first hitbox (always)
+			-- If Knights Blade passive triggered, multiply damage by 2 (like crit multiplier)
+			-- This creates ONE hit with double damage, not two separate hits
+			local finalDamage = actualDamage
+			local visualColor = hitboxConfig.visualColor
+			if knightsBladeTriggered then
+				-- Double the damage (like crits multiply by critMultiplier/100, but we multiply by 2)
+				finalDamage = math.floor(actualDamage * 2)
+				-- Use orange/gold color to indicate Knights Blade triggered
+				visualColor = Color3.new(1, 0.8, 0)
+			end
+			
+			-- Create ONE hitbox with final damage (doubled if Knights Blade triggered)
 			_G.createStaticHitbox({
 				attachTo = root,
 				offset = hitboxConfig.offset,
 				size = hitboxConfig.size,
-				damage = actualDamage,
+				damage = finalDamage,
 				character = char,
 				name = "Combo2",
 				showVisual = true,
-				visualColor = hitboxConfig.visualColor,
+				visualColor = visualColor,
 				delay = hitboxConfig.delay
 			})
-			
-			-- If Knights Blade passive triggered, create second hitbox (double damage)
-			-- Mimic crit behavior: create second hitbox with same damage at same position with minimal delay
-			if knightsBladeTriggered then
-				-- Create second hitbox immediately after first (very small delay to ensure both hit)
-				-- Use same position and damage to guarantee double damage (like crit but 2x)
-				local secondHitDelay = hitboxConfig.delay + 0.05 -- Very small delay to ensure it's a separate hit but still hits
-				_G.createStaticHitbox({
-					attachTo = root,
-					offset = hitboxConfig.offset,
-					size = hitboxConfig.size,
-					damage = actualDamage, -- Same damage as first hit (total = 2x)
-					character = char,
-					name = "Combo2_KnightsBlade",
-					showVisual = true,
-					visualColor = Color3.new(1, 0.8, 0), -- Orange/gold color to indicate passive trigger
-					delay = secondHitDelay
-				})
-			end
 			
 			data.animTrack2.Stopped:Once(function() 
 				data.isAttacking = false 
