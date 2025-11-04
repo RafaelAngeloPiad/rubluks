@@ -96,15 +96,17 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyBrawlerAnimationSpeed(animTrack, "meteordive")
 	
-	-- Lock input for the ultimate
-	remote:FireClient(player, "lock_input")
+	-- Lock movement and stop player during ultimate
+	remote:FireClient(player, "lock_movement")
+	_G.setBrawlerWalkingSpeed(player, "blocking") -- Stop movement completely
 	
 	-- Tell client to play camera sequence
 	remote:FireClient(player, "play_camera_sequence", "meteordive")
 	
-	-- Unlock input when animation ends
+	-- Unlock movement and restore walk speed when animation ends
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
+		remote:FireClient(player, "unlock_movement")
+		_G.setBrawlerWalkingSpeed(player, "normal") -- Restore normal movement
 	end)
 
 	-- Meteor Explosion marker
@@ -145,6 +147,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			size = ServerConfigs.BrawlerSkills.MeteorDive.hitboxSize,
 			damage = actualDamage, -- Damage per tick (calculated from multiplier)
 			damageTickTime = ServerConfigs.BrawlerSkills.MeteorDive.damageTickTime or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultTickTime,
+			duration = 4.0, -- Duration in seconds (matches VFX cleanup time)
 			character = character,
 			name = "MeteorDive Center DOT",
 			showVisual = true,

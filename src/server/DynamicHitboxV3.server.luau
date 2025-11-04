@@ -848,7 +848,7 @@ end
 	
 	SPECIALTY: Damages ALL enemies in area REPEATEDLY every X seconds
 	USE CASE: Fire fields, poison clouds, damage zones
-	DURATION: Lasts until attachTo part is destroyed
+	DURATION: Lasts until attachTo part is destroyed OR duration expires (if duration is specified)
 	
 	EXAMPLE:
 	_G.createStaticDOTHitbox({
@@ -858,6 +858,7 @@ end
 		size = Vector3.new(15, 15, 15),     -- Hitbox dimensions (REQUIRED)
 		damage = 5,                         -- Damage PER TICK (REQUIRED)
 		damageTickTime = 0.5,               -- Seconds between damage ticks (optional, default: 0.5)
+		duration = 4.0,                     -- Optional: Total duration in seconds (if not specified, lasts until attachTo is destroyed)
 		character = character,              -- Player's character to exclude (REQUIRED)
 		name = "FireField",                 -- Hitbox name for debugging (REQUIRED)
 		showVisual = true,                  -- Show debug visual (optional, default: true)
@@ -866,7 +867,7 @@ end
 	})
 ]]
 function _G.createStaticDOTHitbox(config)
-	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime, actionType, classType
+	-- config: cframe OR attachTo, size, damage, character, name, showVisual, visualColor, offset, delay, damageTickTime, duration, actionType, classType
 	local delay = getScaledDelay(config.delay, config.actionType, config.classType)
 	
 	task.delay(delay, function()
@@ -923,7 +924,9 @@ function _G.createStaticDOTHitbox(config)
 		
 		-- Track last tick time - initialize BEFORE connection (matches old working version)
 		local lastTickTime = tick()
+		local startTime = tick() -- Track when hitbox started (for duration check)
 		local active = true
+		local duration = config.duration -- Optional duration limit
 		
 		-- Function to get current hitbox position with offset
 		local function getCurrentHitboxCFrame()
@@ -1012,6 +1015,21 @@ function _G.createStaticDOTHitbox(config)
 				return
 			end
 			
+			-- Check if duration has expired (if duration is specified)
+			if duration and duration > 0 then
+				local currentTime = tick()
+				local elapsed = currentTime - startTime
+				if elapsed >= duration then
+					-- Duration expired, stop hitbox
+					active = false
+					connection:Disconnect()
+					if visual then
+						visual:Destroy()
+					end
+					return
+				end
+			end
+			
 			-- Update visual position to follow attachTo part with offset
 			if visual and attachTo and attachTo.Parent then
 				visual.CFrame = getCurrentHitboxCFrame()
@@ -1030,6 +1048,20 @@ function _G.createStaticDOTHitbox(config)
 						visual:Destroy()
 					end
 					return
+				end
+				
+				-- Check if duration has expired (if duration is specified)
+				if duration and duration > 0 then
+					local elapsed = currentTime - startTime
+					if elapsed >= duration then
+						-- Duration expired, stop hitbox
+						active = false
+						connection:Disconnect()
+						if visual then
+							visual:Destroy()
+						end
+						return
+					end
 				end
 				
 				damageInArea()

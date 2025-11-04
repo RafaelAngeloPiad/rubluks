@@ -95,12 +95,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	animTrack:Play()
 	_G.applyBrawlerAnimationSpeed(animTrack, "brawlersroar")
 	
-	-- Lock input only when skill starts
-	remote:FireClient(player, "lock_input")
+	-- Lock movement and stop player during skill
+	remote:FireClient(player, "lock_movement")
+	_G.setBrawlerWalkingSpeed(player, "blocking") -- Stop movement completely
 	
-	-- Unlock input when animation ends
+	-- Unlock movement and restore walk speed when animation ends
 	animTrack.Stopped:Connect(function()
-		remote:FireClient(player, "unlock_input")
+		remote:FireClient(player, "unlock_movement")
+		_G.setBrawlerWalkingSpeed(player, "normal") -- Restore normal movement
 	end)
 
 	-- Roar marker (from original Berserker's Roar.lua)
