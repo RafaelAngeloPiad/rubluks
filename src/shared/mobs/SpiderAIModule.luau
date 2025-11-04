@@ -402,6 +402,14 @@ local function initializeSpider(enemy, variantName)
 	initializeLegs()
 	task.wait(0.1) -- Small delay to ensure initialization
 
+	-- === Calculate spider scale factor (used for all distance-based parameters) ===
+	-- Calculate once at initialization to scale all step distances proportionally
+	local referenceSize = 8 -- Reference size for a "normal" sized spider
+	local rootSize = root.Size
+	local spiderScaleFactor = ((rootSize.X + rootSize.Z) / 2) / referenceSize
+	-- Clamp scale factor to reasonable bounds (0.1 to 2.0)
+	spiderScaleFactor = math.clamp(spiderScaleFactor, 0.1, 2.0)
+	
 	-- === Continuous leg position update (keeps legs aligned with body) ===
 	coroutine.wrap(function()
 		while true do
@@ -425,8 +433,10 @@ local function initializeSpider(enemy, variantName)
 								local groundPos = rayCast.Position
 								local distance = (currentPos - groundPos).Magnitude
 								
-								-- Only make small adjustments (less than 0.5 studs) to prevent dragging
-								if distance > 0.5 and distance < 1.0 then
+								-- Only make small adjustments (scaled thresholds) to prevent dragging
+								local minAdjustDist = 0.5 * spiderScaleFactor
+								local maxAdjustDist = 1.0 * spiderScaleFactor
+								if distance > minAdjustDist and distance < maxAdjustDist then
 									-- Smoothly adjust position to follow body
 									ikTarget.Position = currentPos:Lerp(groundPos, 0.3)
 								end
@@ -466,28 +476,29 @@ local function initializeSpider(enemy, variantName)
 				
 				-- Adaptive step distance: smaller when moving fast, larger when slow
 				-- Base step distance of 1.5, reduces to 1.0 when moving fast, increases to 2.5 when stationary
-				local baseStepDistance = 1.5
+				-- All distances are scaled by the spider's size
+				local baseStepDistance = 1.5 * spiderScaleFactor
 				local stepDistance = baseStepDistance
 				if bodySpeed > 5 then
 					-- Moving fast: reduce step distance to trigger steps more frequently
-					stepDistance = math.max(0.8, baseStepDistance - (bodySpeed - 5) * 0.1)
+					stepDistance = math.max(0.8 * spiderScaleFactor, baseStepDistance - (bodySpeed - 5) * 0.1 * spiderScaleFactor)
 				elseif bodySpeed < 0.5 then
 					-- Moving slow/stationary: increase step distance
-					stepDistance = baseStepDistance + 1.0
+					stepDistance = baseStepDistance + 1.0 * spiderScaleFactor
 				end
 				
 				-- Adaptive step forward: more when moving fast
-				local stepForward = 2
+				local stepForward = 2 * spiderScaleFactor
 				if bodySpeed > 5 then
-					stepForward = 2 + math.min(bodySpeed * 0.2, 2) -- Max 4 studs forward
+					stepForward = (2 + math.min(bodySpeed * 0.2, 2)) * spiderScaleFactor -- Max 4 studs forward (scaled)
 				end
 				
 				-- Adaptive step height: Higher lift for more visible spider-like movement
-				local stepHeight = 2.5 -- Increased from 1 to make legs lift more noticeably
+				local stepHeight = 2.5 * spiderScaleFactor -- Scaled by spider size
 				if bodySpeed > 5 then
-					stepHeight = 2.0 -- Slightly lower when moving fast
+					stepHeight = 2.0 * spiderScaleFactor -- Slightly lower when moving fast
 				elseif bodySpeed < 0.5 then
-					stepHeight = 3.0 -- Higher when stationary/slow
+					stepHeight = 3.0 * spiderScaleFactor -- Higher when stationary/slow
 				end
 				
 				-- Adaptive wait time: Slower, more deliberate steps
