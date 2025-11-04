@@ -152,18 +152,25 @@ local function createButton(text, color, layoutOrder, onClick)
 	return button
 end
 
--- Function to create a stat row with better spacing
+-- Function to create a stat row with vertical layout (name on top, value on bottom) to prevent truncation
 local function createStatRow(statName, value, color, layoutOrder)
 	local statFrame = Instance.new("Frame")
 	statFrame.Name = HttpService:GenerateGUID(false)
-	statFrame.Size = UDim2.new(1, -10, 0, 22)
+	statFrame.Size = UDim2.new(1, -10, 0, 0) -- Height will be set automatically based on content
 	statFrame.BackgroundTransparency = 1
 	statFrame.LayoutOrder = layoutOrder
 	statFrame.Parent = scrollFrame
 	
+	-- Use automatic sizing
+	local statFrameLayout = Instance.new("UIListLayout")
+	statFrameLayout.FillDirection = Enum.FillDirection.Vertical
+	statFrameLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	statFrameLayout.Padding = UDim.new(0, 2)
+	statFrameLayout.Parent = statFrame
+	
 	local statNameLabel = Instance.new("TextLabel")
 	statNameLabel.Name = "Name"
-	statNameLabel.Size = UDim2.new(0.65, -5, 1, 0)
+	statNameLabel.Size = UDim2.new(1, -10, 0, 0) -- Auto size height
 	statNameLabel.Position = UDim2.new(0, 5, 0, 0)
 	statNameLabel.BackgroundTransparency = 1
 	statNameLabel.Text = statName .. ":"
@@ -171,21 +178,34 @@ local function createStatRow(statName, value, color, layoutOrder)
 	statNameLabel.TextSize = 12
 	statNameLabel.Font = Enum.Font.Gotham
 	statNameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	statNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	statNameLabel.TextYAlignment = Enum.TextYAlignment.Top
+	statNameLabel.TextWrapped = true -- Allow text wrapping
+	statNameLabel.TextScaled = false
+	statNameLabel.AutomaticSize = Enum.AutomaticSize.Y -- Auto size to fit content
+	statNameLabel.LayoutOrder = 1
 	statNameLabel.Parent = statFrame
 	
 	local statValueLabel = Instance.new("TextLabel")
 	statValueLabel.Name = "Value"
-	statValueLabel.Size = UDim2.new(0.35, -5, 1, 0)
-	statValueLabel.Position = UDim2.new(0.65, 5, 0, 0)
+	statValueLabel.Size = UDim2.new(1, -10, 0, 0) -- Auto size height
+	statValueLabel.Position = UDim2.new(0, 5, 0, 0)
 	statValueLabel.BackgroundTransparency = 1
 	statValueLabel.Text = tostring(value)
 	statValueLabel.TextColor3 = color or Color3.fromRGB(255, 255, 255)
 	statValueLabel.TextSize = 12
 	statValueLabel.Font = Enum.Font.GothamBold
-	statValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-	statValueLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	statValueLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statValueLabel.TextYAlignment = Enum.TextYAlignment.Top
+	statValueLabel.TextWrapped = true -- Allow text wrapping
+	statValueLabel.TextScaled = false
+	statValueLabel.AutomaticSize = Enum.AutomaticSize.Y -- Auto size to fit content
+	statValueLabel.LayoutOrder = 2
 	statValueLabel.Parent = statFrame
+	
+	-- Update frame size to fit content
+	statFrameLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		statFrame.Size = UDim2.new(1, -10, 0, statFrameLayout.AbsoluteContentSize.Y)
+	end)
 	
 	return statValueLabel
 end
