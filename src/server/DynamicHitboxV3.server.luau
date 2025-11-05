@@ -541,7 +541,8 @@ local function applyStatusAilmentFromConfig(model, config)
 		chance = statusAilment.chance or 100, -- Default 100% chance
 		dps = statusAilment.dps,
 		tickInterval = statusAilment.tickInterval,
-		slowMultiplier = statusAilment.slowMultiplier
+		slowMultiplier = statusAilment.slowMultiplier,
+		skipDefense = statusAilment.skipDefense or false -- If true, bypasses defense for DPS damage
 	}
 	
 	-- Apply the ailment

@@ -35,18 +35,48 @@ if not model or not model.Parent then return end -- Safety check: model must exi
 local humanoid = model:WaitForChild("Humanoid")
 local root = model:WaitForChild("HumanoidRootPart")
 
--- Apply stats
+-- ========================================
+-- STATS ASSIGNMENT GUIDE
+-- ========================================
+-- 
+-- STATS THAT GO TO HUMANOID (Roblox Humanoid properties):
+-- - HP → humanoid.MaxHealth and humanoid.Health (used by Roblox's health system)
+-- - WalkSpeed → humanoid.WalkSpeed (controls movement speed)
+--
+-- STATS THAT GO TO MODEL ATTRIBUTES (read by DynamicHitboxV3):
+-- - Defense → MaxDefense and CurrentDefense attributes (used by defense system)
+-- - DefensePenetration → attribute (reduces target's defense when attacking)
+-- - CritRate → attribute (mob crit chance, used when mob attacks)
+-- - CritMultiplier → attribute (mob crit damage multiplier)
+-- - Damage → attribute (base damage dealt, used by hitbox creation)
+-- - MobVariant → attribute (for display/identification)
+--
+-- STATS THAT ARE LOCAL CONFIG ONLY (not stored anywhere):
+-- - AttackCooldown → used locally in attack logic
+-- - AttackRange → used locally in attack logic
+-- ========================================
+
+-- Apply stats to HUMANOID (Roblox health/movement system)
 humanoid.MaxHealth = MOB_STATS.HP
 humanoid.Health = MOB_STATS.HP
 humanoid.WalkSpeed = MOB_STATS.WalkSpeed
 
+-- Apply stats to MODEL ATTRIBUTES (read by DynamicHitboxV3 damage system)
+-- Defense stats (used when mob takes damage)
 model:SetAttribute("MaxDefense", MOB_STATS.Defense)
-model:SetAttribute("CurrentDefense", MOB_STATS.Defense)
-model:SetAttribute("DefensePenetration", MOB_STATS.DefensePenetration)
-model:SetAttribute("CritRate", MOB_STATS.CritRate)
-model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
-model:SetAttribute("Damage", MOB_STATS.Damage)
+model:SetAttribute("CurrentDefense", MOB_STATS.Defense)  -- Starts at MaxDefense, decreases when taking damage
+
+-- Offensive stats (used when mob attacks)
+model:SetAttribute("DefensePenetration", MOB_STATS.DefensePenetration)  -- Reduces target's defense
+model:SetAttribute("CritRate", MOB_STATS.CritRate)  -- Crit chance (0-100)
+model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)  -- Crit damage multiplier (150 = 1.5x)
+model:SetAttribute("Damage", MOB_STATS.Damage)  -- Base damage dealt
+
+-- Identification (for display/UI)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
+
+-- Note: AttackCooldown and AttackRange are used locally in the attack logic below,
+-- they don't need to be stored as attributes or humanoid properties.
 
 -- Add exclusion tag so mobs don't damage each other
 CollectionService:AddTag(model, "simple_entity")

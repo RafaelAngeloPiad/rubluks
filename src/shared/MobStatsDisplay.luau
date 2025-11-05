@@ -143,20 +143,13 @@ local function createMobStatsDisplay(model)
 	local dmgLabel = createStatRow("Damage: --", 5)
 	local defensePenLabel = createStatRow("DP: --", 6)
 	
-	-- Update function
-	local lastUpdate = 0
+	-- Update function (reads current values from attributes and humanoid)
 	local function updateStats()
 		-- Check if model still exists
 		if not model.Parent or not humanoid.Parent then
 			billboardGui:Destroy()
 			return
 		end
-		
-		local now = tick()
-		if now - lastUpdate < statsConfig.updateRate then
-			return
-		end
-		lastUpdate = now
 		
 		-- Get mob variant
 		local variant = model:GetAttribute("MobVariant") or "Unknown"
@@ -168,7 +161,7 @@ local function createMobStatsDisplay(model)
 		healthLabel.Text = string.format("HP: %.0f/%.0f", currentHealth, maxHealth)
 		
 		-- Color health based on percentage
-		local healthPercent = currentHealth / maxHealth
+		local healthPercent = maxHealth > 0 and (currentHealth / maxHealth) or 0
 		if healthPercent > 0.5 then
 			healthLabel.TextColor3 = Color3.new(0, 1, 0) -- Green
 		elseif healthPercent > 0.2 then
@@ -177,7 +170,7 @@ local function createMobStatsDisplay(model)
 			healthLabel.TextColor3 = Color3.new(1, 0, 0) -- Red
 		end
 		
-		-- Get defense stats from attributes
+		-- Get defense stats from attributes (these are updated by DynamicHitboxV3 when defense is damaged)
 		local currentDefense = model:GetAttribute("CurrentDefense") or 0
 		local maxDefense = model:GetAttribute("MaxDefense") or 0
 		
@@ -189,17 +182,17 @@ local function createMobStatsDisplay(model)
 			defenseLabel.TextColor3 = Color3.new(0.5, 0.5, 0.5) -- Gray
 		end
 		
-		-- Get crit stats
+		-- Get crit stats from attributes
 		local critRate = model:GetAttribute("CritRate") or 0
-		local critMult = model:GetAttribute("CritMultiplier") or 100
+		local critMult = model:GetAttribute("CritMultiplier") or 150
 		critRateLabel.Text = string.format("Crit: %.0f%%", critRate)
 		critMultLabel.Text = string.format("Crit Mult: %.1fx", critMult / 100)
 		
-		-- Get damage
+		-- Get damage from attributes (this is what the hitbox uses)
 		local damage = model:GetAttribute("Damage") or 0
 		dmgLabel.Text = string.format("Damage: %.0f", damage)
 		
-		-- Get defense penetration
+		-- Get defense penetration from attributes
 		local defensePen = model:GetAttribute("DefensePenetration") or 0
 		defensePenLabel.Text = string.format("DP: %.0f", defensePen)
 	end
@@ -207,17 +200,43 @@ local function createMobStatsDisplay(model)
 	-- Initial update
 	updateStats()
 	
-	-- Set up update loop
+	-- Set up update loop with throttling (to avoid excessive updates)
+	local lastUpdate = 0
 	local connection
 	connection = RunService.Heartbeat:Connect(function()
-		updateStats()
+		local now = tick()
+		-- Only update if enough time has passed (throttle updates)
+		if now - lastUpdate >= statsConfig.updateRate then
+			updateStats()
+			lastUpdate = now
+		end
 	end)
+	
+	-- Also listen to attribute changes for immediate updates (especially for CurrentDefense)
+	-- Use GetAttributeChangedSignal for each attribute we care about
+	local attributeConnections = {}
+	local function setupAttributeListeners()
+		local attributesToWatch = {"CurrentDefense", "MaxDefense", "Damage", "DefensePenetration", "CritRate", "CritMultiplier", "MobVariant"}
+		for _, attrName in ipairs(attributesToWatch) do
+			local connection = model:GetAttributeChangedSignal(attrName):Connect(function()
+				updateStats()
+			end)
+			table.insert(attributeConnections, connection)
+		end
+	end
+	setupAttributeListeners()
 	
 	-- Cleanup on model removal
 	model.AncestryChanged:Connect(function()
 		if not model.Parent then
 			if connection then
 				connection:Disconnect()
+			end
+			-- Disconnect all attribute listeners
+			for _, conn in ipairs(attributeConnections) do
+				if conn then
+					conn:Disconnect()
+				end
 			end
 			billboardGui:Destroy()
 		end

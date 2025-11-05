@@ -25,7 +25,8 @@ local POISON_CONFIG = {
 	chance = 50,             -- 50% chance to poison on hit
 	duration = 5.0,          -- Poison duration in seconds
 	dps = 5,                 -- Damage per second
-	tickInterval = 1.0       -- Seconds between damage ticks
+	tickInterval = 1.0,      -- Seconds between damage ticks
+	skipDefense = true       -- Bypasses all defense, applies poison damage directly to health
 }
 
 -- Radius and return configuration (same as GolemSolo)

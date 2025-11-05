@@ -385,11 +385,22 @@ local function removeAilmentEffects(model, ailmentType)
 end
 
 -- Function to apply DPS damage
-local function applyDPSDamage(model, ailmentType, damage, tickInterval)
+local function applyDPSDamage(model, ailmentType, damage, tickInterval, skipDefense)
 	if not model then return end
 	
 	local humanoid = getHumanoid(model)
 	if not humanoid or humanoid.Health <= 0 then return end
+	
+	-- If skipDefense is true, bypass all defense calculations and apply damage directly to health
+	-- This works for all status ailments (POISON, BURN, ICE)
+	if skipDefense then
+		humanoid:TakeDamage(damage)
+		-- Create damage number display
+		if _G.createDamageNumber then
+			_G.createDamageNumber(model, damage)
+		end
+		return
+	end
 	
 	-- Get defense stats (from DynamicHitboxV3)
 	local currentDefense, maxDefense = 0, 0
@@ -659,10 +670,12 @@ RunService.Heartbeat:Connect(function()
 							local dps = ailmentData.dps or 0
 							local tickInterval = ailmentData.tickInterval or 1.0
 							local lastDPS = ailmentData.lastDPS or ailmentData.startTime
+							-- Get skipDefense from config (if true, bypasses defense for DPS damage)
+							local skipDefense = (ailmentData.config and ailmentData.config.skipDefense) or false
 							
 							if dps > 0 and (currentTime - lastDPS) >= tickInterval then
-								-- Apply DPS damage
-								applyDPSDamage(model, ailmentType, dps, tickInterval)
+								-- Apply DPS damage (with skipDefense option)
+								applyDPSDamage(model, ailmentType, dps, tickInterval, skipDefense)
 								ailmentData.lastDPS = currentTime
 							end
 						end
