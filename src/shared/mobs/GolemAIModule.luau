@@ -26,6 +26,7 @@ local RETURN_WAIT = 2
 local WALK_SPEED_SCALE = 16
 local MIN_WALK_SPEED = 0.5
 local STOP_DELAY = 0.25
+
 -- === TRACKING ===
 -- No need for tracking since each model has its own initializer
 
@@ -173,7 +174,11 @@ local function initializeGolem(monster, variantName)
 						-- Get damage from mob's attribute
 						local damage = monster:GetAttribute("Damage") or 25
 						
-						_G.createStaticHitbox({
+						-- Get status ailment config from MobStatsConfig
+						local stats = MobStatsConfig.getStats(variantName)
+						local statusAilment = stats and stats.StatusAilment or nil
+						
+						local hitboxConfig = {
 							attachTo = root,
 							offset = CFrame.new(0, 0, -4), -- Hitbox in front of golem
 							size = Vector3.new(8, 8, 8), -- 8x8x8 stud hitbox
@@ -184,7 +189,14 @@ local function initializeGolem(monster, variantName)
 							visualColor = Color3.new(1, 0.5, 0), -- Orange color
 							delay = 0.3, -- Delay to sync with animation
 							visualDuration = 0.8
-						})
+						}
+						
+						-- Add status ailment if configured
+						if statusAilment then
+							hitboxConfig.statusAilment = statusAilment
+						end
+						
+						_G.createStaticHitbox(hitboxConfig)
 					end
 					
 					-- Wait for animation to stop with timeout (same as spider)

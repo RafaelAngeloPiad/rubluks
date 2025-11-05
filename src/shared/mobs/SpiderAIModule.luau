@@ -189,7 +189,11 @@ local function initializeSpider(enemy, variantName)
 					-- Get damage from mob's attribute
 					local damage = enemy:GetAttribute("Damage") or 50
 					
-					_G.createStaticHitbox({
+					-- Get status ailment config from MobStatsConfig
+					local stats = MobStatsConfig.getStats(variantName)
+					local statusAilment = stats and stats.StatusAilment or nil
+					
+					local hitboxConfig = {
 						attachTo = root,
 						offset = CFrame.new(0, 0, -3), -- Hitbox in front of spider
 						size = Vector3.new(6, 6, 6), -- 6x6x6 stud hitbox
@@ -200,7 +204,14 @@ local function initializeSpider(enemy, variantName)
 						visualColor = Color3.new(0.8, 0, 0.8), -- Purple color
 						delay = 0.2, -- Delay to sync with animation
 						visualDuration = 0.6
-					})
+					}
+					
+					-- Add status ailment if configured
+					if statusAilment then
+						hitboxConfig.statusAilment = statusAilment
+					end
+					
+					_G.createStaticHitbox(hitboxConfig)
 				end
 				
 				-- Wait for animation to stop with timeout

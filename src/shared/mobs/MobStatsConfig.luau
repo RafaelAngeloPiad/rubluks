@@ -20,7 +20,12 @@ MobStatsConfig.Golem_Sand = {
 	Damage = 25,
 	XPGain = 20,
 	LvlCap = 7,
-	CappedXPGain = 0.5
+	CappedXPGain = 0.5,
+	StatusAilment = {
+		type = "stun",
+		chance = 30,
+		duration = 1.5
+	}
 }
 
 MobStatsConfig.Golem_Ice = {
@@ -29,7 +34,12 @@ MobStatsConfig.Golem_Ice = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	StatusAilment = {
+		type = "stun",
+		chance = 35,
+		duration = 1.8
+	}
 }
 
 MobStatsConfig.Golem_Lava = {
@@ -38,7 +48,12 @@ MobStatsConfig.Golem_Lava = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	StatusAilment = {
+		type = "stun",
+		chance = 40,
+		duration = 2.0
+	}
 }
 
 MobStatsConfig.Golem_Woodland = {
@@ -47,7 +62,12 @@ MobStatsConfig.Golem_Woodland = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	StatusAilment = {
+		type = "stun",
+		chance = 45,
+		duration = 2.2
+	}
 }
 
 MobStatsConfig.Golem_Lightning = {
@@ -56,7 +76,12 @@ MobStatsConfig.Golem_Lightning = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	StatusAilment = {
+		type = "stun",
+		chance = 50,
+		duration = 2.5
+	}
 }
 
 MobStatsConfig.Golem_Crystal = {
@@ -65,7 +90,12 @@ MobStatsConfig.Golem_Crystal = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	StatusAilment = {
+		type = "stun",
+		chance = 55,
+		duration = 2.8
+	}
 }
 
 MobStatsConfig.Golem_Poison = {
@@ -74,7 +104,12 @@ MobStatsConfig.Golem_Poison = {
 	DefensePenetration = 50,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 25
+	Damage = 25,
+	StatusAilment = {
+		type = "stun",
+		chance = 60,
+		duration = 3.0
+	}
 }
 
 -- ========================================
@@ -87,7 +122,15 @@ MobStatsConfig.Spider_Sand = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 30,
+		duration = 4.0,
+		dps = 3,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Ice = {
@@ -96,7 +139,15 @@ MobStatsConfig.Spider_Ice = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 35,
+		duration = 4.5,
+		dps = 4,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Fire = {
@@ -105,7 +156,15 @@ MobStatsConfig.Spider_Fire = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 40,
+		duration = 5.0,
+		dps = 5,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Woodland = {
@@ -114,7 +173,15 @@ MobStatsConfig.Spider_Woodland = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 45,
+		duration = 5.5,
+		dps = 6,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Lightning = {
@@ -123,7 +190,15 @@ MobStatsConfig.Spider_Lightning = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 50,
+		duration = 6.0,
+		dps = 7,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Crystal = {
@@ -132,7 +207,15 @@ MobStatsConfig.Spider_Crystal = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 55,
+		duration = 6.5,
+		dps = 8,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Poison = {
@@ -141,7 +224,15 @@ MobStatsConfig.Spider_Poison = {
 	DefensePenetration = 20,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 60,
+		duration = 7.0,
+		dps = 10,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 MobStatsConfig.Spider_Dark = {
@@ -150,7 +241,15 @@ MobStatsConfig.Spider_Dark = {
 	DefensePenetration = 0,
 	CritRate = 0,
 	CritMultiplier = 150,
-	Damage = 50
+	Damage = 50,
+	StatusAilment = {
+		type = "poison",
+		chance = 40,
+		duration = 5.0,
+		dps = 5,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }
 
 -- ========================================
