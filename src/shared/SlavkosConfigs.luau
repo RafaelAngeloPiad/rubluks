@@ -10,7 +10,7 @@ local ServerConfigs = {}
 -- ========================================
 
 ServerConfigs.Hitbox = {
-	transparency = 0.9, -- Global transparency for all hitbox visuals
+	transparency = 1, -- Global transparency for all hitbox visuals
 	
 		-- Highlighting Configuration
 		highlighting = {

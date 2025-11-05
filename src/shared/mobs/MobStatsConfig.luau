@@ -253,6 +253,129 @@ MobStatsConfig.Spider_Dark = {
 }
 
 -- ========================================
+-- Wraith Stats
+-- ========================================
+
+MobStatsConfig.Wraith_Sand = {
+	HP = 400,
+	Defense = 3,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 30,
+		duration = 4.0,
+		dps = 3,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+MobStatsConfig.Wraith_Ice = {
+	HP = 400,
+	Defense = 9,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 35,
+		duration = 4.5,
+		dps = 4,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+MobStatsConfig.Wraith_Lava = {
+	HP = 400,
+	Defense = 15,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 40,
+		duration = 5.0,
+		dps = 5,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+MobStatsConfig.Wraith_Woodland = {
+	HP = 400,
+	Defense = 20,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 45,
+		duration = 5.5,
+		dps = 6,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+MobStatsConfig.Wraith_Lightning = {
+	HP = 400,
+	Defense = 21,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 50,
+		duration = 6.0,
+		dps = 7,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+MobStatsConfig.Wraith_Crystal = {
+	HP = 400,
+	Defense = 33,
+	DefensePenetration = 0,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 55,
+		duration = 6.5,
+		dps = 8,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+MobStatsConfig.Wraith_Poison = {
+	HP = 400,
+	Defense = 39,
+	DefensePenetration = 50,
+	CritRate = 0,
+	CritMultiplier = 150,
+	Damage = 25,
+	StatusAilment = {
+		type = "burn",
+		chance = 60,
+		duration = 7.0,
+		dps = 10,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
+}
+
+-- ========================================
 -- HELPER FUNCTIONS
 -- ========================================
 
