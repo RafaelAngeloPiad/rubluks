@@ -149,8 +149,8 @@ local function initializeSpider(enemy, variantName)
 		MobStatsDisplay.createMobStatsDisplay(enemy)
 	end
 
-	for _, v in ipairs(ikTargets:GetChildren()) do if v:IsA("BasePart") then v.Transparency = 1 end end
-	for _, v in ipairs(rayCastParts:GetChildren()) do if v:IsA("BasePart") then v.Transparency = 1 end end
+	-- for _, v in ipairs(ikTargets:GetChildren()) do if v:IsA("BasePart") then v.Transparency = 1 end end
+	-- for _, v in ipairs(rayCastParts:GetChildren()) do if v:IsA("BasePart") then v.Transparency = 1 end end
 
 	local rayCastParams = RaycastParams.new()
 	rayCastParams.FilterDescendantsInstances = { enemy }
