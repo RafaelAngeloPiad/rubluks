@@ -3,6 +3,7 @@
 -- Enhanced with pole system and proper leg grouping for better movement
 
 local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
@@ -143,6 +144,9 @@ local function initializeSpider(enemy, variantName)
 
 	local ikTargets = enemy:WaitForChild("IkTargets")
 	local rayCastParts = enemy:WaitForChild("RayCastParts")
+	
+	-- Add exclusion tag so spiders don't damage each other
+	CollectionService:AddTag(enemy, "spider_entity")
 	
 	-- Create floating stats display GUI (if enabled in config)
 	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then

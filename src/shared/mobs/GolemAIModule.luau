@@ -1,6 +1,8 @@
 -- Golem AI Module
 -- Centralized AI logic that can be called from anywhere
 
+local CollectionService = game:GetService("CollectionService")
+
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
@@ -94,6 +96,9 @@ local function initializeGolem(monster, variantName)
 		warn("Golem missing HumanoidRootPart:", monster.Name)
 		return
 	end
+	
+	-- Add exclusion tag so golems don't damage each other
+	CollectionService:AddTag(monster, "golem_entity")
 	
 	-- Create floating stats display GUI (if enabled in config)
 	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
