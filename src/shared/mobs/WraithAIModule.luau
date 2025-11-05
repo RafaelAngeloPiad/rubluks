@@ -213,7 +213,8 @@ local function initializeWraith(wraith, variantName)
 					fire.Enabled = true
 				end
 				
-				-- Disable collision when floating
+				-- Anchor and disable collision when floating to prevent physics interference
+				root.Anchored = true
 				root.CanCollide = false
 				
 				-- Float up
@@ -227,12 +228,24 @@ local function initializeWraith(wraith, variantName)
 					shootHomingProjectile(nearest)
 				end
 				
+				-- Update lerp float - only affects Y position
+				currentY = currentY + (targetY - currentY) * FLOAT_SPEED
+				
+				-- Preserve original X/Z position, only update Y
+				local targetPos = Vector3.new(position.X, currentY, position.Z)
+				
 				local lookDirection = (nearest.Position - position).Unit
 				if lookDirection.Magnitude > 0.1 then
-					-- Only rotate on Y axis (horizontal rotation)
+					-- Only rotate on Y axis (horizontal rotation), preserve the floating Y position
 					local lookDirection2D = Vector3.new(lookDirection.X, 0, lookDirection.Z).Unit
-					local lookCFrame = CFrame.lookAt(root.Position, root.Position + lookDirection2D)
-					root.CFrame = root.CFrame:Lerp(lookCFrame, 0.3)
+					local lookCFrame = CFrame.lookAt(targetPos, targetPos + lookDirection2D)
+					-- Lerp only the rotation part, keep the position fixed
+					local currentRotation = root.CFrame - root.CFrame.Position
+					local targetRotation = lookCFrame - lookCFrame.Position
+					root.CFrame = CFrame.new(targetPos) * currentRotation:Lerp(targetRotation, 0.3)
+				else
+					-- Just update position if no rotation needed
+					root.Position = targetPos
 				end
 			else
 				-- No player detected, turn fire off
@@ -240,18 +253,19 @@ local function initializeWraith(wraith, variantName)
 					fire.Enabled = false
 				end
 				
-				-- Enable collision before falling back down
+				-- Unanchor and enable collision before falling back down
+				root.Anchored = false
 				root.CanCollide = true
 				
 				-- Fall back down
 				targetY = groundY
 				
 				currentTarget = nil
+				
+				-- Update lerp float - only affects Y position
+				currentY = currentY + (targetY - currentY) * FLOAT_SPEED
+				root.Position = Vector3.new(position.X, currentY, position.Z)
 			end
-			
-			-- Simple lerp float - only affects Y position
-			currentY = currentY + (targetY - currentY) * FLOAT_SPEED
-			root.Position = Vector3.new(position.X, currentY, position.Z)
 		end
 	end)
 end
