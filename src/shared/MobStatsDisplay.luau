@@ -3,7 +3,6 @@
 -- Floating GUI above mobs showing real-time stats
 -- ========================================
 
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 -- Import centralized configuration
