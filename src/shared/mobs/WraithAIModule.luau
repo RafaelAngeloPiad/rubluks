@@ -22,6 +22,8 @@ local DETECTION_RANGE = 20
 local ATTACK_COOLDOWN = 2  -- Seconds between attacks
 local MISSILE_SPEED = 20   -- Speed of the homing projectile
 local MISSILE_LIFETIME = 1 -- Seconds before missile despawns
+local FLOAT_HEIGHT = 5  -- Height in studs to float above ground
+local FLOAT_SPEED = 0.08  -- Lerp speed (0.08 = smooth, low performance)
 
 -- === HELPERS ===
 local function HasAnyExcludedTag(model)
@@ -70,6 +72,11 @@ local function initializeWraith(wraith, variantName)
 	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 		MobStatsDisplay.createMobStatsDisplay(wraith)
 	end
+	
+	-- Store original ground Y position
+	local groundY = root.Position.Y
+	local currentY = groundY
+	local targetY = groundY
 	
 	-- Initialize fire as off
 	if fire then
@@ -206,6 +213,12 @@ local function initializeWraith(wraith, variantName)
 					fire.Enabled = true
 				end
 				
+				-- Disable collision when floating
+				root.CanCollide = false
+				
+				-- Float up
+				targetY = groundY + FLOAT_HEIGHT
+				
 				currentTarget = nearest
 				
 				-- Attack if cooldown is ready
@@ -226,8 +239,19 @@ local function initializeWraith(wraith, variantName)
 				if fire then
 					fire.Enabled = false
 				end
+				
+				-- Enable collision before falling back down
+				root.CanCollide = true
+				
+				-- Fall back down
+				targetY = groundY
+				
 				currentTarget = nil
 			end
+			
+			-- Simple lerp float - only affects Y position
+			currentY = currentY + (targetY - currentY) * FLOAT_SPEED
+			root.Position = Vector3.new(position.X, currentY, position.Z)
 		end
 	end)
 end
