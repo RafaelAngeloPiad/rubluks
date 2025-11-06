@@ -43,7 +43,11 @@ local function createMobStatsDisplay(model)
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Name = "MobStatsDisplay"
 	billboardGui.Size = UDim2.new(0, statsConfig.size.X, 0, statsConfig.size.Y)
-	billboardGui.StudsOffset = Vector3.new(0, statsConfig.offsetY, 0)
+	local offsetY = statsConfig.offsetY
+	if not showStatDetails and statsConfig.offsetYNoStat then
+		offsetY = statsConfig.offsetYNoStat
+	end
+	billboardGui.StudsOffset = Vector3.new(0, offsetY, 0)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 1
 	billboardGui.MaxDistance = 50 -- Hide beyond this distance

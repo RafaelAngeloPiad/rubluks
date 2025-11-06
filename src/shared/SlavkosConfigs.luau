@@ -52,6 +52,7 @@ ServerConfigs.Hitbox = {
 		mobStatsDisplay = {
 			enabled = true, -- Enable/disable floating mob stats GUI
 			offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
+			offsetYNoStat = 2, -- Vertical offset when stat details are hidden
 			size = Vector2.new(200, 150), -- GUI size in pixels
 			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
 			backgroundTransparency = 1, -- Background transparency (1 = invisible overlay)
