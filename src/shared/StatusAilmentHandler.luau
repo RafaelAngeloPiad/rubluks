@@ -98,7 +98,15 @@ local function restoreOriginalStats(model)
 			rootPart.Anchored = stats.rootAnchored
 		end
 	end
-	
+
+	-- Restore Animate script state
+	if stats.animateDisabled ~= nil then
+		local animateScript = model:FindFirstChild("Animate")
+		if animateScript then
+			animateScript.Disabled = stats.animateDisabled
+		end
+	end
+
 	-- Clean up stored stats
 	originalStats[model] = nil
 end
@@ -111,6 +119,7 @@ local function saveOriginalStats(model)
 	if not humanoid then return end
 	
 	local rootPart = getHumanoidRootPart(model)
+	local animateScript = model:FindFirstChild("Animate")
 	
 	-- Only save if not already saved
 	if not originalStats[model] then
@@ -118,7 +127,8 @@ local function saveOriginalStats(model)
 			walkSpeed = humanoid.WalkSpeed,
 			jumpPower = humanoid.JumpPower,
 			platformStand = humanoid.PlatformStand,
-			rootAnchored = rootPart and rootPart.Anchored or false
+			rootAnchored = rootPart and rootPart.Anchored or false,
+			animateDisabled = animateScript and animateScript.Disabled or nil
 		}
 	end
 end
@@ -236,6 +246,46 @@ local function applyAilmentEffects(model, ailmentType, config)
 		humanoid.WalkSpeed = 0
 		humanoid.JumpPower = 0
 		humanoid.PlatformStand = true
+
+		-- Stop any currently playing animations
+		for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+			track:Stop(0)
+		end
+
+		-- Disable the default animation controller so new animations don't play
+		local animateScript = model:FindFirstChild("Animate")
+		if animateScript then
+			if originalStats[model] and originalStats[model].animateDisabled == nil then
+				originalStats[model].animateDisabled = animateScript.Disabled
+			end
+			animateScript.Disabled = true
+		end
+
+		-- Play the freeze animation while stunned
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = humanoid
+		end
+
+		local freezeAnimation = Instance.new("Animation")
+		freezeAnimation.Name = "StatusAilment_Freeze"
+		freezeAnimation.AnimationId = "rbxassetid://113085102503802"
+
+		local freezeTrack = animator:LoadAnimation(freezeAnimation)
+		freezeTrack.Priority = Enum.AnimationPriority.Action4
+		freezeTrack.Looped = true
+		freezeTrack:Play(0)
+
+		local ailmentRecord = activeAilments[model] and activeAilments[model][ailmentType]
+		if ailmentRecord then
+			ailmentRecord.freezeTrack = freezeTrack
+			ailmentRecord.freezeAnimation = freezeAnimation
+		else
+			freezeTrack:Stop()
+			freezeTrack:Destroy()
+			freezeAnimation:Destroy()
+		end
 		
 		-- Anchor HumanoidRootPart to prevent sinking
 		local rootPart = getHumanoidRootPart(model)
@@ -312,6 +362,35 @@ local function removeAilmentEffects(model, ailmentType)
 	local highlight = model:FindFirstChild("StatusAilment_" .. ailmentType)
 	if highlight then
 		highlight:Destroy()
+	end
+
+	-- Handle stun animation cleanup
+	if ailmentType == AilmentTypes.STUN then
+		local ailmentsForModel = activeAilments[model]
+		if ailmentsForModel and ailmentsForModel[ailmentType] then
+			local ailmentData = ailmentsForModel[ailmentType]
+
+			if ailmentData.freezeTrack then
+				ailmentData.freezeTrack:Stop(0)
+				ailmentData.freezeTrack:Destroy()
+				ailmentData.freezeTrack = nil
+			end
+
+			if ailmentData.freezeAnimation then
+				ailmentData.freezeAnimation:Destroy()
+				ailmentData.freezeAnimation = nil
+			end
+		end
+
+		local animateScript = model:FindFirstChild("Animate")
+		if animateScript then
+			local stats = originalStats[model]
+			if stats and stats.animateDisabled ~= nil then
+				animateScript.Disabled = stats.animateDisabled
+			else
+				animateScript.Disabled = false
+			end
+		end
 	end
 
 	-- Unlock player controls when stun ends

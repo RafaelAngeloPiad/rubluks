@@ -18,6 +18,7 @@ local inputConnection = nil
 local playerModule = nil
 local controls = nil
 local humanoid = nil
+local humanoidDeathConnection = nil
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Import centralized configuration
@@ -476,6 +477,10 @@ local currentCameraTween = nil
 local cameraSequenceRunning = false
 local lastCameraSequenceTime = 0
 local CAMERA_SEQUENCE_COOLDOWN = 0.1 -- 100ms cooldown between camera sequences
+local originalCameraState = {
+	cframe = nil,
+	cameraType = nil,
+}
 
 local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	-- Cancel any existing camera tween
@@ -495,6 +500,33 @@ local function tweenCameraTo(targetCFrame, tweenDuration, actionType)
 	currentCameraTween = nil
 end
 
+local function restoreOriginalCameraState()
+	if originalCameraState.cameraType then
+		camera.CameraType = originalCameraState.cameraType
+	else
+		camera.CameraType = Enum.CameraType.Custom
+	end
+
+	if originalCameraState.cframe then
+		camera.CFrame = originalCameraState.cframe
+	end
+
+	originalCameraState.cframe = nil
+	originalCameraState.cameraType = nil
+end
+
+local function cancelActiveCameraSequence()
+	if currentCameraTween then
+		currentCameraTween:Cancel()
+		currentCameraTween = nil
+	end
+
+	cameraSequenceRunning = false
+	lastCameraSequenceTime = tick()
+
+	restoreOriginalCameraState()
+end
+
 local function playCameraSequence(sequence, actionType)
 	-- Spam protection: check cooldown
 	local currentTime = tick()
@@ -511,8 +543,8 @@ local function playCameraSequence(sequence, actionType)
 	lastCameraSequenceTime = currentTime
 	
 	-- Save original camera settings
-	local originalCFrame = camera.CFrame
-	local originalType = camera.CameraType
+	originalCameraState.cframe = camera.CFrame
+	originalCameraState.cameraType = camera.CameraType
 	camera.CameraType = Enum.CameraType.Scriptable
 
 	local char = player.Character or player.CharacterAdded:Wait()
@@ -523,6 +555,10 @@ local function playCameraSequence(sequence, actionType)
 
 	-- Play each step in the sequence (exact copy from original MightyBlade.lua)
 	for _, step in ipairs(sequence) do
+		if not cameraSequenceRunning then
+			break
+		end
+
 		-- Handle both old format (offset + rotX/Y/Z) and new format (cf)
 		local targetCFrame
 		if step.cf then
@@ -534,13 +570,20 @@ local function playCameraSequence(sequence, actionType)
 		end
 		tweenCameraTo(targetCFrame, step.tweenTime, actionType)
 		-- Scale hold time with action-specific camera speed multiplier
+		if not cameraSequenceRunning then
+			break
+		end
+
 		local scaledHoldTime = step.holdTime / speedMultiplier
 		task.wait(scaledHoldTime)
+
+		if not cameraSequenceRunning then
+			break
+		end
 	end
 
 	-- Restore original camera instantly (no smooth transition)
-	camera.CFrame = originalCFrame
-	camera.CameraType = originalType
+	restoreOriginalCameraState()
 	
 	-- Mark sequence as completed
 	cameraSequenceRunning = false
@@ -795,6 +838,8 @@ local function onWeaponFound(weaponTool)
 end
 
 local function onWeaponLost()
+	cancelActiveCameraSequence()
+
 	if BrawlerActions._getTool() then
 		
 		-- Tell server to cleanup all animations and remove sword/shield
@@ -808,9 +853,6 @@ local function onWeaponLost()
 	
 	-- Clean up all feral leap state
 	cleanupFeralLeapState()
-	
-	-- Reset camera sequence flag
-	cameraSequenceRunning = false
 	
 	-- Unlock input when weapon is lost
 	unlockInput()
@@ -829,6 +871,21 @@ end
 local function onCharacterAdded(character)
 	-- Update humanoid reference
 	humanoid = character:FindFirstChildOfClass("Humanoid")
+
+	if humanoidDeathConnection then
+		humanoidDeathConnection:Disconnect()
+		humanoidDeathConnection = nil
+	end
+
+	if humanoid then
+		humanoidDeathConnection = humanoid.Died:Connect(function()
+			cancelActiveCameraSequence()
+			cleanupFeralLeapState()
+			disableTrails()
+			unlockInput()
+			unlockMovementOnly()
+		end)
+	end
 	
 	-- Clean up leap connections if character respawns
 	disconnectLeapConnections()
@@ -866,4 +923,12 @@ if player.Character then
 end
 
 player.CharacterAdded:Connect(onCharacterAdded)
+
+player.CharacterRemoving:Connect(function()
+	cancelActiveCameraSequence()
+	cleanupFeralLeapState()
+	disableTrails()
+	unlockInput()
+	unlockMovementOnly()
+end)
 
