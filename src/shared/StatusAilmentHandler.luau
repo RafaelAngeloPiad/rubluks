@@ -11,6 +11,9 @@ local Debris = game:GetService("Debris")
 -- Import configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+-- Remote event for locking player actions (shared with action handlers)
+local ActionEvent = ReplicatedStorage:WaitForChild("ActionEvent")
+
 -- ========================================
 -- STATUS AILMENT TRACKING
 -- ========================================
@@ -64,6 +67,12 @@ local function restoreOriginalStats(model)
 	
 	local humanoid = getHumanoid(model)
 	if not humanoid then return end
+
+	local player = getPlayer(model)
+
+	local player = getPlayer(model)
+	local player = getPlayer(model)
+	local player = getPlayer(model)
 	
 	local stats = originalStats[model]
 	
@@ -216,7 +225,9 @@ local function applyAilmentEffects(model, ailmentType, config)
 	
 	local humanoid = getHumanoid(model)
 	if not humanoid then return end
-	
+
+	local player = getPlayer(model)
+
 	-- Save original stats if not already saved
 	saveOriginalStats(model)
 	
@@ -230,6 +241,12 @@ local function applyAilmentEffects(model, ailmentType, config)
 		local rootPart = getHumanoidRootPart(model)
 		if rootPart then
 			rootPart.Anchored = true
+		end
+
+		-- Lock player input and movement via client controls
+		if player then
+			ActionEvent:FireClient(player, "lock_input")
+			ActionEvent:FireClient(player, "lock_movement")
 		end
 		
 	elseif ailmentType == AilmentTypes.SLOW then
@@ -253,7 +270,6 @@ local function applyAilmentEffects(model, ailmentType, config)
 	createAilmentHighlight(model, ailmentType)
 	
 	-- Create status text above head (only for players, not mobs)
-	local player = getPlayer(model)
 	if player then
 		-- Check if player has status immunity (defensive check)
 		local hasImmunity = false
@@ -296,6 +312,15 @@ local function removeAilmentEffects(model, ailmentType)
 	local highlight = model:FindFirstChild("StatusAilment_" .. ailmentType)
 	if highlight then
 		highlight:Destroy()
+	end
+
+	-- Unlock player controls when stun ends
+	if ailmentType == AilmentTypes.STUN then
+		local player = getPlayer(model)
+		if player then
+			ActionEvent:FireClient(player, "unlock_input")
+			ActionEvent:FireClient(player, "unlock_movement")
+		end
 	end
 	
 	-- Remove status text for this ailment
