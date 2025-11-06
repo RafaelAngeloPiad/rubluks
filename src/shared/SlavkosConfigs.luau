@@ -53,16 +53,28 @@ ServerConfigs.Hitbox = {
 			enabled = true, -- Enable/disable floating mob stats GUI
 			offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
 			size = Vector2.new(200, 150), -- GUI size in pixels
-			backgroundColor = Color3.new(0.1, 0.1, 0.1), -- Background color
-			backgroundTransparency = 0.3, -- Background transparency
-			borderColor = Color3.new(0.5, 0.5, 0.5), -- Border color
-			borderSizePixel = 2, -- Border thickness
-			cornerRadius = 5, -- Corner roundness
-			textColor = Color3.new(1, 1, 1), -- Text color
-			textSize = 12, -- Font size
+			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
+			backgroundTransparency = 1, -- Background transparency (1 = invisible overlay)
+			borderColor = Color3.new(0, 0, 0), -- Border color (unused when border size is 0)
+			borderSizePixel = 0, -- Border thickness (0 = none)
+			cornerRadius = 5, -- Corner roundness for optional background
+			textColor = Color3.new(1, 1, 1), -- Default text color (white)
+			textStrokeColor = Color3.new(0, 0, 0), -- Outline color (black)
+			textStrokeTransparency = 0, -- Outline opacity
+			textStrokeThickness = 0, -- Outline thickness
+			textSize = 14, -- Font size
 			font = Enum.Font.Gotham, -- Font style
-			headerColor = Color3.new(1, 0.8, 0), -- Header text color
-			headerSize = 14, -- Header font size
+			headerColor = Color3.new(1, 1, 1), -- Header text color (white)
+			headerSize = 18, -- Header font size
+			headerStrokeTransparency = 1, -- Outline around header text (0 = solid, 1 = none)
+			showStatDetails = false, -- Toggle to show/hide extra stat rows beneath the name
+			healthBarHeight = 12, -- Pixel height of health bar
+			healthBarBackgroundColor = Color3.fromRGB(35, 35, 35), -- Color behind the health bar fill
+			healthBarBorderColor = Color3.fromRGB(10, 10, 10), -- Health bar outline color
+			healthBarCornerRadius = 4, -- Health bar roundness
+			healthBarDefaultColor = Color3.fromRGB(120, 220, 120), -- Default health bar fill if mob doesn't specify one
+			healthBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the health bar
+			levelLabelColor = Color3.fromRGB(255, 255, 255), -- Level label text color
 			updateRate = 0.1 -- Update frequency in seconds
 		},
 		

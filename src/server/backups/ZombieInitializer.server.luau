@@ -18,6 +18,10 @@ local success, error = pcall(function()
     
     -- Get variant name from model's attribute (if set)
     local variantName = script.Parent:GetAttribute("Variant")
+    if not variantName then
+        variantName = "Zombie_Sand"
+        script.Parent:SetAttribute("Variant", variantName)
+    end
     
     -- Initialize the zombie with variant
     ZombieAIModule.initializeZombie(script.Parent, variantName)
