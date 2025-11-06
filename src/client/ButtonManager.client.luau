@@ -20,6 +20,14 @@ local KnightActions = require(player.PlayerScripts.knight.KnightActionModule)
 local GladiatorActions = require(player.PlayerScripts.gladiator.GladiatorActionModule)
 local BrawlerActions = require(player.PlayerScripts.brawler.BrawlerActionModule)
 
+local function triggerPlatformerSpecial()
+	if typeof(_G.performPlatformerSpecial) == "function" then
+		_G.performPlatformerSpecial()
+		return true
+	end
+	return false
+end
+
 -- ========================================
 -- UNIFIED BUTTON TAG CONFIGURATION
 -- One tag per action, works for ALL classes!
@@ -149,6 +157,17 @@ local UNIFIED_TAGS = {
 			name = "[L] Wave",
 			description = "Wave emote",
 			isGlobal = true -- Doesn't require weapon
+		}
+	},
+
+	platformer_special_trigger = {
+		platformer = {
+			action = function()
+				return triggerPlatformerSpecial()
+			end,
+			name = "[Shift] Dash/Roll",
+			description = "Dash or roll (Platformer)",
+			isGlobal = true,
 		}
 	},
 

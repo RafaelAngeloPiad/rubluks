@@ -18,6 +18,7 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 local GLOBAL_KEYBINDS = {
 	wave = Enum.KeyCode.L, -- L key for wave emote (works globally)
+	platformerSpecial = Enum.KeyCode.LeftShift, -- Shift key for platformer dash/roll
 }
 
 -- ========================================
@@ -27,6 +28,12 @@ local GLOBAL_KEYBINDS = {
 local function wave()
 	-- Fire wave event to server (works without weapon)
 	remote:FireServer("global_wave")
+end
+
+local function triggerPlatformerSpecial()
+	if typeof(_G.performPlatformerSpecial) == "function" then
+		_G.performPlatformerSpecial()
+	end
 end
 
 -- ========================================
@@ -40,6 +47,11 @@ local function onInputBegan(input, isProcessed)
 		-- Handle wave (L key)
 		if input.KeyCode == GLOBAL_KEYBINDS.wave then
 			wave()
+			return
+		end
+
+		if input.KeyCode == GLOBAL_KEYBINDS.platformerSpecial then
+			triggerPlatformerSpecial()
 			return
 		end
 	end
