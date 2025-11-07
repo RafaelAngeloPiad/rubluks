@@ -51,7 +51,7 @@ ServerConfigs.Hitbox = {
 		-- Mob Stats Display Configuration
 		mobStatsDisplay = {
 			enabled = true, -- Enable/disable floating mob stats GUI
-			offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
+			offsetY = 2, -- Vertical offset from character head (studs) - above damage numbers
 			offsetYNoStat = 2, -- Vertical offset when stat details are hidden
 			size = Vector2.new(200, 150), -- GUI size in pixels
 			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
@@ -68,7 +68,7 @@ ServerConfigs.Hitbox = {
 			headerColor = Color3.new(1, 1, 1), -- Header text color (white)
 			headerSize = 18, -- Header font size
 			headerStrokeTransparency = 1, -- Outline around header text (0 = solid, 1 = none)
-			showStatDetails = false, -- Toggle to show/hide extra stat rows beneath the name
+			showStatDetails = true, -- Toggle to show/hide extra stat rows beneath the name
 			healthBarHeight = 12, -- Pixel height of health bar
 			healthBarBackgroundColor = Color3.fromRGB(35, 35, 35), -- Color behind the health bar fill
 			healthBarBorderColor = Color3.fromRGB(10, 10, 10), -- Health bar outline color

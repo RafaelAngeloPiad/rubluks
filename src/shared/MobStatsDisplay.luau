@@ -40,6 +40,12 @@ local function createMobStatsDisplay(model)
 	end
 	
 	-- Create BillboardGui
+	-- Remove any existing stats display to prevent duplicates (standalone mobs may add their own)
+	local existingDisplay = head:FindFirstChild("MobStatsDisplay")
+	if existingDisplay then
+		existingDisplay:Destroy()
+	end
+
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Name = "MobStatsDisplay"
 	billboardGui.Size = UDim2.new(0, statsConfig.size.X, 0, statsConfig.size.Y)
