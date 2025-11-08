@@ -1639,10 +1639,17 @@ createButton("+5 XP", Color3.fromRGB(50, 150, 50), buttonLayoutOrder, function()
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
 
--- Add 10 XP button
 createButton("+10 XP", Color3.fromRGB(50, 180, 50), buttonLayoutOrder, function()
 	if DevStatEvent then
 		DevStatEvent:FireServer("addCurrentXP", 10)
+	end
+end)
+buttonLayoutOrder = buttonLayoutOrder + 1
+
+-- Add 500 XP button
+createButton("+500 XP", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
+	if DevStatEvent then
+		DevStatEvent:FireServer("addCurrentXP", 500)
 	end
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1

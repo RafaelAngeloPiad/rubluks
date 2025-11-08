@@ -1749,7 +1749,16 @@ game.Players.PlayerAdded:Connect(function(plr)
 		---- FOR SUNFIRE ONLY ---
 		waterLevel.Value = convertDataType(data.WaterLevel, 300)
 	end
-	
+
+	-- Ensure Slavkorian stays at starting level
+	if class.Value == "Slavkorian" then
+		level.Value = BaseStats.XP.startLevel
+		maxxp.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+		if currxp.Value > maxxp.Value then
+			currxp.Value = maxxp.Value
+		end
+	end
+
 	-- Flag to track if stats have been initialized (to prevent applying multipliers on load)
 	local statsInitialized = false
 	
@@ -1765,6 +1774,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- DISABLE LEVELING WHEN CLASS IS SLAVKORIAN
 		if class.Value == "Slavkorian" then
+			if maxxp and maxxp.Value and newv > maxxp.Value then
+				currxp.Value = maxxp.Value
+			end
 			return -- Don't allow leveling up when class is Slavkorian
 		end
 		
@@ -1844,6 +1856,17 @@ game.Players.PlayerAdded:Connect(function(plr)
 	-- Connect this OUTSIDE CharacterAdded so it works even before character spawns
 	level.Changed:Connect(function()
 		local newLevel = level.Value
+
+		-- Prevent level changes while class is Slavkorian
+		if class.Value == "Slavkorian" then
+			if newLevel ~= BaseStats.XP.startLevel then
+				level.Value = BaseStats.XP.startLevel
+				return
+			end
+			maxxp.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+			previousLevel = BaseStats.XP.startLevel
+			return
+		end
 		
 		-- Recalculate MaximumXP when level changes (always, for resets too)
 		local newMaxXP = calculateMaximumXP(newLevel)
@@ -2102,6 +2125,15 @@ game.Players.PlayerAdded:Connect(function(plr)
 			statsInitialized = true
 		else
 			statsInitialized = false
+		end
+
+		if class.Value == "Slavkorian" then
+			level.Value = BaseStats.XP.startLevel
+			maxxp.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+			if currxp.Value > maxxp.Value then
+				currxp.Value = maxxp.Value
+			end
+			previousLevel = BaseStats.XP.startLevel
 		end
 	end)
 	
@@ -2503,6 +2535,13 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		end
 	elseif action == "setLevel" then
 		if leaderstats:FindFirstChild("Level") then
+			if leaderstats:FindFirstChild("Class") and leaderstats.Class.Value == "Slavkorian" then
+				leaderstats.Level.Value = BaseStats.XP.startLevel
+				if leaderstats:FindFirstChild("MaximumXP") then
+					leaderstats.MaximumXP.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+				end
+				return
+			end
 			local newLevel = tonumber(value) or 1
 			-- LEVEL CAP: Clamp level to max level
 			leaderstats.Level.Value = math.min(math.max(newLevel, 1), BaseStats.XP.maxLevel)
