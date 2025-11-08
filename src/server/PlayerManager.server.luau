@@ -320,59 +320,464 @@ local BaseStats = {
 	-- Level-up multipliers per class (from spreadsheet)
 	LevelUpMultipliers = {
 		Samurai = {
-			HP = 1.08,     -- 8% growth
-			ATK = 1.05,    -- 5% growth
-			D = 1.08,      -- 8% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.08 },
+				{ level = 7, multiplier = 1.08 },
+				{ level = 13, multiplier = 1.08 },
+				{ level = 19, multiplier = 1.08 },
+				{ level = 25, multiplier = 1.08 },
+				{ level = 31, multiplier = 1.08 },
+				{ level = 37, multiplier = 1.08 },
+				{ level = 43, multiplier = 1.08 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.08 },
+				{ level = 7, multiplier = 1.08 },
+				{ level = 13, multiplier = 1.08 },
+				{ level = 19, multiplier = 1.08 },
+				{ level = 25, multiplier = 1.08 },
+				{ level = 31, multiplier = 1.08 },
+				{ level = 37, multiplier = 1.08 },
+				{ level = 43, multiplier = 1.08 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.02 },
+				{ level = 7, multiplier = 1.02 },
+				{ level = 13, multiplier = 1.02 },
+				{ level = 19, multiplier = 1.02 },
+				{ level = 25, multiplier = 1.02 },
+				{ level = 31, multiplier = 1.02 },
+				{ level = 37, multiplier = 1.02 },
+				{ level = 43, multiplier = 1.02 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		},
 		Archer = {
-			HP = 1.06,     -- 6% growth
-			ATK = 1.10,    -- 10% growth
-			D = 1.05,      -- 5% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.06 },
+				{ level = 7, multiplier = 1.06 },
+				{ level = 13, multiplier = 1.06 },
+				{ level = 19, multiplier = 1.06 },
+				{ level = 25, multiplier = 1.06 },
+				{ level = 31, multiplier = 1.06 },
+				{ level = 37, multiplier = 1.06 },
+				{ level = 43, multiplier = 1.06 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.10 },
+				{ level = 7, multiplier = 1.10 },
+				{ level = 13, multiplier = 1.10 },
+				{ level = 19, multiplier = 1.10 },
+				{ level = 25, multiplier = 1.10 },
+				{ level = 31, multiplier = 1.10 },
+				{ level = 37, multiplier = 1.10 },
+				{ level = 43, multiplier = 1.10 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.03 },
+				{ level = 7, multiplier = 1.03 },
+				{ level = 13, multiplier = 1.03 },
+				{ level = 19, multiplier = 1.03 },
+				{ level = 25, multiplier = 1.03 },
+				{ level = 31, multiplier = 1.03 },
+				{ level = 37, multiplier = 1.03 },
+				{ level = 43, multiplier = 1.03 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			}
 		},
 		Gladiator = {
-			HP = 1.10,     -- 10% growth
-			ATK = 1.03,    -- 3% growth
-			D = 1.08,      -- 8% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.10 },
+				{ level = 7, multiplier = 1.10 },
+				{ level = 13, multiplier = 1.10 },
+				{ level = 19, multiplier = 1.10 },
+				{ level = 25, multiplier = 1.10 },
+				{ level = 31, multiplier = 1.10 },
+				{ level = 37, multiplier = 1.10 },
+				{ level = 43, multiplier = 1.10 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.03 },
+				{ level = 7, multiplier = 1.03 },
+				{ level = 13, multiplier = 1.03 },
+				{ level = 19, multiplier = 1.03 },
+				{ level = 25, multiplier = 1.03 },
+				{ level = 31, multiplier = 1.03 },
+				{ level = 37, multiplier = 1.03 },
+				{ level = 43, multiplier = 1.03 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.08 },
+				{ level = 7, multiplier = 1.08 },
+				{ level = 13, multiplier = 1.08 },
+				{ level = 19, multiplier = 1.08 },
+				{ level = 25, multiplier = 1.08 },
+				{ level = 31, multiplier = 1.08 },
+				{ level = 37, multiplier = 1.08 },
+				{ level = 43, multiplier = 1.08 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.02 },
+				{ level = 7, multiplier = 1.02 },
+				{ level = 13, multiplier = 1.02 },
+				{ level = 19, multiplier = 1.02 },
+				{ level = 25, multiplier = 1.02 },
+				{ level = 31, multiplier = 1.02 },
+				{ level = 37, multiplier = 1.02 },
+				{ level = 43, multiplier = 1.02 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		},
 		Brawler = {  -- Berserker in spreadsheet
-			HP = 1.07,     -- 7% growth
-			ATK = 1.09,    -- 9% growth
-			D = 1.05,      -- 5% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.09 },
+				{ level = 7, multiplier = 1.09 },
+				{ level = 13, multiplier = 1.09 },
+				{ level = 19, multiplier = 1.09 },
+				{ level = 25, multiplier = 1.09 },
+				{ level = 31, multiplier = 1.09 },
+				{ level = 37, multiplier = 1.09 },
+				{ level = 43, multiplier = 1.09 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.03 },
+				{ level = 7, multiplier = 1.03 },
+				{ level = 13, multiplier = 1.03 },
+				{ level = 19, multiplier = 1.03 },
+				{ level = 25, multiplier = 1.03 },
+				{ level = 31, multiplier = 1.03 },
+				{ level = 37, multiplier = 1.03 },
+				{ level = 43, multiplier = 1.03 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		},
 		Knight = {
-			HP = 1.07,     -- 7% growth
-			ATK = 1.07,    -- 7% growth
-			D = 1.07,      -- 7% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.02 },
+				{ level = 7, multiplier = 1.02 },
+				{ level = 13, multiplier = 1.02 },
+				{ level = 19, multiplier = 1.02 },
+				{ level = 25, multiplier = 1.02 },
+				{ level = 31, multiplier = 1.02 },
+				{ level = 37, multiplier = 1.02 },
+				{ level = 43, multiplier = 1.02 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		}
 	},
 	
@@ -454,6 +859,55 @@ local BaseStats = {
 
 -- Export BaseStats to ServerConfigs so other modules can access it
 ServerConfigs.BaseStats = BaseStats
+
+-- Helper to resolve level-based stat multipliers for classes
+local function resolveLevelUpMultiplier(multipliers, statKey, level)
+	if not multipliers or not statKey or not level then
+		return nil
+	end
+
+	local statDefinition = multipliers[statKey]
+	if not statDefinition then
+		return nil
+	end
+
+	local definitionType = typeof(statDefinition)
+	if definitionType == "number" then
+		return statDefinition
+	elseif definitionType ~= "table" then
+		return nil
+	end
+
+	-- Support shorthand table { level = X, multiplier = Y }
+	if statDefinition.level and statDefinition.multiplier then
+		statDefinition = { statDefinition }
+	end
+
+	local selectedMultiplier = nil
+	for _, entry in ipairs(statDefinition) do
+		if typeof(entry) == "table" and entry.level and entry.multiplier then
+			if level >= entry.level then
+				selectedMultiplier = entry.multiplier
+			else
+				break
+			end
+		end
+	end
+
+	if selectedMultiplier ~= nil then
+		return selectedMultiplier
+	end
+
+	-- Fallback support for keyed defaults (e.g., { default = 1.0 })
+	if typeof(statDefinition.defaultMultiplier) == "number" then
+		return statDefinition.defaultMultiplier
+	end
+	if typeof(statDefinition.default) == "number" then
+		return statDefinition.default
+	end
+
+	return nil
+end
 
 -- ========================================
 -- BUFF MANAGEMENT SYSTEM
@@ -2226,28 +2680,34 @@ game.Players.PlayerAdded:Connect(function(plr)
 				-- Level exceeds max level, skipping multipliers
 			else
 				-- Apply level-up multipliers for all stats
-				leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * multipliers.HP)
-				
+				local hpMultiplier = resolveLevelUpMultiplier(multipliers, "HP", newLevel)
+				if hpMultiplier and leaderstats:FindFirstChild("MaxHealth") then
+					leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * hpMultiplier)
+				end
+
 				-- For MaxAttack, use round to ensure it always increases (especially important for classes with small multipliers like Gladiator)
 				-- Gladiator: 30 * 1.03 = 30.9, floor = 30 (no increase!), round = 31 (increases!)
-				if leaderstats:FindFirstChild("MaxAttack") and multipliers.ATK then
+				local atkMultiplier = resolveLevelUpMultiplier(multipliers, "ATK", newLevel)
+				if atkMultiplier and leaderstats:FindFirstChild("MaxAttack") then
 					local oldATK = leaderstats.MaxAttack.Value
-					local newATK = oldATK * multipliers.ATK
+					local newATK = oldATK * atkMultiplier
 					-- Use round to ensure it always increases (math.floor(x + 0.5))
 					local roundedATK = math.floor(newATK + 0.5)
 					-- Ensure it increases by at least 1 (prevents stats from staying the same due to rounding)
 					leaderstats.MaxAttack.Value = math.max(roundedATK, oldATK + 1)
 				end
-				
-				if leaderstats:FindFirstChild("MaxDefense") and multipliers.D then
-					leaderstats.MaxDefense.Value = math.floor(leaderstats.MaxDefense.Value * multipliers.D)
+
+				local defMultiplier = resolveLevelUpMultiplier(multipliers, "D", newLevel)
+				if defMultiplier and leaderstats:FindFirstChild("MaxDefense") then
+					leaderstats.MaxDefense.Value = math.floor(leaderstats.MaxDefense.Value * defMultiplier)
 				end
-				
+
 				-- Apply offense stat multipliers
 				-- Defense Penetration: Use round to ensure it increases (important when starting at 0)
-				if leaderstats:FindFirstChild("DefensePenetration") and multipliers.DP then
+				local dpMultiplier = resolveLevelUpMultiplier(multipliers, "DP", newLevel)
+				if dpMultiplier and leaderstats:FindFirstChild("DefensePenetration") then
 					local oldDP = leaderstats.DefensePenetration.Value
-					local newDP = oldDP * multipliers.DP
+					local newDP = oldDP * dpMultiplier
 					-- Use round to ensure it increases (math.floor(x + 0.5))
 					local roundedDP = math.floor(newDP + 0.5)
 					-- Ensure it increases by at least 1 if it was 0 or very small (prevents staying at 0)
@@ -2259,29 +2719,34 @@ game.Players.PlayerAdded:Connect(function(plr)
 						leaderstats.DefensePenetration.Value = math.max(roundedDP, oldDP + 1)
 					end
 				end
+
 				-- CritRate needs math.ceil because it's a small percentage stat (starts at 5)
 				-- 5 * 1.03 = 5.15, floor(5.15) = 5 (stays same), ceil(5.15) = 6 (increases!)
-				if leaderstats:FindFirstChild("CritRate") and multipliers.CR then
+				local critRateMultiplier = resolveLevelUpMultiplier(multipliers, "CR", newLevel)
+				if critRateMultiplier and leaderstats:FindFirstChild("CritRate") then
 					local oldCR = leaderstats.CritRate.Value
-					local newCritRate = oldCR * multipliers.CR
+					local newCritRate = oldCR * critRateMultiplier
 					-- Always use ceil to ensure progression (removes floating point comparison issues)
 					leaderstats.CritRate.Value = math.ceil(newCritRate)
 				end
+
 				-- CritMultiplier works fine with floor since it starts at 150 (150 * 1.01 = 151.5, floor = 151 ✓)
 				-- But we use round to ensure it always increases slightly
-				if leaderstats:FindFirstChild("CritMultiplier") and multipliers.CM then
+				local critMultiplier = resolveLevelUpMultiplier(multipliers, "CM", newLevel)
+				if critMultiplier and leaderstats:FindFirstChild("CritMultiplier") then
 					local oldCM = leaderstats.CritMultiplier.Value
-					local newCritMultiplier = oldCM * multipliers.CM
+					local newCritMultiplier = oldCM * critMultiplier
 					-- Use round to ensure it increases (1.01 multiplier on 150 = 151.5, round = 152)
 					-- math.round might not exist, so use: math.floor(x + 0.5)
 					leaderstats.CritMultiplier.Value = math.floor(newCritMultiplier + 0.5)
 				end
-				
+
 				-- Apply defense/utility stat multipliers
 				-- Health Regeneration: Use round to ensure it increases (important when starting at 0)
-				if leaderstats:FindFirstChild("HealthRegen") and multipliers.HR then
+				local healthRegenMultiplier = resolveLevelUpMultiplier(multipliers, "HR", newLevel)
+				if healthRegenMultiplier and leaderstats:FindFirstChild("HealthRegen") then
 					local oldHR = leaderstats.HealthRegen.Value
-					local newHR = oldHR * multipliers.HR
+					local newHR = oldHR * healthRegenMultiplier
 					-- Use round to ensure it increases (math.floor(x + 0.5))
 					local roundedHR = math.floor(newHR + 0.5)
 					-- Ensure it increases by at least 1 if it was 0 or very small (prevents staying at 0)
@@ -2293,11 +2758,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 						leaderstats.HealthRegen.Value = math.max(roundedHR, oldHR + 1)
 					end
 				end
-				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
+
+				local movementMultiplier = resolveLevelUpMultiplier(multipliers, "Mspd", newLevel)
+				if movementMultiplier and leaderstats:FindFirstChild("MovementSpeed") then
 					local oldMspd = leaderstats.MovementSpeed.Value
 					-- MovementSpeed is the animation speed multiplier, scale it with Mspd multiplier
-					leaderstats.MovementSpeed.Value = oldMspd * multipliers.Mspd
-					
+					leaderstats.MovementSpeed.Value = oldMspd * movementMultiplier
+
 					-- Update unified movement animation speed in ServerConfigs (MovementSpeed is already the multiplier)
 					local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
@@ -2306,7 +2773,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 					if ServerConfigs and ServerConfigs[class.Value] then
 						ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
 					end
-					
+
 					-- Sync animation speeds with action files for all players of this class
 					local classFuncs = {
 						Archer = _G.updateArcherAnimationSpeed,
@@ -2320,11 +2787,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 						updateFunc("movement", movementAnimSpeedMultiplier)
 					end
 				end
-				if leaderstats:FindFirstChild("AttackSpeed") and multipliers.Aspd then
+
+				local attackSpeedMultiplier = resolveLevelUpMultiplier(multipliers, "Aspd", newLevel)
+				if attackSpeedMultiplier and leaderstats:FindFirstChild("AttackSpeed") then
 					local oldAspd = leaderstats.AttackSpeed.Value
 					-- AttackSpeed is the animation speed multiplier, scale it with Aspd multiplier
-					leaderstats.AttackSpeed.Value = oldAspd * multipliers.Aspd
-					
+					leaderstats.AttackSpeed.Value = oldAspd * attackSpeedMultiplier
+
 					-- Update unified attack animation speed in ServerConfigs (AttackSpeed is already the multiplier)
 					local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
@@ -2333,7 +2802,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 					if ServerConfigs and ServerConfigs[class.Value] then
 						ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
 					end
-					
+
 					-- Sync animation speeds with action files for all players of this class
 					local classFuncs = {
 						Archer = _G.updateArcherAnimationSpeed,
