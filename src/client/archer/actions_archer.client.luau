@@ -150,10 +150,7 @@ end
 -- Function to update cooldown status
 local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
-	ArcherActions._setCooldown(skillName, isOnCooldown)
-	if isOnCooldown then
-		local timeText = remainingTime and tostring(remainingTime)
-	end
+	ArcherActions._setCooldown(skillName, isOnCooldown, remainingTime)
 end
 
 -- Configuration

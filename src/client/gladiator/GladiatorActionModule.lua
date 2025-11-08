@@ -30,6 +30,7 @@ local tool = nil
 local inputLocked = false
 local movementLocked = false
 local onCooldown = {} -- Track which skills are on cooldown
+local cooldownTimers = {} -- Track when each cooldown ends (os.clock timestamp)
 
 -- ========================================
 -- STATE MANAGEMENT (Internal)
@@ -47,8 +48,18 @@ function GladiatorActions._setMovementLocked(locked)
 	movementLocked = locked
 end
 
-function GladiatorActions._setCooldown(skillName, isOnCooldown)
+function GladiatorActions._setCooldown(skillName, isOnCooldown, remainingTime)
 	onCooldown[skillName] = isOnCooldown
+
+	if isOnCooldown then
+		if remainingTime and remainingTime > 0 then
+			cooldownTimers[skillName] = os.clock() + remainingTime
+		elseif not cooldownTimers[skillName] then
+			cooldownTimers[skillName] = os.clock()
+		end
+	else
+		cooldownTimers[skillName] = nil
+	end
 end
 
 function GladiatorActions._getTool()
@@ -197,11 +208,36 @@ function GladiatorActions.isMovementLocked()
 end
 
 function GladiatorActions.isSkillOnCooldown(skillName)
-	return onCooldown[skillName] or false
+	if not onCooldown[skillName] then
+		return false
+	end
+
+	local remaining = GladiatorActions.getCooldownRemaining(skillName)
+	return remaining > 0
 end
 
 function GladiatorActions.isWeaponEquipped()
 	return tool ~= nil and tool.Parent == player.Character
+end
+
+-- ========================================
+-- PUBLIC API - Cooldown Helpers
+-- ========================================
+
+function GladiatorActions.getCooldownRemaining(skillName)
+	local endsAt = cooldownTimers[skillName]
+	if not endsAt then
+		return 0
+	end
+
+	local remaining = endsAt - os.clock()
+	if remaining <= 0 then
+		cooldownTimers[skillName] = nil
+		onCooldown[skillName] = false
+		return 0
+	end
+
+	return remaining
 end
 
 return GladiatorActions

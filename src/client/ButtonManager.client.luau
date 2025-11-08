@@ -176,27 +176,32 @@ local UNIFIED_TAGS = {
 		samurai = {
 			action = function() return SamuraiActions.wakizashi() end,
 			name = "[Q] Wakizashi",
-			description = "Wakizashi skill"
+			description = "Wakizashi skill",
+			cooldownSkill = "wakizashi"
 		},
 		archer = {
 			action = function() return ArcherActions.piercingShot() end,
 			name = "[Q] Piercing Shot",
-			description = "Piercing Shot skill"
+			description = "Piercing Shot skill",
+			cooldownSkill = "piercingShot"
 		},
 		knight = {
 			action = function() return KnightActions.sworddance() end,
 			name = "[Q] Sword Dance",
-			description = "Sword Dance skill"
+			description = "Sword Dance skill",
+			cooldownSkill = "sworddance"
 		},
 		gladiator = {
 			action = function() return GladiatorActions.shieldbash() end,
 			name = "[Q] Shield Bash",
-			description = "Shield Bash skill"
+			description = "Shield Bash skill",
+			cooldownSkill = "shieldbash"
 		},
 		brawler = {
 			action = function() return BrawlerActions.brawlersroar() end,
 			name = "[Q] Berserker's Roar",
-			description = "Berserker's Roar skill"
+			description = "Berserker's Roar skill",
+			cooldownSkill = "brawlersroar"
 		}
 	},
 
@@ -205,27 +210,32 @@ local UNIFIED_TAGS = {
 		samurai = {
 			action = function() return SamuraiActions.kozuki() end,
 			name = "[E] Kozuki",
-			description = "Kozuki skill"
+			description = "Kozuki skill",
+			cooldownSkill = "kozuki"
 		},
 		archer = {
 			action = function() return ArcherActions.powerShot() end,
 			name = "[E] Power Shot",
-			description = "Power Shot skill"
+			description = "Power Shot skill",
+			cooldownSkill = "powerShot"
 		},
 		knight = {
 			action = function() return KnightActions.cyclone_slash() end,
 			name = "[E] Cyclone Slash",
-			description = "Cyclone Slash skill"
+			description = "Cyclone Slash skill",
+			cooldownSkill = "cyclone_slash"
 		},
 		gladiator = {
 			action = function() return GladiatorActions.dragoonjump() end,
 			name = "[E] Dragoon Jump",
-			description = "Dragoon Jump skill"
+			description = "Dragoon Jump skill",
+			cooldownSkill = "dragoonjump"
 		},
 		brawler = {
 			action = function() return BrawlerActions.feralleap() end,
 			name = "[E] Feral Leap",
-			description = "Feral Leap skill"
+			description = "Feral Leap skill",
+			cooldownSkill = "feralleap"
 		}
 	},
 
@@ -234,27 +244,32 @@ local UNIFIED_TAGS = {
 		samurai = {
 			action = function() return SamuraiActions.banzai() end,
 			name = "[X] Banzai",
-			description = "Banzai buff"
+			description = "Banzai buff",
+			cooldownSkill = "banzai"
 		},
 		archer = {
 			action = function() return ArcherActions.hunterInstinct() end,
 			name = "[X] Hunters Instinct",
-			description = "Hunters Instinct buff"
+			description = "Hunters Instinct buff",
+			cooldownSkill = "hunterInstinct"
 		},
 		knight = {
 			action = function() return KnightActions.warcry() end,
 			name = "[X] War Cry",
-			description = "War Cry buff"
+			description = "War Cry buff",
+			cooldownSkill = "warcry"
 		},
 		gladiator = {
 			action = function() return GladiatorActions.championsblood() end,
 			name = "[X] Champions Blood",
-			description = "Champions Blood buff"
+			description = "Champions Blood buff",
+			cooldownSkill = "championsblood"
 		},
 		brawler = {
 			action = function() return BrawlerActions.bloodthirst() end,
 			name = "[X] Bloodthirst",
-			description = "Bloodthirst buff"
+			description = "Bloodthirst buff",
+			cooldownSkill = "bloodthirst"
 		}
 	},
 
@@ -263,27 +278,32 @@ local UNIFIED_TAGS = {
 		samurai = {
 			action = function() return SamuraiActions.bushido() end,
 			name = "[C] Bushido",
-			description = "Bushido buff"
+			description = "Bushido buff",
+			cooldownSkill = "bushido"
 		},
 		archer = {
 			action = function() return ArcherActions.hunterMark() end,
 			name = "[C] Hunters Mark",
-			description = "Hunters Mark buff"
+			description = "Hunters Mark buff",
+			cooldownSkill = "hunterMark"
 		},
 		knight = {
 			action = function() return KnightActions.warriormight() end,
 			name = "[C] Warrior Might",
-			description = "Warrior Might buff"
+			description = "Warrior Might buff",
+			cooldownSkill = "warriormight"
 		},
 		gladiator = {
 			action = function() return GladiatorActions.championscheer() end,
 			name = "[C] Champions Cheer",
-			description = "Champions Cheer buff"
+			description = "Champions Cheer buff",
+			cooldownSkill = "championscheer"
 		},
 		brawler = {
 			action = function() return BrawlerActions.lastchance() end,
 			name = "[C] Last Chance",
-			description = "Last Chance buff"
+			description = "Last Chance buff",
+			cooldownSkill = "lastchance"
 		}
 	},
 
@@ -292,27 +312,32 @@ local UNIFIED_TAGS = {
 		samurai = {
 			action = function() return SamuraiActions.zantetsuken() end,
 			name = "[Z] Zantetsuken",
-			description = "Zantetsuken ultimate"
+			description = "Zantetsuken ultimate",
+			cooldownSkill = "zantetsuken"
 		},
 		archer = {
 			action = function() return ArcherActions.starfall() end,
 			name = "[Z] Starfall",
-			description = "Starfall ultimate"
+			description = "Starfall ultimate",
+			cooldownSkill = "starfall"
 		},
 		knight = {
 			action = function() return KnightActions.mightyblade() end,
 			name = "[Z] Mighty Blade",
-			description = "Mighty Blade ultimate"
+			description = "Mighty Blade ultimate",
+			cooldownSkill = "mightyblade"
 		},
 		gladiator = {
 			action = function() return GladiatorActions.demonicvorpaldance() end,
 			name = "[Z] Demonic Vorpal Dance",
-			description = "Demonic Vorpal Dance ultimate"
+			description = "Demonic Vorpal Dance ultimate",
+			cooldownSkill = "demonicvorpaldance"
 		},
 		brawler = {
 			action = function() return BrawlerActions.meteordive() end,
 			name = "[Z] Meteor Dive",
-			description = "Meteor Dive ultimate"
+			description = "Meteor Dive ultimate",
+			cooldownSkill = "meteordive"
 		}
 	},
 
@@ -336,6 +361,40 @@ local UNIFIED_TAGS = {
 		}
 	}
 }
+
+local COOLDOWN_PROVIDERS = {
+	samurai = function(skillName)
+		return SamuraiActions.getCooldownRemaining(skillName)
+	end,
+	archer = function(skillName)
+		return ArcherActions.getCooldownRemaining(skillName)
+	end,
+	knight = function(skillName)
+		return KnightActions.getCooldownRemaining(skillName)
+	end,
+	gladiator = function(skillName)
+		return GladiatorActions.getCooldownRemaining(skillName)
+	end,
+	brawler = function(skillName)
+		return BrawlerActions.getCooldownRemaining(skillName)
+	end
+}
+
+local function formatCooldown(remaining)
+	if not remaining or remaining <= 0 then
+		return nil
+	end
+
+	if remaining <= 0.1 then
+		return nil
+	end
+
+	if remaining >= 10 then
+		return string.format("%ds", math.ceil(remaining))
+	end
+
+	return string.format("%.1fs", remaining)
+end
 
 -- ========================================
 -- CLASS DETECTION
@@ -466,10 +525,19 @@ local function setupUnifiedButton(button, tag)
 		while button and button.Parent do
 			local class = detectCurrentClass()
 			local textToSet = ""
+			local cooldownText = nil
 
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
+					if classConfig.cooldownSkill then
+						local provider = COOLDOWN_PROVIDERS[class]
+						if provider then
+							local remaining = provider(classConfig.cooldownSkill)
+							cooldownText = formatCooldown(remaining)
+						end
+					end
+
 					-- Special handling for dynamic aim mode toggle button
 					if classConfig.isDynamic and class == "archer" then
 						local currentMode = ArcherActions.getCurrentAimMode()
@@ -502,6 +570,10 @@ local function setupUnifiedButton(button, tag)
 				else
 					textToSet = "---"
 				end
+			end
+
+			if cooldownText then
+				textToSet = cooldownText
 			end
 
 			-- Apply text to appropriate element
@@ -614,10 +686,19 @@ local function setupUnifiedHoldButton(button, tag)
 		while button and button.Parent do
 			local class = detectCurrentClass()
 			local textToSet = ""
+			local cooldownText = nil
 
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig then
+					if classConfig.cooldownSkill then
+						local provider = COOLDOWN_PROVIDERS[class]
+						if provider then
+							local remaining = provider(classConfig.cooldownSkill)
+							cooldownText = formatCooldown(remaining)
+						end
+					end
+
 					-- Special handling for dynamic aim mode toggle button
 					if classConfig.isDynamic and class == "archer" then
 						local currentMode = ArcherActions.getCurrentAimMode()
@@ -636,6 +717,10 @@ local function setupUnifiedHoldButton(button, tag)
 				end
 			else
 				textToSet = "---"
+			end
+
+			if cooldownText then
+				textToSet = cooldownText
 			end
 
 			-- Apply text to appropriate element

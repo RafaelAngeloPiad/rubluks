@@ -99,10 +99,7 @@ end
 -- Function to update cooldown status
 local function updateCooldownStatus(skillName, isOnCooldown, remainingTime)
 	skillCooldowns[skillName] = isOnCooldown
-	KnightActions._setCooldown(skillName, isOnCooldown)
-	if isOnCooldown then
-		local timeText = remainingTime and tostring(remainingTime)
-	end
+	KnightActions._setCooldown(skillName, isOnCooldown, remainingTime)
 end
 
 -- Configuration

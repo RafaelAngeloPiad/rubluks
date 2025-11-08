@@ -31,6 +31,7 @@ local tool = nil
 local inputLocked = false
 local movementLocked = false
 local onCooldown = {} -- Track which skills are on cooldown
+local cooldownTimers = {} -- Track when each cooldown ends (os.clock timestamp)
 local aimLockEnabled = false
 local isFirstPerson = false
 
@@ -56,8 +57,19 @@ function ArcherActions._setMovementLocked(locked)
 	movementLocked = locked
 end
 
-function ArcherActions._setCooldown(skillName, isOnCooldown)
+function ArcherActions._setCooldown(skillName, isOnCooldown, remainingTime)
 	onCooldown[skillName] = isOnCooldown
+
+	if isOnCooldown then
+		if remainingTime and remainingTime > 0 then
+			cooldownTimers[skillName] = os.clock() + remainingTime
+		elseif not cooldownTimers[skillName] then
+			-- Fallback: keep previous end time if we already have one, otherwise mark as zero remaining
+			cooldownTimers[skillName] = os.clock()
+		end
+	else
+		cooldownTimers[skillName] = nil
+	end
 end
 
 function ArcherActions._setAimLockEnabled(enabled)
@@ -230,11 +242,36 @@ function ArcherActions.isMovementLocked()
 end
 
 function ArcherActions.isSkillOnCooldown(skillName)
-	return onCooldown[skillName] or false
+	if not onCooldown[skillName] then
+		return false
+	end
+
+	local remaining = ArcherActions.getCooldownRemaining(skillName)
+	return remaining > 0
 end
 
 function ArcherActions.isWeaponEquipped()
 	return tool ~= nil and tool.Parent == player.Character
+end
+
+-- ========================================
+-- PUBLIC API - Cooldown Helpers
+-- ========================================
+
+function ArcherActions.getCooldownRemaining(skillName)
+	local endsAt = cooldownTimers[skillName]
+	if not endsAt then
+		return 0
+	end
+
+	local remaining = endsAt - os.clock()
+	if remaining <= 0 then
+		cooldownTimers[skillName] = nil
+		onCooldown[skillName] = false
+		return 0
+	end
+
+	return remaining
 end
 
 function ArcherActions.getAimLockEnabled()
