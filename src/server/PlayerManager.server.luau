@@ -19,6 +19,241 @@ local DevStatEvent = Instance.new("RemoteEvent")
 DevStatEvent.Name = "DevStatEvent"
 DevStatEvent.Parent = ReplicatedStorage
 
+local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+
+-- ========================================
+-- EQUIPMENT BONUS CONFIGURATION
+-- ========================================
+
+local EquipmentStatMappings = {
+	HPPlus = {leaderstat = "MaxHealth", displayName = "HP"},
+	AttackPlus = {leaderstat = "MaxAttack", displayName = "Attack"},
+	DefensePlus = {leaderstat = "MaxDefense", displayName = "Defense"},
+	DefensePenPlus = {leaderstat = "DefensePenetration", displayName = "Defense Penetration"},
+	CritRatePlus = {leaderstat = "CritRate", displayName = "Crit Rate"},
+	CritMultiplierPlus = {leaderstat = "CritMultiplier", displayName = "Crit Multiplier"},
+}
+
+local playerEquipmentBonuses = {} -- player -> { statName = totalBonus }
+local playerEquipmentBonusDetails = {} -- player -> { statName = { "Item +Value", ... } }
+
+local function ensureFolder(parent, name)
+	local folder = parent:FindFirstChild(name)
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = name
+		folder.Parent = parent
+	end
+	return folder
+end
+
+local function formatBonus(amount)
+	if math.abs(amount - math.floor(amount)) < 1e-3 then
+		return string.format("%+d", amount)
+	end
+	return string.format("%+.2f", amount)
+end
+
+local function applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, multiplier)
+	if not leaderstats or not bonuses then
+		return
+	end
+
+	local player = leaderstats.Parent
+	local humanoid = player and player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	local humanoidPrevMaxHealth = humanoid and humanoid.MaxHealth or nil
+	local humanoidPrevHealth = humanoid and humanoid.Health or nil
+	local maxHealthChanged = false
+
+	for statName, amount in pairs(bonuses) do
+		if amount ~= 0 then
+			local stat = leaderstats:FindFirstChild(statName)
+			if stat and typeof(stat.Value) == "number" then
+				stat.Value = stat.Value + (amount * multiplier)
+
+				if statName == "MaxHealth" then
+					maxHealthChanged = true
+				end
+
+				if statName == "MaxDefense" then
+					local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+					if currentDefense then
+						currentDefense.Value = math.max(0, currentDefense.Value + (amount * multiplier))
+					end
+				end
+			end
+		end
+	end
+
+	if humanoid and maxHealthChanged then
+		local maxHealthStat = leaderstats:FindFirstChild("MaxHealth")
+		if maxHealthStat then
+			local newMax = math.max(0, maxHealthStat.Value)
+			humanoid.MaxHealth = newMax
+
+			if humanoidPrevMaxHealth and humanoidPrevMaxHealth > 0 then
+				local ratio = humanoidPrevHealth and (humanoidPrevHealth / humanoidPrevMaxHealth) or 1
+				ratio = math.clamp(ratio, 0, 1)
+				humanoid.Health = math.max(0, math.min(newMax, newMax * ratio))
+			else
+				humanoid.Health = newMax
+			end
+		end
+	end
+end
+
+local function updateEquipmentBonusFolders(leaderstats, aggregated, details)
+	if not leaderstats then
+		return
+	end
+
+	aggregated = aggregated or {}
+	details = details or {}
+
+	local bonusesFolder = ensureFolder(leaderstats, "EquipmentBonuses")
+	local detailsFolder = ensureFolder(leaderstats, "EquipmentBonusDetails")
+
+	local seen = {}
+
+	for statName, value in pairs(aggregated) do
+		seen[statName] = true
+
+		local valueObj = bonusesFolder:FindFirstChild(statName)
+		if not valueObj then
+			valueObj = Instance.new("NumberValue")
+			valueObj.Name = statName
+			valueObj.Parent = bonusesFolder
+		end
+		valueObj.Value = value
+
+		local detailText = ""
+		if details[statName] and #details[statName] > 0 then
+			detailText = table.concat(details[statName], ", ")
+		end
+
+		local detailObj = detailsFolder:FindFirstChild(statName)
+		if not detailObj then
+			detailObj = Instance.new("StringValue")
+			detailObj.Name = statName
+			detailObj.Parent = detailsFolder
+		end
+		detailObj.Value = detailText
+	end
+
+	for _, valueObj in ipairs(bonusesFolder:GetChildren()) do
+		if not seen[valueObj.Name] and valueObj:IsA("NumberValue") then
+			valueObj.Value = 0
+		end
+	end
+
+	for _, detailObj in ipairs(detailsFolder:GetChildren()) do
+		if not seen[detailObj.Name] and detailObj:IsA("StringValue") then
+			detailObj.Value = ""
+		end
+	end
+end
+
+local function computeEquipmentBonuses(player)
+	local aggregated = {}
+	local details = {}
+
+	local character = player and player.Character
+	if not character then
+		return aggregated, details
+	end
+
+	for _, child in ipairs(character:GetChildren()) do
+		if child:IsA("Tool") or child:IsA("Accessory") or child:IsA("Model") then
+			local itemTotals = {}
+
+			local function accumulateFromInstance(instance)
+				for attributeName, mapping in pairs(EquipmentStatMappings) do
+					local attrValue = instance:GetAttribute(attributeName)
+					if typeof(attrValue) == "number" and attrValue ~= 0 then
+						local statName = mapping.leaderstat
+						aggregated[statName] = (aggregated[statName] or 0) + attrValue
+						itemTotals[statName] = (itemTotals[statName] or 0) + attrValue
+					end
+				end
+			end
+
+			accumulateFromInstance(child)
+			for _, descendant in ipairs(child:GetDescendants()) do
+				accumulateFromInstance(descendant)
+			end
+
+			local configEntry = EquipmentBonusConfig and EquipmentBonusConfig[child.Name]
+			if configEntry then
+				for key, value in pairs(configEntry) do
+					local mapping = EquipmentStatMappings[key]
+					if mapping and typeof(value) == "number" and value ~= 0 then
+						local statName = mapping.leaderstat
+						aggregated[statName] = (aggregated[statName] or 0) + value
+						itemTotals[statName] = (itemTotals[statName] or 0) + value
+					end
+				end
+			end
+
+			for statName, amount in pairs(itemTotals) do
+				details[statName] = details[statName] or {}
+				table.insert(details[statName], string.format("%s %s", child.Name, formatBonus(amount)))
+			end
+		end
+	end
+
+	return aggregated, details
+end
+
+local function clearEquipmentBonuses(player)
+	if not player then
+		return
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local currentBonuses = playerEquipmentBonuses[player]
+
+	if leaderstats then
+		if currentBonuses then
+			applyEquipmentBonusesToLeaderstats(leaderstats, currentBonuses, -1)
+		end
+		updateEquipmentBonusFolders(leaderstats, {}, {})
+	end
+
+	playerEquipmentBonuses[player] = nil
+	playerEquipmentBonusDetails[player] = nil
+end
+
+local function refreshEquipmentBonuses(player)
+	if not player then
+		return
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return
+	end
+
+	local existing = playerEquipmentBonuses[player]
+	if existing then
+		applyEquipmentBonusesToLeaderstats(leaderstats, existing, -1)
+	end
+
+	local aggregated, details = computeEquipmentBonuses(player)
+	playerEquipmentBonuses[player] = aggregated
+	playerEquipmentBonusDetails[player] = details
+
+	applyEquipmentBonusesToLeaderstats(leaderstats, aggregated, 1)
+	updateEquipmentBonusFolders(leaderstats, aggregated, details)
+end
+
+function _G.refreshEquipmentBonuses(player)
+	refreshEquipmentBonuses(player)
+end
+
+function _G.clearEquipmentBonuses(player)
+	clearEquipmentBonuses(player)
+end
+
 -- ========================================
 -- BASE PLAYER STATS (Classes)
 -- Moved from SlavkosConfigs to be managed here
@@ -198,7 +433,7 @@ local function getBaseStatsBeforeBuff(player)
 	if not leaderstats then
 		return nil
 	end
-	
+
 	return {
 		MaxAttack = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0,
 		MaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0,
@@ -249,6 +484,12 @@ function _G.applyBuff(player, buffName, buffConfig)
 	
 	-- Store base stats before applying buff
 	local baseStats = getBaseStatsBeforeBuff(player)
+	local equipmentSnapshot = {}
+	if playerEquipmentBonuses[player] then
+		for statName, amount in pairs(playerEquipmentBonuses[player]) do
+			equipmentSnapshot[statName] = amount
+		end
+	end
 	
 	-- Calculate new stats with buff
 	if buffName == "Warcry" then
@@ -520,7 +761,8 @@ function _G.applyBuff(player, buffName, buffConfig)
 		config = config,
 		startTime = startTime,
 		endTime = endTime,
-		baseStats = baseStats
+		baseStats = baseStats,
+		equipmentSnapshot = equipmentSnapshot
 	}
 	
 	-- Store base stats in leaderstats for UI display (only for UI, not used in calculations)
@@ -1050,6 +1292,24 @@ function _G.removeBuff(player, buffName)
 	
 	local buffData = playerBuffs[player][buffName]
 	local baseStats = buffData.baseStats
+	local equipmentSnapshot = buffData.equipmentSnapshot or {}
+
+	local function baseWithoutEquipment(statName, value)
+		if equipmentSnapshot[statName] then
+			return math.max(0, value - equipmentSnapshot[statName])
+		end
+		return value
+	end
+
+	local aggregatedEquipmentSnapshot = {}
+	do
+		local currentAggregated = select(1, computeEquipmentBonuses(player))
+		for statName, amount in pairs(currentAggregated) do
+			aggregatedEquipmentSnapshot[statName] = amount
+		end
+	end
+
+	local pendingHealthValue = nil
 	
 	-- Restore base stats
 	if buffName == "Warcry" then
@@ -1058,16 +1318,17 @@ function _G.removeBuff(player, buffName)
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
 		
 		if maxAttack and baseStats then
-			maxAttack.Value = baseStats.MaxAttack
+			maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
 		end
 		
 		if maxDefense and baseStats then
-			maxDefense.Value = baseStats.MaxDefense
+			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
+			maxDefense.Value = restoredDefense
 			
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
-				currentDefense.Value = baseStats.MaxDefense
+				currentDefense.Value = restoredDefense
 			end
 		end
 		
@@ -1078,13 +1339,16 @@ function _G.removeBuff(player, buffName)
 		
 		if maxHealth and baseStats and humanoid then
 			-- Restore base health
-			maxHealth.Value = baseStats.MaxHealth
-			humanoid.MaxHealth = baseStats.MaxHealth
+			local restoredHealth = baseWithoutEquipment("MaxHealth", baseStats.MaxHealth)
+			maxHealth.Value = restoredHealth
+			humanoid.MaxHealth = restoredHealth
 			
-			-- Restore health percentage (cap at max health)
-			local healthPercentage = baseStats.MaxHealth > 0 and (humanoid.Health / (baseStats.MaxHealth + buffData.config.hpIncrease)) or 1
-			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
-			humanoid.Health = newHealth
+			-- Restore health percentage (cap at max health) after reapplying equipment bonuses
+			local buffedMaxHealthBeforeRemoval = baseStats.MaxHealth + (buffData.config.hpIncrease or 0)
+			local finalMaxHealthAfterEquipment = restoredHealth + (aggregatedEquipmentSnapshot.MaxHealth or 0)
+			local healthPercentage = buffedMaxHealthBeforeRemoval > 0 and (humanoid.Health / buffedMaxHealthBeforeRemoval) or 1
+			local desiredHealth = math.min(finalMaxHealthAfterEquipment * healthPercentage, finalMaxHealthAfterEquipment)
+			pendingHealthValue = desiredHealth
 		end
 		
 	elseif buffName == "BloodThirst" then
@@ -1102,24 +1366,27 @@ function _G.removeBuff(player, buffName)
 		
 		if maxHealth and baseStats and humanoid then
 			-- Restore base health
-			maxHealth.Value = baseStats.MaxHealth
-			humanoid.MaxHealth = baseStats.MaxHealth
+			local restoredHealth = baseWithoutEquipment("MaxHealth", baseStats.MaxHealth)
+			maxHealth.Value = restoredHealth
+			humanoid.MaxHealth = restoredHealth
 			
-			-- Restore health percentage (cap at max health)
+			-- Restore health percentage (cap at max health) after reapplying equipment bonuses
 			local buffedMaxHealth = baseStats.MaxHealth * (1 + buffData.config.hpMultiplier)
+			local finalMaxHealthAfterEquipment = restoredHealth + (aggregatedEquipmentSnapshot.MaxHealth or 0)
 			local healthPercentage = buffedMaxHealth > 0 and (humanoid.Health / buffedMaxHealth) or 1
-			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
-			humanoid.Health = newHealth
+			local desiredHealth = math.min(finalMaxHealthAfterEquipment * healthPercentage, finalMaxHealthAfterEquipment)
+			pendingHealthValue = desiredHealth
 		end
 		
 		if maxDefense and baseStats then
 			-- Restore base defense
-			maxDefense.Value = baseStats.MaxDefense
+			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
+			maxDefense.Value = restoredDefense
 			
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
-				currentDefense.Value = baseStats.MaxDefense
+				currentDefense.Value = restoredDefense
 			end
 		end
 		
@@ -1129,12 +1396,13 @@ function _G.removeBuff(player, buffName)
 		
 		if maxDefense and baseStats then
 			-- Restore base defense
-			maxDefense.Value = baseStats.MaxDefense
+			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
+			maxDefense.Value = restoredDefense
 			
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
-				currentDefense.Value = baseStats.MaxDefense
+				currentDefense.Value = restoredDefense
 			end
 		end
 		
@@ -1144,9 +1412,9 @@ function _G.removeBuff(player, buffName)
 		-- HuntersInstinct: Restore Movement Speed to base value
 		local movementSpeed = leaderstats:FindFirstChild("MovementSpeed")
 		
-		if movementSpeed and baseStats then
-			-- Restore base movement speed
-			movementSpeed.Value = baseStats.MovementSpeed
+	if movementSpeed and baseStats then
+		-- Restore base movement speed
+		movementSpeed.Value = baseWithoutEquipment("MovementSpeed", baseStats.MovementSpeed)
 			
 			-- Update unified movement animation speed in ServerConfigs
 			local movementAnimSpeedMultiplier = movementSpeed.Value
@@ -1189,12 +1457,12 @@ function _G.removeBuff(player, buffName)
 		
 		if maxAttack and baseStats then
 			-- Restore base attack
-			maxAttack.Value = baseStats.MaxAttack
+		maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
 		end
 		
 		if attackSpeed and baseStats then
 			-- Restore base attack speed
-			attackSpeed.Value = baseStats.AttackSpeed
+		attackSpeed.Value = baseWithoutEquipment("AttackSpeed", baseStats.AttackSpeed)
 			
 			-- Update unified attack animation speed in ServerConfigs
 			local attackAnimSpeedMultiplier = attackSpeed.Value
@@ -1343,6 +1611,24 @@ function _G.removeBuff(player, buffName)
 		end
 	end
 	
+	-- Reapply current equipment bonuses after stats were reset
+	local humanoidAfterRefresh = nil
+
+	if leaderstats then
+		if playerEquipmentBonuses[player] then
+			playerEquipmentBonuses[player] = nil
+		end
+		if playerEquipmentBonusDetails[player] then
+			playerEquipmentBonusDetails[player] = nil
+		end
+		refreshEquipmentBonuses(player)
+		humanoidAfterRefresh = player.Character and player.Character:FindFirstChild("Humanoid")
+	end
+
+	if pendingHealthValue and humanoidAfterRefresh then
+		humanoidAfterRefresh.Health = math.min(pendingHealthValue, humanoidAfterRefresh.MaxHealth)
+	end
+	
 	return true
 end
 
@@ -1465,6 +1751,8 @@ game.Players.PlayerRemoving:Connect(function(player)
 	if playerBuffs[player] then
 		playerBuffs[player] = nil
 	end
+
+	clearEquipmentBonuses(player)
 end)
 
 -- ========================================
@@ -1673,6 +1961,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local activePassives = Instance.new("StringValue", leaderstats)
 	activePassives.Name = "ActivePassives"
 	activePassives.Value = "" -- Comma-separated list of active passives (e.g., "Tenacity")
+	
+	-- Equipment bonus tracking (set by Inventory/Equipment systems)
+	local equipmentBonusesFolder = Instance.new("Folder", leaderstats)
+	equipmentBonusesFolder.Name = "EquipmentBonuses"
+	
+	local equipmentBonusDetailsFolder = Instance.new("Folder", leaderstats)
+	equipmentBonusDetailsFolder.Name = "EquipmentBonusDetails"
 	
 	
 	------------------ FOR SUNFIRE ONLY ----------------
@@ -2266,6 +2561,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		local humanoid = char:WaitForChild("Humanoid")
 
+		-- Reset equipment bonuses so we can recalculate with newly equipped tools
+		clearEquipmentBonuses(plr)
+
 		-- Apply base stats if not already set
 		applyBaseStats()
 
@@ -2430,6 +2728,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end)
 		end
 		
+		-- Ensure equipment bonuses are applied for the current character state
+		refreshEquipmentBonuses(plr)
+		
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
 		
@@ -2467,10 +2768,19 @@ local function savePlayerData(plr)
 	leaderstats.Level.Value = math.min(leaderstats.Level.Value, BaseStats.XP.maxLevel)
 
 	-- Helper function to safely get a stat value
-	local function getStatValue(statName, defaultValue)
+	local equipmentBonuses = playerEquipmentBonuses[plr]
+
+	local function getStatValue(statName, defaultValue, options)
 		local stat = leaderstats:FindFirstChild(statName)
 		if stat and stat:IsA("ValueBase") then
-			return tonumber(stat.Value) or defaultValue
+			local value = tonumber(stat.Value) or defaultValue
+			local sourceStatName = (options and options.source) or statName
+
+			if equipmentBonuses and equipmentBonuses[sourceStatName] then
+				value = value - equipmentBonuses[sourceStatName]
+			end
+
+			return math.max(value, 0)
 		end
 		return defaultValue
 	end
@@ -2485,7 +2795,7 @@ local function savePlayerData(plr)
 		CritRate = getStatValue("CritRate", 0),
 		CritMultiplier = getStatValue("CritMultiplier", 0),
 		MaxDefense = getStatValue("MaxDefense", 0),
-		CurrentDefense = getStatValue("CurrentDefense", getStatValue("MaxDefense", 0)), -- Default to MaxDefense if CurrentDefense doesn't exist
+		CurrentDefense = getStatValue("CurrentDefense", getStatValue("MaxDefense", 0), {source = "MaxDefense"}), -- Default to MaxDefense if not saved
 		MaxHealth = getStatValue("MaxHealth", 0),
 		HealthRegen = getStatValue("HealthRegen", 0),
 		MovementSpeed = getStatValue("MovementSpeed", 0),

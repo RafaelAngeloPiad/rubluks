@@ -123,6 +123,10 @@ local function LoadPlayerInventory(player)
 			end
 		end
 	end
+
+	if _G.refreshEquipmentBonuses then
+		_G.refreshEquipmentBonuses(player)
+	end
 end
 
 -- Bind events to save inventory ONLY when tools are added/removed from Backpack or Character
@@ -141,15 +145,21 @@ local function BindInventoryEvents(player)
 	-- Bind Character tool events
 	local function bindCharacter(character)
 		character.ChildAdded:Connect(function(child)
-			if child:IsA("Tool") then
+			if child:IsA("Tool") or child:IsA("Accessory") then
 				SavePlayerInventory(player)
+				if _G.refreshEquipmentBonuses then
+					task.defer(_G.refreshEquipmentBonuses, player)
+				end
 			end
 		end)
 		character.ChildRemoved:Connect(function(child)
-			if child:IsA("Tool") then
+			if child:IsA("Tool") or child:IsA("Accessory") then
 				-- Only save if player is not dying (to prevent losing equipped weapon on death)
 				if not playerDying[player.UserId] then
 					SavePlayerInventory(player)
+				end
+				if _G.refreshEquipmentBonuses then
+					task.defer(_G.refreshEquipmentBonuses, player)
 				end
 			end
 		end)

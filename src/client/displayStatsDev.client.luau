@@ -226,6 +226,22 @@ local function getStatColor(statName)
 	return colors[statName] or Color3.fromRGB(255, 255, 255)
 end
 
+local EquipmentStatDisplayOrder = {
+	{stat = "MaxHealth", label = "HP"},
+	{stat = "MaxAttack", label = "Attack"},
+	{stat = "MaxDefense", label = "Defense"},
+	{stat = "DefensePenetration", label = "Defense Penetration"},
+	{stat = "CritRate", label = "Crit Rate"},
+	{stat = "CritMultiplier", label = "Crit Multiplier"},
+}
+
+local function formatBonus(amount)
+	if math.abs(amount - math.floor(amount)) < 1e-3 then
+		return string.format("%+d", amount)
+	end
+	return string.format("%+.2f", amount)
+end
+
 -- Track stat labels
 local statLabels = {}
 
@@ -353,6 +369,68 @@ local function updateStatsDisplay()
 	divider.BorderSizePixel = 0
 	divider.LayoutOrder = layoutOrder
 	divider.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+
+	-- Equipment bonuses header
+	local equipmentHeader = Instance.new("TextLabel")
+	equipmentHeader.Name = "EquipmentHeader"
+	equipmentHeader.Size = UDim2.new(1, -10, 0, 25)
+	equipmentHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	equipmentHeader.BorderSizePixel = 0
+	equipmentHeader.Text = "WEAPON & ACCESSORY BONUSES"
+	equipmentHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+	equipmentHeader.TextSize = 11
+	equipmentHeader.Font = Enum.Font.GothamBold
+	equipmentHeader.LayoutOrder = layoutOrder
+	equipmentHeader.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+
+	local equipmentBonusesFolder = leaderstats:FindFirstChild("EquipmentBonuses")
+	local equipmentDetailsFolder = leaderstats:FindFirstChild("EquipmentBonusDetails")
+	local hasEquipmentBonuses = false
+
+	if equipmentBonusesFolder then
+		for _, entry in ipairs(EquipmentStatDisplayOrder) do
+			local valueObj = equipmentBonusesFolder:FindFirstChild(entry.stat)
+			if valueObj and math.abs(valueObj.Value) > 0 then
+				hasEquipmentBonuses = true
+				local bonusText = formatBonus(valueObj.Value)
+
+				if equipmentDetailsFolder then
+					local detailObj = equipmentDetailsFolder:FindFirstChild(entry.stat)
+					if detailObj and detailObj.Value ~= "" then
+						bonusText = string.format("%s  (%s)", bonusText, detailObj.Value)
+					end
+				end
+
+				local labelKey = "Equipment_" .. entry.stat
+				statLabels[labelKey] = createStatRow(entry.label, bonusText, Color3.fromRGB(180, 255, 180), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			end
+		end
+	end
+
+	if not hasEquipmentBonuses then
+		local noEquipmentLabel = Instance.new("TextLabel")
+		noEquipmentLabel.Name = "NoEquipmentBonuses"
+		noEquipmentLabel.Size = UDim2.new(1, -10, 0, 20)
+		noEquipmentLabel.BackgroundTransparency = 1
+		noEquipmentLabel.Text = "No weapon/accessory bonuses"
+		noEquipmentLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		noEquipmentLabel.TextSize = 11
+		noEquipmentLabel.Font = Enum.Font.Gotham
+		noEquipmentLabel.LayoutOrder = layoutOrder
+		noEquipmentLabel.Parent = scrollFrame
+		layoutOrder = layoutOrder + 1
+	end
+
+	-- Divider before buffs/passives section
+	local equipmentDivider = Instance.new("Frame")
+	equipmentDivider.Size = UDim2.new(1, -10, 0, 2)
+	equipmentDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	equipmentDivider.BorderSizePixel = 0
+	equipmentDivider.LayoutOrder = layoutOrder
+	equipmentDivider.Parent = scrollFrame
 	layoutOrder = layoutOrder + 1
 	
 	-- Buffs and Passives header
@@ -1746,6 +1824,65 @@ local function setupStatConnections()
 			end
 		end
 		
+	local function connectEquipmentFolder(folder, keyPrefix)
+		for _, child in ipairs(folder:GetChildren()) do
+			if child:IsA("ValueBase") then
+				local conn = child:GetPropertyChangedSignal("Value"):Connect(function()
+					task.wait(0.05)
+					updateStatsDisplay()
+				end)
+				statConnections[child] = conn
+			end
+		end
+
+		local addedConn = folder.ChildAdded:Connect(function(child)
+			if child:IsA("ValueBase") then
+				local conn = child:GetPropertyChangedSignal("Value"):Connect(function()
+					task.wait(0.05)
+					updateStatsDisplay()
+				end)
+				statConnections[child] = conn
+				task.wait(0.05)
+				updateStatsDisplay()
+			end
+		end)
+		statConnections[keyPrefix .. "_ChildAdded"] = addedConn
+
+		local removedConn = folder.ChildRemoved:Connect(function()
+			task.wait(0.05)
+			updateStatsDisplay()
+		end)
+		statConnections[keyPrefix .. "_ChildRemoved"] = removedConn
+	end
+
+	local equipmentBonuses = leaderstats:FindFirstChild("EquipmentBonuses")
+	if equipmentBonuses then
+		connectEquipmentFolder(equipmentBonuses, "EquipmentBonuses")
+	end
+
+	local equipmentBonusDetails = leaderstats:FindFirstChild("EquipmentBonusDetails")
+	if equipmentBonusDetails then
+		connectEquipmentFolder(equipmentBonusDetails, "EquipmentBonusDetails")
+	end
+
+	local childAddedConn = leaderstats.ChildAdded:Connect(function(child)
+		if child.Name == "EquipmentBonuses" or child.Name == "EquipmentBonusDetails" then
+			task.wait(0.1)
+			updateStatsDisplay()
+			task.defer(setupStatConnections)
+		end
+	end)
+	statConnections["LeaderstatsChildAdded"] = childAddedConn
+
+	local childRemovedConn = leaderstats.ChildRemoved:Connect(function(child)
+		if child.Name == "EquipmentBonuses" or child.Name == "EquipmentBonusDetails" then
+			task.wait(0.1)
+			updateStatsDisplay()
+			task.defer(setupStatConnections)
+		end
+	end)
+	statConnections["LeaderstatsChildRemoved"] = childRemovedConn
+
 		-- Connect to ActiveBuffs changes for real-time buff display updates
 		if leaderstats:FindFirstChild("ActiveBuffs") then
 			local conn = leaderstats.ActiveBuffs:GetPropertyChangedSignal("Value"):Connect(function()
