@@ -25,6 +25,37 @@ local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBo
 -- EQUIPMENT BONUS CONFIGURATION
 -- ========================================
 
+local function shallowCopy(source)
+	local copy = {}
+	if source then
+		for key, value in pairs(source) do
+			copy[key] = value
+		end
+	end
+	return copy
+end
+
+local EquipmentBonusEntries = EquipmentBonusConfig.Entries or EquipmentBonusConfig
+local EquipmentBonusAssetLookup = shallowCopy(EquipmentBonusConfig.AssetLookup)
+local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.CanonicalLookup)
+
+if next(EquipmentBonusAssetLookup) == nil then
+	for canonicalName, entry in pairs(EquipmentBonusEntries) do
+		entry.assetName = entry.assetName or canonicalName
+		entry.canonicalName = entry.canonicalName or canonicalName
+
+		EquipmentBonusAssetLookup[canonicalName] = entry
+		EquipmentBonusAssetLookup[entry.assetName] = entry
+		EquipmentBonusCanonicalLookup[canonicalName] = canonicalName
+		EquipmentBonusCanonicalLookup[entry.assetName] = canonicalName
+	end
+else
+	for canonicalName, entry in pairs(EquipmentBonusEntries) do
+		entry.assetName = entry.assetName or canonicalName
+		entry.canonicalName = entry.canonicalName or canonicalName
+	end
+end
+
 local EquipmentStatMappings = {
 	HPPlus = {leaderstat = "MaxHealth", displayName = "HP"},
 	AttackPlus = {leaderstat = "MaxAttack", displayName = "Attack"},
@@ -182,14 +213,22 @@ local function computeEquipmentBonuses(player)
 				accumulateFromInstance(descendant)
 			end
 
-			local configEntry = EquipmentBonusConfig and EquipmentBonusConfig[child.Name]
+			local configEntry = EquipmentBonusAssetLookup[child.Name]
+			if not configEntry then
+				local canonicalName = EquipmentBonusCanonicalLookup[child.Name]
+				if canonicalName then
+					configEntry = EquipmentBonusEntries[canonicalName]
+				end
+			end
 			if configEntry then
 				for key, value in pairs(configEntry) do
-					local mapping = EquipmentStatMappings[key]
-					if mapping and typeof(value) == "number" and value ~= 0 then
-						local statName = mapping.leaderstat
-						aggregated[statName] = (aggregated[statName] or 0) + value
-						itemTotals[statName] = (itemTotals[statName] or 0) + value
+					if key ~= "assetName" and key ~= "canonicalName" then
+						local mapping = EquipmentStatMappings[key]
+						if mapping and typeof(value) == "number" and value ~= 0 then
+							local statName = mapping.leaderstat
+							aggregated[statName] = (aggregated[statName] or 0) + value
+							itemTotals[statName] = (itemTotals[statName] or 0) + value
+						end
 					end
 				end
 			end
@@ -203,7 +242,6 @@ local function computeEquipmentBonuses(player)
 
 	return aggregated, details
 end
-
 local function clearEquipmentBonuses(player)
 	if not player then
 		return

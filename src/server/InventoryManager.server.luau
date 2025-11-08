@@ -1,6 +1,71 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MainDataStore = require(ReplicatedStorage:FindFirstChild("MainDataStore"))
+local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+
+local function shallowCopy(source)
+	local copy = {}
+	if source then
+		for key, value in pairs(source) do
+			copy[key] = value
+		end
+	end
+	return copy
+end
+
+local EquipmentBonusEntries = EquipmentBonusConfig.Entries or EquipmentBonusConfig
+local EquipmentBonusAssetLookup = shallowCopy(EquipmentBonusConfig.AssetLookup)
+local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.CanonicalLookup)
+
+if next(EquipmentBonusAssetLookup) == nil then
+	for canonicalName, entry in pairs(EquipmentBonusEntries) do
+		entry.assetName = entry.assetName or canonicalName
+		entry.canonicalName = entry.canonicalName or canonicalName
+
+		EquipmentBonusAssetLookup[canonicalName] = entry
+		EquipmentBonusAssetLookup[entry.assetName] = entry
+		EquipmentBonusCanonicalLookup[canonicalName] = canonicalName
+		EquipmentBonusCanonicalLookup[entry.assetName] = canonicalName
+	end
+else
+	for canonicalName, entry in pairs(EquipmentBonusEntries) do
+		entry.assetName = entry.assetName or canonicalName
+		entry.canonicalName = entry.canonicalName or canonicalName
+	end
+end
+
+local function getCanonicalToolName(toolName)
+	return EquipmentBonusCanonicalLookup[toolName] or toolName
+end
+
+local function resolveAsset(assetsFolder, toolName)
+	if not assetsFolder then
+		return nil
+	end
+
+	local asset = assetsFolder:FindFirstChild(toolName)
+	if asset then
+		return asset
+	end
+
+	local entry = EquipmentBonusEntries[toolName]
+	if entry and entry.assetName then
+		asset = assetsFolder:FindFirstChild(entry.assetName)
+		if asset then
+			return asset
+		end
+	end
+
+	local aliasEntry = EquipmentBonusAssetLookup[toolName]
+	if aliasEntry and aliasEntry.assetName then
+		asset = assetsFolder:FindFirstChild(aliasEntry.assetName)
+		if asset then
+			return asset
+		end
+	end
+
+	return nil
+end
 
 -- Debounce table for inventory saves per player
 local inventorySaveDebounce = {}
@@ -27,7 +92,7 @@ local function SavePlayerInventory(player)
 		if backpack then
 			for i, item in backpack:GetChildren() do
 				if item:IsA("Tool") then
-					table.insert(inventory, item.Name)
+					table.insert(inventory, getCanonicalToolName(item.Name))
 				end
 			end
 		end
@@ -35,7 +100,7 @@ local function SavePlayerInventory(player)
 		if character then
 			for i, item in character:GetChildren() do
 				if item:IsA("Tool") then
-					table.insert(equipped, item.Name)
+					table.insert(equipped, getCanonicalToolName(item.Name))
 				end
 			end
 		end
@@ -95,30 +160,53 @@ local function LoadPlayerInventory(player)
 	local inventoryData = MainDataStore.LoadInventory(player.UserId)
 	local inventory = inventoryData.inventory or {}
 	local equipped = inventoryData.equipped or {}
+
+	local function normaliseToolList(list)
+		local result = {}
+		for _, toolName in ipairs(list) do
+			table.insert(result, getCanonicalToolName(toolName))
+		end
+		return result
+	end
+
+	inventory = normaliseToolList(inventory)
+	equipped = normaliseToolList(equipped)
+
 	local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
 	if not assetsFolder then
 		warn("[InventoryManager] Assets folder not found in ReplicatedStorage for", player.Name)
 		return
 	end
 
+	local missingWarnings = {}
 
 	-- Load Backpack tools (allow duplicates - these come from DataStore)
 	for i, toolName in inventory do
-		local asset = assetsFolder:FindFirstChild(toolName)
+		local asset = resolveAsset(assetsFolder, toolName)
 		if asset and asset:IsA("Tool") then
-			asset:Clone().Parent = backpack
+			local clone = asset:Clone()
+			clone.Parent = backpack
 		else
-			warn("[InventoryManager] Tool not found:", toolName)
+			if not missingWarnings[toolName] then
+				warn("[InventoryManager] Tool not found:", toolName)
+				missingWarnings[toolName] = true
+			end
 		end
 	end
 
 	-- Load Equipped tools (to Character) - prevent duplicates for equipped items
 	if character and #equipped > 0 then
 		for i, toolName in equipped do
-			local asset = assetsFolder:FindFirstChild(toolName)
+			local asset = resolveAsset(assetsFolder, toolName)
 			if asset and asset:IsA("Tool") then
-				if not character:FindFirstChild(toolName) then
-					asset:Clone().Parent = character
+				if not character:FindFirstChild(asset.Name) then
+					local clone = asset:Clone()
+					clone.Parent = character
+				end
+			else
+				if not missingWarnings[toolName] then
+					warn("[InventoryManager] Tool not found:", toolName)
+					missingWarnings[toolName] = true
 				end
 			end
 		end
