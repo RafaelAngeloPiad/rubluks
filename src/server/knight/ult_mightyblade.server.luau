@@ -56,6 +56,37 @@ slashAnim.AnimationId = "rbxassetid://100472690161584"
 -- MIGHTY BLADE HITBOX CONFIG (using centralized config)
 local MIGHTYBLADE_CONFIG = ServerConfigs.KnightSkills.MightyBlade
 
+local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+
+	offsetCFrame = offsetCFrame or CFrame.new()
+	lifetime = lifetime or 3
+
+	local anchor = Instance.new("Part")
+	anchor.Name = "MightyBladeHitboxAnchor"
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Massless = true
+	anchor.Anchored = false
+	anchor.CFrame = root.CFrame * offsetCFrame
+	anchor.Parent = character
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = anchor
+	weld.Parent = anchor
+
+	Debris:AddItem(anchor, lifetime)
+
+	return anchor
+end
+
 -- Helper functions from original MightyBlade.lua
 local function swordsNear(character, angle, tilt)
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -358,12 +389,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		local root = character:WaitForChild("HumanoidRootPart")
 		local damageMultiplier = MIGHTYBLADE_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		local hitboxDuration = math.max((MIGHTYBLADE_CONFIG.damageTickTime or 0.5) * 6, 3)
+		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, 0, 0), hitboxDuration)
 		_G.createStaticDOTHitbox({
-			attachTo = root,
+			attachTo = hitboxAnchor or root,
 			offset = CFrame.new(0, 0, 0),
 			size = MIGHTYBLADE_CONFIG.hitboxSize, -- Massive center hitbox
 			damage = actualDamage, -- Damage per tick (calculated with crit)
 			damageTickTime = MIGHTYBLADE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
+			duration = hitboxDuration,
 			character = character,
 			name = "MightyBlade Center DOT",
 			showVisual = true,

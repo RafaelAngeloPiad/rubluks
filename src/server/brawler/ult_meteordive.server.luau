@@ -56,6 +56,37 @@ end
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://95054632322392"
 
+local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+
+	offsetCFrame = offsetCFrame or CFrame.new()
+	lifetime = lifetime or 4
+
+	local anchor = Instance.new("Part")
+	anchor.Name = "MeteorDiveHitboxAnchor"
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Massless = true
+	anchor.Anchored = false
+	anchor.CFrame = root.CFrame * offsetCFrame
+	anchor.Parent = character
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = anchor
+	weld.Parent = anchor
+
+	Debris:AddItem(anchor, lifetime)
+
+	return anchor
+end
+
 remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle meteordive ultimate requests
 	if skillType ~= "meteordive" then
@@ -147,13 +178,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Calculate actual damage from multiplier (damage is now a multiplier)
 		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultDamage or ServerConfigs.BrawlerSkills.MeteorDive.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Brawler", damageMultiplier)
+		local hitboxDuration = 4
+		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, -1, 0), hitboxDuration)
 		_G.createStaticDOTHitbox({
-			attachTo = root,
+			attachTo = hitboxAnchor or root,
 			offset = CFrame.new(0, -1, 0),
 			size = ServerConfigs.BrawlerSkills.MeteorDive.hitboxSize,
 			damage = actualDamage, -- Damage per tick (calculated from multiplier)
 			damageTickTime = ServerConfigs.BrawlerSkills.MeteorDive.damageTickTime or ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.ultTickTime,
-			duration = 4.0, -- Duration in seconds (matches VFX cleanup time)
+			duration = hitboxDuration, -- Duration in seconds (matches VFX cleanup time)
 			character = character,
 			name = "MeteorDive Center DOT",
 			showVisual = true,

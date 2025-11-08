@@ -835,6 +835,7 @@ function _G.createStaticHitbox(config)
 		
 		-- Create visual
 		local visual = nil
+		local visualTransparency = config.visualTransparency
 		if showVisual then
 			visual = Instance.new("Part")
 			visual.Size = size
@@ -844,7 +845,7 @@ function _G.createStaticHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = HITBOX_CONFIG.transparency
+			visual.Transparency = visualTransparency ~= nil and visualTransparency or HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "HitboxVisual"
 			visual.Parent = workspace
@@ -979,6 +980,7 @@ function _G.createStaticDOTHitbox(config)
 		
 		-- Create visual
 		local visual = nil
+		local visualTransparency = config.visualTransparency
 		if showVisual then
 			visual = Instance.new("Part")
 			visual.Size = size
@@ -988,7 +990,7 @@ function _G.createStaticDOTHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = HITBOX_CONFIG.transparency
+			visual.Transparency = visualTransparency ~= nil and visualTransparency or HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "DOTHitboxVisual"
 			visual.Parent = workspace
@@ -1200,6 +1202,7 @@ function _G.createTravelingHitbox(config)
 		
 		-- Create visual
 		local visual = nil
+		local visualTransparency = config.visualTransparency
 		if showVisual then
 			visual = Instance.new("Part")
 			visual.Size = size
@@ -1208,7 +1211,7 @@ function _G.createTravelingHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = HITBOX_CONFIG.transparency
+			visual.Transparency = visualTransparency ~= nil and visualTransparency or HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "HitboxVisual"
 			visual.Parent = workspace
@@ -1339,6 +1342,7 @@ function _G.createTravelingDOTHitbox(config)
 		
 		-- Create visual
 		local visual = nil
+		local visualTransparency = config.visualTransparency
 		if showVisual then
 			visual = Instance.new("Part")
 			visual.Size = size
@@ -1347,7 +1351,7 @@ function _G.createTravelingDOTHitbox(config)
 			visual.CanQuery = false
 			visual.CanTouch = false
 			visual.Material = Enum.Material.Neon
-			visual.Transparency = HITBOX_CONFIG.transparency
+			visual.Transparency = visualTransparency ~= nil and visualTransparency or HITBOX_CONFIG.transparency
 			visual.Color = visualColor
 			visual.Name = name .. "TravelingDOTHitboxVisual"
 			visual.Parent = workspace
@@ -1552,6 +1556,7 @@ function _G.createProjectileHitbox(config)
 
 	-- Create visual debug hitbox (using HITBOX_CONFIG.transparency for consistency)
 	local visual = nil
+	local visualTransparency = config.visualTransparency
 	if showVisual then
 		visual = Instance.new("Part")
 		visual.Size = size
@@ -1560,7 +1565,7 @@ function _G.createProjectileHitbox(config)
 		visual.CanQuery = false
 		visual.CanTouch = false
 		visual.Material = Enum.Material.Neon
-		visual.Transparency = HITBOX_CONFIG.transparency -- Use unified transparency setting
+		visual.Transparency = visualTransparency ~= nil and visualTransparency or HITBOX_CONFIG.transparency -- Use unified transparency setting
 		visual.Color = visualColor
 		visual.Name = name .. "ProjectileHitboxVisual"
 		visual.Parent = workspace

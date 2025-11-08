@@ -51,6 +51,37 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://136486872917927"
 
+local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+
+	offsetCFrame = offsetCFrame or CFrame.new()
+	lifetime = lifetime or 3
+
+	local anchor = Instance.new("Part")
+	anchor.Name = "StarfallHitboxAnchor"
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Massless = true
+	anchor.Anchored = false
+	anchor.CFrame = root.CFrame * offsetCFrame
+	anchor.Parent = character
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = anchor
+	weld.Parent = anchor
+
+	Debris:AddItem(anchor, lifetime)
+
+	return anchor
+end
+
 -- kung tinatawag sa loob ng function kung saan meron 'character' at 'angle'
 local function createSlash(character, angle)
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -254,12 +285,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		
 		-- Massive center DOT hitbox
 		local root = character:WaitForChild("HumanoidRootPart")
+		local anchorLifetime = math.max((ServerConfigs.ArcherSkills.Starfall.damageTickTime or 0.5) * 6, 2)
+		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(), anchorLifetime)
 		_G.createStaticDOTHitbox({
-			attachTo = root,
+			attachTo = hitboxAnchor or root,
 			offset = CFrame.new(0, 0, 0),
 			size = ServerConfigs.ArcherSkills.Starfall.hitboxSize,
 			damage = actualDamage, -- Use calculated damage based on MaxAttack
 			damageTickTime = ServerConfigs.ArcherSkills.Starfall.damageTickTime or 0.5,
+			duration = anchorLifetime,
 			character = character,
 			name = "Starfall Center DOT",
 			showVisual = true,

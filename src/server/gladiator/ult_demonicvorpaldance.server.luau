@@ -57,6 +57,37 @@ slashAnim.AnimationId = "rbxassetid://117441445922611"
 -- DEMONIC VORPAL DANCE HITBOX CONFIG (using centralized config)
 local DEMONICVORPALDANCE_CONFIG = ServerConfigs.GladiatorSkills.DemonicVorpalDance
 
+local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+
+	offsetCFrame = offsetCFrame or CFrame.new()
+	lifetime = lifetime or 3
+
+	local anchor = Instance.new("Part")
+	anchor.Name = "DemonicVorpalDanceHitboxAnchor"
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Massless = true
+	anchor.Anchored = false
+	anchor.CFrame = root.CFrame * offsetCFrame
+	anchor.Parent = character
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = anchor
+	weld.Parent = anchor
+
+	Debris:AddItem(anchor, lifetime)
+
+	return anchor
+end
+
 
 -- Helper function: Enter Arena (spawns demonic shields in a circle)
 local function enterArena(character, angle, tilt)
@@ -257,12 +288,15 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		local root = character:WaitForChild("HumanoidRootPart")
 		local damageMultiplier = DEMONICVORPALDANCE_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		local hitboxDuration = math.max((DEMONICVORPALDANCE_CONFIG.damageTickTime or 0.5) * 6, 3)
+		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, 0, 0), hitboxDuration)
 		_G.createStaticDOTHitbox({
-			attachTo = root,
+			attachTo = hitboxAnchor or root,
 			offset = CFrame.new(0, 0, 0),
 			size = DEMONICVORPALDANCE_CONFIG.hitboxSize, -- Massive center hitbox
 			damage = actualDamage, -- Damage per tick (calculated with crit)
 			damageTickTime = DEMONICVORPALDANCE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
+			duration = hitboxDuration,
 			character = character,
 			name = "DemonicVorpalDance Center DOT",
 			showVisual = true,
