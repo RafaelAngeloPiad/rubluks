@@ -405,6 +405,388 @@ MobStatsConfig.Golem_Dark = applyTheme({
 }, "Dark")
 
 -- ========================================
+-- Bandit Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.Arabandit_Sand = applyTheme({
+	Family = "Bandit",
+	Level = 4,
+	DisplayName = "Arabandit 4",
+	HP = 320,
+	Defense = 3,
+	DefensePenetration = 0,
+	CritRate = 4,
+	CritMultiplier = 155,
+	Damage = 24,
+	WalkSpeed = 17,
+	XPGain = 12
+}, "Sand")
+
+MobStatsConfig.Arrabow_Sand = applyTheme({
+	Family = "Bandit",
+	Level = 5,
+	DisplayName = "Arrabow 5",
+	HP = 340,
+	Defense = 3,
+	DefensePenetration = 0,
+	CritRate = 7,
+	CritMultiplier = 160,
+	Damage = 26,
+	WalkSpeed = 18,
+	XPGain = 13
+}, "Sand")
+
+MobStatsConfig.Arawizard_Sand = applyTheme({
+	Family = "Bandit",
+	Level = 6,
+	DisplayName = "Arawizard 6",
+	HP = 360,
+	Defense = 4,
+	DefensePenetration = 1,
+	CritRate = 8,
+	CritMultiplier = 165,
+	Damage = 29,
+	WalkSpeed = 17,
+	XPGain = 14
+}, "Sand")
+
+-- ========================================
+-- Pirate Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.Pirate_Ice = applyTheme({
+	Family = "Pirate",
+	Level = 10,
+	DisplayName = "Pirate 10",
+	HP = 460,
+	Defense = 6,
+	DefensePenetration = 0,
+	CritRate = 5,
+	CritMultiplier = 158,
+	Damage = 36,
+	WalkSpeed = 18,
+	XPGain = 20
+}, "Ice")
+
+MobStatsConfig.GunPirate_Ice = applyTheme({
+	Family = "Pirate",
+	Level = 11,
+	DisplayName = "Gun Pirate 11",
+	HP = 480,
+	Defense = 6,
+	DefensePenetration = 2,
+	CritRate = 8,
+	CritMultiplier = 164,
+	Damage = 39,
+	WalkSpeed = 18,
+	XPGain = 22
+}, "Ice")
+
+MobStatsConfig.Jakalapati_Ice = applyTheme({
+	Family = "Pirate",
+	Level = 12,
+	DisplayName = "Jakalapati 12",
+	HP = 500,
+	Defense = 7,
+	DefensePenetration = 4,
+	CritRate = 9,
+	CritMultiplier = 168,
+	Damage = 42,
+	WalkSpeed = 19,
+	XPGain = 24
+}, "Ice")
+
+-- ========================================
+-- Demon Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.BurningDemon_Lava = applyTheme({
+	Family = "Demon",
+	Level = 16,
+	DisplayName = "Burning Demon 16",
+	HP = 620,
+	Defense = 10,
+	DefensePenetration = 5,
+	CritRate = 6,
+	CritMultiplier = 170,
+	Damage = 48,
+	WalkSpeed = 19,
+	XPGain = 30
+}, "Lava")
+
+MobStatsConfig.FlamingDemon_Lava = applyTheme({
+	Family = "Demon",
+	Level = 17,
+	DisplayName = "Flaming Demon 17",
+	HP = 650,
+	Defense = 11,
+	DefensePenetration = 6,
+	CritRate = 7,
+	CritMultiplier = 172,
+	Damage = 50,
+	WalkSpeed = 19,
+	XPGain = 32
+}, "Lava")
+
+MobStatsConfig.HotDemon_Lava = applyTheme({
+	Family = "Demon",
+	Level = 18,
+	DisplayName = "Hot Demon 18",
+	HP = 680,
+	Defense = 11,
+	DefensePenetration = 7,
+	CritRate = 8,
+	CritMultiplier = 174,
+	Damage = 52,
+	WalkSpeed = 19,
+	XPGain = 34
+}, "Lava")
+
+-- ========================================
+-- Elf Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.EvilElf_Woodland = applyTheme({
+	Family = "Elf",
+	Level = 22,
+	DisplayName = "Evil Elf 22",
+	HP = 720,
+	Defense = 13,
+	DefensePenetration = 5,
+	CritRate = 10,
+	CritMultiplier = 176,
+	Damage = 55,
+	WalkSpeed = 19,
+	XPGain = 36
+}, "Woodland")
+
+MobStatsConfig.EvilerElf_Woodland = applyTheme({
+	Family = "Elf",
+	Level = 23,
+	DisplayName = "Eviler Elf 23",
+	HP = 750,
+	Defense = 14,
+	DefensePenetration = 7,
+	CritRate = 11,
+	CritMultiplier = 178,
+	Damage = 58,
+	WalkSpeed = 19,
+	XPGain = 38
+}, "Woodland")
+
+MobStatsConfig.EvilistElf_Woodland = applyTheme({
+	Family = "Elf",
+	Level = 24,
+	DisplayName = "Evilist Elf 24",
+	HP = 780,
+	Defense = 14,
+	DefensePenetration = 8,
+	CritRate = 12,
+	CritMultiplier = 180,
+	Damage = 60,
+	WalkSpeed = 20,
+	XPGain = 40
+}, "Woodland")
+
+-- ========================================
+-- Monk Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.LightningRaider_Lightning = applyTheme({
+	Family = "Monk",
+	Level = 27,
+	DisplayName = "Lightning 27",
+	HP = 820,
+	Defense = 16,
+	DefensePenetration = 8,
+	CritRate = 10,
+	CritMultiplier = 182,
+	Damage = 62,
+	WalkSpeed = 20,
+	XPGain = 42
+}, "Lightning")
+
+MobStatsConfig.EvilMonk_Lightning = applyTheme({
+	Family = "Monk",
+	Level = 28,
+	DisplayName = "Evil Monk 28",
+	HP = 850,
+	Defense = 16,
+	DefensePenetration = 9,
+	CritRate = 11,
+	CritMultiplier = 184,
+	Damage = 64,
+	WalkSpeed = 20,
+	XPGain = 44
+}, "Lightning")
+
+MobStatsConfig.EvilerMonk_Lightning = applyTheme({
+	Family = "Monk",
+	Level = 29,
+	DisplayName = "Eviler Monk 29",
+	HP = 880,
+	Defense = 17,
+	DefensePenetration = 10,
+	CritRate = 12,
+	CritMultiplier = 186,
+	Damage = 66,
+	WalkSpeed = 21,
+	XPGain = 46
+}, "Lightning")
+
+MobStatsConfig.EvilistMonk_Lightning = applyTheme({
+	Family = "Monk",
+	Level = 30,
+	DisplayName = "Evilist Monk 30",
+	HP = 910,
+	Defense = 18,
+	DefensePenetration = 12,
+	CritRate = 13,
+	CritMultiplier = 188,
+	Damage = 68,
+	WalkSpeed = 21,
+	XPGain = 48
+}, "Lightning")
+
+-- ========================================
+-- Dwarven Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.DwarvenMiner_Crystal = applyTheme({
+	Family = "Dwarf",
+	Level = 34,
+	DisplayName = "Dwarven Miner 34",
+	HP = 960,
+	Defense = 20,
+	DefensePenetration = 10,
+	CritRate = 9,
+	CritMultiplier = 182,
+	Damage = 72,
+	WalkSpeed = 18,
+	XPGain = 52
+}, "Crystal")
+
+MobStatsConfig.DwarvenSniper_Crystal = applyTheme({
+	Family = "Dwarf",
+	Level = 35,
+	DisplayName = "Dwarven Sniper 35",
+	HP = 980,
+	Defense = 20,
+	DefensePenetration = 12,
+	CritRate = 14,
+	CritMultiplier = 190,
+	Damage = 75,
+	WalkSpeed = 19,
+	XPGain = 54
+}, "Crystal")
+
+MobStatsConfig.Cardelist_Crystal = applyTheme({
+	Family = "Dwarf",
+	Level = 36,
+	DisplayName = "Cardelist 36",
+	HP = 1000,
+	Defense = 21,
+	DefensePenetration = 14,
+	CritRate = 12,
+	CritMultiplier = 188,
+	Damage = 78,
+	WalkSpeed = 19,
+	XPGain = 56
+}, "Crystal")
+
+-- ========================================
+-- Boy Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.BoyLason_Poison = applyTheme({
+	Family = "Boy",
+	Level = 40,
+	DisplayName = "Boy Lason 40",
+	HP = 1080,
+	Defense = 23,
+	DefensePenetration = 12,
+	CritRate = 10,
+	CritMultiplier = 186,
+	Damage = 82,
+	WalkSpeed = 19,
+	XPGain = 60
+}, "Poison")
+
+MobStatsConfig.BoyDura_Poison = applyTheme({
+	Family = "Boy",
+	Level = 41,
+	DisplayName = "Boy Dura 41",
+	HP = 1100,
+	Defense = 24,
+	DefensePenetration = 13,
+	CritRate = 11,
+	CritMultiplier = 188,
+	Damage = 84,
+	WalkSpeed = 19,
+	XPGain = 62
+}, "Poison")
+
+MobStatsConfig.PlemaBoy_Poison = applyTheme({
+	Family = "Boy",
+	Level = 42,
+	DisplayName = "Plema Boy 42",
+	HP = 1120,
+	Defense = 24,
+	DefensePenetration = 14,
+	CritRate = 12,
+	CritMultiplier = 190,
+	Damage = 86,
+	WalkSpeed = 20,
+	XPGain = 64
+}, "Poison")
+
+-- ========================================
+-- Dark Faction Stats (placeholder values)
+-- ========================================
+
+MobStatsConfig.DarkBoi_Dark = applyTheme({
+	Family = "Darkling",
+	Level = 46,
+	DisplayName = "Dark Boi 46",
+	HP = 1200,
+	Defense = 32,
+	DefensePenetration = 18,
+	CritRate = 14,
+	CritMultiplier = 192,
+	Damage = 92,
+	WalkSpeed = 20,
+	XPGain = 72
+}, "Dark")
+
+MobStatsConfig.DarkBai_Dark = applyTheme({
+	Family = "Darkling",
+	Level = 47,
+	DisplayName = "Dark Bai 47",
+	HP = 1230,
+	Defense = 33,
+	DefensePenetration = 20,
+	CritRate = 15,
+	CritMultiplier = 194,
+	Damage = 95,
+	WalkSpeed = 20,
+	XPGain = 74
+}, "Dark")
+
+MobStatsConfig.Libagerist_Dark = applyTheme({
+	Family = "Darkling",
+	Level = 48,
+	DisplayName = "Libagerist 48",
+	HP = 1260,
+	Defense = 34,
+	DefensePenetration = 22,
+	CritRate = 16,
+	CritMultiplier = 196,
+	Damage = 98,
+	WalkSpeed = 20,
+	XPGain = 76
+}, "Dark")
+
+-- ========================================
 -- Zombie Stats (fixed values)
 -- ========================================
 

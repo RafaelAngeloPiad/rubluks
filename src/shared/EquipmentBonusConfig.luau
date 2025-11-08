@@ -17,10 +17,26 @@
 	You can remove the example entries below and configure your own.
 --]]
 
+
+-- local EquipmentStatMappings = {
+-- 	HPPlus = {leaderstat = "MaxHealth", displayName = "HP"},
+-- 	AttackPlus = {leaderstat = "MaxAttack", displayName = "Attack"},
+-- 	DefensePlus = {leaderstat = "MaxDefense", displayName = "Defense"},
+-- 	DefensePenPlus = {leaderstat = "DefensePenetration", displayName = "Defense Penetration"},
+-- 	CritRatePlus = {leaderstat = "CritRate", displayName = "Crit Rate"},
+-- 	CritMultiplierPlus = {leaderstat = "CritMultiplier", displayName = "Crit Multiplier"},
+-- }
+
+-- hindi literal na inventory - kunyari lang .. tapos tayo may mga boolean dito kung nakaequip ba , tapos 
+-- dun irereference ng gui. based sa pangalan nung nakaequip
+-- level requirement dapat and class 
+-- pero pag accessory kahit kanino yun
+-- tsaka armor kahit kanino
+
 local Entries = {
 	-- Example configuration entries (replace with your own values)
 	["Samurai Weapon Trailed"] = {
-		HPPlus = 500000000,
+		AttackPlus = 500000000,
 	},
 	["Archer Weapon"] = {
 		assetName = "Archer Weapon Bonus",
