@@ -1,0 +1,4 @@
+1. rojo -v
+2. aftman install - di na ata pag 2nd time
+3. aftman add rojo-rbx/rojo
+4. click on the rojo plugin and install again, the bottom thingy with the rocket on the vscode plugin
