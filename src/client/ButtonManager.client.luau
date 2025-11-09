@@ -28,6 +28,15 @@ local function triggerPlatformerSpecial()
 	return false
 end
 
+local function findGlobalConfig(tagConfig)
+	for _, config in pairs(tagConfig) do
+		if config and config.isGlobal then
+			return config
+		end
+	end
+	return nil
+end
+
 -- ========================================
 -- UNIFIED BUTTON TAG CONFIGURATION
 -- One tag per action, works for ALL classes!
@@ -103,51 +112,7 @@ local UNIFIED_TAGS = {
 	},
 
 	wave_trigger = {
-		samurai = {
-			action = function()
-				-- Global wave (works without weapon)
-				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
-				remote:FireServer("global_wave")
-				return true
-			end,
-			name = "[L] Wave",
-			description = "Wave emote",
-			isGlobal = true -- Doesn't require weapon
-		},
-		archer = {
-			action = function()
-				-- Global wave (works without weapon)
-				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
-				remote:FireServer("global_wave")
-				return true
-			end,
-			name = "[L] Wave",
-			description = "Wave emote",
-			isGlobal = true -- Doesn't require weapon
-		},
-		knight = {
-			action = function()
-				-- Global wave (works without weapon)
-				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
-				remote:FireServer("global_wave")
-				return true
-			end,
-			name = "[L] Wave",
-			description = "Wave emote",
-			isGlobal = true -- Doesn't require weapon
-		},
-		gladiator = {
-			action = function()
-				-- Global wave (works without weapon)
-				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
-				remote:FireServer("global_wave")
-				return true
-			end,
-			name = "[L] Wave",
-			description = "Wave emote",
-			isGlobal = true -- Doesn't require weapon
-		},
-		brawler = {
+		global = {
 			action = function()
 				-- Global wave (works without weapon)
 				local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
@@ -161,7 +126,7 @@ local UNIFIED_TAGS = {
 	},
 
 	platformer_special_trigger = {
-		platformer = {
+		global = {
 			action = function()
 				return triggerPlatformerSpecial()
 			end,
@@ -459,42 +424,29 @@ local function setupUnifiedButton(button, tag)
 		return
 	end
 
+	local globalConfig = findGlobalConfig(tagConfig)
+
 	-- Click handler
 	button.MouseButton1Click:Connect(function()
 		local class = detectCurrentClass()
 
-		-- For global actions, try both classes if no weapon equipped
-		if not class then
-			-- Try to find any class config that has this as a global action
-			for className, classConfig in pairs(tagConfig) do
-				if classConfig and classConfig.isGlobal and classConfig.action then
-					classConfig.action()
-					return
-				end
-			end
+		local classConfig = class and tagConfig[class] or nil
+		if classConfig and classConfig.action then
+			classConfig.action()
 			return
 		end
 
-		local classConfig = tagConfig[class]
-		if not classConfig or not classConfig.action then return end
-
-		classConfig.action()
+		if globalConfig and globalConfig.action then
+			globalConfig.action()
+		end
 	end)
 
 	-- Transparency updater
 	task.spawn(function()
+		local isGlobalAction = globalConfig ~= nil
 		while button and button.Parent do
 			local class = detectCurrentClass()
-			local classConfig = tagConfig[class]
-
-			-- Check if this is a global action (works without weapon)
-			local isGlobalAction = false
-			for _, config in pairs(tagConfig) do
-				if config and config.isGlobal then
-					isGlobalAction = true
-					break
-				end
-			end
+			local classConfig = class and tagConfig[class] or nil
 
 			-- Show button if: (weapon equipped AND has class config) OR (is global action)
 			if (isWeaponEquipped() and classConfig) or isGlobalAction then
@@ -526,50 +478,37 @@ local function setupUnifiedButton(button, tag)
 			local class = detectCurrentClass()
 			local textToSet = ""
 			local cooldownText = nil
+			local classConfig = class and tagConfig[class] or nil
 
-			if class then
-				local classConfig = tagConfig[class]
-				if classConfig then
-					if classConfig.cooldownSkill then
-						local provider = COOLDOWN_PROVIDERS[class]
-						if provider then
-							local remaining = provider(classConfig.cooldownSkill)
-							cooldownText = formatCooldown(remaining)
-						end
-					end
-
-					-- Special handling for dynamic aim mode toggle button
-					if classConfig.isDynamic and class == "archer" then
-						local currentMode = ArcherActions.getCurrentAimMode()
-						local modeText = ""
-						if currentMode == true then
-							modeText = "Always On"
-						elseif currentMode == false then
-							modeText = "Always Off"
-						elseif currentMode == "dynamic" then
-							modeText = "Dynamic"
-						end
-						textToSet = "[T] " .. modeText
-					else
-						-- Update button text to show current class's skill name
-						textToSet = classConfig.name or "???"
-					end
-				end
-			else
-				-- No weapon equipped - check if this is a global action
-				local globalConfig = nil
-				for _, config in pairs(tagConfig) do
-					if config and config.isGlobal then
-						globalConfig = config
-						break
+			if classConfig then
+				if classConfig.cooldownSkill then
+					local provider = COOLDOWN_PROVIDERS[class]
+					if provider then
+						local remaining = provider(classConfig.cooldownSkill)
+						cooldownText = formatCooldown(remaining)
 					end
 				end
 
-				if globalConfig then
-					textToSet = globalConfig.name or "???"
+				-- Special handling for dynamic aim mode toggle button
+				if classConfig.isDynamic and class == "archer" then
+					local currentMode = ArcherActions.getCurrentAimMode()
+					local modeText = ""
+					if currentMode == true then
+						modeText = "Always On"
+					elseif currentMode == false then
+						modeText = "Always Off"
+					elseif currentMode == "dynamic" then
+						modeText = "Dynamic"
+					end
+					textToSet = "[T] " .. modeText
 				else
-					textToSet = "---"
+					-- Update button text to show current class's skill name
+					textToSet = classConfig.name or "???"
 				end
+			elseif globalConfig then
+				textToSet = globalConfig.name or "???"
+			else
+				textToSet = "---"
 			end
 
 			if cooldownText then
