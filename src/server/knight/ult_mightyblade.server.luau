@@ -229,20 +229,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "mightyblade") then
-		local remainingTime = _G.getRemainingCooldown(player, "mightyblade")
-		_G.sendCooldownStatus(player, "mightyblade", true, math.ceil(remainingTime))
+	if _G.knightIsSkillOnCooldown(player, "mightyblade") then
+		local remainingTime = _G.knightGetRemainingCooldown(player, "mightyblade")
+		_G.knightSendCooldownStatus(player, "mightyblade", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "mightyblade")
+	_G.knightSetSkillCooldown(player, "mightyblade")
 	local cooldownTime = _G.KNIGHT_COOLDOWNS["mightyblade"]
-	_G.sendCooldownStatus(player, "mightyblade", true, cooldownTime)
+	_G.knightSendCooldownStatus(player, "mightyblade", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "mightyblade", false, 0)
+		_G.knightSendCooldownStatus(player, "mightyblade", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

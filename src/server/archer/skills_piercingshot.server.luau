@@ -75,20 +75,20 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	local isFirstPerson = args[3] or false
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "piercingShot") then
-		local remainingTime = _G.getRemainingCooldown(player, "piercingShot")
-		_G.sendCooldownStatus(player, "piercingShot", true, math.ceil(remainingTime))
+	if _G.archerIsSkillOnCooldown(player, "piercingShot") then
+		local remainingTime = _G.archerGetRemainingCooldown(player, "piercingShot")
+		_G.archerSendCooldownStatus(player, "piercingShot", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "piercingShot")
+	_G.archerSetSkillCooldown(player, "piercingShot")
 	local cooldownTime = _G.ARCHER_COOLDOWNS["piercingShot"]
-	_G.sendCooldownStatus(player, "piercingShot", true, cooldownTime)
+	_G.archerSendCooldownStatus(player, "piercingShot", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "piercingShot", false, 0)
+		_G.archerSendCooldownStatus(player, "piercingShot", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

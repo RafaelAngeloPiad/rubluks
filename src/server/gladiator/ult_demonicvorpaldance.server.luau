@@ -199,20 +199,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "demonicvorpaldance") then
-		local remainingTime = _G.getRemainingCooldown(player, "demonicvorpaldance")
-		_G.sendCooldownStatus(player, "demonicvorpaldance", true, math.ceil(remainingTime))
+	if _G.gladiatorIsSkillOnCooldown(player, "demonicvorpaldance") then
+		local remainingTime = _G.gladiatorGetRemainingCooldown(player, "demonicvorpaldance")
+		_G.gladiatorSendCooldownStatus(player, "demonicvorpaldance", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "demonicvorpaldance")
+	_G.gladiatorSetSkillCooldown(player, "demonicvorpaldance")
 	local cooldownTime = _G.GLADIATOR_COOLDOWNS["demonicvorpaldance"]
-	_G.sendCooldownStatus(player, "demonicvorpaldance", true, cooldownTime)
+	_G.gladiatorSendCooldownStatus(player, "demonicvorpaldance", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "demonicvorpaldance", false, 0)
+		_G.gladiatorSendCooldownStatus(player, "demonicvorpaldance", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

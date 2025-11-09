@@ -25,20 +25,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "hunterInstinct") then
-		local remainingTime = _G.getRemainingCooldown(player, "hunterInstinct")
-		_G.sendCooldownStatus(player, "hunterInstinct", true, math.ceil(remainingTime))
+	if _G.archerIsSkillOnCooldown(player, "hunterInstinct") then
+		local remainingTime = _G.archerGetRemainingCooldown(player, "hunterInstinct")
+		_G.archerSendCooldownStatus(player, "hunterInstinct", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "hunterInstinct")
+	_G.archerSetSkillCooldown(player, "hunterInstinct")
 	local cooldownTime = _G.ARCHER_COOLDOWNS["hunterInstinct"]
-	_G.sendCooldownStatus(player, "hunterInstinct", true, cooldownTime)
+	_G.archerSendCooldownStatus(player, "hunterInstinct", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "hunterInstinct", false, 0)
+		_G.archerSendCooldownStatus(player, "hunterInstinct", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

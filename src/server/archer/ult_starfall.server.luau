@@ -184,20 +184,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Cooldown check (added system)
-	if _G.isSkillOnCooldown(player, "starfall") then
-		local remainingTime = _G.getRemainingCooldown(player, "starfall")
-		_G.sendCooldownStatus(player, "starfall", true, math.ceil(remainingTime))
+	if _G.archerIsSkillOnCooldown(player, "starfall") then
+		local remainingTime = _G.archerGetRemainingCooldown(player, "starfall")
+		_G.archerSendCooldownStatus(player, "starfall", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown (added system)
-	_G.setSkillCooldown(player, "starfall")
+	_G.archerSetSkillCooldown(player, "starfall")
 	local cooldownTime = _G.ARCHER_COOLDOWNS["starfall"]
-	_G.sendCooldownStatus(player, "starfall", true, cooldownTime)
+	_G.archerSendCooldownStatus(player, "starfall", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "starfall", false, 0)
+		_G.archerSendCooldownStatus(player, "starfall", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

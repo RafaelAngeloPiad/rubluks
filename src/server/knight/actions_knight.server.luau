@@ -200,7 +200,7 @@ _G.KNIGHT_COOLDOWNS = ServerConfigs.Knight.Cooldowns
 local playerCooldowns = {}
 
 -- Function to check if skill is on cooldown
-function _G.isSkillOnCooldown(player, skillName)
+function _G.knightIsSkillOnCooldown(player, skillName)
 	local currentTime = tick()
 	local cooldownTime = _G.KNIGHT_COOLDOWNS[skillName]
 	
@@ -222,7 +222,7 @@ function _G.isSkillOnCooldown(player, skillName)
 end
 
 -- Function to get remaining cooldown time
-function _G.getRemainingCooldown(player, skillName)
+function _G.knightGetRemainingCooldown(player, skillName)
 	local currentTime = tick()
 	local cooldownTime = _G.KNIGHT_COOLDOWNS[skillName]
 	
@@ -241,7 +241,7 @@ function _G.getRemainingCooldown(player, skillName)
 end
 
 -- Function to set skill cooldown
-function _G.setSkillCooldown(player, skillName)
+function _G.knightSetSkillCooldown(player, skillName)
 	local currentTime = tick()
 	
 	if not playerCooldowns[player.UserId] then
@@ -252,7 +252,7 @@ function _G.setSkillCooldown(player, skillName)
 end
 
 -- Function to send cooldown status to client
-function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
+function _G.knightSendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	remote:FireClient(player, "cooldown_status", skillName, isOnCooldown, remainingTime)
 end

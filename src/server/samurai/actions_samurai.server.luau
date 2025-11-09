@@ -200,7 +200,7 @@ _G.SAMURAI_COOLDOWNS = ServerConfigs.Samurai.Cooldowns
 local playerCooldowns = {}
 
 -- Function to check if skill is on cooldown
-function _G.isSkillOnCooldown(player, skillName)
+function _G.samuraiIsSkillOnCooldown(player, skillName)
 	local currentTime = tick()
 	local cooldownTime = _G.SAMURAI_COOLDOWNS[skillName]
 	
@@ -222,7 +222,7 @@ function _G.isSkillOnCooldown(player, skillName)
 end
 
 -- Function to get remaining cooldown time
-function _G.getRemainingCooldown(player, skillName)
+function _G.samuraiGetRemainingCooldown(player, skillName)
 	local currentTime = tick()
 	local cooldownTime = _G.SAMURAI_COOLDOWNS[skillName]
 	
@@ -241,7 +241,7 @@ function _G.getRemainingCooldown(player, skillName)
 end
 
 -- Function to set skill cooldown
-function _G.setSkillCooldown(player, skillName)
+function _G.samuraiSetSkillCooldown(player, skillName)
 	local currentTime = tick()
 	
 	if not playerCooldowns[player.UserId] then
@@ -252,7 +252,7 @@ function _G.setSkillCooldown(player, skillName)
 end
 
 -- Function to send cooldown status to client
-function _G.sendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
+function _G.samuraiSendCooldownStatus(player, skillName, isOnCooldown, remainingTime)
 	local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 	remote:FireClient(player, "cooldown_status", skillName, isOnCooldown, remainingTime)
 end

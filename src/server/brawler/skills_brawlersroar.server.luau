@@ -70,20 +70,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "brawlersroar") then
-		local remainingTime = _G.getRemainingCooldown(player, "brawlersroar")
-		_G.sendCooldownStatus(player, "brawlersroar", true, math.ceil(remainingTime))
+	if _G.brawlerIsSkillOnCooldown(player, "brawlersroar") then
+		local remainingTime = _G.brawlerGetRemainingCooldown(player, "brawlersroar")
+		_G.brawlerSendCooldownStatus(player, "brawlersroar", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "brawlersroar")
+	_G.brawlerSetSkillCooldown(player, "brawlersroar")
 	local cooldownTime = _G.BRAWLER_COOLDOWNS["brawlersroar"]
-	_G.sendCooldownStatus(player, "brawlersroar", true, cooldownTime)
+	_G.brawlerSendCooldownStatus(player, "brawlersroar", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "brawlersroar", false, 0)
+		_G.brawlerSendCooldownStatus(player, "brawlersroar", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

@@ -74,20 +74,20 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 	local isFirstPerson = args[3] or false
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "powerShot") then
-		local remainingTime = _G.getRemainingCooldown(player, "powerShot")
-		_G.sendCooldownStatus(player, "powerShot", true, math.ceil(remainingTime))
+	if _G.archerIsSkillOnCooldown(player, "powerShot") then
+		local remainingTime = _G.archerGetRemainingCooldown(player, "powerShot")
+		_G.archerSendCooldownStatus(player, "powerShot", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "powerShot")
+	_G.archerSetSkillCooldown(player, "powerShot")
 	local cooldownTime = _G.ARCHER_COOLDOWNS["powerShot"]
-	_G.sendCooldownStatus(player, "powerShot", true, cooldownTime)
+	_G.archerSendCooldownStatus(player, "powerShot", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "powerShot", false, 0)
+		_G.archerSendCooldownStatus(player, "powerShot", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

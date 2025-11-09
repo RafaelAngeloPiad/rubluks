@@ -25,20 +25,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "championsblood") then
-		local remainingTime = _G.getRemainingCooldown(player, "championsblood")
-		_G.sendCooldownStatus(player, "championsblood", true, math.ceil(remainingTime))
+	if _G.gladiatorIsSkillOnCooldown(player, "championsblood") then
+		local remainingTime = _G.gladiatorGetRemainingCooldown(player, "championsblood")
+		_G.gladiatorSendCooldownStatus(player, "championsblood", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "championsblood")
+	_G.gladiatorSetSkillCooldown(player, "championsblood")
 	local cooldownTime = _G.GLADIATOR_COOLDOWNS["championsblood"]
-	_G.sendCooldownStatus(player, "championsblood", true, cooldownTime)
+	_G.gladiatorSendCooldownStatus(player, "championsblood", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "championsblood", false, 0)
+		_G.gladiatorSendCooldownStatus(player, "championsblood", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()

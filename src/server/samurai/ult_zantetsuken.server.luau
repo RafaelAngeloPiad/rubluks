@@ -133,20 +133,20 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	end
 	
 	-- Check cooldown using centralized system
-	if _G.isSkillOnCooldown(player, "zantetsuken") then
-		local remainingTime = _G.getRemainingCooldown(player, "zantetsuken")
-		_G.sendCooldownStatus(player, "zantetsuken", true, math.ceil(remainingTime))
+	if _G.samuraiIsSkillOnCooldown(player, "zantetsuken") then
+		local remainingTime = _G.samuraiGetRemainingCooldown(player, "zantetsuken")
+		_G.samuraiSendCooldownStatus(player, "zantetsuken", true, math.ceil(remainingTime))
 		return
 	end
 	
 	-- Set cooldown using centralized system
-	_G.setSkillCooldown(player, "zantetsuken")
+	_G.samuraiSetSkillCooldown(player, "zantetsuken")
 	local cooldownTime = _G.SAMURAI_COOLDOWNS["zantetsuken"]
-	_G.sendCooldownStatus(player, "zantetsuken", true, cooldownTime)
+	_G.samuraiSendCooldownStatus(player, "zantetsuken", true, cooldownTime)
 	
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
-		_G.sendCooldownStatus(player, "zantetsuken", false, 0)
+		_G.samuraiSendCooldownStatus(player, "zantetsuken", false, 0)
 	end)
 	
 	local character = player.Character or player.CharacterAdded:Wait()
