@@ -173,6 +173,7 @@ ServerConfigs.Hitboxes = {
 			arrowTrailColor = {255, 255, 255},  -- White
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (normalAttack, jumpAttack, piercingShot, powerShot, hunterInstinct, hunterMark, starfall)
+			skillAttackSpeedBaseline = 1.0, -- Baseline speed for skill/buff/ult animations (kept independent from normal attacks)
 			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
 			-- Note: block animations remain at 1.0 (not affected by these speeds)
 			-- Walking speeds (fixed values, not affected by animation speed)
@@ -508,6 +509,8 @@ ServerConfigs.Hitboxes = {
 -- Archer Configuration (references UnifiedAttacks.Archer)
 ServerConfigs.Archer = {
 	AttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.attackSpeed,
+	SkillAttackSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.attackSpeed,
+	SkillAttackSpeedRatio = 1.0,
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.walkingSpeed,

@@ -793,7 +793,8 @@ local BaseStats = {
 		D = 5,           -- Defense: Reduces Penetration
 		HR = 2,           -- Health Regeneration: Health Points gained per second
 		Mspd = 18,        -- Base walk speed in studs per second
-		Aspd = 2,         -- Attack speed multiplier baseline
+		Aspd = 2,         -- Attack speed multiplier baseline for normal attacks
+		SkillAspd = 1,    -- Attack speed baseline for skills/buffs/ultimates
 	},
 	
 	Samurai = {
@@ -864,6 +865,7 @@ ServerConfigs.BaseStats = BaseStats
 local classConfigBaselines: {[string]: {
 	movementSpeed: number,
 	attackSpeed: number,
+	skillAttackSpeedBaseline: number?,
 	walking: {[string]: number}?,
 	walkingSpeed: {[string]: number}?,
 }} = {}
@@ -905,6 +907,7 @@ local function getClassConfigBaseline(className: string)
 	classConfigBaselines[className] = {
 		movementSpeed = unified.movementSpeed or 1.0,
 		attackSpeed = unified.attackSpeed or 1.0,
+		skillAttackSpeedBaseline = unified.skillAttackSpeedBaseline or unified.attackSpeed or 1.0,
 		walking = cloneNumericTable(unified.walking),
 		walkingSpeed = cloneNumericTable(unified.walkingSpeed),
 	}
@@ -973,12 +976,23 @@ local function updateRuntimeSpeedsFromBaseStats(className: string, baseStatsForC
 	local referenceAttack = baselines.attackSpeed ~= 0 and baselines.attackSpeed or 1.0
 	local attackMultiplier = baseAttackSpeed / referenceAttack
 
+	local baseSkillSpeed = baseStatsForClass.SkillAspd or baseAttackSpeed
+	local skillRatio = 1.0
+	if baseAttackSpeed ~= 0 then
+		skillRatio = baseSkillSpeed / baseAttackSpeed
+	end
+	local skillMultiplier = attackMultiplier * skillRatio
+
 	unified.attackSpeed = attackMultiplier
+	unified.skillAttackSpeedRatio = skillRatio
+	unified.skillAttackSpeedMultiplier = skillMultiplier
 	if classSummary then
 		classSummary.AttackSpeed = attackMultiplier
+		classSummary.SkillAttackSpeedRatio = skillRatio
+		classSummary.SkillAttackSpeed = skillMultiplier
 	end
 
-	return movementMultiplier, attackMultiplier
+	return movementMultiplier, attackMultiplier, skillMultiplier
 end
 
 for className, classStats in pairs(BaseStats) do
@@ -3039,14 +3053,14 @@ game.Players.PlayerAdded:Connect(function(plr)
 			leaderstats.HealthRegen.Value = baseStats.HR or 0
 		end
 		
-	local movementMultiplier, attackMultiplier = updateRuntimeSpeedsFromBaseStats(class.Value, baseStats)
+		local movementMultiplier, attackMultiplier = updateRuntimeSpeedsFromBaseStats(class.Value, baseStats)
 
-	if leaderstats:FindFirstChild("MovementSpeed").Value == 0 then
-		leaderstats.MovementSpeed.Value = movementMultiplier or 1.0
-	end
-	
-	if leaderstats:FindFirstChild("AttackSpeed").Value == 0 then
-		leaderstats.AttackSpeed.Value = attackMultiplier or 1.0
+		if leaderstats:FindFirstChild("MovementSpeed").Value == 0 then
+			leaderstats.MovementSpeed.Value = movementMultiplier or 1.0
+		end
+		
+		if leaderstats:FindFirstChild("AttackSpeed").Value == 0 then
+			leaderstats.AttackSpeed.Value = attackMultiplier or 1.0
 		end
 	
 	-- Initialize animation speeds in ServerConfigs based on MovementSpeed and AttackSpeed (animation multipliers)

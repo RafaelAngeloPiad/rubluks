@@ -59,6 +59,19 @@ local playerAttackData = {}
 -- Movement actions: run, jump (idle and block are NOT affected - always 1.0)
 
 -- Helper function to get animation speed for an action type
+local normalAttackActions = {
+	normalAttack = true,
+	jumpAttack = true,
+}
+
+local skillAttackActions = {
+	piercingShot = true,
+	powerShot = true,
+	hunterInstinct = true,
+	hunterMark = true,
+	starfall = true,
+}
+
 local function getAnimationSpeed(actionType)
 	if not actionType then return 1.0 end
 	
@@ -67,18 +80,19 @@ local function getAnimationSpeed(actionType)
 		return 1.0
 	end
 	
-	-- Determine if this is an attack or movement action
-	local isAttack = actionType == "normalAttack" or actionType == "jumpAttack" or
-	                 actionType == "piercingShot" or actionType == "powerShot" or
-	                 actionType == "hunterInstinct" or actionType == "hunterMark" or actionType == "starfall"
-	
-	local isMovement = actionType == "run" or actionType == "jump"
-	
-	-- Return appropriate unified speed
-	if isAttack then
-		return ServerConfigs.Archer.AttackSpeed or 1.0
-	elseif isMovement then
+	-- Movement actions
+	if actionType == "run" or actionType == "jump" then
 		return ServerConfigs.Archer.MovementSpeed or 1.0
+	end
+
+	-- Normal attacks use the full attack speed (e.g., 2x baseline)
+	if normalAttackActions[actionType] then
+		return ServerConfigs.Archer.AttackSpeed or 1.0
+	end
+	
+	-- Skills/buffs/ultimates use the dedicated skill attack speed (defaults to ratio of attack speed)
+	if skillAttackActions[actionType] then
+		return ServerConfigs.Archer.SkillAttackSpeed or ServerConfigs.Archer.AttackSpeed or 1.0
 	end
 	
 	-- Default to 1.0 for unknown action types
@@ -122,8 +136,12 @@ function _G.updateArcherAnimationSpeed(speedType, newSpeed)
 
 	-- Update the unified speed in config
 	if speedType == "attack" then
+		local ratio = ServerConfigs.Archer.SkillAttackSpeedRatio or 1.0
+		local skillSpeed = newSpeed * ratio
 		ServerConfigs.Archer.AttackSpeed = newSpeed
+		ServerConfigs.Archer.SkillAttackSpeed = skillSpeed
 		ServerConfigs.Hitboxes.UnifiedAttacks.Archer.attackSpeed = newSpeed
+		ServerConfigs.Hitboxes.UnifiedAttacks.Archer.skillAttackSpeedMultiplier = skillSpeed
 	elseif speedType == "movement" then
 		ServerConfigs.Archer.MovementSpeed = newSpeed
 		ServerConfigs.Hitboxes.UnifiedAttacks.Archer.movementSpeed = newSpeed
@@ -143,7 +161,8 @@ function _G.updateArcherAnimationSpeed(speedType, newSpeed)
 	
 	for _, player in pairs(Players:GetPlayers()) do
 		for _, actionType in ipairs(actionTypes) do
-			remote:FireClient(player, "update_animation_speed", newSpeed, actionType)
+			local actionSpeed = getAnimationSpeed(actionType)
+			remote:FireClient(player, "update_animation_speed", actionSpeed, actionType)
 		end
 	end
 end
