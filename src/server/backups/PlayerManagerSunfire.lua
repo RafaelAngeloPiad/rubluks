@@ -19,6 +19,279 @@ local DevStatEvent = Instance.new("RemoteEvent")
 DevStatEvent.Name = "DevStatEvent"
 DevStatEvent.Parent = ReplicatedStorage
 
+local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+
+-- ========================================
+-- EQUIPMENT BONUS CONFIGURATION
+-- ========================================
+
+local function shallowCopy(source)
+	local copy = {}
+	if source then
+		for key, value in pairs(source) do
+			copy[key] = value
+		end
+	end
+	return copy
+end
+
+local EquipmentBonusEntries = EquipmentBonusConfig.Entries or EquipmentBonusConfig
+local EquipmentBonusAssetLookup = shallowCopy(EquipmentBonusConfig.AssetLookup)
+local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.CanonicalLookup)
+
+if next(EquipmentBonusAssetLookup) == nil then
+	for canonicalName, entry in pairs(EquipmentBonusEntries) do
+		entry.assetName = entry.assetName or canonicalName
+		entry.canonicalName = entry.canonicalName or canonicalName
+
+		EquipmentBonusAssetLookup[canonicalName] = entry
+		EquipmentBonusAssetLookup[entry.assetName] = entry
+		EquipmentBonusCanonicalLookup[canonicalName] = canonicalName
+		EquipmentBonusCanonicalLookup[entry.assetName] = canonicalName
+	end
+else
+	for canonicalName, entry in pairs(EquipmentBonusEntries) do
+		entry.assetName = entry.assetName or canonicalName
+		entry.canonicalName = entry.canonicalName or canonicalName
+	end
+end
+
+local EquipmentStatMappings = {
+	HPPlus = {leaderstat = "MaxHealth", displayName = "HP"},
+	AttackPlus = {leaderstat = "MaxAttack", displayName = "Attack"},
+	DefensePlus = {leaderstat = "MaxDefense", displayName = "Defense"},
+	DefensePenPlus = {leaderstat = "DefensePenetration", displayName = "Defense Penetration"},
+	CritRatePlus = {leaderstat = "CritRate", displayName = "Crit Rate"},
+	CritMultiplierPlus = {leaderstat = "CritMultiplier", displayName = "Crit Multiplier"},
+}
+
+local playerEquipmentBonuses = {} -- player -> { statName = totalBonus }
+local playerEquipmentBonusDetails = {} -- player -> { statName = { "Item +Value", ... } }
+
+local function ensureFolder(parent, name)
+	local folder = parent:FindFirstChild(name)
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = name
+		folder.Parent = parent
+	end
+	return folder
+end
+
+local function formatBonus(amount)
+	if math.abs(amount - math.floor(amount)) < 1e-3 then
+		return string.format("%+d", amount)
+	end
+	return string.format("%+.2f", amount)
+end
+
+local function applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, multiplier)
+	if not leaderstats or not bonuses then
+		return
+	end
+
+	local player = leaderstats.Parent
+	local humanoid = player and player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	local humanoidPrevMaxHealth = humanoid and humanoid.MaxHealth or nil
+	local humanoidPrevHealth = humanoid and humanoid.Health or nil
+	local maxHealthChanged = false
+
+	for statName, amount in pairs(bonuses) do
+		if amount ~= 0 then
+			local stat = leaderstats:FindFirstChild(statName)
+			if stat and typeof(stat.Value) == "number" then
+				stat.Value = stat.Value + (amount * multiplier)
+
+				if statName == "MaxHealth" then
+					maxHealthChanged = true
+				end
+
+				if statName == "MaxDefense" then
+					local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+					if currentDefense then
+						currentDefense.Value = math.max(0, currentDefense.Value + (amount * multiplier))
+					end
+				end
+			end
+		end
+	end
+
+	if humanoid and maxHealthChanged then
+		local maxHealthStat = leaderstats:FindFirstChild("MaxHealth")
+		if maxHealthStat then
+			local newMax = math.max(0, maxHealthStat.Value)
+			humanoid.MaxHealth = newMax
+
+			if humanoidPrevMaxHealth and humanoidPrevMaxHealth > 0 then
+				local ratio = humanoidPrevHealth and (humanoidPrevHealth / humanoidPrevMaxHealth) or 1
+				ratio = math.clamp(ratio, 0, 1)
+				humanoid.Health = math.max(0, math.min(newMax, newMax * ratio))
+			else
+				humanoid.Health = newMax
+			end
+		end
+	end
+end
+
+local function updateEquipmentBonusFolders(leaderstats, aggregated, details)
+	if not leaderstats then
+		return
+	end
+
+	aggregated = aggregated or {}
+	details = details or {}
+
+	local bonusesFolder = ensureFolder(leaderstats, "EquipmentBonuses")
+	local detailsFolder = ensureFolder(leaderstats, "EquipmentBonusDetails")
+
+	local seen = {}
+
+	for statName, value in pairs(aggregated) do
+		seen[statName] = true
+
+		local valueObj = bonusesFolder:FindFirstChild(statName)
+		if not valueObj then
+			valueObj = Instance.new("NumberValue")
+			valueObj.Name = statName
+			valueObj.Parent = bonusesFolder
+		end
+		valueObj.Value = value
+
+		local detailText = ""
+		if details[statName] and #details[statName] > 0 then
+			detailText = table.concat(details[statName], ", ")
+		end
+
+		local detailObj = detailsFolder:FindFirstChild(statName)
+		if not detailObj then
+			detailObj = Instance.new("StringValue")
+			detailObj.Name = statName
+			detailObj.Parent = detailsFolder
+		end
+		detailObj.Value = detailText
+	end
+
+	for _, valueObj in ipairs(bonusesFolder:GetChildren()) do
+		if not seen[valueObj.Name] and valueObj:IsA("NumberValue") then
+			valueObj.Value = 0
+		end
+	end
+
+	for _, detailObj in ipairs(detailsFolder:GetChildren()) do
+		if not seen[detailObj.Name] and detailObj:IsA("StringValue") then
+			detailObj.Value = ""
+		end
+	end
+end
+
+local function computeEquipmentBonuses(player)
+	local aggregated = {}
+	local details = {}
+
+	local character = player and player.Character
+	if not character then
+		return aggregated, details
+	end
+
+	for _, child in ipairs(character:GetChildren()) do
+		if child:IsA("Tool") or child:IsA("Accessory") or child:IsA("Model") then
+			local itemTotals = {}
+
+			local function accumulateFromInstance(instance)
+				for attributeName, mapping in pairs(EquipmentStatMappings) do
+					local attrValue = instance:GetAttribute(attributeName)
+					if typeof(attrValue) == "number" and attrValue ~= 0 then
+						local statName = mapping.leaderstat
+						aggregated[statName] = (aggregated[statName] or 0) + attrValue
+						itemTotals[statName] = (itemTotals[statName] or 0) + attrValue
+					end
+				end
+			end
+
+			accumulateFromInstance(child)
+			for _, descendant in ipairs(child:GetDescendants()) do
+				accumulateFromInstance(descendant)
+			end
+
+			local configEntry = EquipmentBonusAssetLookup[child.Name]
+			if not configEntry then
+				local canonicalName = EquipmentBonusCanonicalLookup[child.Name]
+				if canonicalName then
+					configEntry = EquipmentBonusEntries[canonicalName]
+				end
+			end
+			if configEntry then
+				for key, value in pairs(configEntry) do
+					if key ~= "assetName" and key ~= "canonicalName" then
+						local mapping = EquipmentStatMappings[key]
+						if mapping and typeof(value) == "number" and value ~= 0 then
+							local statName = mapping.leaderstat
+							aggregated[statName] = (aggregated[statName] or 0) + value
+							itemTotals[statName] = (itemTotals[statName] or 0) + value
+						end
+					end
+				end
+			end
+
+			for statName, amount in pairs(itemTotals) do
+				details[statName] = details[statName] or {}
+				table.insert(details[statName], string.format("%s %s", child.Name, formatBonus(amount)))
+			end
+		end
+	end
+
+	return aggregated, details
+end
+local function clearEquipmentBonuses(player)
+	if not player then
+		return
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local currentBonuses = playerEquipmentBonuses[player]
+
+	if leaderstats then
+		if currentBonuses then
+			applyEquipmentBonusesToLeaderstats(leaderstats, currentBonuses, -1)
+		end
+		updateEquipmentBonusFolders(leaderstats, {}, {})
+	end
+
+	playerEquipmentBonuses[player] = nil
+	playerEquipmentBonusDetails[player] = nil
+end
+
+local function refreshEquipmentBonuses(player)
+	if not player then
+		return
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return
+	end
+
+	local existing = playerEquipmentBonuses[player]
+	if existing then
+		applyEquipmentBonusesToLeaderstats(leaderstats, existing, -1)
+	end
+
+	local aggregated, details = computeEquipmentBonuses(player)
+	playerEquipmentBonuses[player] = aggregated
+	playerEquipmentBonusDetails[player] = details
+
+	applyEquipmentBonusesToLeaderstats(leaderstats, aggregated, 1)
+	updateEquipmentBonusFolders(leaderstats, aggregated, details)
+end
+
+function _G.refreshEquipmentBonuses(player)
+	refreshEquipmentBonuses(player)
+end
+
+function _G.clearEquipmentBonuses(player)
+	clearEquipmentBonuses(player)
+end
+
 -- ========================================
 -- BASE PLAYER STATS (Classes)
 -- Moved from SlavkosConfigs to be managed here
@@ -47,75 +320,480 @@ local BaseStats = {
 	-- Level-up multipliers per class (from spreadsheet)
 	LevelUpMultipliers = {
 		Samurai = {
-			HP = 1.08,     -- 8% growth
-			ATK = 1.05,    -- 5% growth
-			D = 1.08,      -- 8% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.08 },
+				{ level = 7, multiplier = 1.08 },
+				{ level = 13, multiplier = 1.08 },
+				{ level = 19, multiplier = 1.08 },
+				{ level = 25, multiplier = 1.08 },
+				{ level = 31, multiplier = 1.08 },
+				{ level = 37, multiplier = 1.08 },
+				{ level = 43, multiplier = 1.08 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.08 },
+				{ level = 7, multiplier = 1.08 },
+				{ level = 13, multiplier = 1.08 },
+				{ level = 19, multiplier = 1.08 },
+				{ level = 25, multiplier = 1.08 },
+				{ level = 31, multiplier = 1.08 },
+				{ level = 37, multiplier = 1.08 },
+				{ level = 43, multiplier = 1.08 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.02 },
+				{ level = 7, multiplier = 1.02 },
+				{ level = 13, multiplier = 1.02 },
+				{ level = 19, multiplier = 1.02 },
+				{ level = 25, multiplier = 1.02 },
+				{ level = 31, multiplier = 1.02 },
+				{ level = 37, multiplier = 1.02 },
+				{ level = 43, multiplier = 1.02 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		},
 		Archer = {
-			HP = 1.06,     -- 6% growth
-			ATK = 1.10,    -- 10% growth
-			D = 1.05,      -- 5% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01    -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.06 },
+				{ level = 7, multiplier = 1.06 },
+				{ level = 13, multiplier = 1.06 },
+				{ level = 19, multiplier = 1.06 },
+				{ level = 25, multiplier = 1.06 },
+				{ level = 31, multiplier = 1.06 },
+				{ level = 37, multiplier = 1.06 },
+				{ level = 43, multiplier = 1.06 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.10 },
+				{ level = 7, multiplier = 1.10 },
+				{ level = 13, multiplier = 1.10 },
+				{ level = 19, multiplier = 1.10 },
+				{ level = 25, multiplier = 1.10 },
+				{ level = 31, multiplier = 1.10 },
+				{ level = 37, multiplier = 1.10 },
+				{ level = 43, multiplier = 1.10 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.03 },
+				{ level = 7, multiplier = 1.03 },
+				{ level = 13, multiplier = 1.03 },
+				{ level = 19, multiplier = 1.03 },
+				{ level = 25, multiplier = 1.03 },
+				{ level = 31, multiplier = 1.03 },
+				{ level = 37, multiplier = 1.03 },
+				{ level = 43, multiplier = 1.03 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
+			}
 		},
 		Gladiator = {
-			HP = 1.10,     -- 10% growth
-			ATK = 1.03,    -- 3% growth
-			D = 1.08,      -- 8% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.10 },
+				{ level = 7, multiplier = 1.10 },
+				{ level = 13, multiplier = 1.10 },
+				{ level = 19, multiplier = 1.10 },
+				{ level = 25, multiplier = 1.10 },
+				{ level = 31, multiplier = 1.10 },
+				{ level = 37, multiplier = 1.10 },
+				{ level = 43, multiplier = 1.10 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.03 },
+				{ level = 7, multiplier = 1.03 },
+				{ level = 13, multiplier = 1.03 },
+				{ level = 19, multiplier = 1.03 },
+				{ level = 25, multiplier = 1.03 },
+				{ level = 31, multiplier = 1.03 },
+				{ level = 37, multiplier = 1.03 },
+				{ level = 43, multiplier = 1.03 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.08 },
+				{ level = 7, multiplier = 1.08 },
+				{ level = 13, multiplier = 1.08 },
+				{ level = 19, multiplier = 1.08 },
+				{ level = 25, multiplier = 1.08 },
+				{ level = 31, multiplier = 1.08 },
+				{ level = 37, multiplier = 1.08 },
+				{ level = 43, multiplier = 1.08 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.02 },
+				{ level = 7, multiplier = 1.02 },
+				{ level = 13, multiplier = 1.02 },
+				{ level = 19, multiplier = 1.02 },
+				{ level = 25, multiplier = 1.02 },
+				{ level = 31, multiplier = 1.02 },
+				{ level = 37, multiplier = 1.02 },
+				{ level = 43, multiplier = 1.02 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		},
 		Brawler = {  -- Berserker in spreadsheet
-			HP = 1.07,     -- 7% growth
-			ATK = 1.09,    -- 9% growth
-			D = 1.05,      -- 5% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.03,     -- 3% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.09 },
+				{ level = 7, multiplier = 1.09 },
+				{ level = 13, multiplier = 1.09 },
+				{ level = 19, multiplier = 1.09 },
+				{ level = 25, multiplier = 1.09 },
+				{ level = 31, multiplier = 1.09 },
+				{ level = 37, multiplier = 1.09 },
+				{ level = 43, multiplier = 1.09 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.03 },
+				{ level = 7, multiplier = 1.03 },
+				{ level = 13, multiplier = 1.03 },
+				{ level = 19, multiplier = 1.03 },
+				{ level = 25, multiplier = 1.03 },
+				{ level = 31, multiplier = 1.03 },
+				{ level = 37, multiplier = 1.03 },
+				{ level = 43, multiplier = 1.03 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
 		},
 		Knight = {
-			HP = 1.07,     -- 7% growth
-			ATK = 1.07,    -- 7% growth
-			D = 1.07,      -- 7% growth
-			DP = 1.05,     -- 5% growth - Defense Penetration
-			CR = 1.02,     -- 2% growth - Crit Rate (percentage stat)
-			CM = 1.01,     -- 1% growth - Crit Multiplier (percentage stat)
-			HR = 1.05,     -- 5% growth - Health Regeneration
-			Mspd = 1.01,   -- 1% growth - Movement Speed
-			Aspd = 1.01,   -- 1% growth - Attack Speed
+			HP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.10 },
+				{ level = 13, multiplier = 1.15 },
+				{ level = 19, multiplier = 1.20 },
+				{ level = 25, multiplier = 1.25 },
+				{ level = 31, multiplier = 1.30 },
+				{ level = 37, multiplier = 1.35 },
+				{ level = 43, multiplier = 1.40 },
+			},
+			ATK = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			D = {
+				{ level = 1, multiplier = 1.07 },
+				{ level = 7, multiplier = 1.07 },
+				{ level = 13, multiplier = 1.07 },
+				{ level = 19, multiplier = 1.07 },
+				{ level = 25, multiplier = 1.07 },
+				{ level = 31, multiplier = 1.07 },
+				{ level = 37, multiplier = 1.07 },
+				{ level = 43, multiplier = 1.07 },
+			},
+			DP = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			CR = {
+				{ level = 1, multiplier = 1.02 },
+				{ level = 7, multiplier = 1.02 },
+				{ level = 13, multiplier = 1.02 },
+				{ level = 19, multiplier = 1.02 },
+				{ level = 25, multiplier = 1.02 },
+				{ level = 31, multiplier = 1.02 },
+				{ level = 37, multiplier = 1.02 },
+				{ level = 43, multiplier = 1.02 },
+			},
+			CM = {
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
+			},
+			HR = {
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.05 },
+				{ level = 13, multiplier = 1.05 },
+				{ level = 19, multiplier = 1.05 },
+				{ level = 25, multiplier = 1.05 },
+				{ level = 31, multiplier = 1.05 },
+				{ level = 37, multiplier = 1.05 },
+				{ level = 43, multiplier = 1.05 },
+			},
+			Mspd = {
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
+			},
+			Aspd = {
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
+			},
 		}
 	},
 	
 	Archer = {
 		-- Offense Stats
 		ATK = 100,        -- Attack: Directly affects Health points
-		DP = 0,           -- Defense Penetration: Directly affects Defense
+		DP = 1,           -- Defense Penetration: Directly affects Defense
 		CR = 5,           -- Crit Rate: Rate of Critical Chance up to 100%
 		CM = 150,         -- Crit Multiplier: Attack Multiplier (percentage)
 		
 		-- Defense Stats
-		HP = 1200,        -- Health Points: Life pool (dies if ≤ 0)
-		D = 50,           -- Defense: Reduces Penetration
-		HR = 0,           -- Health Regeneration: Health Points gained per second
-		Mspd = 18,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
-		Aspd = 1,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
+		HP = 400,        -- Health Points: Life pool (dies if ≤ 0)
+		D = 5,           -- Defense: Reduces Penetration
+		HR = 2,           -- Health Regeneration: Health Points gained per second
+		Mspd = 50,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
+		Aspd = 200,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
 	},
 	
 	Samurai = {
@@ -150,17 +828,17 @@ local BaseStats = {
 	
 	Knight = {
 		-- Offense Stats
-		ATK = 70,
-		DP = 0,
-		CR = 5,
-		CM = 150,
+		ATK = 5,
+		DP = 1,
+		CR = 1,
+		CM = 2,
 		
 		-- Defense Stats
-		HP = 1400,
-		D = 70,
-		HR = 0,
-		Mspd = 18,
-		Aspd = 1,
+		HP = 500,
+		D = 5,
+		HR = 5,
+		Mspd = 50,
+		Aspd = 50,
 	},
 	
 	Gladiator = {
@@ -182,6 +860,55 @@ local BaseStats = {
 -- Export BaseStats to ServerConfigs so other modules can access it
 ServerConfigs.BaseStats = BaseStats
 
+-- Helper to resolve level-based stat multipliers for classes
+local function resolveLevelUpMultiplier(multipliers, statKey, level)
+	if not multipliers or not statKey or not level then
+		return nil
+	end
+
+	local statDefinition = multipliers[statKey]
+	if not statDefinition then
+		return nil
+	end
+
+	local definitionType = typeof(statDefinition)
+	if definitionType == "number" then
+		return statDefinition
+	elseif definitionType ~= "table" then
+		return nil
+	end
+
+	-- Support shorthand table { level = X, multiplier = Y }
+	if statDefinition.level and statDefinition.multiplier then
+		statDefinition = { statDefinition }
+	end
+
+	local selectedMultiplier = nil
+	for _, entry in ipairs(statDefinition) do
+		if typeof(entry) == "table" and entry.level and entry.multiplier then
+			if level >= entry.level then
+				selectedMultiplier = entry.multiplier
+			else
+				break
+			end
+		end
+	end
+
+	if selectedMultiplier ~= nil then
+		return selectedMultiplier
+	end
+
+	-- Fallback support for keyed defaults (e.g., { default = 1.0 })
+	if typeof(statDefinition.defaultMultiplier) == "number" then
+		return statDefinition.defaultMultiplier
+	end
+	if typeof(statDefinition.default) == "number" then
+		return statDefinition.default
+	end
+
+	return nil
+end
+
 -- ========================================
 -- BUFF MANAGEMENT SYSTEM
 -- ========================================
@@ -198,7 +925,7 @@ local function getBaseStatsBeforeBuff(player)
 	if not leaderstats then
 		return nil
 	end
-	
+
 	return {
 		MaxAttack = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0,
 		MaxDefense = leaderstats:FindFirstChild("MaxDefense") and leaderstats.MaxDefense.Value or 0,
@@ -249,6 +976,12 @@ function _G.applyBuff(player, buffName, buffConfig)
 	
 	-- Store base stats before applying buff
 	local baseStats = getBaseStatsBeforeBuff(player)
+	local equipmentSnapshot = {}
+	if playerEquipmentBonuses[player] then
+		for statName, amount in pairs(playerEquipmentBonuses[player]) do
+			equipmentSnapshot[statName] = amount
+		end
+	end
 	
 	-- Calculate new stats with buff
 	if buffName == "Warcry" then
@@ -520,7 +1253,8 @@ function _G.applyBuff(player, buffName, buffConfig)
 		config = config,
 		startTime = startTime,
 		endTime = endTime,
-		baseStats = baseStats
+		baseStats = baseStats,
+		equipmentSnapshot = equipmentSnapshot
 	}
 	
 	-- Store base stats in leaderstats for UI display (only for UI, not used in calculations)
@@ -1050,6 +1784,24 @@ function _G.removeBuff(player, buffName)
 	
 	local buffData = playerBuffs[player][buffName]
 	local baseStats = buffData.baseStats
+	local equipmentSnapshot = buffData.equipmentSnapshot or {}
+
+	local function baseWithoutEquipment(statName, value)
+		if equipmentSnapshot[statName] then
+			return math.max(0, value - equipmentSnapshot[statName])
+		end
+		return value
+	end
+
+	local aggregatedEquipmentSnapshot = {}
+	do
+		local currentAggregated = select(1, computeEquipmentBonuses(player))
+		for statName, amount in pairs(currentAggregated) do
+			aggregatedEquipmentSnapshot[statName] = amount
+		end
+	end
+
+	local pendingHealthValue = nil
 	
 	-- Restore base stats
 	if buffName == "Warcry" then
@@ -1058,16 +1810,17 @@ function _G.removeBuff(player, buffName)
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
 		
 		if maxAttack and baseStats then
-			maxAttack.Value = baseStats.MaxAttack
+			maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
 		end
 		
 		if maxDefense and baseStats then
-			maxDefense.Value = baseStats.MaxDefense
+			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
+			maxDefense.Value = restoredDefense
 			
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
-				currentDefense.Value = baseStats.MaxDefense
+				currentDefense.Value = restoredDefense
 			end
 		end
 		
@@ -1078,13 +1831,16 @@ function _G.removeBuff(player, buffName)
 		
 		if maxHealth and baseStats and humanoid then
 			-- Restore base health
-			maxHealth.Value = baseStats.MaxHealth
-			humanoid.MaxHealth = baseStats.MaxHealth
+			local restoredHealth = baseWithoutEquipment("MaxHealth", baseStats.MaxHealth)
+			maxHealth.Value = restoredHealth
+			humanoid.MaxHealth = restoredHealth
 			
-			-- Restore health percentage (cap at max health)
-			local healthPercentage = baseStats.MaxHealth > 0 and (humanoid.Health / (baseStats.MaxHealth + buffData.config.hpIncrease)) or 1
-			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
-			humanoid.Health = newHealth
+			-- Restore health percentage (cap at max health) after reapplying equipment bonuses
+			local buffedMaxHealthBeforeRemoval = baseStats.MaxHealth + (buffData.config.hpIncrease or 0)
+			local finalMaxHealthAfterEquipment = restoredHealth + (aggregatedEquipmentSnapshot.MaxHealth or 0)
+			local healthPercentage = buffedMaxHealthBeforeRemoval > 0 and (humanoid.Health / buffedMaxHealthBeforeRemoval) or 1
+			local desiredHealth = math.min(finalMaxHealthAfterEquipment * healthPercentage, finalMaxHealthAfterEquipment)
+			pendingHealthValue = desiredHealth
 		end
 		
 	elseif buffName == "BloodThirst" then
@@ -1102,24 +1858,27 @@ function _G.removeBuff(player, buffName)
 		
 		if maxHealth and baseStats and humanoid then
 			-- Restore base health
-			maxHealth.Value = baseStats.MaxHealth
-			humanoid.MaxHealth = baseStats.MaxHealth
+			local restoredHealth = baseWithoutEquipment("MaxHealth", baseStats.MaxHealth)
+			maxHealth.Value = restoredHealth
+			humanoid.MaxHealth = restoredHealth
 			
-			-- Restore health percentage (cap at max health)
+			-- Restore health percentage (cap at max health) after reapplying equipment bonuses
 			local buffedMaxHealth = baseStats.MaxHealth * (1 + buffData.config.hpMultiplier)
+			local finalMaxHealthAfterEquipment = restoredHealth + (aggregatedEquipmentSnapshot.MaxHealth or 0)
 			local healthPercentage = buffedMaxHealth > 0 and (humanoid.Health / buffedMaxHealth) or 1
-			local newHealth = math.min(baseStats.MaxHealth * healthPercentage, baseStats.MaxHealth)
-			humanoid.Health = newHealth
+			local desiredHealth = math.min(finalMaxHealthAfterEquipment * healthPercentage, finalMaxHealthAfterEquipment)
+			pendingHealthValue = desiredHealth
 		end
 		
 		if maxDefense and baseStats then
 			-- Restore base defense
-			maxDefense.Value = baseStats.MaxDefense
+			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
+			maxDefense.Value = restoredDefense
 			
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
-				currentDefense.Value = baseStats.MaxDefense
+				currentDefense.Value = restoredDefense
 			end
 		end
 		
@@ -1129,12 +1888,13 @@ function _G.removeBuff(player, buffName)
 		
 		if maxDefense and baseStats then
 			-- Restore base defense
-			maxDefense.Value = baseStats.MaxDefense
+			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
+			maxDefense.Value = restoredDefense
 			
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
-				currentDefense.Value = baseStats.MaxDefense
+				currentDefense.Value = restoredDefense
 			end
 		end
 		
@@ -1144,9 +1904,9 @@ function _G.removeBuff(player, buffName)
 		-- HuntersInstinct: Restore Movement Speed to base value
 		local movementSpeed = leaderstats:FindFirstChild("MovementSpeed")
 		
-		if movementSpeed and baseStats then
-			-- Restore base movement speed
-			movementSpeed.Value = baseStats.MovementSpeed
+	if movementSpeed and baseStats then
+		-- Restore base movement speed
+		movementSpeed.Value = baseWithoutEquipment("MovementSpeed", baseStats.MovementSpeed)
 			
 			-- Update unified movement animation speed in ServerConfigs
 			local movementAnimSpeedMultiplier = movementSpeed.Value
@@ -1189,12 +1949,12 @@ function _G.removeBuff(player, buffName)
 		
 		if maxAttack and baseStats then
 			-- Restore base attack
-			maxAttack.Value = baseStats.MaxAttack
+		maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
 		end
 		
 		if attackSpeed and baseStats then
 			-- Restore base attack speed
-			attackSpeed.Value = baseStats.AttackSpeed
+		attackSpeed.Value = baseWithoutEquipment("AttackSpeed", baseStats.AttackSpeed)
 			
 			-- Update unified attack animation speed in ServerConfigs
 			local attackAnimSpeedMultiplier = attackSpeed.Value
@@ -1343,6 +2103,24 @@ function _G.removeBuff(player, buffName)
 		end
 	end
 	
+	-- Reapply current equipment bonuses after stats were reset
+	local humanoidAfterRefresh = nil
+
+	if leaderstats then
+		if playerEquipmentBonuses[player] then
+			playerEquipmentBonuses[player] = nil
+		end
+		if playerEquipmentBonusDetails[player] then
+			playerEquipmentBonusDetails[player] = nil
+		end
+		refreshEquipmentBonuses(player)
+		humanoidAfterRefresh = player.Character and player.Character:FindFirstChild("Humanoid")
+	end
+
+	if pendingHealthValue and humanoidAfterRefresh then
+		humanoidAfterRefresh.Health = math.min(pendingHealthValue, humanoidAfterRefresh.MaxHealth)
+	end
+	
 	return true
 end
 
@@ -1465,6 +2243,8 @@ game.Players.PlayerRemoving:Connect(function(player)
 	if playerBuffs[player] then
 		playerBuffs[player] = nil
 	end
+
+	clearEquipmentBonuses(player)
 end)
 
 -- ========================================
@@ -1674,12 +2454,43 @@ game.Players.PlayerAdded:Connect(function(plr)
 	activePassives.Name = "ActivePassives"
 	activePassives.Value = "" -- Comma-separated list of active passives (e.g., "Tenacity")
 	
+	-- Equipment bonus tracking (set by Inventory/Equipment systems)
+	local equipmentBonusesFolder = Instance.new("Folder", leaderstats)
+	equipmentBonusesFolder.Name = "EquipmentBonuses"
+	
+	local equipmentBonusDetailsFolder = Instance.new("Folder", leaderstats)
+	equipmentBonusDetailsFolder.Name = "EquipmentBonusDetails"
+	
 	
 	------------------ FOR SUNFIRE ONLY ----------------
 	
-	local waterLevel = Instance.new("NumberValue", leaderstats)
-	waterLevel.Name = "WaterLevel"
-	waterLevel.Value = 300
+	local currentWaterLevel = Instance.new("NumberValue", leaderstats)
+	currentWaterLevel.Name = "CurrentWaterLevel"
+	currentWaterLevel.Value = 0
+	
+	local maxWaterLevel = Instance.new("NumberValue", leaderstats)
+	maxWaterLevel.Name = "MaxWaterLevel"
+	maxWaterLevel.Value = 300
+	
+	local waterBasinOne = Instance.new("BoolValue", leaderstats)
+	waterBasinOne.Name = "WaterBasinOne"
+	waterBasinOne.Value = false
+	
+	local waterBasinTwo = Instance.new("BoolValue", leaderstats)
+	waterBasinTwo.Name = "WaterBasinTwo"
+	waterBasinTwo.Value = false
+	
+	local waterBasinThree = Instance.new("BoolValue", leaderstats)
+	waterBasinThree.Name = "WaterBasinThree"
+	waterBasinThree.Value = false
+	
+	local waterBasinFour = Instance.new("BoolValue", leaderstats)
+	waterBasinFour.Name = "WaterBasinFour"
+	waterBasinFour.Value = false
+	
+	local waterBasinFifth = Instance.new("BoolValue", leaderstats)
+	waterBasinFifth.Name = "WaterBasinFifth"
+	waterBasinFifth.Value = false
 	
 	-- loads progress data
 	if data then
@@ -1747,9 +2558,24 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 		
 		---- FOR SUNFIRE ONLY ---
-		waterLevel.Value = convertDataType(data.WaterLevel, 300)
+		currentWaterLevel.Value = convertDataType(data.CurrentWaterLevel, 0)
+		maxWaterLevel.Value = convertDataType(data.MaxWaterLevel, 300)
+		waterBasinOne.Value = convertDataType(data.WaterBasinOne, false)
+		waterBasinTwo.Value = convertDataType(data.WaterBasinTwo, false)
+		waterBasinThree.Value = convertDataType(data.WaterBasinThree, false)
+		waterBasinFour.Value = convertDataType(data.WaterBasinFour, false)
+		waterBasinFifth.Value = convertDataType(data.WaterBasinFifth, false)
 	end
-	
+
+	-- Ensure Slavkorian stays at starting level
+	if class.Value == "Slavkorian" then
+		level.Value = BaseStats.XP.startLevel
+		maxxp.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+		if currxp.Value > maxxp.Value then
+			currxp.Value = maxxp.Value
+		end
+	end
+
 	-- Flag to track if stats have been initialized (to prevent applying multipliers on load)
 	local statsInitialized = false
 	
@@ -1765,6 +2591,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		
 		-- DISABLE LEVELING WHEN CLASS IS SLAVKORIAN
 		if class.Value == "Slavkorian" then
+			if maxxp and maxxp.Value and newv > maxxp.Value then
+				currxp.Value = maxxp.Value
+			end
 			return -- Don't allow leveling up when class is Slavkorian
 		end
 		
@@ -1844,6 +2673,17 @@ game.Players.PlayerAdded:Connect(function(plr)
 	-- Connect this OUTSIDE CharacterAdded so it works even before character spawns
 	level.Changed:Connect(function()
 		local newLevel = level.Value
+
+		-- Prevent level changes while class is Slavkorian
+		if class.Value == "Slavkorian" then
+			if newLevel ~= BaseStats.XP.startLevel then
+				level.Value = BaseStats.XP.startLevel
+				return
+			end
+			maxxp.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+			previousLevel = BaseStats.XP.startLevel
+			return
+		end
 		
 		-- Recalculate MaximumXP when level changes (always, for resets too)
 		local newMaxXP = calculateMaximumXP(newLevel)
@@ -1870,28 +2710,34 @@ game.Players.PlayerAdded:Connect(function(plr)
 				-- Level exceeds max level, skipping multipliers
 			else
 				-- Apply level-up multipliers for all stats
-				leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * multipliers.HP)
-				
+				local hpMultiplier = resolveLevelUpMultiplier(multipliers, "HP", newLevel)
+				if hpMultiplier and leaderstats:FindFirstChild("MaxHealth") then
+					leaderstats.MaxHealth.Value = math.floor(leaderstats.MaxHealth.Value * hpMultiplier)
+				end
+
 				-- For MaxAttack, use round to ensure it always increases (especially important for classes with small multipliers like Gladiator)
 				-- Gladiator: 30 * 1.03 = 30.9, floor = 30 (no increase!), round = 31 (increases!)
-				if leaderstats:FindFirstChild("MaxAttack") and multipliers.ATK then
+				local atkMultiplier = resolveLevelUpMultiplier(multipliers, "ATK", newLevel)
+				if atkMultiplier and leaderstats:FindFirstChild("MaxAttack") then
 					local oldATK = leaderstats.MaxAttack.Value
-					local newATK = oldATK * multipliers.ATK
+					local newATK = oldATK * atkMultiplier
 					-- Use round to ensure it always increases (math.floor(x + 0.5))
 					local roundedATK = math.floor(newATK + 0.5)
 					-- Ensure it increases by at least 1 (prevents stats from staying the same due to rounding)
 					leaderstats.MaxAttack.Value = math.max(roundedATK, oldATK + 1)
 				end
-				
-				if leaderstats:FindFirstChild("MaxDefense") and multipliers.D then
-					leaderstats.MaxDefense.Value = math.floor(leaderstats.MaxDefense.Value * multipliers.D)
+
+				local defMultiplier = resolveLevelUpMultiplier(multipliers, "D", newLevel)
+				if defMultiplier and leaderstats:FindFirstChild("MaxDefense") then
+					leaderstats.MaxDefense.Value = math.floor(leaderstats.MaxDefense.Value * defMultiplier)
 				end
-				
+
 				-- Apply offense stat multipliers
 				-- Defense Penetration: Use round to ensure it increases (important when starting at 0)
-				if leaderstats:FindFirstChild("DefensePenetration") and multipliers.DP then
+				local dpMultiplier = resolveLevelUpMultiplier(multipliers, "DP", newLevel)
+				if dpMultiplier and leaderstats:FindFirstChild("DefensePenetration") then
 					local oldDP = leaderstats.DefensePenetration.Value
-					local newDP = oldDP * multipliers.DP
+					local newDP = oldDP * dpMultiplier
 					-- Use round to ensure it increases (math.floor(x + 0.5))
 					local roundedDP = math.floor(newDP + 0.5)
 					-- Ensure it increases by at least 1 if it was 0 or very small (prevents staying at 0)
@@ -1903,29 +2749,34 @@ game.Players.PlayerAdded:Connect(function(plr)
 						leaderstats.DefensePenetration.Value = math.max(roundedDP, oldDP + 1)
 					end
 				end
+
 				-- CritRate needs math.ceil because it's a small percentage stat (starts at 5)
 				-- 5 * 1.03 = 5.15, floor(5.15) = 5 (stays same), ceil(5.15) = 6 (increases!)
-				if leaderstats:FindFirstChild("CritRate") and multipliers.CR then
+				local critRateMultiplier = resolveLevelUpMultiplier(multipliers, "CR", newLevel)
+				if critRateMultiplier and leaderstats:FindFirstChild("CritRate") then
 					local oldCR = leaderstats.CritRate.Value
-					local newCritRate = oldCR * multipliers.CR
+					local newCritRate = oldCR * critRateMultiplier
 					-- Always use ceil to ensure progression (removes floating point comparison issues)
 					leaderstats.CritRate.Value = math.ceil(newCritRate)
 				end
+
 				-- CritMultiplier works fine with floor since it starts at 150 (150 * 1.01 = 151.5, floor = 151 ✓)
 				-- But we use round to ensure it always increases slightly
-				if leaderstats:FindFirstChild("CritMultiplier") and multipliers.CM then
+				local critMultiplier = resolveLevelUpMultiplier(multipliers, "CM", newLevel)
+				if critMultiplier and leaderstats:FindFirstChild("CritMultiplier") then
 					local oldCM = leaderstats.CritMultiplier.Value
-					local newCritMultiplier = oldCM * multipliers.CM
+					local newCritMultiplier = oldCM * critMultiplier
 					-- Use round to ensure it increases (1.01 multiplier on 150 = 151.5, round = 152)
 					-- math.round might not exist, so use: math.floor(x + 0.5)
 					leaderstats.CritMultiplier.Value = math.floor(newCritMultiplier + 0.5)
 				end
-				
+
 				-- Apply defense/utility stat multipliers
 				-- Health Regeneration: Use round to ensure it increases (important when starting at 0)
-				if leaderstats:FindFirstChild("HealthRegen") and multipliers.HR then
+				local healthRegenMultiplier = resolveLevelUpMultiplier(multipliers, "HR", newLevel)
+				if healthRegenMultiplier and leaderstats:FindFirstChild("HealthRegen") then
 					local oldHR = leaderstats.HealthRegen.Value
-					local newHR = oldHR * multipliers.HR
+					local newHR = oldHR * healthRegenMultiplier
 					-- Use round to ensure it increases (math.floor(x + 0.5))
 					local roundedHR = math.floor(newHR + 0.5)
 					-- Ensure it increases by at least 1 if it was 0 or very small (prevents staying at 0)
@@ -1937,11 +2788,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 						leaderstats.HealthRegen.Value = math.max(roundedHR, oldHR + 1)
 					end
 				end
-				if leaderstats:FindFirstChild("MovementSpeed") and multipliers.Mspd then
+
+				local movementMultiplier = resolveLevelUpMultiplier(multipliers, "Mspd", newLevel)
+				if movementMultiplier and leaderstats:FindFirstChild("MovementSpeed") then
 					local oldMspd = leaderstats.MovementSpeed.Value
 					-- MovementSpeed is the animation speed multiplier, scale it with Mspd multiplier
-					leaderstats.MovementSpeed.Value = oldMspd * multipliers.Mspd
-					
+					leaderstats.MovementSpeed.Value = oldMspd * movementMultiplier
+
 					-- Update unified movement animation speed in ServerConfigs (MovementSpeed is already the multiplier)
 					local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
@@ -1950,7 +2803,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 					if ServerConfigs and ServerConfigs[class.Value] then
 						ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
 					end
-					
+
 					-- Sync animation speeds with action files for all players of this class
 					local classFuncs = {
 						Archer = _G.updateArcherAnimationSpeed,
@@ -1964,11 +2817,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 						updateFunc("movement", movementAnimSpeedMultiplier)
 					end
 				end
-				if leaderstats:FindFirstChild("AttackSpeed") and multipliers.Aspd then
+
+				local attackSpeedMultiplier = resolveLevelUpMultiplier(multipliers, "Aspd", newLevel)
+				if attackSpeedMultiplier and leaderstats:FindFirstChild("AttackSpeed") then
 					local oldAspd = leaderstats.AttackSpeed.Value
 					-- AttackSpeed is the animation speed multiplier, scale it with Aspd multiplier
-					leaderstats.AttackSpeed.Value = oldAspd * multipliers.Aspd
-					
+					leaderstats.AttackSpeed.Value = oldAspd * attackSpeedMultiplier
+
 					-- Update unified attack animation speed in ServerConfigs (AttackSpeed is already the multiplier)
 					local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
 					if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
@@ -1977,7 +2832,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 					if ServerConfigs and ServerConfigs[class.Value] then
 						ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
 					end
-					
+
 					-- Sync animation speeds with action files for all players of this class
 					local classFuncs = {
 						Archer = _G.updateArcherAnimationSpeed,
@@ -2102,6 +2957,15 @@ game.Players.PlayerAdded:Connect(function(plr)
 			statsInitialized = true
 		else
 			statsInitialized = false
+		end
+
+		if class.Value == "Slavkorian" then
+			level.Value = BaseStats.XP.startLevel
+			maxxp.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+			if currxp.Value > maxxp.Value then
+				currxp.Value = maxxp.Value
+			end
+			previousLevel = BaseStats.XP.startLevel
 		end
 	end)
 	
@@ -2233,6 +3097,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 		
 		local humanoid = char:WaitForChild("Humanoid")
+
+		-- Reset equipment bonuses so we can recalculate with newly equipped tools
+		clearEquipmentBonuses(plr)
 
 		-- Apply base stats if not already set
 		applyBaseStats()
@@ -2398,6 +3265,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end)
 		end
 		
+		-- Ensure equipment bonuses are applied for the current character state
+		refreshEquipmentBonuses(plr)
+		
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
 		
@@ -2435,10 +3305,19 @@ local function savePlayerData(plr)
 	leaderstats.Level.Value = math.min(leaderstats.Level.Value, BaseStats.XP.maxLevel)
 
 	-- Helper function to safely get a stat value
-	local function getStatValue(statName, defaultValue)
+	local equipmentBonuses = playerEquipmentBonuses[plr]
+
+	local function getStatValue(statName, defaultValue, options)
 		local stat = leaderstats:FindFirstChild(statName)
 		if stat and stat:IsA("ValueBase") then
-			return tonumber(stat.Value) or defaultValue
+			local value = tonumber(stat.Value) or defaultValue
+			local sourceStatName = (options and options.source) or statName
+
+			if equipmentBonuses and equipmentBonuses[sourceStatName] then
+				value = value - equipmentBonuses[sourceStatName]
+			end
+
+			return math.max(value, 0)
 		end
 		return defaultValue
 	end
@@ -2453,13 +3332,19 @@ local function savePlayerData(plr)
 		CritRate = getStatValue("CritRate", 0),
 		CritMultiplier = getStatValue("CritMultiplier", 0),
 		MaxDefense = getStatValue("MaxDefense", 0),
-		CurrentDefense = getStatValue("CurrentDefense", getStatValue("MaxDefense", 0)), -- Default to MaxDefense if CurrentDefense doesn't exist
+		CurrentDefense = getStatValue("CurrentDefense", getStatValue("MaxDefense", 0), {source = "MaxDefense"}), -- Default to MaxDefense if not saved
 		MaxHealth = getStatValue("MaxHealth", 0),
 		HealthRegen = getStatValue("HealthRegen", 0),
 		MovementSpeed = getStatValue("MovementSpeed", 0),
 		AttackSpeed = getStatValue("AttackSpeed", 0),
 		Slavkoins = getStatValue("Slavkoins", 0),
-		WaterLevel = getStatValue("WaterLevel", 0)
+		CurrentWaterLevel = getStatValue("CurrentWaterLevel", 0),
+		MaxWaterLevel = getStatValue("MaxWaterLevel", 0),
+		WaterBasinOne = getStatValue("WaterBasinOne", false),
+		WaterBasinTwo = getStatValue("WaterBasinTwo", false),
+		WaterBasinThree = getStatValue("WaterBasinThree", false),
+		WaterBasinFour = getStatValue("WaterBasinFour", false),
+		WaterBasinFifth = getStatValue("WaterBasinFifth", false)
 	}
 
 	local success, err = MainDataStore.SavePlayerData(plr.UserId, dataToSave)
@@ -2503,6 +3388,13 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		end
 	elseif action == "setLevel" then
 		if leaderstats:FindFirstChild("Level") then
+			if leaderstats:FindFirstChild("Class") and leaderstats.Class.Value == "Slavkorian" then
+				leaderstats.Level.Value = BaseStats.XP.startLevel
+				if leaderstats:FindFirstChild("MaximumXP") then
+					leaderstats.MaximumXP.Value = calculateMaximumXP(BaseStats.XP.startLevel)
+				end
+				return
+			end
 			local newLevel = tonumber(value) or 1
 			-- LEVEL CAP: Clamp level to max level
 			leaderstats.Level.Value = math.min(math.max(newLevel, 1), BaseStats.XP.maxLevel)

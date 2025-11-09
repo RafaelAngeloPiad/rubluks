@@ -483,24 +483,24 @@ local BaseStats = {
 				{ level = 43, multiplier = 1.05 },
 			},
 			Mspd = {
-				{ level = 1, multiplier = 1.01 },
-				{ level = 7, multiplier = 1.01 },
-				{ level = 13, multiplier = 1.01 },
-				{ level = 19, multiplier = 1.01 },
-				{ level = 25, multiplier = 1.01 },
-				{ level = 31, multiplier = 1.01 },
-				{ level = 37, multiplier = 1.01 },
-				{ level = 43, multiplier = 1.01 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
 			},
 			Aspd = {
-				{ level = 1, multiplier = 1.01 },
-				{ level = 7, multiplier = 1.01 },
-				{ level = 13, multiplier = 1.01 },
-				{ level = 19, multiplier = 1.01 },
-				{ level = 25, multiplier = 1.01 },
-				{ level = 31, multiplier = 1.01 },
-				{ level = 37, multiplier = 1.01 },
-				{ level = 43, multiplier = 1.01 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
 			}
 		},
 		Gladiator = {
@@ -689,14 +689,14 @@ local BaseStats = {
 		},
 		Knight = {
 			HP = {
-				{ level = 1, multiplier = 1.07 },
-				{ level = 7, multiplier = 1.07 },
-				{ level = 13, multiplier = 1.07 },
-				{ level = 19, multiplier = 1.07 },
-				{ level = 25, multiplier = 1.07 },
-				{ level = 31, multiplier = 1.07 },
-				{ level = 37, multiplier = 1.07 },
-				{ level = 43, multiplier = 1.07 },
+				{ level = 1, multiplier = 1.05 },
+				{ level = 7, multiplier = 1.10 },
+				{ level = 13, multiplier = 1.15 },
+				{ level = 19, multiplier = 1.20 },
+				{ level = 25, multiplier = 1.25 },
+				{ level = 31, multiplier = 1.30 },
+				{ level = 37, multiplier = 1.35 },
+				{ level = 43, multiplier = 1.40 },
 			},
 			ATK = {
 				{ level = 1, multiplier = 1.07 },
@@ -759,24 +759,24 @@ local BaseStats = {
 				{ level = 43, multiplier = 1.05 },
 			},
 			Mspd = {
-				{ level = 1, multiplier = 1.01 },
-				{ level = 7, multiplier = 1.01 },
-				{ level = 13, multiplier = 1.01 },
-				{ level = 19, multiplier = 1.01 },
-				{ level = 25, multiplier = 1.01 },
-				{ level = 31, multiplier = 1.01 },
-				{ level = 37, multiplier = 1.01 },
-				{ level = 43, multiplier = 1.01 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
 			},
 			Aspd = {
-				{ level = 1, multiplier = 1.01 },
-				{ level = 7, multiplier = 1.01 },
-				{ level = 13, multiplier = 1.01 },
-				{ level = 19, multiplier = 1.01 },
-				{ level = 25, multiplier = 1.01 },
-				{ level = 31, multiplier = 1.01 },
-				{ level = 37, multiplier = 1.01 },
-				{ level = 43, multiplier = 1.01 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
 			},
 		}
 	},
@@ -784,16 +784,16 @@ local BaseStats = {
 	Archer = {
 		-- Offense Stats
 		ATK = 100,        -- Attack: Directly affects Health points
-		DP = 0,           -- Defense Penetration: Directly affects Defense
+		DP = 1,           -- Defense Penetration: Directly affects Defense
 		CR = 5,           -- Crit Rate: Rate of Critical Chance up to 100%
 		CM = 150,         -- Crit Multiplier: Attack Multiplier (percentage)
 		
 		-- Defense Stats
-		HP = 1200,        -- Health Points: Life pool (dies if ≤ 0)
-		D = 50,           -- Defense: Reduces Penetration
-		HR = 0,           -- Health Regeneration: Health Points gained per second
-		Mspd = 18,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
-		Aspd = 1,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
+		HP = 400,        -- Health Points: Life pool (dies if ≤ 0)
+		D = 5,           -- Defense: Reduces Penetration
+		HR = 2,           -- Health Regeneration: Health Points gained per second
+		Mspd = 50,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
+		Aspd = 200,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
 	},
 	
 	Samurai = {
@@ -828,17 +828,17 @@ local BaseStats = {
 	
 	Knight = {
 		-- Offense Stats
-		ATK = 70,
-		DP = 0,
-		CR = 5,
-		CM = 150,
+		ATK = 5,
+		DP = 1,
+		CR = 1,
+		CM = 2,
 		
 		-- Defense Stats
-		HP = 1400,
-		D = 70,
-		HR = 0,
-		Mspd = 18,
-		Aspd = 1,
+		HP = 500,
+		D = 5,
+		HR = 5,
+		Mspd = 50,
+		Aspd = 50,
 	},
 	
 	Gladiator = {
@@ -2464,9 +2464,33 @@ game.Players.PlayerAdded:Connect(function(plr)
 	
 	------------------ FOR SUNFIRE ONLY ----------------
 	
-	local waterLevel = Instance.new("NumberValue", leaderstats)
-	waterLevel.Name = "WaterLevel"
-	waterLevel.Value = 300
+	local currentWaterLevel = Instance.new("NumberValue", leaderstats)
+	currentWaterLevel.Name = "CurrentWaterLevel"
+	currentWaterLevel.Value = 0
+	
+	local maxWaterLevel = Instance.new("NumberValue", leaderstats)
+	maxWaterLevel.Name = "MaxWaterLevel"
+	maxWaterLevel.Value = 300
+	
+	local waterBasinOne = Instance.new("BoolValue", leaderstats)
+	waterBasinOne.Name = "WaterBasinOne"
+	waterBasinOne.Value = false
+	
+	local waterBasinTwo = Instance.new("BoolValue", leaderstats)
+	waterBasinTwo.Name = "WaterBasinTwo"
+	waterBasinTwo.Value = false
+	
+	local waterBasinThree = Instance.new("BoolValue", leaderstats)
+	waterBasinThree.Name = "WaterBasinThree"
+	waterBasinThree.Value = false
+	
+	local waterBasinFour = Instance.new("BoolValue", leaderstats)
+	waterBasinFour.Name = "WaterBasinFour"
+	waterBasinFour.Value = false
+	
+	local waterBasinFifth = Instance.new("BoolValue", leaderstats)
+	waterBasinFifth.Name = "WaterBasinFifth"
+	waterBasinFifth.Value = false
 	
 	-- loads progress data
 	if data then
@@ -2534,7 +2558,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 		
 		---- FOR SUNFIRE ONLY ---
-		waterLevel.Value = convertDataType(data.WaterLevel, 300)
+		currentWaterLevel.Value = convertDataType(data.CurrentWaterLevel, 0)
+		maxWaterLevel.Value = convertDataType(data.MaxWaterLevel, 300)
+		waterBasinOne.Value = convertDataType(data.WaterBasinOne, false)
+		waterBasinTwo.Value = convertDataType(data.WaterBasinTwo, false)
+		waterBasinThree.Value = convertDataType(data.WaterBasinThree, false)
+		waterBasinFour.Value = convertDataType(data.WaterBasinFour, false)
+		waterBasinFifth.Value = convertDataType(data.WaterBasinFifth, false)
 	end
 
 	-- Ensure Slavkorian stays at starting level
@@ -3308,7 +3338,13 @@ local function savePlayerData(plr)
 		MovementSpeed = getStatValue("MovementSpeed", 0),
 		AttackSpeed = getStatValue("AttackSpeed", 0),
 		Slavkoins = getStatValue("Slavkoins", 0),
-		WaterLevel = getStatValue("WaterLevel", 0)
+		CurrentWaterLevel = getStatValue("CurrentWaterLevel", 0),
+		MaxWaterLevel = getStatValue("MaxWaterLevel", 0),
+		WaterBasinOne = getStatValue("WaterBasinOne", false),
+		WaterBasinTwo = getStatValue("WaterBasinTwo", false),
+		WaterBasinThree = getStatValue("WaterBasinThree", false),
+		WaterBasinFour = getStatValue("WaterBasinFour", false),
+		WaterBasinFifth = getStatValue("WaterBasinFifth", false)
 	}
 
 	local success, err = MainDataStore.SavePlayerData(plr.UserId, dataToSave)
