@@ -165,8 +165,8 @@ local UNIFIED_TAGS = {
 			action = function()
 				return triggerPlatformerSpecial()
 			end,
-			name = "[Shift] Dash/Roll",
-			description = "Dash or roll (Platformer)",
+			name = "[Shift] Dash",
+			description = "Dash",
 			isGlobal = true,
 		}
 	},
