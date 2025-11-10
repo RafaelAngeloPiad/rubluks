@@ -133,19 +133,17 @@ end
 
 local function mergeConsumableLists(...)
 	local result = {}
-	local seen = {}
-
-	local function addEntry(name)
-		local canonical = getConsumableCanonicalName(name)
-		if canonical and ConsumableEntries[canonical] and not seen[canonical] and #result < MAX_CONSUMABLE_SLOTS then
-			table.insert(result, canonical)
-			seen[canonical] = true
-		end
-	end
 
 	for _, sourceList in ipairs({...}) do
 		for _, name in ipairs(sourceList) do
-			addEntry(name)
+			if #result >= MAX_CONSUMABLE_SLOTS then
+				return result
+			end
+
+			local canonical = getConsumableCanonicalName(name)
+			if canonical and ConsumableEntries[canonical] then
+				table.insert(result, canonical)
+			end
 		end
 	end
 
