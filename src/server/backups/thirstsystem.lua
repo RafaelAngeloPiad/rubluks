@@ -1,5 +1,6 @@
 local TS = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -10,12 +11,19 @@ local bar = WaterGUI.Background.WaterFrame.waterBackground.bar
 
 local caveThirst = workspace.Tickbox:WaitForChild("CaveThirst")
 local playersTouching = {}
+local SunfireWaterEvent = ReplicatedStorage:WaitForChild("SunfireWaterEvent")
 
 -- Thirst settings
 local thirstDamage = 1
 local thirstInterval = 1
 local activeThirstConnection = nil
 local thirstLoopRunning = false
+
+local currentWaterLevelValue: NumberValue? = nil
+local maxWaterLevelValue: NumberValue? = nil
+local basinValues = {}
+local humanoidRef: Humanoid? = nil
+local activeIcons: {Instance}? = nil
 
 -- Function to get updated stats every respawn
 local function getSunfireStats()
@@ -69,12 +77,51 @@ local function updateWaterBasin(basins, icons)
 	end
 end
 
+SunfireWaterEvent.OnClientEvent:Connect(function(action, value, maxValue)
+	if action ~= "restore" then
+		return
+	end
+
+	if not currentWaterLevelValue or not maxWaterLevelValue then
+		local stats = getSunfireStats()
+		currentWaterLevelValue = stats.current
+		maxWaterLevelValue = stats.max
+		basinValues = stats.basins
+	end
+
+	if maxWaterLevelValue and typeof(maxValue) == "number" then
+		maxWaterLevelValue.Value = math.max(0, maxValue)
+	end
+
+	if currentWaterLevelValue and maxWaterLevelValue then
+		local target = currentWaterLevelValue.Value
+		if typeof(value) == "number" then
+			target = value
+		end
+		target = math.clamp(target, 0, maxWaterLevelValue.Value)
+		currentWaterLevelValue.Value = target
+
+		if humanoidRef then
+			updateWaterUI(currentWaterLevelValue, maxWaterLevelValue, humanoidRef)
+		end
+		if basinValues and activeIcons and #activeIcons > 0 then
+			updateWaterBasin(basinValues, activeIcons)
+		end
+	end
+end)
+
 -- Function to start thirst system
 local function startThirstSystem(character)
 	local humanoid = character:WaitForChild("Humanoid")
 	local stats = getSunfireStats()
-	local currentWaterLevel, maxWaterLevel = stats.current, stats.max
-	local basins = stats.basins
+	currentWaterLevelValue = stats.current
+	maxWaterLevelValue = stats.max
+	basinValues = stats.basins
+	humanoidRef = humanoid
+
+	local currentWaterLevel = currentWaterLevelValue
+	local maxWaterLevel = maxWaterLevelValue
+	local basins = basinValues
 
 	local icons = {
 		WaterGUI.Background:WaitForChild("WaterBasin1"),
@@ -83,6 +130,7 @@ local function startThirstSystem(character)
 		WaterGUI.Background:WaitForChild("WaterBasin4"),
 		WaterGUI.Background:WaitForChild("WaterBasin5"),
 	}
+	activeIcons = icons
 
 	-- Reset to full water when respawn
 	currentWaterLevel.Value = maxWaterLevel.Value

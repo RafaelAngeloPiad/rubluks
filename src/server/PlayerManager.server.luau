@@ -20,6 +20,13 @@ local DevStatEvent = Instance.new("RemoteEvent")
 DevStatEvent.Name = "DevStatEvent"
 DevStatEvent.Parent = ReplicatedStorage
 
+local SunfireWaterEvent = ReplicatedStorage:FindFirstChild("SunfireWaterEvent")
+if not SunfireWaterEvent then
+	SunfireWaterEvent = Instance.new("RemoteEvent")
+	SunfireWaterEvent.Name = "SunfireWaterEvent"
+	SunfireWaterEvent.Parent = ReplicatedStorage
+end
+
 local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 
@@ -169,6 +176,86 @@ local function extractConsumableBonuses(entry)
 	end
 
 	return next(bonuses) and bonuses or nil
+end
+
+local function applySunfireWaterRestore(player, effectConfig)
+	if not player or typeof(effectConfig) ~= "table" then
+		return false
+	end
+
+	local amount = tonumber(effectConfig.amount)
+	if not amount then
+		return false
+	end
+
+	local sunfire = player:FindFirstChild("sunfireprogress")
+	if not sunfire then
+		return false
+	end
+
+	local currentValueObj = sunfire:FindFirstChild("CurrentWaterLevel")
+	local maxValueObj = sunfire:FindFirstChild("MaxWaterLevel")
+	if not currentValueObj or not maxValueObj then
+		return false
+	end
+
+	local currentValue = tonumber(currentValueObj.Value) or 0
+	local maxValue = tonumber(maxValueObj.Value) or 0
+
+	local mode = typeof(effectConfig.mode) == "string" and effectConfig.mode:lower() or "add"
+	local newValue = currentValue
+
+	if mode == "set" then
+		newValue = amount
+	elseif mode == "add" then
+		newValue = currentValue + amount
+	elseif mode == "percent" or mode == "percentage" then
+		newValue = currentValue + (maxValue * amount)
+	elseif mode == "multiply" or mode == "mult" then
+		newValue = currentValue * amount
+	else
+		newValue = currentValue + amount
+	end
+
+	local clampToMax = effectConfig.clampToMax
+	if clampToMax == nil or clampToMax == true then
+		newValue = math.min(newValue, maxValue)
+	end
+
+	local clampToMin = effectConfig.clampToMin
+	if clampToMin == nil or clampToMin == true then
+		newValue = math.max(newValue, 0)
+	end
+
+	currentValueObj.Value = newValue
+	SunfireWaterEvent:FireClient(player, "restore", newValue, maxValue)
+	return true
+end
+
+local function applySpecialConsumableEffects(player, entry)
+	if not entry then
+		return false
+	end
+
+	local specialEffects = entry.specialEffects
+	if typeof(specialEffects) ~= "table" then
+		return false
+	end
+
+	local applied = false
+
+	for _, effectConfig in ipairs(specialEffects) do
+		if typeof(effectConfig) == "table" then
+			local effectType = effectConfig.type or effectConfig.Type
+			if effectType == "SunfireWaterRestore" then
+				if applySunfireWaterRestore(player, effectConfig) then
+					applied = true
+				end
+			end
+		end
+	end
+
+	return applied
 end
 
 local function ensureConsumableTables(player)
@@ -348,99 +435,105 @@ local function applyConsumableEffect(player, consumableName)
 	end
 
 	local bonuses = extractConsumableBonuses(entry)
-	if not bonuses then
-		return false, "consumable has no defined bonuses"
-	end
+	local specialApplied = applySpecialConsumableEffects(player, entry)
 
-	ensureConsumableTables(player)
+	if bonuses then
+		ensureConsumableTables(player)
 
-	local duration = tonumber(entry.duration)
-	local permanent = entry.permanent == true
-	if not permanent then
-		permanent = duration == nil or duration <= 0
-	end
+		local duration = tonumber(entry.duration)
+		local permanent = entry.permanent == true
+		if not permanent then
+			permanent = duration == nil or duration <= 0
+		end
 
-	if not permanent then
-		playerConsumableTemporaryTotals[player] = playerConsumableTemporaryTotals[player] or {}
-		addBonusesToTotals(playerConsumableTemporaryTotals[player], bonuses, 1)
-	end
+		if not permanent then
+			playerConsumableTemporaryTotals[player] = playerConsumableTemporaryTotals[player] or {}
+			addBonusesToTotals(playerConsumableTemporaryTotals[player], bonuses, 1)
+		end
 
-	playerConsumableTotals[player] = playerConsumableTotals[player] or {}
-	addBonusesToTotals(playerConsumableTotals[player], bonuses, 1)
-	playerConsumableDetails[player] = playerConsumableDetails[player] or {}
+		playerConsumableTotals[player] = playerConsumableTotals[player] or {}
+		addBonusesToTotals(playerConsumableTotals[player], bonuses, 1)
+		playerConsumableDetails[player] = playerConsumableDetails[player] or {}
 
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		if playerConsumableTotalsApplied[player] then
-			applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, 1)
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			if playerConsumableTotalsApplied[player] then
+				applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, 1)
+			else
+				applyConsumableTotalsToLeaderstats(player, leaderstats)
+			end
 		else
-			applyConsumableTotalsToLeaderstats(player, leaderstats)
+			playerConsumableTotalsApplied[player] = false
 		end
-	else
-		playerConsumableTotalsApplied[player] = false
-	end
 
-	consumableEffectCounter = consumableEffectCounter + 1
-	local effectId = consumableEffectCounter
+		consumableEffectCounter = consumableEffectCounter + 1
+		local effectId = consumableEffectCounter
 
-	local displayName = entry.displayName or consumableName
-	local effectLabels = {}
-	for statName, amount in pairs(bonuses) do
-		local label = string.format("%s %s", displayName, formatBonus(amount))
+		local displayName = entry.displayName or consumableName
+		local effectLabels = {}
+		for statName, amount in pairs(bonuses) do
+			local label = string.format("%s %s", displayName, formatBonus(amount))
+			if not permanent and duration and duration > 0 then
+				label = string.format("%s (%ds)", label, math.floor(duration))
+			end
+			effectLabels[statName] = label
+
+			playerConsumableDetails[player][statName] = playerConsumableDetails[player][statName] or {}
+			table.insert(playerConsumableDetails[player][statName], label)
+		end
+
+		local endTime = (not permanent and duration and duration > 0) and (tick() + duration) or nil
+
+		playerConsumableEffects[player][effectId] = {
+			name = consumableName,
+			displayName = displayName,
+			bonuses = bonuses,
+			permanent = permanent,
+			duration = duration,
+			endTime = endTime,
+			detailStrings = effectLabels,
+		}
+
 		if not permanent and duration and duration > 0 then
-			label = string.format("%s (%ds)", label, math.floor(duration))
+			task.delay(duration, function()
+				local effects = playerConsumableEffects[player]
+				if not effects then
+					return
+				end
+
+				local effect = effects[effectId]
+				if not effect or effect.permanent then
+					return
+				end
+
+				if effect.endTime and tick() >= effect.endTime - 0.05 then
+					removeConsumableEffect(player, effectId)
+				end
+			end)
 		end
-		effectLabels[statName] = label
 
-		playerConsumableDetails[player][statName] = playerConsumableDetails[player][statName] or {}
-		table.insert(playerConsumableDetails[player][statName], label)
+		if leaderstats then
+			updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+		end
+
+		setActiveConsumableValue(player, effectId, {
+			id = effectId,
+			name = consumableName,
+			displayName = displayName,
+			bonuses = bonuses,
+			permanent = permanent,
+			duration = (not permanent and duration and duration > 0) and duration or nil,
+			endTime = endTime,
+		})
+
+		return true
 	end
 
-	local endTime = (not permanent and duration and duration > 0) and (tick() + duration) or nil
-
-	playerConsumableEffects[player][effectId] = {
-		name = consumableName,
-		displayName = displayName,
-		bonuses = bonuses,
-		permanent = permanent,
-		duration = duration,
-	endTime = endTime,
-		detailStrings = effectLabels,
-	}
-
-	if not permanent and duration and duration > 0 then
-		task.delay(duration, function()
-			local effects = playerConsumableEffects[player]
-			if not effects then
-				return
-			end
-
-			local effect = effects[effectId]
-			if not effect or effect.permanent then
-				return
-			end
-
-			if effect.endTime and tick() >= effect.endTime - 0.05 then
-				removeConsumableEffect(player, effectId)
-			end
-		end)
+	if specialApplied then
+		return true
 	end
 
-	if leaderstats then
-		updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
-	end
-
-	setActiveConsumableValue(player, effectId, {
-		id = effectId,
-		name = consumableName,
-		displayName = displayName,
-		bonuses = bonuses,
-		permanent = permanent,
-		duration = (not permanent and duration and duration > 0) and duration or nil,
-	endTime = endTime,
-	})
-
-	return true
+	return false, "consumable has no applicable effects"
 end
 
 local function applyConsumableTotalsToCharacter(player)
