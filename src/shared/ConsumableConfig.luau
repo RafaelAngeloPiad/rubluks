@@ -76,7 +76,7 @@ local Entries = {
 	},
 
 	["Large Extra Joss"] = {
-		assetName = "LargeExtraJoss",
+		assetName = "Large Extra Joss",
 		displayName = "Large Extra Joss",
 		description = "A premium recharge that tops up your water supply and bolsters your vitality.",
 		permanent = false,
