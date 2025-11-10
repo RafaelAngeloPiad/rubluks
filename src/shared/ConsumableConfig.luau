@@ -61,10 +61,10 @@ local Entries = {
 		},
 	},
 
-	["Sunfire Water Flask"] = {
-		assetName = "SunfireWaterFlask",
-		displayName = "Sunfire Water Flask",
-		description = "Instantly refills your Sunfire water reserves.",
+	["Extra Joss"] = {
+		assetName = "Extra Joss",
+		displayName = "Extra Joss",
+		description = "Refills your Water Level with 150 Points.",
 		specialEffects = {
 			{
 				type = "SunfireWaterRestore",
