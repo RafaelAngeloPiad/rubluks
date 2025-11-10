@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 -- RemoteEvent for dev stat changes
@@ -210,6 +211,131 @@ local function createStatRow(statName, value, color, layoutOrder)
 	return statValueLabel
 end
 
+local function formatBonus(amount)
+	if math.abs(amount - math.floor(amount)) < 1e-3 then
+		return string.format("%+d", amount)
+	end
+	return string.format("%+.2f", amount)
+end
+
+local function formatDuration(seconds)
+	if not seconds then
+		return "Permanent"
+	end
+
+	local remaining = math.max(0, math.floor(seconds + 0.5))
+	local minutes = math.floor(remaining / 60)
+	local secs = remaining % 60
+
+	if minutes > 0 then
+		return string.format("%dm %02ds", minutes, secs)
+	end
+
+	return string.format("%ds", secs)
+end
+
+local EquipmentStatDisplayOrder = {
+	{stat = "MaxHealth", label = "HP"},
+	{stat = "MaxAttack", label = "Attack"},
+	{stat = "MaxDefense", label = "Defense"},
+	{stat = "DefensePenetration", label = "Defense Penetration"},
+	{stat = "CritRate", label = "Crit Rate"},
+	{stat = "CritMultiplier", label = "Crit Multiplier"},
+}
+
+local StatLabelLookup = {}
+for _, entry in ipairs(EquipmentStatDisplayOrder) do
+	StatLabelLookup[entry.stat] = entry.label
+end
+
+local activeConsumableTimers = {}
+
+local function createConsumableRow(valueObj, payload, layoutOrder)
+	local frame = Instance.new("Frame")
+	frame.Name = "Consumable_" .. (payload.displayName or payload.name or valueObj.Name)
+	frame.Size = UDim2.new(1, -10, 0, 0)
+	frame.BackgroundTransparency = 1
+	frame.LayoutOrder = layoutOrder
+	frame.Parent = scrollFrame
+
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Vertical
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 2)
+	layout.Parent = frame
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, -10, 0, 0)
+	nameLabel.Position = UDim2.new(0, 5, 0, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = payload.displayName or payload.name or "Consumable"
+	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	nameLabel.TextSize = 12
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextYAlignment = Enum.TextYAlignment.Top
+	nameLabel.TextWrapped = true
+	nameLabel.AutomaticSize = Enum.AutomaticSize.Y
+	nameLabel.LayoutOrder = 1
+	nameLabel.Parent = frame
+
+	local bonusLines = {}
+	if payload.bonuses then
+		for statName, amount in pairs(payload.bonuses) do
+			local label = StatLabelLookup[statName] or statName
+			table.insert(bonusLines, string.format("%s %s", label, formatBonus(amount)))
+		end
+	end
+	table.sort(bonusLines)
+
+	local bonusLabel = Instance.new("TextLabel")
+	bonusLabel.Size = UDim2.new(1, -10, 0, 0)
+	bonusLabel.Position = UDim2.new(0, 5, 0, 0)
+	bonusLabel.BackgroundTransparency = 1
+	bonusLabel.Text = (#bonusLines > 0) and table.concat(bonusLines, ", ") or "No stat bonuses"
+	bonusLabel.TextColor3 = Color3.fromRGB(180, 255, 180)
+	bonusLabel.TextSize = 11
+	bonusLabel.Font = Enum.Font.Gotham
+	bonusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	bonusLabel.TextYAlignment = Enum.TextYAlignment.Top
+	bonusLabel.TextWrapped = true
+	bonusLabel.AutomaticSize = Enum.AutomaticSize.Y
+	bonusLabel.LayoutOrder = 2
+	bonusLabel.Parent = frame
+
+	local timerLabel = Instance.new("TextLabel")
+	timerLabel.Size = UDim2.new(1, -10, 0, 0)
+	timerLabel.Position = UDim2.new(0, 5, 0, 0)
+	timerLabel.BackgroundTransparency = 1
+	timerLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
+	timerLabel.TextSize = 11
+	timerLabel.Font = Enum.Font.Gotham
+	timerLabel.TextXAlignment = Enum.TextXAlignment.Left
+	timerLabel.TextYAlignment = Enum.TextYAlignment.Top
+	timerLabel.TextWrapped = true
+	timerLabel.AutomaticSize = Enum.AutomaticSize.Y
+	timerLabel.LayoutOrder = 3
+	timerLabel.Parent = frame
+
+	local now = tick()
+	if payload.endTime then
+		timerLabel.Text = formatDuration(payload.endTime - now)
+	else
+		timerLabel.Text = "Permanent"
+	end
+
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		frame.Size = UDim2.new(1, -10, 0, layout.AbsoluteContentSize.Y)
+	end)
+
+	activeConsumableTimers[valueObj] = {
+		label = timerLabel,
+		payload = payload,
+	}
+
+	return frame
+end
+
 -- Color coding
 local function getStatColor(statName)
 	local colors = {
@@ -226,21 +352,6 @@ local function getStatColor(statName)
 	return colors[statName] or Color3.fromRGB(255, 255, 255)
 end
 
-local EquipmentStatDisplayOrder = {
-	{stat = "MaxHealth", label = "HP"},
-	{stat = "MaxAttack", label = "Attack"},
-	{stat = "MaxDefense", label = "Defense"},
-	{stat = "DefensePenetration", label = "Defense Penetration"},
-	{stat = "CritRate", label = "Crit Rate"},
-	{stat = "CritMultiplier", label = "Crit Multiplier"},
-}
-
-local function formatBonus(amount)
-	if math.abs(amount - math.floor(amount)) < 1e-3 then
-		return string.format("%+d", amount)
-	end
-	return string.format("%+.2f", amount)
-end
 
 -- Track stat labels
 local statLabels = {}
@@ -254,6 +365,7 @@ local function updateStatsDisplay()
 		end
 	end
 	statLabels = {}
+	activeConsumableTimers = {}
 	
 	local layoutOrder = 1
 	
@@ -421,6 +533,124 @@ local function updateStatsDisplay()
 		noEquipmentLabel.Font = Enum.Font.Gotham
 		noEquipmentLabel.LayoutOrder = layoutOrder
 		noEquipmentLabel.Parent = scrollFrame
+		layoutOrder = layoutOrder + 1
+	end
+
+	-- Consumable bonuses header
+	local consumableHeader = Instance.new("TextLabel")
+	consumableHeader.Name = "ConsumableHeader"
+	consumableHeader.Size = UDim2.new(1, -10, 0, 25)
+	consumableHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	consumableHeader.BorderSizePixel = 0
+	consumableHeader.Text = "CONSUMABLE BONUSES"
+	consumableHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+	consumableHeader.TextSize = 11
+	consumableHeader.Font = Enum.Font.GothamBold
+	consumableHeader.LayoutOrder = layoutOrder
+	consumableHeader.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+
+	local consumableBonusesFolder = leaderstats:FindFirstChild("ConsumableBonuses")
+	local consumableDetailsFolder = leaderstats:FindFirstChild("ConsumableBonusDetails")
+	local hasConsumableBonuses = false
+
+	if consumableBonusesFolder then
+		for _, entry in ipairs(EquipmentStatDisplayOrder) do
+			local valueObj = consumableBonusesFolder:FindFirstChild(entry.stat)
+			if valueObj and math.abs(valueObj.Value) > 0 then
+				hasConsumableBonuses = true
+				local bonusText = formatBonus(valueObj.Value)
+
+				if consumableDetailsFolder then
+					local detailObj = consumableDetailsFolder:FindFirstChild(entry.stat)
+					if detailObj and detailObj.Value ~= "" then
+						bonusText = string.format("%s  (%s)", bonusText, detailObj.Value)
+					end
+				end
+
+				local labelKey = "Consumable_" .. entry.stat
+				statLabels[labelKey] = createStatRow("Consumable " .. entry.label, bonusText, Color3.fromRGB(255, 220, 150), layoutOrder)
+				layoutOrder = layoutOrder + 1
+			end
+		end
+	end
+
+	if not hasConsumableBonuses then
+		local noConsumableLabel = Instance.new("TextLabel")
+		noConsumableLabel.Name = "NoConsumableBonuses"
+		noConsumableLabel.Size = UDim2.new(1, -10, 0, 20)
+		noConsumableLabel.BackgroundTransparency = 1
+		noConsumableLabel.Text = "No consumable bonuses"
+		noConsumableLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		noConsumableLabel.TextSize = 11
+		noConsumableLabel.Font = Enum.Font.Gotham
+		noConsumableLabel.LayoutOrder = layoutOrder
+		noConsumableLabel.Parent = scrollFrame
+		layoutOrder = layoutOrder + 1
+	end
+
+	-- Active consumables header
+	local activeConsumablesHeader = Instance.new("TextLabel")
+	activeConsumablesHeader.Name = "ActiveConsumablesHeader"
+	activeConsumablesHeader.Size = UDim2.new(1, -10, 0, 25)
+	activeConsumablesHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	activeConsumablesHeader.BorderSizePixel = 0
+	activeConsumablesHeader.Text = "ACTIVE CONSUMABLES"
+	activeConsumablesHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+	activeConsumablesHeader.TextSize = 11
+	activeConsumablesHeader.Font = Enum.Font.GothamBold
+	activeConsumablesHeader.LayoutOrder = layoutOrder
+	activeConsumablesHeader.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+
+	local activeConsumablesFolder = leaderstats:FindFirstChild("ActiveConsumables")
+	local activeConsumables = activeConsumablesFolder and activeConsumablesFolder:GetChildren() or {}
+
+	if #activeConsumables > 0 then
+		table.sort(activeConsumables, function(a, b)
+			if not a:IsA("StringValue") then
+				return false
+			end
+			if not b:IsA("StringValue") then
+				return true
+			end
+
+			local successA, payloadA = pcall(function()
+				return HttpService:JSONDecode(a.Value)
+			end)
+			local successB, payloadB = pcall(function()
+				return HttpService:JSONDecode(b.Value)
+			end)
+
+			local nameA = successA and payloadA and (payloadA.displayName or payloadA.name) or a.Name
+			local nameB = successB and payloadB and (payloadB.displayName or payloadB.name) or b.Name
+
+			return tostring(nameA) < tostring(nameB)
+		end)
+
+		for _, valueObj in ipairs(activeConsumables) do
+			if valueObj:IsA("StringValue") then
+				local success, payload = pcall(function()
+					return HttpService:JSONDecode(valueObj.Value)
+				end)
+
+				if success and typeof(payload) == "table" then
+					createConsumableRow(valueObj, payload, layoutOrder)
+					layoutOrder = layoutOrder + 1
+				end
+			end
+		end
+	else
+		local noActiveConsumablesLabel = Instance.new("TextLabel")
+		noActiveConsumablesLabel.Name = "NoActiveConsumables"
+		noActiveConsumablesLabel.Size = UDim2.new(1, -10, 0, 20)
+		noActiveConsumablesLabel.BackgroundTransparency = 1
+		noActiveConsumablesLabel.Text = "No active consumables"
+		noActiveConsumablesLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		noActiveConsumablesLabel.TextSize = 11
+		noActiveConsumablesLabel.Font = Enum.Font.Gotham
+		noActiveConsumablesLabel.LayoutOrder = layoutOrder
+		noActiveConsumablesLabel.Parent = scrollFrame
 		layoutOrder = layoutOrder + 1
 	end
 
@@ -1865,8 +2095,56 @@ local function setupStatConnections()
 		connectEquipmentFolder(equipmentBonusDetails, "EquipmentBonusDetails")
 	end
 
+	local consumableBonuses = leaderstats:FindFirstChild("ConsumableBonuses")
+	if consumableBonuses then
+		connectEquipmentFolder(consumableBonuses, "ConsumableBonuses")
+	end
+
+	local consumableBonusDetails = leaderstats:FindFirstChild("ConsumableBonusDetails")
+	if consumableBonusDetails then
+		connectEquipmentFolder(consumableBonusDetails, "ConsumableBonusDetails")
+	end
+
+	local activeConsumablesFolder = leaderstats:FindFirstChild("ActiveConsumables")
+	if activeConsumablesFolder then
+		local function connectActive(child)
+			if child:IsA("StringValue") then
+				local conn = child:GetPropertyChangedSignal("Value"):Connect(function()
+					task.wait(0.05)
+					updateStatsDisplay()
+				end)
+				statConnections[child] = conn
+			end
+		end
+
+		for _, child in ipairs(activeConsumablesFolder:GetChildren()) do
+			connectActive(child)
+		end
+
+		local addedConn = activeConsumablesFolder.ChildAdded:Connect(function(child)
+			connectActive(child)
+			task.wait(0.05)
+			updateStatsDisplay()
+		end)
+		statConnections["ActiveConsumablesAdded"] = addedConn
+
+		local removedConn = activeConsumablesFolder.ChildRemoved:Connect(function(child)
+			if statConnections[child] then
+				statConnections[child]:Disconnect()
+				statConnections[child] = nil
+			end
+			task.wait(0.05)
+			updateStatsDisplay()
+		end)
+		statConnections["ActiveConsumablesRemoved"] = removedConn
+	end
+
 	local childAddedConn = leaderstats.ChildAdded:Connect(function(child)
-		if child.Name == "EquipmentBonuses" or child.Name == "EquipmentBonusDetails" then
+		if child.Name == "EquipmentBonuses"
+			or child.Name == "EquipmentBonusDetails"
+			or child.Name == "ConsumableBonuses"
+			or child.Name == "ConsumableBonusDetails"
+			or child.Name == "ActiveConsumables" then
 			task.wait(0.1)
 			updateStatsDisplay()
 			task.defer(setupStatConnections)
@@ -1875,7 +2153,11 @@ local function setupStatConnections()
 	statConnections["LeaderstatsChildAdded"] = childAddedConn
 
 	local childRemovedConn = leaderstats.ChildRemoved:Connect(function(child)
-		if child.Name == "EquipmentBonuses" or child.Name == "EquipmentBonusDetails" then
+		if child.Name == "EquipmentBonuses"
+			or child.Name == "EquipmentBonusDetails"
+			or child.Name == "ConsumableBonuses"
+			or child.Name == "ConsumableBonusDetails"
+			or child.Name == "ActiveConsumables" then
 			task.wait(0.1)
 			updateStatsDisplay()
 			task.defer(setupStatConnections)
@@ -2027,8 +2309,32 @@ player.CharacterAdded:Connect(function()
 end)
 
 -- Initial setup
-updateStatsDisplay()
 setupStatConnections()
+updateStatsDisplay()
+task.defer(function()
+	task.wait(0.2)
+	updateStatsDisplay()
+end)
+
+RunService.RenderStepped:Connect(function()
+	local now = tick()
+	for valueObj, data in pairs(activeConsumableTimers) do
+		if valueObj.Parent and data.label then
+			local payload = data.payload
+			if payload and payload.endTime then
+				local remaining = payload.endTime - now
+				if remaining < 0 then
+					remaining = 0
+				end
+				data.label.Text = formatDuration(remaining)
+			else
+				data.label.Text = "Permanent"
+			end
+		else
+			activeConsumableTimers[valueObj] = nil
+		end
+	end
+end)
 
 -- Keybind to toggle visibility
 UserInputService.InputBegan:Connect(function(input, gameProcessed)

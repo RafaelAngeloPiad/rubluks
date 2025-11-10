@@ -1,7 +1,25 @@
 local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local MainDataStore = require(ReplicatedStorage:FindFirstChild("MainDataStore"))
 local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+
+local function listToString(list)
+	if not list or #list == 0 then
+		return "[]"
+	end
+	local parts = {}
+	for _, value in ipairs(list) do
+		table.insert(parts, tostring(value))
+	end
+	return "[" .. table.concat(parts, ", ") .. "]"
+end
+
+local function debugPrint(...)
+	print("[InventoryManager]", ...)
+end
 
 local function shallowCopy(source)
 	local copy = {}
@@ -16,6 +34,13 @@ end
 local EquipmentBonusEntries = EquipmentBonusConfig.Entries or EquipmentBonusConfig
 local EquipmentBonusAssetLookup = shallowCopy(EquipmentBonusConfig.AssetLookup)
 local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.CanonicalLookup)
+
+local ConsumableEntries = ConsumableConfig.Entries or {}
+local ConsumableAssetLookup = ConsumableConfig.AssetLookup or {}
+local ConsumableCanonicalLookup = ConsumableConfig.CanonicalLookup or {}
+
+local CONSUMABLE_TAG = "consumable_entity"
+local MAX_CONSUMABLE_SLOTS = 5
 
 if next(EquipmentBonusAssetLookup) == nil then
 	for canonicalName, entry in pairs(EquipmentBonusEntries) do
@@ -36,6 +61,117 @@ end
 
 local function getCanonicalToolName(toolName)
 	return EquipmentBonusCanonicalLookup[toolName] or toolName
+end
+
+local function normaliseEquipmentList(list)
+	local result = {}
+	for _, toolName in ipairs(list) do
+		table.insert(result, getCanonicalToolName(toolName))
+	end
+	return result
+end
+
+local function getConsumableCanonicalName(name)
+	if not name then
+		return nil
+	end
+
+	if ConsumableCanonicalLookup and ConsumableCanonicalLookup[name] then
+		return ConsumableCanonicalLookup[name]
+	end
+
+	if ConsumableEntries and ConsumableEntries[name] then
+		return name
+	end
+
+	local assetEntry = ConsumableAssetLookup and ConsumableAssetLookup[name]
+	if assetEntry and assetEntry.canonicalName then
+		return assetEntry.canonicalName
+	end
+
+	return nil
+end
+
+local function isConsumableToolName(name)
+	local canonicalName = getConsumableCanonicalName(name)
+	if canonicalName and ConsumableEntries[canonicalName] then
+		return true, canonicalName
+	end
+	return false, nil
+end
+
+local function isConsumableToolInstance(tool)
+	if not tool or not tool:IsA("Tool") then
+		return false, nil
+	end
+
+	if CollectionService:HasTag(tool, CONSUMABLE_TAG) then
+		local canonicalName = getConsumableCanonicalName(tool.Name)
+		return true, canonicalName
+	end
+
+	return isConsumableToolName(tool.Name)
+end
+
+local function partitionConsumables(list)
+	local filtered = {}
+	local consumables = {}
+
+	for _, name in ipairs(list) do
+		local isConsumable, consumableCanonical = isConsumableToolName(name)
+		if isConsumable then
+			if consumableCanonical then
+				table.insert(consumables, consumableCanonical)
+			end
+		else
+			table.insert(filtered, getCanonicalToolName(name))
+		end
+	end
+
+	return filtered, consumables
+end
+
+local function mergeConsumableLists(...)
+	local result = {}
+	local seen = {}
+
+	local function addEntry(name)
+		local canonical = getConsumableCanonicalName(name)
+		if canonical and ConsumableEntries[canonical] and not seen[canonical] and #result < MAX_CONSUMABLE_SLOTS then
+			table.insert(result, canonical)
+			seen[canonical] = true
+		end
+	end
+
+	for _, sourceList in ipairs({...}) do
+		for _, name in ipairs(sourceList) do
+			addEntry(name)
+		end
+	end
+
+	return result
+end
+
+local function arraysDifferent(a, b)
+	if #a ~= #b then
+		return true
+	end
+
+	for index = 1, #a do
+		if a[index] ~= b[index] then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function cloneArray(list)
+	local copy = {}
+	for index, value in ipairs(list) do
+		copy[index] = value
+	end
+	return copy
 end
 
 local function resolveAsset(assetsFolder, toolName)
@@ -88,11 +224,16 @@ local function SavePlayerInventory(player)
 		local character = player.Character
 		local inventory = {}
 		local equipped = {}
+		local consumables = {}
+		debugPrint("Save snapshot begin", player.Name)
 
 		if backpack then
 			for i, item in backpack:GetChildren() do
 				if item:IsA("Tool") then
-					table.insert(inventory, getCanonicalToolName(item.Name))
+					local isConsumable = isConsumableToolInstance(item)
+					if not isConsumable then
+						table.insert(inventory, getCanonicalToolName(item.Name))
+					end
 				end
 			end
 		end
@@ -100,7 +241,10 @@ local function SavePlayerInventory(player)
 		if character then
 			for i, item in character:GetChildren() do
 				if item:IsA("Tool") then
-					table.insert(equipped, getCanonicalToolName(item.Name))
+					local isConsumable = isConsumableToolInstance(item)
+					if not isConsumable then
+						table.insert(equipped, getCanonicalToolName(item.Name))
+					end
 				end
 			end
 		end
@@ -109,12 +253,34 @@ local function SavePlayerInventory(player)
 		if #inventory == 0 and #equipped == 0 then
 			local existingData = MainDataStore.LoadInventory(player.UserId)
 			if existingData and (existingData.inventory and #existingData.inventory > 0 or existingData.equipped and #existingData.equipped > 0) then
-				inventory = existingData.inventory or {}
-				equipped = existingData.equipped or {}
+				inventory = normaliseEquipmentList(existingData.inventory or {})
+				equipped = normaliseEquipmentList(existingData.equipped or {})
+				consumables = existingData.consumables or {}
+				debugPrint("Restored persisted data because snapshot empty", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped))
 			end
 		end
 
-		MainDataStore.SaveInventory(player.UserId, {inventory = inventory, equipped = equipped})
+		local inventoryFiltered, inventoryConsumables = partitionConsumables(inventory)
+		local equippedFiltered, equippedConsumables = partitionConsumables(equipped)
+
+		inventory = inventoryFiltered
+		equipped = equippedFiltered
+		consumables = mergeConsumableLists(consumables, inventoryConsumables, equippedConsumables)
+
+		if typeof(_G.getPlayerConsumables) == "function" then
+			consumables = _G.getPlayerConsumables(player)
+		end
+
+		consumables = consumables or {}
+		consumables = mergeConsumableLists(consumables)
+
+		debugPrint("Saving to store", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped), "consumables =", listToString(consumables))
+
+		MainDataStore.SaveInventory(player.UserId, {
+			inventory = inventory,
+			equipped = equipped,
+			consumables = consumables,
+		})
 		inventorySaveDebounce[userId].lastSave = os.clock()
 		inventorySaveDebounce[userId].pending = false
 	end
@@ -157,20 +323,55 @@ local function LoadPlayerInventory(player)
 	-- Additional wait to ensure everything is properly loaded
 	task.wait(0.5)
 
-	local inventoryData = MainDataStore.LoadInventory(player.UserId)
-	local inventory = inventoryData.inventory or {}
-	local equipped = inventoryData.equipped or {}
+	local userId = player.UserId
+	local inventoryData = MainDataStore.LoadInventory(userId) or {}
+	local originalInventory = inventoryData.inventory or {}
+	local originalEquipped = inventoryData.equipped or {}
+	local storedConsumablesRaw = inventoryData.consumables or {}
 
-	local function normaliseToolList(list)
-		local result = {}
-		for _, toolName in ipairs(list) do
-			table.insert(result, getCanonicalToolName(toolName))
+	local originalInventoryCanonical = normaliseEquipmentList(originalInventory)
+	local originalEquippedCanonical = normaliseEquipmentList(originalEquipped)
+
+	local inventory = cloneArray(originalInventoryCanonical)
+	local equipped = cloneArray(originalEquippedCanonical)
+
+	local inventoryFiltered, inventoryConsumables = partitionConsumables(inventory)
+	local equippedFiltered, equippedConsumables = partitionConsumables(equipped)
+
+	inventory = inventoryFiltered
+	equipped = equippedFiltered
+
+	local storedConsumablesCanonical = {}
+	for _, name in ipairs(storedConsumablesRaw) do
+		local canonical = getConsumableCanonicalName(name)
+		if canonical and ConsumableEntries[canonical] then
+			table.insert(storedConsumablesCanonical, canonical)
 		end
-		return result
 	end
 
-	inventory = normaliseToolList(inventory)
-	equipped = normaliseToolList(equipped)
+	local mergedConsumables = mergeConsumableLists(storedConsumablesCanonical, inventoryConsumables, equippedConsumables)
+
+	if typeof(_G.setPlayerConsumablesFromData) == "function" then
+		_G.setPlayerConsumablesFromData(player, mergedConsumables)
+	end
+	debugPrint("Load snapshot", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped), "consumables =", listToString(mergedConsumables))
+
+	local shouldResaveInventory = arraysDifferent(inventory, originalInventoryCanonical)
+		or arraysDifferent(equipped, originalEquippedCanonical)
+		or arraysDifferent(mergedConsumables, storedConsumablesCanonical)
+
+	if shouldResaveInventory then
+		debugPrint("Detected outdated stored data, rewriting", player.Name)
+		MainDataStore.SaveInventory(userId, {
+			inventory = inventory,
+			equipped = equipped,
+			consumables = mergedConsumables,
+		})
+
+		inventorySaveDebounce[userId] = inventorySaveDebounce[userId] or {lastSave = 0, pending = false}
+		inventorySaveDebounce[userId].lastSave = os.clock()
+		inventorySaveDebounce[userId].pending = false
+	end
 
 	local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
 	if not assetsFolder then
@@ -293,7 +494,10 @@ local function OnCharacterAdded(character, player)
 					local currentBackpack = {}
 					for i, item in backpack:GetChildren() do
 						if item:IsA("Tool") then
-							table.insert(currentBackpack, item.Name)
+							local isConsumable = isConsumableToolInstance(item)
+							if not isConsumable then
+								table.insert(currentBackpack, getCanonicalToolName(item.Name))
+							end
 						end
 					end
 					-- Only update if we have items in backpack (to preserve existing inventory)
@@ -307,7 +511,10 @@ local function OnCharacterAdded(character, player)
 					local currentEquipped = {}
 					for i, item in character:GetChildren() do
 						if item:IsA("Tool") then
-							table.insert(currentEquipped, item.Name)
+							local isConsumable = isConsumableToolInstance(item)
+							if not isConsumable then
+								table.insert(currentEquipped, getCanonicalToolName(item.Name))
+							end
 						end
 					end
 					-- Only update if we have equipped items (to preserve existing equipped)
@@ -316,7 +523,22 @@ local function OnCharacterAdded(character, player)
 					end
 				end
 
-				MainDataStore.SaveInventory(player.UserId, {inventory = inventory, equipped = equipped})
+				local baseConsumables = (existingData and existingData.consumables) or {}
+				local consumables = {}
+				if typeof(_G.getPlayerConsumables) == "function" then
+					consumables = _G.getPlayerConsumables(player)
+				else
+					consumables = baseConsumables
+				end
+				consumables = mergeConsumableLists(consumables or {})
+
+				debugPrint("Death save for", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped), "consumables =", listToString(consumables))
+
+				MainDataStore.SaveInventory(player.UserId, {
+					inventory = inventory,
+					equipped = equipped,
+					consumables = consumables,
+				})
 				
 				-- Reset dying flag after a delay
 				task.delay(2, function()

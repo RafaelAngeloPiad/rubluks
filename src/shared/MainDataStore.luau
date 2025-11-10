@@ -41,17 +41,18 @@ function MainDataStore.LoadInventory(userId)
 	end)
 	if success then
 		if typeof(data) == "table" then
-			-- Ensure both inventory and equipped arrays exist
+			-- Ensure arrays exist
 			data.inventory = data.inventory or {}
 			data.equipped = data.equipped or {}
+			data.consumables = data.consumables or {}
 			return data
 		elseif data == nil then
-			return {inventory = {}, equipped = {}}
+			return {inventory = {}, equipped = {}, consumables = {}}
 		else
-			return {inventory = {}, equipped = {}}
+			return {inventory = {}, equipped = {}, consumables = {}}
 		end
 	else
-		return {inventory = {}, equipped = {}}
+		return {inventory = {}, equipped = {}, consumables = {}}
 	end
 end
 
@@ -60,6 +61,7 @@ function MainDataStore.SaveInventory(userId, inventoryTable)
 	-- Ensure inventoryTable is a table with inventory and equipped arrays
 	local filteredInventory = {}
 	local filteredEquipped = {}
+	local filteredConsumables = {}
 	if typeof(inventoryTable) == "table" then
 		if typeof(inventoryTable.inventory) == "table" then
 			for i, v in inventoryTable.inventory do
@@ -75,10 +77,18 @@ function MainDataStore.SaveInventory(userId, inventoryTable)
 				end
 			end
 		end
+		if typeof(inventoryTable.consumables) == "table" then
+			for i, v in inventoryTable.consumables do
+				if typeof(v) == "string" then
+					table.insert(filteredConsumables, v)
+				end
+			end
+		end
 	end
 	local saveData = {
 		inventory = filteredInventory,
-		equipped = filteredEquipped
+		equipped = filteredEquipped,
+		consumables = filteredConsumables,
 	}
 	local success, err = pcall(function()
 		InventoryStore:SetAsync(key, saveData)

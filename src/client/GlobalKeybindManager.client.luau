@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
+local ConsumableEvent = ReplicatedStorage:WaitForChild("ConsumableEvent")
 
 -- ========================================
 -- GLOBAL KEYBINDS CONFIGURATION
@@ -36,6 +37,14 @@ local function triggerPlatformerSpecial()
 	end
 end
 
+local consumableSlots = {}
+
+local function tryUseConsumable(slotIndex)
+	if consumableSlots[slotIndex] then
+		ConsumableEvent:FireServer("use", slotIndex)
+	end
+end
+
 -- ========================================
 -- INPUT HANDLING
 -- ========================================
@@ -54,6 +63,23 @@ local function onInputBegan(input, isProcessed)
 			triggerPlatformerSpecial()
 			return
 		end
+
+		if input.KeyCode == Enum.KeyCode.One then
+			tryUseConsumable(1)
+			return
+		elseif input.KeyCode == Enum.KeyCode.Two then
+			tryUseConsumable(2)
+			return
+		elseif input.KeyCode == Enum.KeyCode.Three then
+			tryUseConsumable(3)
+			return
+		elseif input.KeyCode == Enum.KeyCode.Four then
+			tryUseConsumable(4)
+			return
+		elseif input.KeyCode == Enum.KeyCode.Five then
+			tryUseConsumable(5)
+			return
+		end
 	end
 end
 
@@ -63,4 +89,16 @@ end
 
 -- Listen for all inputs (global, always active)
 UserInputService.InputBegan:Connect(onInputBegan)
+
+ConsumableEvent.OnClientEvent:Connect(function(action, payload)
+	if action == "updateSlots" then
+		for index = 1, 5 do
+			if payload then
+				consumableSlots[index] = payload[index]
+			else
+				consumableSlots[index] = nil
+			end
+		end
+	end
+end)
 

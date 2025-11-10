@@ -1,4 +1,5 @@
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local MainDataStore
 
@@ -20,6 +21,7 @@ DevStatEvent.Name = "DevStatEvent"
 DevStatEvent.Parent = ReplicatedStorage
 
 local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 
 -- ========================================
 -- EQUIPMENT BONUS CONFIGURATION
@@ -38,6 +40,10 @@ end
 local EquipmentBonusEntries = EquipmentBonusConfig.Entries or EquipmentBonusConfig
 local EquipmentBonusAssetLookup = shallowCopy(EquipmentBonusConfig.AssetLookup)
 local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.CanonicalLookup)
+
+local ConsumableEntries = ConsumableConfig.Entries or {}
+local ConsumableAssetLookup = ConsumableConfig.AssetLookup or {}
+local ConsumableCanonicalLookup = ConsumableConfig.CanonicalLookup or {}
 
 if next(EquipmentBonusAssetLookup) == nil then
 	for canonicalName, entry in pairs(EquipmentBonusEntries) do
@@ -67,6 +73,16 @@ local EquipmentStatMappings = {
 
 local playerEquipmentBonuses = {} -- player -> { statName = totalBonus }
 local playerEquipmentBonusDetails = {} -- player -> { statName = { "Item +Value", ... } }
+
+local playerConsumableEffects = {} -- player -> { effectId = { bonuses, permanent, endTime } }
+local playerConsumableTotals = {} -- player -> aggregated bonuses
+local playerConsumableTemporaryTotals = {} -- player -> aggregated temporary bonuses
+local playerConsumableTotalsApplied = {} -- player -> boolean indicating if totals are currently applied to leaderstats
+local playerConsumableDetails = {} -- player -> { statName = { "Consumable +Value", ... } }
+local consumableEffectCounter = 0
+
+local updateConsumableBonusFolders
+local setActiveConsumableValue
 
 local function ensureFolder(parent, name)
 	local folder = parent:FindFirstChild(name)
@@ -133,6 +149,321 @@ local function applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, multipli
 	end
 end
 
+local function extractConsumableBonuses(entry)
+	if not entry then
+		return nil
+	end
+
+	local effects = entry.effects or entry.Effects or entry
+	if typeof(effects) ~= "table" then
+		return nil
+	end
+
+	local bonuses = {}
+	for key, value in pairs(effects) do
+		local mapping = EquipmentStatMappings[key]
+		if mapping and typeof(value) == "number" and value ~= 0 then
+			local statName = mapping.leaderstat
+			bonuses[statName] = (bonuses[statName] or 0) + value
+		end
+	end
+
+	return next(bonuses) and bonuses or nil
+end
+
+local function ensureConsumableTables(player)
+	if not playerConsumableEffects[player] then
+		playerConsumableEffects[player] = {}
+	end
+	if not playerConsumableTotals[player] then
+		playerConsumableTotals[player] = {}
+	end
+	if not playerConsumableTotalsApplied[player] then
+		playerConsumableTotalsApplied[player] = false
+	end
+end
+
+local function applyConsumableTotalsToLeaderstats(player, leaderstats)
+	leaderstats = leaderstats or (player and player:FindFirstChild("leaderstats"))
+	if not leaderstats then
+		return
+	end
+
+	local totals = playerConsumableTotals[player]
+	if not totals or not next(totals) then
+		playerConsumableTotalsApplied[player] = false
+		return
+	end
+
+	applyEquipmentBonusesToLeaderstats(leaderstats, totals, 1)
+	playerConsumableTotalsApplied[player] = true
+
+	updateConsumableBonusFolders(leaderstats, totals, playerConsumableDetails[player])
+end
+
+local function removeConsumableTotalsFromLeaderstats(player, leaderstats)
+	if not playerConsumableTotalsApplied[player] then
+		return
+	end
+
+	leaderstats = leaderstats or (player and player:FindFirstChild("leaderstats"))
+	if not leaderstats then
+		playerConsumableTotalsApplied[player] = false
+		return
+	end
+
+	local totals = playerConsumableTotals[player]
+	if not totals or not next(totals) then
+		playerConsumableTotalsApplied[player] = false
+		return
+	end
+
+	applyEquipmentBonusesToLeaderstats(leaderstats, totals, -1)
+	playerConsumableTotalsApplied[player] = false
+
+	updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+end
+
+local function addBonusesToTotals(targetTotals, bonuses, multiplier)
+	if not targetTotals or not bonuses then
+		return
+	end
+
+	for statName, amount in pairs(bonuses) do
+		local current = targetTotals[statName] or 0
+		local newValue = current + (amount * multiplier)
+		if math.abs(newValue) < 1e-4 then
+			targetTotals[statName] = nil
+		else
+			targetTotals[statName] = newValue
+		end
+	end
+end
+
+local function clearConsumableState(player)
+	removeConsumableTotalsFromLeaderstats(player)
+	playerConsumableEffects[player] = nil
+	playerConsumableTotals[player] = nil
+	playerConsumableTemporaryTotals[player] = nil
+	playerConsumableTotalsApplied[player] = nil
+	playerConsumableDetails[player] = nil
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		updateConsumableBonusFolders(leaderstats, nil, nil)
+		local folder = leaderstats:FindFirstChild("ActiveConsumables")
+		if folder then
+			folder:ClearAllChildren()
+		end
+	end
+end
+
+local function removeConsumableEffect(player, effectId)
+	local effects = playerConsumableEffects[player]
+	if not effects then
+		return
+	end
+
+	local effect = effects[effectId]
+	if not effect then
+		return
+	end
+
+	effects[effectId] = nil
+
+	local hadTotalsApplied = playerConsumableTotalsApplied[player] == true
+
+	local totals = playerConsumableTotals[player]
+	if totals then
+		addBonusesToTotals(totals, effect.bonuses, -1)
+		if not next(totals) then
+			playerConsumableTotals[player] = nil
+		end
+	end
+
+	if not effect.permanent then
+		local temporaryTotals = playerConsumableTemporaryTotals[player]
+		if temporaryTotals then
+			addBonusesToTotals(temporaryTotals, effect.bonuses, -1)
+			if not next(temporaryTotals) then
+				playerConsumableTemporaryTotals[player] = nil
+			end
+		end
+	end
+
+	local details = playerConsumableDetails[player]
+	if details and effect.detailStrings then
+		for statName, label in pairs(effect.detailStrings) do
+			local list = details[statName]
+			if list then
+				for index = #list, 1, -1 do
+					if list[index] == label then
+						table.remove(list, index)
+					end
+				end
+				if #list == 0 then
+					details[statName] = nil
+				end
+			end
+		end
+		if not next(details) then
+			playerConsumableDetails[player] = nil
+		end
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats and hadTotalsApplied then
+		applyEquipmentBonusesToLeaderstats(leaderstats, effect.bonuses, -1)
+		if playerConsumableTotals[player] and not next(playerConsumableTotals[player]) then
+			playerConsumableTotalsApplied[player] = false
+		elseif not playerConsumableTotals[player] then
+			playerConsumableTotalsApplied[player] = false
+		end
+	end
+
+	playerConsumableTotalsApplied[player] = playerConsumableTotalsApplied[player] or false
+
+	if leaderstats then
+		updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+	end
+
+	setActiveConsumableValue(player, effectId, nil)
+end
+
+local function applyConsumableEffect(player, consumableName)
+	if not player or not consumableName then
+		return false, "invalid parameters"
+	end
+
+	local entry = ConsumableEntries[consumableName]
+	if not entry then
+		entry = ConsumableAssetLookup[consumableName]
+		if entry and entry.canonicalName then
+			entry = ConsumableEntries[entry.canonicalName]
+		end
+	end
+
+	if not entry then
+		return false, "consumable not found"
+	end
+
+	local bonuses = extractConsumableBonuses(entry)
+	if not bonuses then
+		return false, "consumable has no defined bonuses"
+	end
+
+	ensureConsumableTables(player)
+
+	local duration = tonumber(entry.duration)
+	local permanent = entry.permanent == true
+	if not permanent then
+		permanent = duration == nil or duration <= 0
+	end
+
+	if not permanent then
+		playerConsumableTemporaryTotals[player] = playerConsumableTemporaryTotals[player] or {}
+		addBonusesToTotals(playerConsumableTemporaryTotals[player], bonuses, 1)
+	end
+
+	playerConsumableTotals[player] = playerConsumableTotals[player] or {}
+	addBonusesToTotals(playerConsumableTotals[player], bonuses, 1)
+	playerConsumableDetails[player] = playerConsumableDetails[player] or {}
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		if playerConsumableTotalsApplied[player] then
+			applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, 1)
+		else
+			applyConsumableTotalsToLeaderstats(player, leaderstats)
+		end
+	else
+		playerConsumableTotalsApplied[player] = false
+	end
+
+	consumableEffectCounter = consumableEffectCounter + 1
+	local effectId = consumableEffectCounter
+
+	local displayName = entry.displayName or consumableName
+	local effectLabels = {}
+	for statName, amount in pairs(bonuses) do
+		local label = string.format("%s %s", displayName, formatBonus(amount))
+		if not permanent and duration and duration > 0 then
+			label = string.format("%s (%ds)", label, math.floor(duration))
+		end
+		effectLabels[statName] = label
+
+		playerConsumableDetails[player][statName] = playerConsumableDetails[player][statName] or {}
+		table.insert(playerConsumableDetails[player][statName], label)
+	end
+
+	local endTime = (not permanent and duration and duration > 0) and (tick() + duration) or nil
+
+	playerConsumableEffects[player][effectId] = {
+		name = consumableName,
+		displayName = displayName,
+		bonuses = bonuses,
+		permanent = permanent,
+		duration = duration,
+	endTime = endTime,
+		detailStrings = effectLabels,
+	}
+
+	if not permanent and duration and duration > 0 then
+		task.delay(duration, function()
+			local effects = playerConsumableEffects[player]
+			if not effects then
+				return
+			end
+
+			local effect = effects[effectId]
+			if not effect or effect.permanent then
+				return
+			end
+
+			if effect.endTime and tick() >= effect.endTime - 0.05 then
+				removeConsumableEffect(player, effectId)
+			end
+		end)
+	end
+
+	if leaderstats then
+		updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+	end
+
+	setActiveConsumableValue(player, effectId, {
+		id = effectId,
+		name = consumableName,
+		displayName = displayName,
+		bonuses = bonuses,
+		permanent = permanent,
+		duration = (not permanent and duration and duration > 0) and duration or nil,
+	endTime = endTime,
+	})
+
+	return true
+end
+
+local function applyConsumableTotalsToCharacter(player)
+	if not player then
+		return
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return
+	end
+
+	if playerConsumableTotalsApplied[player] then
+		removeConsumableTotalsFromLeaderstats(player, leaderstats)
+	end
+
+	applyConsumableTotalsToLeaderstats(player, leaderstats)
+	updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+end
+
+_G.applyConsumableEffect = applyConsumableEffect
+_G.applyConsumableTotalsToCharacter = applyConsumableTotalsToCharacter
+
 local function updateEquipmentBonusFolders(leaderstats, aggregated, details)
 	if not leaderstats then
 		return
@@ -182,6 +513,84 @@ local function updateEquipmentBonusFolders(leaderstats, aggregated, details)
 			detailObj.Value = ""
 		end
 	end
+end
+
+updateConsumableBonusFolders = function(leaderstats, aggregated, details)
+	if not leaderstats then
+		return
+	end
+
+	aggregated = aggregated or {}
+	details = details or {}
+
+	local bonusesFolder = ensureFolder(leaderstats, "ConsumableBonuses")
+	local detailsFolder = ensureFolder(leaderstats, "ConsumableBonusDetails")
+
+	local seenStats = {}
+
+	for statName, value in pairs(aggregated) do
+		seenStats[statName] = true
+
+		local valueObj = bonusesFolder:FindFirstChild(statName)
+		if not valueObj then
+			valueObj = Instance.new("NumberValue")
+			valueObj.Name = statName
+			valueObj.Parent = bonusesFolder
+		end
+		valueObj.Value = value
+
+		local detailList = details[statName]
+		local detailText = ""
+		if detailList and #detailList > 0 then
+			detailText = table.concat(detailList, ", ")
+		end
+
+		local detailObj = detailsFolder:FindFirstChild(statName)
+		if not detailObj then
+			detailObj = Instance.new("StringValue")
+			detailObj.Name = statName
+			detailObj.Parent = detailsFolder
+		end
+		detailObj.Value = detailText
+	end
+
+	for _, valueObj in ipairs(bonusesFolder:GetChildren()) do
+		if valueObj:IsA("NumberValue") and not seenStats[valueObj.Name] then
+			valueObj.Value = 0
+		end
+	end
+
+	for _, detailObj in ipairs(detailsFolder:GetChildren()) do
+		if detailObj:IsA("StringValue") and not seenStats[detailObj.Name] then
+			detailObj.Value = ""
+		end
+	end
+end
+
+setActiveConsumableValue = function(player, effectId, payload)
+	local leaderstats = player and player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return
+	end
+
+	local activeFolder = ensureFolder(leaderstats, "ActiveConsumables")
+	local name = tostring(effectId)
+	local valueObj = activeFolder:FindFirstChild(name)
+
+	if not payload then
+		if valueObj then
+			valueObj:Destroy()
+		end
+		return
+	end
+
+	if not valueObj then
+		valueObj = Instance.new("StringValue")
+		valueObj.Name = name
+		valueObj.Parent = activeFolder
+	end
+
+	valueObj.Value = HttpService:JSONEncode(payload)
 end
 
 local function computeEquipmentBonuses(player)
@@ -251,6 +660,8 @@ local function clearEquipmentBonuses(player)
 	local currentBonuses = playerEquipmentBonuses[player]
 
 	if leaderstats then
+		removeConsumableTotalsFromLeaderstats(player, leaderstats)
+
 		if currentBonuses then
 			applyEquipmentBonusesToLeaderstats(leaderstats, currentBonuses, -1)
 		end
@@ -271,6 +682,8 @@ local function refreshEquipmentBonuses(player)
 		return
 	end
 
+	removeConsumableTotalsFromLeaderstats(player, leaderstats)
+
 	local existing = playerEquipmentBonuses[player]
 	if existing then
 		applyEquipmentBonusesToLeaderstats(leaderstats, existing, -1)
@@ -282,6 +695,8 @@ local function refreshEquipmentBonuses(player)
 
 	applyEquipmentBonusesToLeaderstats(leaderstats, aggregated, 1)
 	updateEquipmentBonusFolders(leaderstats, aggregated, details)
+
+	applyConsumableTotalsToLeaderstats(player, leaderstats)
 end
 
 function _G.refreshEquipmentBonuses(player)
@@ -2386,6 +2801,7 @@ game.Players.PlayerRemoving:Connect(function(player)
 	end
 
 	clearEquipmentBonuses(player)
+	clearConsumableState(player)
 end)
 
 -- ========================================
@@ -3407,6 +3823,7 @@ local function savePlayerData(plr)
 
 	-- Helper function to safely get a stat value
 	local equipmentBonuses = playerEquipmentBonuses[plr]
+	local consumableTemporaryBonuses = playerConsumableTemporaryTotals and playerConsumableTemporaryTotals[plr]
 
 	local function getStatValue(statName, defaultValue, options)
 		local stat = leaderstats:FindFirstChild(statName)
@@ -3420,6 +3837,10 @@ local function savePlayerData(plr)
 
 			if equipmentBonuses and equipmentBonuses[sourceStatName] then
 				value = value - equipmentBonuses[sourceStatName]
+			end
+
+			if consumableTemporaryBonuses and consumableTemporaryBonuses[sourceStatName] then
+				value = value - consumableTemporaryBonuses[sourceStatName]
 			end
 
 			return math.max(value, 0)

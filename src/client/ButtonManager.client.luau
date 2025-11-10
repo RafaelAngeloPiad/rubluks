@@ -10,8 +10,11 @@
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
+
+local ConsumableEvent = ReplicatedStorage:WaitForChild("ConsumableEvent")
 
 -- Require all action modules
 local SamuraiActions = require(player.PlayerScripts.samurai.SamuraiActionModule)
@@ -327,6 +330,16 @@ local UNIFIED_TAGS = {
 	}
 }
 
+local CONSUMABLE_SLOT_TAGS = {
+	"consumable_slot1",
+	"consumable_slot2",
+	"consumable_slot3",
+	"consumable_slot4",
+	"consumable_slot5",
+}
+
+local CONSUMABLE_SLOT_COUNT = #CONSUMABLE_SLOT_TAGS
+
 local COOLDOWN_PROVIDERS = {
 	samurai = function(skillName)
 		return SamuraiActions.getCooldownRemaining(skillName)
@@ -409,6 +422,86 @@ end
 
 local function isWeaponEquipped()
 	return SamuraiActions.isWeaponEquipped() or ArcherActions.isWeaponEquipped() or KnightActions.isWeaponEquipped() or GladiatorActions.isWeaponEquipped() or BrawlerActions.isWeaponEquipped()
+end
+
+local consumableSlots = {}
+local consumableButtons = {}
+for index = 1, CONSUMABLE_SLOT_COUNT do
+	consumableButtons[index] = {}
+end
+
+local function removeConsumableButtonReference(slotIndex, button)
+	local buttons = consumableButtons[slotIndex]
+	if not buttons then
+		return
+	end
+
+	for i = #buttons, 1, -1 do
+		if buttons[i] == button then
+			table.remove(buttons, i)
+			break
+		end
+	end
+end
+
+local function updateConsumableButtonVisual(button, slotIndex)
+	local slotData = consumableSlots[slotIndex]
+	local displayName = slotData and (slotData.displayName or slotData.canonicalName) or "---"
+	local hasConsumable = slotData ~= nil
+
+	if button:IsA("ImageButton") then
+		button.ImageTransparency = hasConsumable and 0 or 0.7
+		local textLabel = button:FindFirstChildOfClass("TextLabel")
+		if textLabel then
+			textLabel.Text = displayName
+			textLabel.TextTransparency = hasConsumable and 0 or 0.4
+		end
+	else
+		button.Text = displayName
+		if button:IsA("TextButton") then
+			button.TextTransparency = hasConsumable and 0 or 0.4
+		end
+	end
+
+	if button:IsA("GuiButton") then
+		button.AutoButtonColor = hasConsumable
+	end
+end
+
+local function updateConsumableButtonsForSlot(slotIndex)
+	local buttons = consumableButtons[slotIndex]
+	if not buttons then
+		return
+	end
+
+	for _, button in ipairs(buttons) do
+		if button.Parent then
+			updateConsumableButtonVisual(button, slotIndex)
+		end
+	end
+end
+
+local function registerConsumableButton(slotIndex, button)
+	table.insert(consumableButtons[slotIndex], button)
+	button.Destroying:Connect(function()
+		removeConsumableButtonReference(slotIndex, button)
+	end)
+	button.AncestryChanged:Connect(function(_, parent)
+		if not parent then
+			removeConsumableButtonReference(slotIndex, button)
+		end
+	end)
+	updateConsumableButtonVisual(button, slotIndex)
+end
+
+local function setupConsumableButton(button, slotIndex)
+	registerConsumableButton(slotIndex, button)
+
+	button.MouseButton1Click:Connect(function()
+		if consumableSlots[slotIndex] then
+			ConsumableEvent:FireServer("use", slotIndex)
+		end
+	end)
 end
 
 -- ========================================
@@ -720,14 +813,43 @@ local function initializeButtons()
 			end
 		end)
 	end
+
+	for slotIndex, tag in ipairs(CONSUMABLE_SLOT_TAGS) do
+		local taggedButtons = CollectionService:GetTagged(tag)
+		for _, button in ipairs(taggedButtons) do
+			if button:IsA("GuiButton") then
+				setupConsumableButton(button, slotIndex)
+			end
+		end
+
+		CollectionService:GetInstanceAddedSignal(tag):Connect(function(button)
+			if button:IsA("GuiButton") then
+				setupConsumableButton(button, slotIndex)
+			end
+		end)
+	end
 end
 
 -- ========================================
 -- START
 -- ========================================
 
+ConsumableEvent.OnClientEvent:Connect(function(action, payload)
+	if action == "updateSlots" then
+		for index = 1, CONSUMABLE_SLOT_COUNT do
+			if payload then
+				consumableSlots[index] = payload[index]
+			else
+				consumableSlots[index] = nil
+			end
+			updateConsumableButtonsForSlot(index)
+		end
+	end
+end)
+
 -- Initialize when script runs
 initializeButtons()
+ConsumableEvent:FireServer("sync")
 
 
 
