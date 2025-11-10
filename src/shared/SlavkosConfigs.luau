@@ -1473,6 +1473,49 @@ ServerConfigs.Client = {
 }
 
 -- ========================================
+-- STAT CAPS
+-- ========================================
+
+ServerConfigs.StatCaps = {
+	Default = {
+		MaxAttack = { max = 1000000 },
+		MaxDefense = { max = 1000000 },
+		CurrentDefense = { max = 1000000 },
+		MaxHealth = { max = 10000000 },
+		DefensePenetration = { max = 100000 },
+		CritRate = { max = 100 },
+		CritMultiplier = { max = 500 },
+		HealthRegen = { max = 10000 },
+		MovementSpeed = { max = 5 },
+		AttackSpeed = { max = 5 },
+	},
+	Slavkorian = {
+		AttackSpeed = { max = 5 },
+		MovementSpeed = { max = 5 },
+	},
+	Archer = {
+		AttackSpeed = { max = 5 },
+		MovementSpeed = { max = 5 },
+	},
+	Samurai = {
+		AttackSpeed = { max = 5 },
+		MovementSpeed = { max = 5 },
+	},
+	Brawler = {
+		AttackSpeed = { max = 5 },
+		MovementSpeed = { max = 5 },
+	},
+	Knight = {
+		AttackSpeed = { max = 5 },
+		MovementSpeed = { max = 5 },
+	},
+	Gladiator = {
+		AttackSpeed = { max = 5 },
+		MovementSpeed = { max = 5 },
+	},
+}
+
+-- ========================================
 -- BUFF CONFIGURATIONS
 -- ========================================
 

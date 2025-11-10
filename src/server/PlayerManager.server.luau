@@ -91,6 +91,7 @@ local consumableEffectCounter = 0
 local updateConsumableBonusFolders
 local setActiveConsumableValue
 local synchronizeMovementAndAttackSpeeds
+local enforceStatCaps
 
 local function ensureFolder(parent, name)
 	local folder = parent:FindFirstChild(name)
@@ -155,6 +156,8 @@ local function applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, multipli
 			end
 		end
 	end
+
+	enforceStatCaps(leaderstats)
 end
 
 local function extractConsumableBonuses(entry)
@@ -287,6 +290,7 @@ local function applyConsumableTotalsToLeaderstats(player, leaderstats)
 	playerConsumableTotalsApplied[player] = true
 
 	updateConsumableBonusFolders(leaderstats, totals, playerConsumableDetails[player])
+	enforceStatCaps(leaderstats)
 end
 
 local function removeConsumableTotalsFromLeaderstats(player, leaderstats)
@@ -310,6 +314,7 @@ local function removeConsumableTotalsFromLeaderstats(player, leaderstats)
 	playerConsumableTotalsApplied[player] = false
 
 	updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+	enforceStatCaps(leaderstats)
 end
 
 local function addBonusesToTotals(targetTotals, bonuses, multiplier)
@@ -527,6 +532,10 @@ local function applyConsumableEffect(player, consumableName)
 			endTime = endTime,
 		})
 
+		if leaderstats then
+			enforceStatCaps(leaderstats)
+		end
+
 		return true
 	end
 
@@ -553,6 +562,7 @@ local function applyConsumableTotalsToCharacter(player)
 
 	applyConsumableTotalsToLeaderstats(player, leaderstats)
 	updateConsumableBonusFolders(leaderstats, playerConsumableTotals[player], playerConsumableDetails[player])
+	enforceStatCaps(leaderstats)
 end
 
 _G.applyConsumableEffect = applyConsumableEffect
@@ -687,6 +697,94 @@ setActiveConsumableValue = function(player, effectId, payload)
 	valueObj.Value = HttpService:JSONEncode(payload)
 end
 
+local StatCapsConfig = ServerConfigs.StatCaps or {}
+
+local function getEffectiveStatCaps(className)
+	local effectiveCaps = nil
+
+	if StatCapsConfig.Default then
+		effectiveCaps = effectiveCaps or {}
+		for statName, capEntry in pairs(StatCapsConfig.Default) do
+			effectiveCaps[statName] = capEntry
+		end
+	end
+
+	if className and className ~= "" then
+		local classCaps = StatCapsConfig[className]
+		if classCaps then
+			effectiveCaps = effectiveCaps or {}
+			for statName, capEntry in pairs(classCaps) do
+				effectiveCaps[statName] = capEntry
+			end
+		end
+	end
+
+	return effectiveCaps
+end
+
+local function clampValueWithEntry(value, capEntry)
+	if typeof(capEntry) == "number" then
+		if value > capEntry then
+			return capEntry
+		end
+		return value
+	elseif typeof(capEntry) == "table" then
+		local newValue = value
+		local minValue = capEntry.min
+		local maxValue = capEntry.max
+
+		if typeof(maxValue) == "number" and newValue > maxValue then
+			newValue = maxValue
+		end
+		if typeof(minValue) == "number" and newValue < minValue then
+			newValue = minValue
+		end
+
+		return newValue
+	end
+
+	return value
+end
+
+enforceStatCaps = function(leaderstats)
+	if not leaderstats then
+		return false
+	end
+
+	local classValue = leaderstats:FindFirstChild("Class")
+	local className = classValue and classValue.Value or nil
+	local effectiveCaps = getEffectiveStatCaps(className)
+
+	if not effectiveCaps then
+		return false
+	end
+
+	local changed = false
+
+	for statName, capEntry in pairs(effectiveCaps) do
+		local statObject = leaderstats:FindFirstChild(statName)
+		if statObject and typeof(statObject.Value) == "number" then
+			local clamped = clampValueWithEntry(statObject.Value, capEntry)
+			if clamped ~= statObject.Value then
+				statObject.Value = clamped
+				changed = true
+			end
+		end
+	end
+
+	local maxDefense = leaderstats:FindFirstChild("MaxDefense")
+	local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
+	if maxDefense and currentDefense and typeof(maxDefense.Value) == "number" and typeof(currentDefense.Value) == "number" then
+		local newCurrentDefense = math.min(currentDefense.Value, maxDefense.Value)
+		if newCurrentDefense ~= currentDefense.Value then
+			currentDefense.Value = newCurrentDefense
+			changed = true
+		end
+	end
+
+	return changed
+end
+
 local function computeEquipmentBonuses(player)
 	local aggregated = {}
 	local details = {}
@@ -761,6 +859,7 @@ local function clearEquipmentBonuses(player)
 		end
 		updateEquipmentBonusFolders(leaderstats, {}, {})
 		synchronizeMovementAndAttackSpeeds(player, leaderstats)
+		enforceStatCaps(leaderstats)
 	end
 
 	playerEquipmentBonuses[player] = nil
@@ -793,6 +892,7 @@ local function refreshEquipmentBonuses(player)
 
 	applyConsumableTotalsToLeaderstats(player, leaderstats)
 	synchronizeMovementAndAttackSpeeds(player, leaderstats)
+	enforceStatCaps(leaderstats)
 end
 
 function _G.refreshEquipmentBonuses(player)
@@ -2467,6 +2567,8 @@ function _G.applyBuff(player, buffName, buffConfig)
 		end
 	end)
 	
+	enforceStatCaps(leaderstats)
+
 	return true
 end
 
@@ -2826,6 +2928,8 @@ function _G.removeBuff(player, buffName)
 	if pendingHealthValue and humanoidAfterRefresh then
 		humanoidAfterRefresh.Health = math.min(pendingHealthValue, humanoidAfterRefresh.MaxHealth)
 	end
+
+	enforceStatCaps(leaderstats)
 	
 	return true
 end
@@ -3224,6 +3328,8 @@ game.Players.PlayerAdded:Connect(function(plr)
 		end
 	end
 
+	enforceStatCaps(leaderstats)
+
 	-- Ensure Slavkorian stays at starting level
 	if class.Value == "Slavkorian" then
 		level.Value = BaseStats.XP.startLevel
@@ -3521,6 +3627,8 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end
 		end
 		
+	enforceStatCaps(leaderstats)
+
 		-- Update previous level (important for detecting resets)
 		previousLevel = newLevel
 	end)
@@ -3592,6 +3700,8 @@ game.Players.PlayerAdded:Connect(function(plr)
 		ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
 		ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
 	end
+
+	enforceStatCaps(leaderstats)
 	end
 	
 	-- Apply base stats when class changes (works immediately, even before character spawns)
@@ -3624,6 +3734,8 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end
 			previousLevel = BaseStats.XP.startLevel
 		end
+
+		enforceStatCaps(leaderstats)
 	end)
 	
 	-- Apply base stats on initial load (if no saved data or if class was selected)
@@ -4167,5 +4279,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 			end
 		end
 	end
+
+	enforceStatCaps(leaderstats)
 end)
 

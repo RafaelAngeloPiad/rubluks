@@ -1969,6 +1969,13 @@ createButton("+5000 XP", Color3.fromRGB(120, 220, 120), buttonLayoutOrder, funct
 end)
 buttonLayoutOrder = buttonLayoutOrder + 1
 
+createButton("+100000 XP", Color3.fromRGB(90, 200, 90), buttonLayoutOrder, function()
+	if DevStatEvent then
+		DevStatEvent:FireServer("addCurrentXP", 100000)
+	end
+end)
+buttonLayoutOrder = buttonLayoutOrder + 1
+
 -- Row 3: Class selection buttons
 createButton("Knight", Color3.fromRGB(100, 150, 200), buttonLayoutOrder, function()
 	if DevStatEvent then
