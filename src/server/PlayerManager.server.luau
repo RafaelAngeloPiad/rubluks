@@ -2602,37 +2602,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local equipmentBonusDetailsFolder = Instance.new("Folder", leaderstats)
 	equipmentBonusDetailsFolder.Name = "EquipmentBonusDetails"
 	
-	
-	------------------ FOR SUNFIRE ONLY ----------------
-	
-	local currentWaterLevel = Instance.new("NumberValue", leaderstats)
-	currentWaterLevel.Name = "CurrentWaterLevel"
-	currentWaterLevel.Value = 0
-	
-	local maxWaterLevel = Instance.new("NumberValue", leaderstats)
-	maxWaterLevel.Name = "MaxWaterLevel"
-	maxWaterLevel.Value = 300
-	
-	local waterBasinOne = Instance.new("BoolValue", leaderstats)
-	waterBasinOne.Name = "WaterBasinOne"
-	waterBasinOne.Value = false
-	
-	local waterBasinTwo = Instance.new("BoolValue", leaderstats)
-	waterBasinTwo.Name = "WaterBasinTwo"
-	waterBasinTwo.Value = false
-	
-	local waterBasinThree = Instance.new("BoolValue", leaderstats)
-	waterBasinThree.Name = "WaterBasinThree"
-	waterBasinThree.Value = false
-	
-	local waterBasinFour = Instance.new("BoolValue", leaderstats)
-	waterBasinFour.Name = "WaterBasinFour"
-	waterBasinFour.Value = false
-	
-	local waterBasinFifth = Instance.new("BoolValue", leaderstats)
-	waterBasinFifth.Name = "WaterBasinFifth"
-	waterBasinFifth.Value = false
-	
 	-- loads progress data
 	if data then
 		-- Convert and load level (ensure it's a number)
@@ -2697,15 +2666,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 				level.Value = level.Value + 1
 			end
 		end
-		
-		---- FOR SUNFIRE ONLY ---
-		currentWaterLevel.Value = convertDataType(data.CurrentWaterLevel, 0)
-		maxWaterLevel.Value = convertDataType(data.MaxWaterLevel, 300)
-		waterBasinOne.Value = convertDataType(data.WaterBasinOne, false)
-		waterBasinTwo.Value = convertDataType(data.WaterBasinTwo, false)
-		waterBasinThree.Value = convertDataType(data.WaterBasinThree, false)
-		waterBasinFour.Value = convertDataType(data.WaterBasinFour, false)
-		waterBasinFifth.Value = convertDataType(data.WaterBasinFifth, false)
 	end
 
 	-- Ensure Slavkorian stays at starting level

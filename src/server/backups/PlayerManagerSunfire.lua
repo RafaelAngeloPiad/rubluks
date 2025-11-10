@@ -391,24 +391,24 @@ local BaseStats = {
 				{ level = 43, multiplier = 1.05 },
 			},
 			Mspd = {
-				{ level = 1, multiplier = 1.09 },
-				{ level = 7, multiplier = 1.09 },
-				{ level = 13, multiplier = 1.09 },
-				{ level = 19, multiplier = 1.09 },
-				{ level = 25, multiplier = 1.09 },
-				{ level = 31, multiplier = 1.09 },
-				{ level = 37, multiplier = 1.09 },
-				{ level = 43, multiplier = 1.09 },
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
 			},
 			Aspd = {
-				{ level = 1, multiplier = 1.09 },
-				{ level = 7, multiplier = 1.09 },
-				{ level = 13, multiplier = 1.09 },
-				{ level = 19, multiplier = 1.09 },
-				{ level = 25, multiplier = 1.09 },
-				{ level = 31, multiplier = 1.09 },
-				{ level = 37, multiplier = 1.09 },
-				{ level = 43, multiplier = 1.09 },
+				{ level = 1, multiplier = 1.01 },
+				{ level = 7, multiplier = 1.01 },
+				{ level = 13, multiplier = 1.01 },
+				{ level = 19, multiplier = 1.01 },
+				{ level = 25, multiplier = 1.01 },
+				{ level = 31, multiplier = 1.01 },
+				{ level = 37, multiplier = 1.01 },
+				{ level = 43, multiplier = 1.01 },
 			},
 		},
 		Archer = {
@@ -483,24 +483,24 @@ local BaseStats = {
 				{ level = 43, multiplier = 1.05 },
 			},
 			Mspd = {
-				{ level = 1, multiplier = 1.09 },
-				{ level = 7, multiplier = 1.09 },
-				{ level = 13, multiplier = 1.09 },
-				{ level = 19, multiplier = 1.09 },
-				{ level = 25, multiplier = 1.09 },
-				{ level = 31, multiplier = 1.09 },
-				{ level = 37, multiplier = 1.09 },
-				{ level = 43, multiplier = 1.09 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
 			},
 			Aspd = {
-				{ level = 1, multiplier = 1.09 },
-				{ level = 7, multiplier = 1.09 },
-				{ level = 13, multiplier = 1.09 },
-				{ level = 19, multiplier = 1.09 },
-				{ level = 25, multiplier = 1.09 },
-				{ level = 31, multiplier = 1.09 },
-				{ level = 37, multiplier = 1.09 },
-				{ level = 43, multiplier = 1.09 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 7, multiplier = 1.00 },
+				{ level = 13, multiplier = 1.00 },
+				{ level = 19, multiplier = 1.00 },
+				{ level = 25, multiplier = 1.00 },
+				{ level = 31, multiplier = 1.00 },
+				{ level = 37, multiplier = 1.00 },
+				{ level = 43, multiplier = 1.00 },
 			}
 		},
 		Gladiator = {
@@ -690,93 +690,93 @@ local BaseStats = {
 		Knight = {
 			HP = {
 				{ level = 1, multiplier = 1.05 },
-				{ level = 7, multiplier = 1.10 },
-				{ level = 13, multiplier = 1.15 },
-				{ level = 19, multiplier = 1.20 },
-				{ level = 25, multiplier = 1.25 },
-				{ level = 31, multiplier = 1.30 },
-				{ level = 37, multiplier = 1.35 },
-				{ level = 43, multiplier = 1.40 },
+				{ level = 8, multiplier = 1.05 },
+				{ level = 14, multiplier = 1.10 },
+				{ level = 20, multiplier = 1.10 },
+				{ level = 26, multiplier = 1.15 },
+				{ level = 32, multiplier = 1.15 },
+				{ level = 38, multiplier = 1.20 },
+				{ level = 44, multiplier = 1.25 },
 			},
 			ATK = {
-				{ level = 1, multiplier = 1.07 },
-				{ level = 7, multiplier = 1.07 },
-				{ level = 13, multiplier = 1.07 },
-				{ level = 19, multiplier = 1.07 },
-				{ level = 25, multiplier = 1.07 },
-				{ level = 31, multiplier = 1.07 },
-				{ level = 37, multiplier = 1.07 },
-				{ level = 43, multiplier = 1.07 },
+				{ level = 1, multiplier = 1.05 },
+				{ level = 8, multiplier = 1.05 },
+				{ level = 14, multiplier = 1.10 },
+				{ level = 20, multiplier = 1.10 },
+				{ level = 26, multiplier = 1.15 },
+				{ level = 32, multiplier = 1.15 },
+				{ level = 38, multiplier = 1.20 },
+				{ level = 44, multiplier = 1.25 },
 			},
 			D = {
-				{ level = 1, multiplier = 1.07 },
-				{ level = 7, multiplier = 1.07 },
-				{ level = 13, multiplier = 1.07 },
-				{ level = 19, multiplier = 1.07 },
-				{ level = 25, multiplier = 1.07 },
-				{ level = 31, multiplier = 1.07 },
-				{ level = 37, multiplier = 1.07 },
-				{ level = 43, multiplier = 1.07 },
+				{ level = 1, multiplier = 1.05 },
+				{ level = 8, multiplier = 1.05 },
+				{ level = 14, multiplier = 1.10 },
+				{ level = 20, multiplier = 1.10 },
+				{ level = 26, multiplier = 1.15 },
+				{ level = 32, multiplier = 1.15 },
+				{ level = 38, multiplier = 1.20 },
+				{ level = 44, multiplier = 1.25 },
 			},
 			DP = {
 				{ level = 1, multiplier = 1.05 },
-				{ level = 7, multiplier = 1.05 },
-				{ level = 13, multiplier = 1.05 },
-				{ level = 19, multiplier = 1.05 },
-				{ level = 25, multiplier = 1.05 },
-				{ level = 31, multiplier = 1.05 },
-				{ level = 37, multiplier = 1.05 },
-				{ level = 43, multiplier = 1.05 },
+				{ level = 8, multiplier = 1.05 },
+				{ level = 14, multiplier = 1.10 },
+				{ level = 20, multiplier = 1.10 },
+				{ level = 26, multiplier = 1.15 },
+				{ level = 32, multiplier = 1.15 },
+				{ level = 38, multiplier = 1.20 },
+				{ level = 44, multiplier = 1.25 },
 			},
 			CR = {
-				{ level = 1, multiplier = 1.02 },
-				{ level = 7, multiplier = 1.02 },
-				{ level = 13, multiplier = 1.02 },
-				{ level = 19, multiplier = 1.02 },
-				{ level = 25, multiplier = 1.02 },
-				{ level = 31, multiplier = 1.02 },
-				{ level = 37, multiplier = 1.02 },
-				{ level = 43, multiplier = 1.02 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 8, multiplier = 1.10 },
+				{ level = 14, multiplier = 1.10 },
+				{ level = 20, multiplier = 1.10 },
+				{ level = 26, multiplier = 1.10 },
+				{ level = 32, multiplier = 1.10 },
+				{ level = 38, multiplier = 1.10 },
+				{ level = 44, multiplier = 1.10 },
 			},
 			CM = {
-				{ level = 1, multiplier = 1.01 },
-				{ level = 7, multiplier = 1.01 },
-				{ level = 13, multiplier = 1.01 },
-				{ level = 19, multiplier = 1.01 },
-				{ level = 25, multiplier = 1.01 },
-				{ level = 31, multiplier = 1.01 },
-				{ level = 37, multiplier = 1.01 },
-				{ level = 43, multiplier = 1.01 },
+				{ level = 1, multiplier = 1.00 },
+				{ level = 8, multiplier = 1.005 },
+				{ level = 14, multiplier = 1.01 },
+				{ level = 20, multiplier = 1.01 },
+				{ level = 26, multiplier = 1.015 },
+				{ level = 32, multiplier = 1.015 },
+				{ level = 38, multiplier = 1.02 },
+				{ level = 44, multiplier = 1.025 },
 			},
 			HR = {
-				{ level = 1, multiplier = 1.05 },
-				{ level = 7, multiplier = 1.05 },
-				{ level = 13, multiplier = 1.05 },
-				{ level = 19, multiplier = 1.05 },
-				{ level = 25, multiplier = 1.05 },
-				{ level = 31, multiplier = 1.05 },
-				{ level = 37, multiplier = 1.05 },
-				{ level = 43, multiplier = 1.05 },
+				{ level = 1, multiplier = 1.10 },
+				{ level = 8, multiplier = 1.10 },
+				{ level = 14, multiplier = 1.10 },
+				{ level = 20, multiplier = 1.10 },
+				{ level = 26, multiplier = 1.10 },
+				{ level = 32, multiplier = 1.10 },
+				{ level = 38, multiplier = 1.10 },
+				{ level = 44, multiplier = 1.10 },
 			},
 			Mspd = {
 				{ level = 1, multiplier = 1.00 },
-				{ level = 7, multiplier = 1.00 },
-				{ level = 13, multiplier = 1.00 },
-				{ level = 19, multiplier = 1.00 },
-				{ level = 25, multiplier = 1.00 },
-				{ level = 31, multiplier = 1.00 },
-				{ level = 37, multiplier = 1.00 },
-				{ level = 43, multiplier = 1.00 },
+				{ level = 8, multiplier = 1.00 },
+				{ level = 14, multiplier = 1.00 },
+				{ level = 20, multiplier = 1.00 },
+				{ level = 26, multiplier = 1.00 },
+				{ level = 32, multiplier = 1.00 },
+				{ level = 38, multiplier = 1.00 },
+				{ level = 44, multiplier = 1.00 },
 			},
 			Aspd = {
 				{ level = 1, multiplier = 1.00 },
-				{ level = 7, multiplier = 1.00 },
-				{ level = 13, multiplier = 1.00 },
-				{ level = 19, multiplier = 1.00 },
-				{ level = 25, multiplier = 1.00 },
-				{ level = 31, multiplier = 1.00 },
-				{ level = 37, multiplier = 1.00 },
-				{ level = 43, multiplier = 1.00 },
+				{ level = 8, multiplier = 1.00 },
+				{ level = 14, multiplier = 1.00 },
+				{ level = 20, multiplier = 1.00 },
+				{ level = 26, multiplier = 1.00 },
+				{ level = 32, multiplier = 1.00 },
+				{ level = 38, multiplier = 1.00 },
+				{ level = 44, multiplier = 1.00 },
 			},
 		}
 	},
@@ -792,9 +792,8 @@ local BaseStats = {
 		HP = 400,        -- Health Points: Life pool (dies if ≤ 0)
 		D = 5,           -- Defense: Reduces Penetration
 		HR = 2,           -- Health Regeneration: Health Points gained per second
-		Mspd = 18,        -- Base walk speed in studs per second
-		Aspd = 2,         -- Attack speed multiplier baseline for normal attacks
-		SkillAspd = 1,    -- Attack speed baseline for skills/buffs/ultimates
+		Mspd = 15,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
+		Aspd = 200,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
 	},
 	
 	Samurai = {
@@ -808,7 +807,7 @@ local BaseStats = {
 		HP = 1600,
 		D = 80,
 		HR = 0,
-		Mspd = 18,
+		Mspd = 20,
 		Aspd = 1,
 	},
 	
@@ -823,23 +822,23 @@ local BaseStats = {
 		HP = 1400,
 		D = 50,
 		HR = 0,
-		Mspd = 18,
-		Aspd = 1,
+		Mspd = 25,
+		Aspd = 10,
 	},
 	
 	Knight = {
 		-- Offense Stats
-		ATK = 5,
-		DP = 1,
+		ATK = 25,
+		DP = 25,
 		CR = 1,
-		CM = 2,
+		CM = 2.5,
 		
 		-- Defense Stats
 		HP = 500,
-		D = 5,
-		HR = 5,
-		Mspd = 18,
-		Aspd = 1,
+		D = 25,
+		HR = 25,
+		Mspd = 20,
+		Aspd = 10,
 	},
 	
 	Gladiator = {
@@ -853,153 +852,13 @@ local BaseStats = {
 		HP = 2000,
 		D = 80,
 		HR = 0,
-		Mspd = 18,
+		Mspd = 15,
 		Aspd = 1,
 	}
 }
 
 -- Export BaseStats to ServerConfigs so other modules can access it
 ServerConfigs.BaseStats = BaseStats
-
--- Cache original class animation settings so base stats can scale them
-local classConfigBaselines: {[string]: {
-	movementSpeed: number,
-	attackSpeed: number,
-	skillAttackSpeedBaseline: number?,
-	walking: {[string]: number}?,
-	walkingSpeed: {[string]: number}?,
-}} = {}
-
-local function cloneNumericTable(source)
-	if not source then
-		return nil
-	end
-
-	local copy = {}
-	for key, value in pairs(source) do
-		if typeof(value) == "number" then
-			copy[key] = value
-		end
-	end
-
-	return next(copy) and copy or nil
-end
-
-local function getClassConfigBaseline(className: string)
-	if classConfigBaselines[className] then
-		return classConfigBaselines[className]
-	end
-
-	local unified = ServerConfigs.Hitboxes
-		and ServerConfigs.Hitboxes.UnifiedAttacks
-		and ServerConfigs.Hitboxes.UnifiedAttacks[className]
-
-	if not unified then
-		classConfigBaselines[className] = {
-			movementSpeed = 1.0,
-			attackSpeed = 1.0,
-			walking = nil,
-			walkingSpeed = nil,
-		}
-		return classConfigBaselines[className]
-	end
-
-	classConfigBaselines[className] = {
-		movementSpeed = unified.movementSpeed or 1.0,
-		attackSpeed = unified.attackSpeed or 1.0,
-		skillAttackSpeedBaseline = unified.skillAttackSpeedBaseline or unified.attackSpeed or 1.0,
-		walking = cloneNumericTable(unified.walking),
-		walkingSpeed = cloneNumericTable(unified.walkingSpeed),
-	}
-
-	return classConfigBaselines[className]
-end
-
-local function updateRuntimeSpeedsFromBaseStats(className: string, baseStatsForClass)
-	if not className or not baseStatsForClass then
-		return nil, nil
-	end
-
-	local unified = ServerConfigs.Hitboxes
-		and ServerConfigs.Hitboxes.UnifiedAttacks
-		and ServerConfigs.Hitboxes.UnifiedAttacks[className]
-
-	local classSummary = ServerConfigs[className]
-
-	if not unified then
-		return nil, nil
-	end
-
-	local baselines = getClassConfigBaseline(className)
-
-	local baseWalkSpeed = baseStatsForClass.Mspd or 18
-	local referenceWalk = 18
-
-	if baselines.walkingSpeed and baselines.walkingSpeed.normal and baselines.walkingSpeed.normal > 0 then
-		referenceWalk = baselines.walkingSpeed.normal
-	elseif baselines.walking and baselines.walking.normal and baselines.walking.normal > 0 then
-		referenceWalk = baselines.walking.normal
-	end
-
-	if referenceWalk <= 0 then
-		referenceWalk = baseWalkSpeed ~= 0 and baseWalkSpeed or 18
-	end
-
-	local movementMultiplier = baseWalkSpeed / referenceWalk
-
-	unified.movementSpeed = movementMultiplier
-
-	if baselines.walking then
-		unified.walking = unified.walking or {}
-		for key, baselineValue in pairs(baselines.walking) do
-			unified.walking[key] = baselineValue * movementMultiplier
-		end
-	end
-
-	if baselines.walkingSpeed then
-		unified.walkingSpeed = unified.walkingSpeed or {}
-		for key, baselineValue in pairs(baselines.walkingSpeed) do
-			unified.walkingSpeed[key] = baselineValue * movementMultiplier
-		end
-	end
-
-	if classSummary then
-		classSummary.MovementSpeed = movementMultiplier
-		if classSummary.walking and baselines.walkingSpeed then
-			for key, baselineValue in pairs(baselines.walkingSpeed) do
-				classSummary.walking[key] = baselineValue * movementMultiplier
-			end
-		end
-	end
-
-	local baseAttackSpeed = baseStatsForClass.Aspd or baselines.attackSpeed or 1.0
-	local referenceAttack = baselines.attackSpeed ~= 0 and baselines.attackSpeed or 1.0
-	local attackMultiplier = baseAttackSpeed / referenceAttack
-
-	local baseSkillSpeed = baseStatsForClass.SkillAspd or baseAttackSpeed
-	local skillRatio = 1.0
-	if baseAttackSpeed ~= 0 then
-		skillRatio = baseSkillSpeed / baseAttackSpeed
-	end
-	local skillMultiplier = attackMultiplier * skillRatio
-
-	unified.attackSpeed = attackMultiplier
-	unified.skillAttackSpeedRatio = skillRatio
-	unified.skillAttackSpeedMultiplier = skillMultiplier
-	if classSummary then
-		classSummary.AttackSpeed = attackMultiplier
-		classSummary.SkillAttackSpeedRatio = skillRatio
-		classSummary.SkillAttackSpeed = skillMultiplier
-	end
-
-	return movementMultiplier, attackMultiplier, skillMultiplier
-end
-
-for className, classStats in pairs(BaseStats) do
-	if typeof(classStats) == "table" and classStats.Mspd and classStats.Aspd then
-		updateRuntimeSpeedsFromBaseStats(className, classStats)
-	end
-end
 
 -- Helper to resolve level-based stat multipliers for classes
 local function resolveLevelUpMultiplier(multipliers, statKey, level)
@@ -2602,37 +2461,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local equipmentBonusDetailsFolder = Instance.new("Folder", leaderstats)
 	equipmentBonusDetailsFolder.Name = "EquipmentBonusDetails"
 	
-	
-	------------------ FOR SUNFIRE ONLY ----------------
-	
-	local currentWaterLevel = Instance.new("NumberValue", leaderstats)
-	currentWaterLevel.Name = "CurrentWaterLevel"
-	currentWaterLevel.Value = 0
-	
-	local maxWaterLevel = Instance.new("NumberValue", leaderstats)
-	maxWaterLevel.Name = "MaxWaterLevel"
-	maxWaterLevel.Value = 300
-	
-	local waterBasinOne = Instance.new("BoolValue", leaderstats)
-	waterBasinOne.Name = "WaterBasinOne"
-	waterBasinOne.Value = false
-	
-	local waterBasinTwo = Instance.new("BoolValue", leaderstats)
-	waterBasinTwo.Name = "WaterBasinTwo"
-	waterBasinTwo.Value = false
-	
-	local waterBasinThree = Instance.new("BoolValue", leaderstats)
-	waterBasinThree.Name = "WaterBasinThree"
-	waterBasinThree.Value = false
-	
-	local waterBasinFour = Instance.new("BoolValue", leaderstats)
-	waterBasinFour.Name = "WaterBasinFour"
-	waterBasinFour.Value = false
-	
-	local waterBasinFifth = Instance.new("BoolValue", leaderstats)
-	waterBasinFifth.Name = "WaterBasinFifth"
-	waterBasinFifth.Value = false
-	
 	-- loads progress data
 	if data then
 		-- Convert and load level (ensure it's a number)
@@ -2698,14 +2526,6 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end
 		end
 		
-		---- FOR SUNFIRE ONLY ---
-		currentWaterLevel.Value = convertDataType(data.CurrentWaterLevel, 0)
-		maxWaterLevel.Value = convertDataType(data.MaxWaterLevel, 300)
-		waterBasinOne.Value = convertDataType(data.WaterBasinOne, false)
-		waterBasinTwo.Value = convertDataType(data.WaterBasinTwo, false)
-		waterBasinThree.Value = convertDataType(data.WaterBasinThree, false)
-		waterBasinFour.Value = convertDataType(data.WaterBasinFour, false)
-		waterBasinFifth.Value = convertDataType(data.WaterBasinFifth, false)
 	end
 
 	-- Ensure Slavkorian stays at starting level
@@ -3053,29 +2873,29 @@ game.Players.PlayerAdded:Connect(function(plr)
 			leaderstats.HealthRegen.Value = baseStats.HR or 0
 		end
 		
-		local movementMultiplier, attackMultiplier = updateRuntimeSpeedsFromBaseStats(class.Value, baseStats)
-
 		if leaderstats:FindFirstChild("MovementSpeed").Value == 0 then
-			leaderstats.MovementSpeed.Value = movementMultiplier or 1.0
+			-- MovementSpeed in leaderstats is the animation speed multiplier, should start at 1.0
+			leaderstats.MovementSpeed.Value = 1.0
 		end
 		
 		if leaderstats:FindFirstChild("AttackSpeed").Value == 0 then
-			leaderstats.AttackSpeed.Value = attackMultiplier or 1.0
+			-- AttackSpeed in leaderstats is the animation speed multiplier, should start at 1.0
+			leaderstats.AttackSpeed.Value = 1.0
 		end
-	
-	-- Initialize animation speeds in ServerConfigs based on MovementSpeed and AttackSpeed (animation multipliers)
-	if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
-		local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
-		local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
-		ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
-		ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
-	end
-	if ServerConfigs and ServerConfigs[class.Value] then
-		local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
-		local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
-		ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
-		ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
-	end
+		
+		-- Initialize animation speeds in ServerConfigs based on MovementSpeed and AttackSpeed (animation multipliers)
+		if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
+			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
+			ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].movementSpeed = movementAnimSpeedMultiplier
+			ServerConfigs.Hitboxes.UnifiedAttacks[class.Value].attackSpeed = attackAnimSpeedMultiplier
+		end
+		if ServerConfigs and ServerConfigs[class.Value] then
+			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
+			local attackAnimSpeedMultiplier = leaderstats.AttackSpeed.Value
+			ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
+			ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
+		end
 	end
 	
 	-- Apply base stats when class changes (works immediately, even before character spawns)
@@ -3450,10 +3270,6 @@ local function savePlayerData(plr)
 
 	local function getStatValue(statName, defaultValue, options)
 		local stat = leaderstats:FindFirstChild(statName)
-		if typeof(defaultValue) == "boolean" then
-			return stat and stat.Value == true
-		end
-
 		if stat and stat:IsA("ValueBase") then
 			local value = tonumber(stat.Value) or defaultValue
 			local sourceStatName = (options and options.source) or statName
@@ -3482,14 +3298,7 @@ local function savePlayerData(plr)
 		HealthRegen = getStatValue("HealthRegen", 0),
 		MovementSpeed = getStatValue("MovementSpeed", 0),
 		AttackSpeed = getStatValue("AttackSpeed", 0),
-		Slavkoins = getStatValue("Slavkoins", 0),
-		CurrentWaterLevel = getStatValue("CurrentWaterLevel", 0),
-		MaxWaterLevel = getStatValue("MaxWaterLevel", 0),
-		WaterBasinOne = getStatValue("WaterBasinOne", false),
-		WaterBasinTwo = getStatValue("WaterBasinTwo", false),
-		WaterBasinThree = getStatValue("WaterBasinThree", false),
-		WaterBasinFour = getStatValue("WaterBasinFour", false),
-		WaterBasinFifth = getStatValue("WaterBasinFifth", false)
+		Slavkoins = getStatValue("Slavkoins", 0)
 	}
 
 	local success, err = MainDataStore.SavePlayerData(plr.UserId, dataToSave)
@@ -3583,7 +3392,6 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 			-- Apply base stats immediately (don't wait for class.Changed event)
 			local baseStats = BaseStats[newClass]
 			if baseStats then
-				local movementMultiplier, attackMultiplier = updateRuntimeSpeedsFromBaseStats(newClass, baseStats)
 				leaderstats.MaxHealth.Value = baseStats.HP or 0
 				leaderstats.MaxAttack.Value = baseStats.ATK or 0
 				leaderstats.MaxDefense.Value = baseStats.D or 0
@@ -3592,8 +3400,9 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.CritRate.Value = baseStats.CR or 5
 				leaderstats.CritMultiplier.Value = baseStats.CM or 150
 				leaderstats.HealthRegen.Value = baseStats.HR or 0
-				leaderstats.MovementSpeed.Value = movementMultiplier or leaderstats.MovementSpeed.Value
-				leaderstats.AttackSpeed.Value = attackMultiplier or leaderstats.AttackSpeed.Value
+				-- MovementSpeed and AttackSpeed are animation speed multipliers, should start at 1.0
+				leaderstats.MovementSpeed.Value = 1.0
+				leaderstats.AttackSpeed.Value = 1.0
 			else
 				-- Default Slavkorian stats if class not found
 				leaderstats.MaxHealth.Value = 1000
@@ -3604,6 +3413,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 				leaderstats.CritRate.Value = 5
 				leaderstats.CritMultiplier.Value = 150
 				leaderstats.HealthRegen.Value = 0
+				-- MovementSpeed and AttackSpeed are animation speed multipliers, should start at 1.0
 				leaderstats.MovementSpeed.Value = 1.0
 				leaderstats.AttackSpeed.Value = 1.0
 			end
