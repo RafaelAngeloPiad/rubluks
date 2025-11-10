@@ -90,6 +90,7 @@ local consumableEffectCounter = 0
 
 local updateConsumableBonusFolders
 local setActiveConsumableValue
+local synchronizeMovementAndAttackSpeeds
 
 local function ensureFolder(parent, name)
 	local folder = parent:FindFirstChild(name)
@@ -759,6 +760,7 @@ local function clearEquipmentBonuses(player)
 			applyEquipmentBonusesToLeaderstats(leaderstats, currentBonuses, -1)
 		end
 		updateEquipmentBonusFolders(leaderstats, {}, {})
+		synchronizeMovementAndAttackSpeeds(player, leaderstats)
 	end
 
 	playerEquipmentBonuses[player] = nil
@@ -790,6 +792,7 @@ local function refreshEquipmentBonuses(player)
 	updateEquipmentBonusFolders(leaderstats, aggregated, details)
 
 	applyConsumableTotalsToLeaderstats(player, leaderstats)
+	synchronizeMovementAndAttackSpeeds(player, leaderstats)
 end
 
 function _G.refreshEquipmentBonuses(player)
@@ -1506,6 +1509,60 @@ end
 for className, classStats in pairs(BaseStats) do
 	if typeof(classStats) == "table" and classStats.Mspd and classStats.Aspd then
 		updateRuntimeSpeedsFromBaseStats(className, classStats)
+	end
+end
+
+local classAnimationUpdateFuncs = {
+	Archer = _G.updateArcherAnimationSpeed,
+	Samurai = _G.updateSamuraiAnimationSpeed,
+	Brawler = _G.updateBrawlerAnimationSpeed,
+	Knight = _G.updateKnightAnimationSpeed,
+	Gladiator = _G.updateGladiatorAnimationSpeed,
+}
+
+synchronizeMovementAndAttackSpeeds = function(player, leaderstats)
+	if not player or not leaderstats then
+		return
+	end
+
+	local classValue = leaderstats:FindFirstChild("Class")
+	local className = classValue and classValue.Value
+	if not className or className == "" then
+		return
+	end
+
+	local movementStat = leaderstats:FindFirstChild("MovementSpeed")
+	local attackStat = leaderstats:FindFirstChild("AttackSpeed")
+	local movementMultiplier = movementStat and movementStat.Value or 1.0
+	local attackMultiplier = attackStat and attackStat.Value or 1.0
+
+	if movementMultiplier <= 0 then
+		movementMultiplier = 1.0
+	end
+	if attackMultiplier <= 0 then
+		attackMultiplier = 1.0
+	end
+
+	if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[className] then
+		ServerConfigs.Hitboxes.UnifiedAttacks[className].movementSpeed = movementMultiplier
+		ServerConfigs.Hitboxes.UnifiedAttacks[className].attackSpeed = attackMultiplier
+	end
+	if ServerConfigs and ServerConfigs[className] then
+		ServerConfigs[className].MovementSpeed = movementMultiplier
+		ServerConfigs[className].AttackSpeed = attackMultiplier
+	end
+
+	local baseStatsForClass = BaseStats[className]
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid and baseStatsForClass then
+		local baseMspd = baseStatsForClass.Mspd or 18
+		humanoid.WalkSpeed = baseMspd * movementMultiplier
+	end
+
+	local updateFunc = classAnimationUpdateFuncs[className]
+	if updateFunc then
+		updateFunc("movement", movementMultiplier)
+		updateFunc("attack", attackMultiplier)
 	end
 end
 
@@ -3139,29 +3196,19 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Load MovementSpeed and AttackSpeed, but convert if they're old format (walk speed values > 1.5)
 		-- MovementSpeed and AttackSpeed should be animation multipliers starting at 1.0
 		local loadedMovementSpeed = convertDataType(data.MovementSpeed, 0)
-		if loadedMovementSpeed > 1.5 then
-			-- Old format: This is likely the walk speed (18), convert to animation multiplier
-			-- Reverse-engineer: divide by base Mspd (18) to get the multiplier
-			local baseMspd = 18 -- Base walk speed
-			local calculatedMultiplier = loadedMovementSpeed / baseMspd
-			-- Clamp to reasonable range (between 1.0 and 2.0 for safety)
-			movementSpeed.Value = math.max(1.0, math.min(2.0, calculatedMultiplier))
+		if loadedMovementSpeed >= 9 then
+			-- Legacy saves stored raw WalkSpeed (e.g., 18). Convert those to animation multipliers.
+			local baseMspd = 18
+			local convertedMultiplier = loadedMovementSpeed / baseMspd
+			movementSpeed.Value = convertedMultiplier
 		else
-			movementSpeed.Value = loadedMovementSpeed == 0 and 0 or loadedMovementSpeed
+			-- Modern saves already store the multiplier; keep it as-is (including 0 so base stats can initialize it).
+			movementSpeed.Value = loadedMovementSpeed
 		end
 		
 		local loadedAttackSpeed = convertDataType(data.AttackSpeed, 0)
-		-- AttackSpeed should be animation multiplier (1.0)
-		-- Old data might have it as 1 (which is correct) or > 1.5 (invalid)
-		if loadedAttackSpeed > 1.5 then
-			-- Invalid value, reset to 1.0
-			attackSpeed.Value = 1.0
-		elseif loadedAttackSpeed > 0 and loadedAttackSpeed < 0.5 then
-			-- Invalid value, reset to 1.0
-			attackSpeed.Value = 1.0
-		else
-			attackSpeed.Value = loadedAttackSpeed == 0 and 0 or loadedAttackSpeed
-		end
+		-- Use the stored attack speed multiplier as-is so we respect any custom tuning.
+		attackSpeed.Value = loadedAttackSpeed
 		
 		slavkoins.Value = convertDataType(data.Slavkoins, 0)
 		
