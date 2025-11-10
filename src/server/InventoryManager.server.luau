@@ -17,10 +17,6 @@ local function listToString(list)
 	return "[" .. table.concat(parts, ", ") .. "]"
 end
 
-local function debugPrint(...)
-	print("[InventoryManager]", ...)
-end
-
 local function shallowCopy(source)
 	local copy = {}
 	if source then
@@ -223,7 +219,6 @@ local function SavePlayerInventory(player)
 		local inventory = {}
 		local equipped = {}
 		local consumables = {}
-		debugPrint("Save snapshot begin", player.Name)
 
 		if backpack then
 			for i, item in backpack:GetChildren() do
@@ -254,7 +249,6 @@ local function SavePlayerInventory(player)
 				inventory = normaliseEquipmentList(existingData.inventory or {})
 				equipped = normaliseEquipmentList(existingData.equipped or {})
 				consumables = existingData.consumables or {}
-				debugPrint("Restored persisted data because snapshot empty", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped))
 			end
 		end
 
@@ -271,8 +265,6 @@ local function SavePlayerInventory(player)
 
 		consumables = consumables or {}
 		consumables = mergeConsumableLists(consumables)
-
-		debugPrint("Saving to store", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped), "consumables =", listToString(consumables))
 
 		MainDataStore.SaveInventory(player.UserId, {
 			inventory = inventory,
@@ -352,14 +344,12 @@ local function LoadPlayerInventory(player)
 	if typeof(_G.setPlayerConsumablesFromData) == "function" then
 		_G.setPlayerConsumablesFromData(player, mergedConsumables)
 	end
-	debugPrint("Load snapshot", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped), "consumables =", listToString(mergedConsumables))
 
 	local shouldResaveInventory = arraysDifferent(inventory, originalInventoryCanonical)
 		or arraysDifferent(equipped, originalEquippedCanonical)
 		or arraysDifferent(mergedConsumables, storedConsumablesCanonical)
 
 	if shouldResaveInventory then
-		debugPrint("Detected outdated stored data, rewriting", player.Name)
 		MainDataStore.SaveInventory(userId, {
 			inventory = inventory,
 			equipped = equipped,
@@ -529,8 +519,6 @@ local function OnCharacterAdded(character, player)
 					consumables = baseConsumables
 				end
 				consumables = mergeConsumableLists(consumables or {})
-
-				debugPrint("Death save for", player.Name, "inventory =", listToString(inventory), "equipped =", listToString(equipped), "consumables =", listToString(consumables))
 
 				MainDataStore.SaveInventory(player.UserId, {
 					inventory = inventory,

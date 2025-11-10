@@ -965,12 +965,6 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 	-- If animation is 0.5x slower, delays should be 2x (double the time) - hitbox appears LATER
 	local scaledDelay = baseDelay / animationSpeed
 	
-	-- Debug: verify lookup and calculation (uncomment to debug)
-	-- if actionType == "wakizashi" then
-	-- 	print(string.format("[getScaledDelay] classType=%s, actionType=%s, animationSpeed=%s, baseDelay=%s, scaledDelay=%s", 
-	-- 		tostring(classType), tostring(actionType), tostring(animationSpeed), tostring(baseDelay), tostring(scaledDelay)))
-	-- end
-	
 	return scaledDelay
 end
 

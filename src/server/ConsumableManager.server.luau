@@ -24,10 +24,6 @@ local function listToString(list)
 	return "[" .. table.concat(parts, ", ") .. "]"
 end
 
-local function debugPrint(...)
-	print("[ConsumableManager]", ...)
-end
-
 local MAX_CONSUMABLE_SLOTS = 5
 local CONSUMABLE_TAG = "consumable_entity"
 local DEBOUNCE_TIME = 1
@@ -173,13 +169,11 @@ local function sendConsumableUpdate(player: Player)
 		local canonicalName = consumableList[index]
 		if canonicalName then
 			local entry = ConsumableEntries[canonicalName]
-			debugPrint("Sending slot", index, "for", player.Name, "->", canonicalName, "display =", entry and entry.displayName)
 			payload[index] = {
 				canonicalName = canonicalName,
 				displayName = entry and (entry.displayName or canonicalName) or canonicalName,
 			}
 		else
-			debugPrint("Clearing slot", index, "for", player.Name)
 			payload[index] = nil
 		end
 	end
@@ -220,7 +214,6 @@ assignConsumables = function(player: Player, sourceList: {any}?)
 	end
 
 	sendConsumableUpdate(player)
-	debugPrint("Assigned slots for", player.Name, listToString(_G.getPlayerConsumables and _G.getPlayerConsumables(player) or {}))
 end
 
 local function setToolTouchEnabled(tool: Tool, enabled: boolean)
@@ -262,7 +255,6 @@ local function loadConsumables(player: Player)
 	local storedConsumables = inventoryData.consumables or {}
 
 	assignConsumables(player, storedConsumables)
-	debugPrint("Loaded consumables from data for", player.Name, listToString(storedConsumables))
 end
 
 local function collectConsumable(player: Player, tool: Tool)
@@ -305,7 +297,6 @@ local function collectConsumable(player: Player, tool: Tool)
 
 	sendConsumableUpdate(player)
 	queueInventorySave(player)
-	debugPrint("Collected", canonicalName, "into slot", targetSlot, "for", player.Name)
 end
 
 local function bindCharacter(player: Player, character: Model)
@@ -390,7 +381,6 @@ local function handleConsumableUse(player: Player, slotIndex: number)
 	consumableList[slotIndex] = nil
 	sendConsumableUpdate(player)
 	queueInventorySave(player)
-	debugPrint("Consumed slot", slotIndex, "for", player.Name, "item", canonicalName)
 end
 
 ConsumableEvent.OnServerEvent:Connect(function(player, action, ...)

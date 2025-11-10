@@ -1,6 +1,7 @@
 local DataStoreService = game:GetService("DataStoreService")
-local PlayerStoreData = DataStoreService:GetDataStore("PlayerStoreData") -- Player Manager
-local InventoryStore = DataStoreService:GetDataStore("InventoryStore") -- Inventory Manager
+local PlayerStoreData = DataStoreService:GetDataStore("PlayerStoreData")
+local InventoryStore = DataStoreService:GetDataStore("InventoryStore")
+local SunfireStore = DataStoreService:GetDataStore("SunfireStore")
 
 local MainDataStore = {}
 
@@ -16,11 +17,9 @@ function MainDataStore.LoadPlayerData(userId)
 	else
 		return nil
 	end
-
 end
 
 function MainDataStore.SavePlayerData(userId, data)
-
 	local key = "Player_" .. userId
 
 	local success, err = pcall(function()
@@ -28,12 +27,12 @@ function MainDataStore.SavePlayerData(userId, data)
 	end)
 
 	if not success then
+		warn("Failed saving PlayerStoreData:", err)
 	end
 
 	return success, err
 end
 
--- InventoryStore now stores a table: {inventory = {...}, equipped = {...}}
 function MainDataStore.LoadInventory(userId)
 	local key = "Player_" .. userId
 	local success, data = pcall(function()
@@ -41,7 +40,6 @@ function MainDataStore.LoadInventory(userId)
 	end)
 	if success then
 		if typeof(data) == "table" then
-			-- Ensure arrays exist
 			data.inventory = data.inventory or {}
 			data.equipped = data.equipped or {}
 			data.consumables = data.consumables or {}
@@ -58,27 +56,26 @@ end
 
 function MainDataStore.SaveInventory(userId, inventoryTable)
 	local key = "Player_" .. userId
-	-- Ensure inventoryTable is a table with inventory and equipped arrays
 	local filteredInventory = {}
 	local filteredEquipped = {}
 	local filteredConsumables = {}
 	if typeof(inventoryTable) == "table" then
 		if typeof(inventoryTable.inventory) == "table" then
-			for i, v in inventoryTable.inventory do
+			for _, v in inventoryTable.inventory do
 				if typeof(v) == "string" then
 					table.insert(filteredInventory, v)
 				end
 			end
 		end
 		if typeof(inventoryTable.equipped) == "table" then
-			for i, v in inventoryTable.equipped do
+			for _, v in inventoryTable.equipped do
 				if typeof(v) == "string" then
 					table.insert(filteredEquipped, v)
 				end
 			end
 		end
 		if typeof(inventoryTable.consumables) == "table" then
-			for i, v in inventoryTable.consumables do
+			for _, v in inventoryTable.consumables do
 				if typeof(v) == "string" then
 					table.insert(filteredConsumables, v)
 				end
@@ -90,11 +87,46 @@ function MainDataStore.SaveInventory(userId, inventoryTable)
 		equipped = filteredEquipped,
 		consumables = filteredConsumables,
 	}
+
 	local success, err = pcall(function()
 		InventoryStore:SetAsync(key, saveData)
 	end)
+
+	if not success then
+		warn("Failed saving InventoryStore:", err)
+	end
+
+	return success, err
+end
+
+-- SUNFIRE MAINDATASTORE
+
+function MainDataStore.LoadSunfireProgress(userId)
+	local key = "Player_" .. userId
+
+	local success, data = pcall(function()
+		return SunfireStore:GetAsync(key)
+	end)
+
+	if success and data then
+		return data
+	else
+		return nil
+	end
+end
+
+function MainDataStore.SaveSunfireProgress(userId, data)
+	local key = "Player_" .. userId
+
+	local success, err = pcall(function()
+		SunfireStore:SetAsync(key, data)
+	end)
+
+	if not success then
+		warn("Failed saving SunfireStore:", err)
+	end
+
 	return success, err
 end
 
 return MainDataStore
-
