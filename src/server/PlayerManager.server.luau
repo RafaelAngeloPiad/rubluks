@@ -45,6 +45,25 @@ local ConsumableEntries = ConsumableConfig.Entries or {}
 local ConsumableAssetLookup = ConsumableConfig.AssetLookup or {}
 local ConsumableCanonicalLookup = ConsumableConfig.CanonicalLookup or {}
 
+local ConsumableSpecialHandlers = {}
+
+function _G.registerConsumableHandler(effectType, handler)
+	if typeof(effectType) ~= "string" or typeof(handler) ~= "function" then
+		return false
+	end
+
+	ConsumableSpecialHandlers[effectType] = handler
+	return true
+end
+
+function _G.unregisterConsumableHandler(effectType)
+	if typeof(effectType) ~= "string" then
+		return
+	end
+
+	ConsumableSpecialHandlers[effectType] = nil
+end
+
 if next(EquipmentBonusAssetLookup) == nil then
 	for canonicalName, entry in pairs(EquipmentBonusEntries) do
 		entry.assetName = entry.assetName or canonicalName
@@ -169,6 +188,76 @@ local function extractConsumableBonuses(entry)
 	end
 
 	return next(bonuses) and bonuses or nil
+end
+
+local function normalizeSpecialEffectDefinitions(definitions)
+	if definitions == nil then
+		return nil
+	end
+
+	if typeof(definitions) ~= "table" then
+		return { definitions }
+	end
+
+	if #definitions > 0 then
+		return definitions
+	end
+
+	if definitions.type or definitions.effectType or definitions.id or definitions.kind then
+		return { definitions }
+	end
+
+	local list = {}
+	for _, value in pairs(definitions) do
+		table.insert(list, value)
+	end
+
+	return #list > 0 and list or nil
+end
+
+local function executeSpecialConsumableEffects(player, entry)
+	local definitions = normalizeSpecialEffectDefinitions(entry.specialEffects or entry.specialEffect or entry.special)
+	if not definitions then
+		return false, false, nil
+	end
+
+	local anySuccess = false
+	local lastError = nil
+
+	for _, definition in ipairs(definitions) do
+		local effectType
+		local payload
+
+		if typeof(definition) == "string" then
+			effectType = definition
+			payload = { type = effectType }
+		elseif typeof(definition) == "table" then
+			effectType = definition.type or definition.effectType or definition.id or definition.kind
+			payload = definition
+		end
+
+		if effectType then
+			local handler = ConsumableSpecialHandlers[effectType]
+			if handler then
+				local ok, success, errMsg = pcall(handler, player, payload, entry)
+				if not ok then
+					warn("[PlayerManager] Consumable handler error for", effectType, ":", success)
+					lastError = typeof(success) == "string" and success or nil
+				else
+					if success then
+						anySuccess = true
+					elseif errMsg ~= nil then
+						lastError = errMsg
+					end
+				end
+			else
+				warn("[PlayerManager] No consumable handler registered for", effectType)
+				lastError = string.format("no handler registered for %s", effectType)
+			end
+		end
+	end
+
+	return true, anySuccess, lastError
 end
 
 local function ensureConsumableTables(player)
@@ -348,7 +437,21 @@ local function applyConsumableEffect(player, consumableName)
 	end
 
 	local bonuses = extractConsumableBonuses(entry)
-	if not bonuses then
+	local hasBonuses = bonuses ~= nil
+
+	local hasSpecial, specialSuccess, specialError = executeSpecialConsumableEffects(player, entry)
+	if hasSpecial and not specialSuccess then
+		if not hasBonuses then
+			return false, specialError or "failed to apply consumable special effects"
+		else
+			warn("[PlayerManager] Consumable special effect failed for", consumableName, specialError)
+		end
+	end
+
+	if not hasBonuses then
+		if hasSpecial and specialSuccess then
+			return true
+		end
 		return false, "consumable has no defined bonuses"
 	end
 

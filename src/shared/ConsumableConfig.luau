@@ -52,11 +52,26 @@ local Entries = {
 	["Dragon Fruit"] = {
 		assetName = "DragonFruit",
 		displayName = "Dragon Fruit",
+        description = "A fruit that grants you a temporary boost to your health and attack.",
 		permanent = false,
         duration = 10,
 		effects = {
 			HPPlus = 150,
 			AttackPlus = 15,
+		},
+	},
+
+	["Sunfire Water Flask"] = {
+		assetName = "SunfireWaterFlask",
+		displayName = "Sunfire Water Flask",
+		description = "Instantly refills your Sunfire water reserves.",
+		specialEffects = {
+			{
+				type = "SunfireWaterRestore",
+				amount = 150,
+				mode = "add",
+				clampToMax = true,
+			},
 		},
 	},
 }

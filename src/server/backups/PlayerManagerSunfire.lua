@@ -316,7 +316,7 @@ local BaseStats = {
 			{ level = 43, multiplier = 1.55 } -- Levels 43+
 		}
 	},
-	
+
 	-- Level-up multipliers per class (from spreadsheet)
 	LevelUpMultipliers = {
 		Samurai = {
@@ -780,14 +780,14 @@ local BaseStats = {
 			},
 		}
 	},
-	
+
 	Archer = {
 		-- Offense Stats
 		ATK = 100,        -- Attack: Directly affects Health points
 		DP = 1,           -- Defense Penetration: Directly affects Defense
 		CR = 5,           -- Crit Rate: Rate of Critical Chance up to 100%
 		CM = 150,         -- Crit Multiplier: Attack Multiplier (percentage)
-		
+
 		-- Defense Stats
 		HP = 400,        -- Health Points: Life pool (dies if ≤ 0)
 		D = 5,           -- Defense: Reduces Penetration
@@ -795,14 +795,14 @@ local BaseStats = {
 		Mspd = 15,        -- Movement Speed: Displacement per second (also used for movement animation speed multiplier: Mspd/18)
 		Aspd = 200,         -- Attack Speed: Amount of hits per second (also used for attack animation speed multiplier)
 	},
-	
+
 	Samurai = {
 		-- Offense Stats
 		ATK = 50,
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		
+
 		-- Defense Stats
 		HP = 1600,
 		D = 80,
@@ -810,14 +810,14 @@ local BaseStats = {
 		Mspd = 20,
 		Aspd = 1,
 	},
-	
+
 	Brawler = {
 		-- Offense Stats
 		ATK = 90,
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		
+
 		-- Defense Stats
 		HP = 1400,
 		D = 50,
@@ -825,14 +825,14 @@ local BaseStats = {
 		Mspd = 25,
 		Aspd = 10,
 	},
-	
+
 	Knight = {
 		-- Offense Stats
 		ATK = 25,
 		DP = 25,
 		CR = 1,
 		CM = 2.5,
-		
+
 		-- Defense Stats
 		HP = 500,
 		D = 25,
@@ -840,14 +840,14 @@ local BaseStats = {
 		Mspd = 20,
 		Aspd = 10,
 	},
-	
+
 	Gladiator = {
 		-- Offense Stats
 		ATK = 30,
 		DP = 0,
 		CR = 5,
 		CM = 150,
-		
+
 		-- Defense Stats
 		HP = 2000,
 		D = 80,
@@ -945,35 +945,35 @@ function _G.applyBuff(player, buffName, buffConfig)
 	if not player or not buffName or not buffConfig then
 		return false
 	end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
 		return false
 	end
-	
+
 	-- Get player's level
 	local level = leaderstats:FindFirstChild("Level")
 	if not level then
 		return false
 	end
-	
+
 	-- Check if buff config is valid for player's level
 	local config = ServerConfigs.getBuffConfig(buffName, level.Value)
 	if not config then
 		-- Buff not unlocked yet
 		return false
 	end
-	
+
 	-- Initialize player buffs tracking
 	if not playerBuffs[player] then
 		playerBuffs[player] = {}
 	end
-	
+
 	-- Remove existing buff if active (stacking prevention)
 	if playerBuffs[player][buffName] then
 		_G.removeBuff(player, buffName)
 	end
-	
+
 	-- Store base stats before applying buff
 	local baseStats = getBaseStatsBeforeBuff(player)
 	local equipmentSnapshot = {}
@@ -982,121 +982,121 @@ function _G.applyBuff(player, buffName, buffConfig)
 			equipmentSnapshot[statName] = amount
 		end
 	end
-	
+
 	-- Calculate new stats with buff
 	if buffName == "Warcry" then
 		-- Warcry: Multiplies Attack and Defense
 		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
-		
+
 		if maxAttack and baseStats then
 			-- Calculate buffed attack (multiply base by multiplier)
 			local buffedAttack = math.floor(baseStats.MaxAttack * config.attackMultiplier)
 			maxAttack.Value = buffedAttack
 		end
-		
+
 		if maxDefense and baseStats then
 			-- Calculate buffed defense (multiply base by multiplier)
 			local buffedDefense = math.floor(baseStats.MaxDefense * config.defenseMultiplier)
 			maxDefense.Value = buffedDefense
-			
+
 			-- Also update CurrentDefense to match MaxDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
 				currentDefense.Value = buffedDefense
 			end
 		end
-		
+
 	elseif buffName == "WarriorMight" then
 		-- WarriorMight: Adds flat HP
 		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
 		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
-		
+
 		if maxHealth and baseStats and humanoid then
 			-- Calculate buffed health (base + flat increase)
 			local buffedHealth = baseStats.MaxHealth + config.hpIncrease
 			maxHealth.Value = buffedHealth
-			
+
 			-- Update humanoid MaxHealth
 			humanoid.MaxHealth = buffedHealth
-			
+
 			-- Increase current health proportionally or add flat amount (preserve health percentage)
 			local healthPercentage = baseStats.MaxHealth > 0 and (baseStats.CurrentHealth / baseStats.MaxHealth) or 1
 			local newHealth = math.min(buffedHealth * healthPercentage, buffedHealth)
 			humanoid.Health = newHealth
 		end
-		
+
 	elseif buffName == "BloodThirst" then
 		-- BloodThirst: Provides lifesteal (no stat modifications, just tracking)
 		-- Lifesteal is applied automatically in hitbox creation
-		
+
 	elseif buffName == "LastChance" then
 		-- LastChance: Provides status immunity and HP regeneration
 		-- Status immunity is checked in StatusAilmentHandler
 		-- HP regeneration is handled in update loop
-		
+
 	elseif buffName == "ChampionsCheer" then
 		-- ChampionsCheer: Multiplies HP and Defense, adds HP regeneration
 		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
 		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
 		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
-		
+
 		if maxHealth and baseStats and humanoid then
 			-- Calculate buffed health (base * (1 + multiplier))
 			local buffedHealth = math.floor(baseStats.MaxHealth * (1 + config.hpMultiplier))
 			maxHealth.Value = buffedHealth
-			
+
 			-- Update humanoid MaxHealth
 			humanoid.MaxHealth = buffedHealth
-			
+
 			-- Increase current health proportionally (preserve health percentage)
 			local healthPercentage = baseStats.MaxHealth > 0 and (baseStats.CurrentHealth / baseStats.MaxHealth) or 1
 			local newHealth = math.min(buffedHealth * healthPercentage, buffedHealth)
 			humanoid.Health = newHealth
 		end
-		
+
 		if maxDefense and baseStats then
 			-- Calculate buffed defense (base * (1 + multiplier))
 			local buffedDefense = math.floor(baseStats.MaxDefense * (1 + config.defenseMultiplier))
 			maxDefense.Value = buffedDefense
-			
+
 			-- Also update CurrentDefense to match MaxDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
 				currentDefense.Value = buffedDefense
 			end
 		end
-		
+
 		-- HP regeneration is handled in update loop (similar to LastChance)
-		
+
 	elseif buffName == "ChampionsBlood" then
 		-- ChampionsBlood: Adds flat Defense and provides status immunity
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
-		
+
 		if maxDefense and baseStats then
 			-- Calculate buffed defense (base + flat increase)
 			local buffedDefense = baseStats.MaxDefense + config.defenseIncrease
 			maxDefense.Value = buffedDefense
-			
+
 			-- Also update CurrentDefense to match MaxDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
 				currentDefense.Value = buffedDefense
 			end
 		end
-		
+
 		-- Status immunity is checked in StatusAilmentHandler (similar to LastChance)
-		
+
 	elseif buffName == "HuntersInstinct" then
 		-- HuntersInstinct: Multiplies Movement Speed and provides status immunity
 		local movementSpeed = leaderstats:FindFirstChild("MovementSpeed")
-		
+
 		if movementSpeed and baseStats then
 			-- Calculate buffed movement speed (base * (1 + multiplier))
 			local buffedMovementSpeed = baseStats.MovementSpeed * (1 + config.mspdMultiplier)
 			movementSpeed.Value = buffedMovementSpeed
-			
+
 			-- Update unified movement animation speed in ServerConfigs
 			local movementAnimSpeedMultiplier = movementSpeed.Value
 			local classType = ServerConfigs.getPlayerClass(player)
@@ -1106,7 +1106,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			if classType and ServerConfigs[classType] then
 				ServerConfigs[classType].MovementSpeed = movementAnimSpeedMultiplier
 			end
-			
+
 			-- Update humanoid walk speed
 			local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
 			if humanoid and classType then
@@ -1114,7 +1114,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				local baseMspd = baseStatsConfig and baseStatsConfig.Mspd or 18
 				humanoid.WalkSpeed = baseMspd * movementAnimSpeedMultiplier
 			end
-			
+
 			-- Sync animation speeds with action files
 			local classFuncs = {
 				Archer = _G.updateArcherAnimationSpeed,
@@ -1128,25 +1128,25 @@ function _G.applyBuff(player, buffName, buffConfig)
 				updateFunc("movement", movementAnimSpeedMultiplier)
 			end
 		end
-		
+
 		-- Status immunity is checked in StatusAilmentHandler (similar to LastChance/ChampionsBlood)
-		
+
 	elseif buffName == "HuntersMark" then
 		-- HuntersMark: Adds flat Attack and Attack Speed
 		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 		local attackSpeed = leaderstats:FindFirstChild("AttackSpeed")
-		
+
 		if maxAttack and baseStats then
 			-- Calculate buffed attack (base + flat increase)
 			local buffedAttack = baseStats.MaxAttack + config.attackIncrease
 			maxAttack.Value = buffedAttack
 		end
-		
+
 		if attackSpeed and baseStats then
 			-- Calculate buffed attack speed (base + flat increase)
 			local buffedAttackSpeed = baseStats.AttackSpeed + config.attackSpeedIncrease
 			attackSpeed.Value = buffedAttackSpeed
-			
+
 			-- Update unified attack animation speed in ServerConfigs
 			local attackAnimSpeedMultiplier = attackSpeed.Value
 			local classType = ServerConfigs.getPlayerClass(player)
@@ -1156,7 +1156,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			if classType and ServerConfigs[classType] then
 				ServerConfigs[classType].AttackSpeed = attackAnimSpeedMultiplier
 			end
-			
+
 			-- Sync animation speeds with action files
 			local classFuncs = {
 				Archer = _G.updateArcherAnimationSpeed,
@@ -1170,7 +1170,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				updateFunc("attack", attackAnimSpeedMultiplier)
 			end
 		end
-		
+
 	elseif buffName == "Banzai" then
 		-- Banzai: Provides immunity to damage (no stat modifications needed)
 		-- Enable invincibility for the entire buff duration
@@ -1178,7 +1178,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			_G.enablePlayerInvincibility(player)
 		end
 		-- The static hitbox creation is handled in the buff file when marker is reached
-		
+
 	elseif buffName == "Bushido" then
 		-- Bushido: Prevents HP from hitting 0 (death prevention)
 		-- No stat modifications needed, death prevention is handled via HealthChanged monitoring
@@ -1196,7 +1196,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 					character = character,
 					humanoid = humanoid
 				}
-				
+
 				-- Monitor health changes to prevent HP from hitting 0
 				local healthConnection
 				healthConnection = humanoid.HealthChanged:Connect(function()
@@ -1211,7 +1211,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 					end
 				end)
-				
+
 				-- Also use RunService.Heartbeat as backup (similar to One Last Chance)
 				local RunService = game:GetService("RunService")
 				local heartbeatConnection
@@ -1220,7 +1220,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						if heartbeatConnection then heartbeatConnection:Disconnect() end
 						return
 					end
-					
+
 					-- Check if Bushido buff is still active
 					if playerBuffs[player] and playerBuffs[player]["Bushido"] then
 						local buffData = playerBuffs[player]["Bushido"]
@@ -1238,14 +1238,14 @@ function _G.applyBuff(player, buffName, buffConfig)
 						if heartbeatConnection then heartbeatConnection:Disconnect() end
 					end
 				end)
-				
+
 				-- Store connections for cleanup
 				playerBushidoStates[player].healthConnection = healthConnection
 				playerBushidoStates[player].heartbeatConnection = heartbeatConnection
 			end
 		end
 	end
-	
+
 	-- Track buff
 	local startTime = tick()
 	local endTime = startTime + config.duration
@@ -1256,14 +1256,14 @@ function _G.applyBuff(player, buffName, buffConfig)
 		baseStats = baseStats,
 		equipmentSnapshot = equipmentSnapshot
 	}
-	
+
 	-- Store base stats in leaderstats for UI display (only for UI, not used in calculations)
 	local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
 	if not baseStatsFolder then
 		baseStatsFolder = Instance.new("Folder", leaderstats)
 		baseStatsFolder.Name = "BaseStats"
 	end
-	
+
 	if buffName == "Warcry" then
 		-- Store base Attack and Defense for UI
 		if baseStats then
@@ -1273,7 +1273,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				baseAttack.Name = "BaseMaxAttack"
 			end
 			baseAttack.Value = baseStats.MaxAttack
-			
+
 			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
 			if not baseDefense then
 				baseDefense = Instance.new("NumberValue", baseStatsFolder)
@@ -1300,7 +1300,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				baseHealth.Name = "BaseMaxHealth"
 			end
 			baseHealth.Value = baseStats.MaxHealth
-			
+
 			local baseDefense = baseStatsFolder:FindFirstChild("BaseMaxDefense")
 			if not baseDefense then
 				baseDefense = Instance.new("NumberValue", baseStatsFolder)
@@ -1337,7 +1337,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				baseAttack.Name = "BaseMaxAttack"
 			end
 			baseAttack.Value = baseStats.MaxAttack
-			
+
 			local baseAttackSpeed = baseStatsFolder:FindFirstChild("BaseAttackSpeed")
 			if not baseAttackSpeed then
 				baseAttackSpeed = Instance.new("NumberValue", baseStatsFolder)
@@ -1346,7 +1346,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			baseAttackSpeed.Value = baseStats.AttackSpeed
 		end
 	end
-	
+
 	-- Update ActiveBuffs string value
 	local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
 	if activeBuffs then
@@ -1357,14 +1357,14 @@ function _G.applyBuff(player, buffName, buffConfig)
 			activeBuffs.Value = currentBuffs .. "," .. buffName
 		end
 	end
-	
+
 	-- Create buff duration tracking value
 	local buffDurations = leaderstats:FindFirstChild("BuffDurations")
 	if buffDurations then
 		local buffDuration = Instance.new("NumberValue", buffDurations)
 		buffDuration.Name = buffName
 		buffDuration.Value = math.ceil(config.duration)
-		
+
 		-- Update duration countdown
 		local buffStartTime = tick()
 		local connection
@@ -1381,7 +1381,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			end
 		end)
 	end
-	
+
 	-- Start HP regeneration for ChampionsCheer buff
 	if buffName == "ChampionsCheer" then
 		local character = player.Character
@@ -1395,37 +1395,37 @@ function _G.applyBuff(player, buffName, buffConfig)
 						if not playerBuffs[player] or not playerBuffs[player]["ChampionsCheer"] then
 							break
 						end
-						
+
 						local buffData = playerBuffs[player]["ChampionsCheer"]
 						if not buffData or not buffData.config then
 							break
 						end
-						
+
 						-- Check if buff expired
 						local currentTime = tick()
 						if currentTime >= buffData.endTime then
 							break
 						end
-						
+
 						-- Wait 1 second before next regeneration
 						task.wait(1)
-						
+
 						-- Check again after wait (character might have been removed or buff expired)
 						if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 							break
 						end
-						
+
 						if not playerBuffs[player] or not playerBuffs[player]["ChampionsCheer"] then
 							break
 						end
-						
+
 						-- Get HP regen percentage from buff config
 						local hpRegenPercentage = buffData.config.hpRegenPercentage or 0
 						if hpRegenPercentage > 0 then
 							-- Calculate healing amount (percentage of Max HP)
 							local maxHealth = humanoid.MaxHealth
 							local healingAmount = maxHealth * hpRegenPercentage
-							
+
 							-- Regenerate health (cap at MaxHealth)
 							local newHealth = math.min(humanoid.Health + healingAmount, maxHealth)
 							humanoid.Health = newHealth
@@ -1435,7 +1435,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			end
 		end
 	end
-	
+
 	-- Start HP regeneration and status immunity display for LastChance buff
 	if buffName == "LastChance" then
 		local character = player.Character
@@ -1449,50 +1449,50 @@ function _G.applyBuff(player, buffName, buffConfig)
 						if not playerBuffs[player] or not playerBuffs[player]["LastChance"] then
 							break
 						end
-						
+
 						local buffData = playerBuffs[player]["LastChance"]
 						if not buffData or not buffData.config then
 							break
 						end
-						
+
 						-- Check if buff expired
 						local currentTime = tick()
 						if currentTime >= buffData.endTime then
 							break
 						end
-						
+
 						-- Wait 1 second before next regeneration
 						task.wait(1)
-						
+
 						-- Check again after wait (character might have been removed or buff expired)
 						if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 							break
 						end
-						
+
 						if not playerBuffs[player] or not playerBuffs[player]["LastChance"] then
 							break
 						end
-						
+
 						-- Get HP regen percentage from buff config
 						local hpRegenPercentage = buffData.config.hpRegenPercentage or 0
 						if hpRegenPercentage > 0 then
 							-- Calculate healing amount (percentage of Max HP)
 							local maxHealth = humanoid.MaxHealth
 							local healingAmount = maxHealth * hpRegenPercentage
-							
+
 							-- Regenerate health (cap at MaxHealth)
 							local newHealth = math.min(humanoid.Health + healingAmount, maxHealth)
 							humanoid.Health = newHealth
 						end
 					end
 				end)
-				
+
 				-- Show "Immune" text above head during immunity duration
 				local RunService = game:GetService("RunService")
 				local head = character:FindFirstChild("Head")
 				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 				local attachPart = head or humanoidRootPart
-				
+
 				if attachPart then
 					-- Create "Immune" text
 					local billboardGui = Instance.new("BillboardGui")
@@ -1503,7 +1503,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 					billboardGui.LightInfluence = 0
 					billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 					billboardGui.Parent = attachPart
-					
+
 					-- Create TextLabel
 					local textLabel = Instance.new("TextLabel")
 					textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -1517,7 +1517,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 					textLabel.TextXAlignment = Enum.TextXAlignment.Center
 					textLabel.TextYAlignment = Enum.TextYAlignment.Center
 					textLabel.Parent = billboardGui
-					
+
 					-- Monitor immunity status and remove text when immunity expires
 					local connection
 					connection = RunService.Heartbeat:Connect(function()
@@ -1528,7 +1528,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 							end
 							return
 						end
-						
+
 						if not playerBuffs[player] or not playerBuffs[player]["LastChance"] then
 							if connection then connection:Disconnect() end
 							if billboardGui and billboardGui.Parent then
@@ -1536,7 +1536,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 							end
 							return
 						end
-						
+
 						local buffData = playerBuffs[player]["LastChance"]
 						if not buffData or not buffData.config then
 							if connection then connection:Disconnect() end
@@ -1545,10 +1545,10 @@ function _G.applyBuff(player, buffName, buffConfig)
 							end
 							return
 						end
-						
+
 						local currentTime = tick()
 						local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
-						
+
 						if currentTime >= immunityEndTime then
 							-- Immunity expired, remove text
 							if connection then connection:Disconnect() end
@@ -1558,7 +1558,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 							return
 						end
 					end)
-					
+
 					-- Clean up when done (safety cleanup)
 					local buffData = playerBuffs[player]["LastChance"]
 					if buffData and buffData.config then
@@ -1573,7 +1573,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			end
 		end
 	end
-	
+
 	-- Start status immunity display for HuntersInstinct buff
 	if buffName == "HuntersInstinct" then
 		local character = player.Character
@@ -1582,7 +1582,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			local head = character:FindFirstChild("Head")
 			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 			local attachPart = head or humanoidRootPart
-			
+
 			if attachPart then
 				-- Create "Immune" text above head during immunity duration
 				local RunService = game:GetService("RunService")
@@ -1594,7 +1594,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				billboardGui.LightInfluence = 0
 				billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 				billboardGui.Parent = attachPart
-				
+
 				-- Create TextLabel
 				local textLabel = Instance.new("TextLabel")
 				textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -1608,7 +1608,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				textLabel.TextXAlignment = Enum.TextXAlignment.Center
 				textLabel.TextYAlignment = Enum.TextYAlignment.Center
 				textLabel.Parent = billboardGui
-				
+
 				-- Monitor immunity status and remove text when immunity expires
 				local connection
 				connection = RunService.Heartbeat:Connect(function()
@@ -1619,7 +1619,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 						return
 					end
-					
+
 					if not playerBuffs[player] or not playerBuffs[player]["HuntersInstinct"] then
 						if connection then connection:Disconnect() end
 						if billboardGui and billboardGui.Parent then
@@ -1627,7 +1627,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 						return
 					end
-					
+
 					local buffData = playerBuffs[player]["HuntersInstinct"]
 					if not buffData or not buffData.config then
 						if connection then connection:Disconnect() end
@@ -1636,10 +1636,10 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 						return
 					end
-					
+
 					local currentTime = tick()
 					local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
-					
+
 					if currentTime >= immunityEndTime then
 						-- Immunity expired, remove text
 						if connection then connection:Disconnect() end
@@ -1649,7 +1649,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						return
 					end
 				end)
-				
+
 				-- Clean up when done (safety cleanup)
 				local buffData = playerBuffs[player]["HuntersInstinct"]
 				if buffData and buffData.config then
@@ -1663,7 +1663,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			end
 		end
 	end
-	
+
 	-- Start status immunity display for ChampionsBlood buff
 	if buffName == "ChampionsBlood" then
 		local character = player.Character
@@ -1672,7 +1672,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			local head = character:FindFirstChild("Head")
 			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 			local attachPart = head or humanoidRootPart
-			
+
 			if attachPart then
 				-- Create "Immune" text above head during immunity duration
 				local RunService = game:GetService("RunService")
@@ -1684,7 +1684,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				billboardGui.LightInfluence = 0
 				billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 				billboardGui.Parent = attachPart
-				
+
 				-- Create TextLabel
 				local textLabel = Instance.new("TextLabel")
 				textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -1698,7 +1698,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 				textLabel.TextXAlignment = Enum.TextXAlignment.Center
 				textLabel.TextYAlignment = Enum.TextYAlignment.Center
 				textLabel.Parent = billboardGui
-				
+
 				-- Monitor immunity status and remove text when immunity expires
 				local connection
 				connection = RunService.Heartbeat:Connect(function()
@@ -1709,7 +1709,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 						return
 					end
-					
+
 					if not playerBuffs[player] or not playerBuffs[player]["ChampionsBlood"] then
 						if connection then connection:Disconnect() end
 						if billboardGui and billboardGui.Parent then
@@ -1717,7 +1717,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 						return
 					end
-					
+
 					local buffData = playerBuffs[player]["ChampionsBlood"]
 					if not buffData or not buffData.config then
 						if connection then connection:Disconnect() end
@@ -1726,10 +1726,10 @@ function _G.applyBuff(player, buffName, buffConfig)
 						end
 						return
 					end
-					
+
 					local currentTime = tick()
 					local immunityEndTime = buffData.startTime + buffData.config.immunityDuration
-					
+
 					if currentTime >= immunityEndTime then
 						-- Immunity expired, remove text
 						if connection then connection:Disconnect() end
@@ -1739,7 +1739,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 						return
 					end
 				end)
-				
+
 				-- Clean up when done (safety cleanup)
 				local buffData = playerBuffs[player]["ChampionsBlood"]
 				if buffData and buffData.config then
@@ -1753,14 +1753,14 @@ function _G.applyBuff(player, buffName, buffConfig)
 			end
 		end
 	end
-	
+
 	-- Auto-remove buff after duration
 	task.delay(config.duration, function()
 		if playerBuffs[player] and playerBuffs[player][buffName] then
 			_G.removeBuff(player, buffName)
 		end
 	end)
-	
+
 	return true
 end
 
@@ -1772,16 +1772,16 @@ function _G.removeBuff(player, buffName)
 	if not player or not buffName then
 		return false
 	end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
 		return false
 	end
-	
+
 	if not playerBuffs[player] or not playerBuffs[player][buffName] then
 		return false
 	end
-	
+
 	local buffData = playerBuffs[player][buffName]
 	local baseStats = buffData.baseStats
 	local equipmentSnapshot = buffData.equipmentSnapshot or {}
@@ -1802,39 +1802,39 @@ function _G.removeBuff(player, buffName)
 	end
 
 	local pendingHealthValue = nil
-	
+
 	-- Restore base stats
 	if buffName == "Warcry" then
 		-- Warcry: Restore Attack and Defense to base values
 		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
-		
+
 		if maxAttack and baseStats then
 			maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
 		end
-		
+
 		if maxDefense and baseStats then
 			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
 			maxDefense.Value = restoredDefense
-			
+
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
 				currentDefense.Value = restoredDefense
 			end
 		end
-		
+
 	elseif buffName == "WarriorMight" then
 		-- WarriorMight: Restore HP to base value
 		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
 		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
-		
+
 		if maxHealth and baseStats and humanoid then
 			-- Restore base health
 			local restoredHealth = baseWithoutEquipment("MaxHealth", baseStats.MaxHealth)
 			maxHealth.Value = restoredHealth
 			humanoid.MaxHealth = restoredHealth
-			
+
 			-- Restore health percentage (cap at max health) after reapplying equipment bonuses
 			local buffedMaxHealthBeforeRemoval = baseStats.MaxHealth + (buffData.config.hpIncrease or 0)
 			local finalMaxHealthAfterEquipment = restoredHealth + (aggregatedEquipmentSnapshot.MaxHealth or 0)
@@ -1842,26 +1842,26 @@ function _G.removeBuff(player, buffName)
 			local desiredHealth = math.min(finalMaxHealthAfterEquipment * healthPercentage, finalMaxHealthAfterEquipment)
 			pendingHealthValue = desiredHealth
 		end
-		
+
 	elseif buffName == "BloodThirst" then
 		-- BloodThirst: No stat restoration needed (no stat modifications)
-		
+
 	elseif buffName == "LastChance" then
 		-- LastChance: No stat restoration needed (no stat modifications)
 		-- Status immunity and HP regen are handled automatically
-		
+
 	elseif buffName == "ChampionsCheer" then
 		-- ChampionsCheer: Restore HP and Defense to base values
 		local maxHealth = leaderstats:FindFirstChild("MaxHealth")
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
 		local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
-		
+
 		if maxHealth and baseStats and humanoid then
 			-- Restore base health
 			local restoredHealth = baseWithoutEquipment("MaxHealth", baseStats.MaxHealth)
 			maxHealth.Value = restoredHealth
 			humanoid.MaxHealth = restoredHealth
-			
+
 			-- Restore health percentage (cap at max health) after reapplying equipment bonuses
 			local buffedMaxHealth = baseStats.MaxHealth * (1 + buffData.config.hpMultiplier)
 			local finalMaxHealthAfterEquipment = restoredHealth + (aggregatedEquipmentSnapshot.MaxHealth or 0)
@@ -1869,45 +1869,45 @@ function _G.removeBuff(player, buffName)
 			local desiredHealth = math.min(finalMaxHealthAfterEquipment * healthPercentage, finalMaxHealthAfterEquipment)
 			pendingHealthValue = desiredHealth
 		end
-		
+
 		if maxDefense and baseStats then
 			-- Restore base defense
 			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
 			maxDefense.Value = restoredDefense
-			
+
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
 				currentDefense.Value = restoredDefense
 			end
 		end
-		
+
 	elseif buffName == "ChampionsBlood" then
 		-- ChampionsBlood: Restore Defense to base value
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
-		
+
 		if maxDefense and baseStats then
 			-- Restore base defense
 			local restoredDefense = baseWithoutEquipment("MaxDefense", baseStats.MaxDefense)
 			maxDefense.Value = restoredDefense
-			
+
 			-- Also restore CurrentDefense
 			local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 			if currentDefense then
 				currentDefense.Value = restoredDefense
 			end
 		end
-		
+
 		-- Status immunity is handled automatically
-		
+
 	elseif buffName == "HuntersInstinct" then
 		-- HuntersInstinct: Restore Movement Speed to base value
 		local movementSpeed = leaderstats:FindFirstChild("MovementSpeed")
-		
-	if movementSpeed and baseStats then
-		-- Restore base movement speed
-		movementSpeed.Value = baseWithoutEquipment("MovementSpeed", baseStats.MovementSpeed)
-			
+
+		if movementSpeed and baseStats then
+			-- Restore base movement speed
+			movementSpeed.Value = baseWithoutEquipment("MovementSpeed", baseStats.MovementSpeed)
+
 			-- Update unified movement animation speed in ServerConfigs
 			local movementAnimSpeedMultiplier = movementSpeed.Value
 			local classType = ServerConfigs.getPlayerClass(player)
@@ -1917,7 +1917,7 @@ function _G.removeBuff(player, buffName)
 			if classType and ServerConfigs[classType] then
 				ServerConfigs[classType].MovementSpeed = movementAnimSpeedMultiplier
 			end
-			
+
 			-- Update humanoid walk speed
 			local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
 			if humanoid and classType then
@@ -1925,7 +1925,7 @@ function _G.removeBuff(player, buffName)
 				local baseMspd = baseStatsConfig and baseStatsConfig.Mspd or 18
 				humanoid.WalkSpeed = baseMspd * movementAnimSpeedMultiplier
 			end
-			
+
 			-- Sync animation speeds with action files
 			local classFuncs = {
 				Archer = _G.updateArcherAnimationSpeed,
@@ -1939,23 +1939,23 @@ function _G.removeBuff(player, buffName)
 				updateFunc("movement", movementAnimSpeedMultiplier)
 			end
 		end
-		
+
 		-- Status immunity is handled automatically
-		
+
 	elseif buffName == "HuntersMark" then
 		-- HuntersMark: Restore Attack and Attack Speed to base values
 		local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 		local attackSpeed = leaderstats:FindFirstChild("AttackSpeed")
-		
+
 		if maxAttack and baseStats then
 			-- Restore base attack
-		maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
+			maxAttack.Value = baseWithoutEquipment("MaxAttack", baseStats.MaxAttack)
 		end
-		
+
 		if attackSpeed and baseStats then
 			-- Restore base attack speed
-		attackSpeed.Value = baseWithoutEquipment("AttackSpeed", baseStats.AttackSpeed)
-			
+			attackSpeed.Value = baseWithoutEquipment("AttackSpeed", baseStats.AttackSpeed)
+
 			-- Update unified attack animation speed in ServerConfigs
 			local attackAnimSpeedMultiplier = attackSpeed.Value
 			local classType = ServerConfigs.getPlayerClass(player)
@@ -1965,7 +1965,7 @@ function _G.removeBuff(player, buffName)
 			if classType and ServerConfigs[classType] then
 				ServerConfigs[classType].AttackSpeed = attackAnimSpeedMultiplier
 			end
-			
+
 			-- Sync animation speeds with action files
 			local classFuncs = {
 				Archer = _G.updateArcherAnimationSpeed,
@@ -1979,13 +1979,13 @@ function _G.removeBuff(player, buffName)
 				updateFunc("attack", attackAnimSpeedMultiplier)
 			end
 		end
-		
+
 	elseif buffName == "Banzai" then
 		-- Banzai: Disable invincibility (allow damage again)
 		if _G.disablePlayerInvincibility then
 			_G.disablePlayerInvincibility(player)
 		end
-		
+
 	elseif buffName == "Bushido" then
 		-- Bushido: Clean up death prevention monitoring
 		if playerBushidoStates and playerBushidoStates[player] then
@@ -1999,10 +1999,10 @@ function _G.removeBuff(player, buffName)
 			playerBushidoStates[player] = nil
 		end
 	end
-	
+
 	-- Remove buff tracking
 	playerBuffs[player][buffName] = nil
-	
+
 	-- Update ActiveBuffs string value
 	local activeBuffs = leaderstats:FindFirstChild("ActiveBuffs")
 	if activeBuffs then
@@ -2015,7 +2015,7 @@ function _G.removeBuff(player, buffName)
 		end
 		activeBuffs.Value = table.concat(buffList, ",")
 	end
-	
+
 	-- Remove buff duration tracking
 	local buffDurations = leaderstats:FindFirstChild("BuffDurations")
 	if buffDurations then
@@ -2024,7 +2024,7 @@ function _G.removeBuff(player, buffName)
 			buffDuration:Destroy()
 		end
 	end
-	
+
 	-- Remove base stats tracking when buff expires (clean up BaseStats folder)
 	-- BUT: Only remove if no other buffs/passives are using it
 	local baseStatsFolder = leaderstats:FindFirstChild("BaseStats")
@@ -2034,7 +2034,7 @@ function _G.removeBuff(player, buffName)
 		local activePassives = leaderstats:FindFirstChild("ActivePassives")
 		local hasOtherBuffs = false
 		local hasPassives = false
-		
+
 		-- Check for other active buffs
 		if activeBuffs and activeBuffs.Value ~= "" then
 			for buff in string.gmatch(activeBuffs.Value, "([^,]+)") do
@@ -2044,12 +2044,12 @@ function _G.removeBuff(player, buffName)
 				end
 			end
 		end
-		
+
 		-- Check for active passives
 		if activePassives and activePassives.Value ~= "" then
 			hasPassives = true
 		end
-		
+
 		-- Only remove BaseStats if no other buffs/passives are active
 		if not hasOtherBuffs and not hasPassives then
 			if buffName == "Warcry" then
@@ -2095,14 +2095,14 @@ function _G.removeBuff(player, buffName)
 					baseAttackSpeed:Destroy()
 				end
 			end
-			
+
 			-- Clean up BaseStats folder if it's empty
 			if #baseStatsFolder:GetChildren() == 0 then
 				baseStatsFolder:Destroy()
 			end
 		end
 	end
-	
+
 	-- Reapply current equipment bonuses after stats were reset
 	local humanoidAfterRefresh = nil
 
@@ -2120,7 +2120,7 @@ function _G.removeBuff(player, buffName)
 	if pendingHealthValue and humanoidAfterRefresh then
 		humanoidAfterRefresh.Health = math.min(pendingHealthValue, humanoidAfterRefresh.MaxHealth)
 	end
-	
+
 	return true
 end
 
@@ -2131,12 +2131,12 @@ function _G.getActiveBuffs(player)
 	if not playerBuffs[player] then
 		return {}
 	end
-	
+
 	local active = {}
 	for buffName, _ in pairs(playerBuffs[player]) do
 		table.insert(active, buffName)
 	end
-	
+
 	return active
 end
 
@@ -2147,7 +2147,7 @@ function _G.getPlayerLifestealPercentage(player)
 	if not player or not playerBuffs[player] then
 		return nil
 	end
-	
+
 	-- Check for BloodThirst buff
 	if playerBuffs[player]["BloodThirst"] then
 		local buffData = playerBuffs[player]["BloodThirst"]
@@ -2163,7 +2163,7 @@ function _G.getPlayerLifestealPercentage(player)
 			end
 		end
 	end
-	
+
 	return nil
 end
 
@@ -2174,7 +2174,7 @@ function _G.hasStatusImmunity(player)
 	if not player or not playerBuffs[player] then
 		return false
 	end
-	
+
 	-- Check for LastChance buff
 	if playerBuffs[player]["LastChance"] then
 		local buffData = playerBuffs[player]["LastChance"]
@@ -2194,7 +2194,7 @@ function _G.hasStatusImmunity(player)
 			end
 		end
 	end
-	
+
 	-- Check for ChampionsBlood buff
 	if playerBuffs[player]["ChampionsBlood"] then
 		local buffData = playerBuffs[player]["ChampionsBlood"]
@@ -2214,7 +2214,7 @@ function _G.hasStatusImmunity(player)
 			end
 		end
 	end
-	
+
 	-- Check for HuntersInstinct buff
 	if playerBuffs[player]["HuntersInstinct"] then
 		local buffData = playerBuffs[player]["HuntersInstinct"]
@@ -2234,7 +2234,7 @@ function _G.hasStatusImmunity(player)
 			end
 		end
 	end
-	
+
 	return false
 end
 
@@ -2283,7 +2283,7 @@ game.Players.PlayerRemoving:Connect(function(player)
 	if playerInvincibility[player] then
 		playerInvincibility[player] = nil
 	end
-	
+
 	-- Clean up Bushido states when player leaves
 	if playerBushidoStates and playerBushidoStates[player] then
 		local state = playerBushidoStates[player]
@@ -2301,11 +2301,11 @@ end)
 local function getXPMultiplierForLevel(level)
 	local defaultMultiplier = BaseStats.XP.xpMultiplier or 1.2
 	local levelMultipliers = BaseStats.XP.levelMultipliers
-	
+
 	if not levelMultipliers then
 		return defaultMultiplier
 	end
-	
+
 	local selectedMultiplier = defaultMultiplier
 	for _, entry in ipairs(levelMultipliers) do
 		if level >= entry.level then
@@ -2314,7 +2314,7 @@ local function getXPMultiplierForLevel(level)
 			break
 		end
 	end
-	
+
 	return selectedMultiplier
 end
 
@@ -2324,13 +2324,13 @@ local function calculateMaximumXP(level)
 	if level <= 1 then
 		return math.floor(startMaxXP)
 	end
-	
+
 	local calculatedMaxXP = startMaxXP
 	for currentLevel = 2, level do
 		local xpMultiplier = getXPMultiplierForLevel(currentLevel)
 		calculatedMaxXP = math.floor(calculatedMaxXP * xpMultiplier)
 	end
-	
+
 	return calculatedMaxXP
 end
 
@@ -2353,7 +2353,7 @@ end
 
 
 game.Players.PlayerAdded:Connect(function(plr)
-	
+
 	local teleportData = plr:GetJoinData().TeleportData
 	--print("PlayerAdded: TeleportData =", teleportData)
 	local data
@@ -2397,25 +2397,25 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local maxAttack = Instance.new("NumberValue", leaderstats)
 	maxAttack.Name = "MaxAttack"
 	maxAttack.Value = 0 -- Will be set based on class
-	
+
 	local defensePenetration = Instance.new("NumberValue", leaderstats)
 	defensePenetration.Name = "DefensePenetration"
 	defensePenetration.Value = 0
-	
+
 	local critRate = Instance.new("NumberValue", leaderstats)
 	critRate.Name = "CritRate"
 	critRate.Value = 0
-	
+
 	local critMultiplier = Instance.new("NumberValue", leaderstats)
 	critMultiplier.Name = "CritMultiplier"
 	critMultiplier.Value = 0
-	
+
 
 	-- Defense Stats
 	local maxDefense = Instance.new("NumberValue", leaderstats)
 	maxDefense.Name = "MaxDefense"
 	maxDefense.Value = 0 -- Will be set based on class
-	
+
 	local currentDefense = Instance.new("NumberValue", leaderstats)
 	currentDefense.Name = "CurrentDefense"
 	currentDefense.Value = 0 -- Will track current defense (damaged defense)
@@ -2423,15 +2423,15 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local maxHealth = Instance.new("NumberValue", leaderstats)
 	maxHealth.Name = "MaxHealth"
 	maxHealth.Value = 0 -- Will be set based on class
-	
+
 	local healthRegen = Instance.new("NumberValue", leaderstats)
 	healthRegen.Name = "HealthRegen"
 	healthRegen.Value = 0
-	
+
 	local movementSpeed = Instance.new("NumberValue", leaderstats)
 	movementSpeed.Name = "MovementSpeed"
 	movementSpeed.Value = 0
-	
+
 	local attackSpeed = Instance.new("NumberValue", leaderstats)
 	attackSpeed.Name = "AttackSpeed"
 	attackSpeed.Value = 0
@@ -2439,43 +2439,43 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local slavkoins = Instance.new("NumberValue", leaderstats)
 	slavkoins.Name = "Slavkoins"
 	slavkoins.Value = 0
-	
+
 	-- Buff tracking (stores active buff information)
 	local activeBuffs = Instance.new("StringValue", leaderstats)
 	activeBuffs.Name = "ActiveBuffs"
 	activeBuffs.Value = "" -- Comma-separated list of active buffs (e.g., "Warcry,WarriorMight")
-	
+
 	-- Buff duration tracking (stores when buffs expire)
 	local buffDurations = Instance.new("Folder", leaderstats)
 	buffDurations.Name = "BuffDurations"
-	
+
 	-- Passive tracking (stores active passive information)
 	local activePassives = Instance.new("StringValue", leaderstats)
 	activePassives.Name = "ActivePassives"
 	activePassives.Value = "" -- Comma-separated list of active passives (e.g., "Tenacity")
-	
+
 	-- Equipment bonus tracking (set by Inventory/Equipment systems)
 	local equipmentBonusesFolder = Instance.new("Folder", leaderstats)
 	equipmentBonusesFolder.Name = "EquipmentBonuses"
-	
+
 	local equipmentBonusDetailsFolder = Instance.new("Folder", leaderstats)
 	equipmentBonusDetailsFolder.Name = "EquipmentBonusDetails"
-	
+
 	-- loads progress data
 	if data then
 		-- Convert and load level (ensure it's a number)
 		local loadedLevel = convertDataType(data.Level, BaseStats.XP.startLevel)
 		level.Value = math.min(math.max(loadedLevel, 1), BaseStats.XP.maxLevel)
-		
+
 		-- Load CurrentXP and ensure it's a number
 		currxp.Value = convertDataType(data.CurrentXP, BaseStats.XP.startXP)
-		
+
 		-- Calculate MaximumXP based on level (don't trust saved MaximumXP as it might be outdated)
 		maxxp.Value = calculateMaximumXP(level.Value)
-		
+
 		-- Load class
 		class.Value = typeof(data.Class) == "string" and data.Class or "Slavkorian"
-		
+
 		-- Load all stats with proper type conversion
 		maxAttack.Value = convertDataType(data.MaxAttack, 0)
 		defensePenetration.Value = convertDataType(data.DefensePenetration, 0)
@@ -2485,7 +2485,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		currentDefense.Value = convertDataType(data.CurrentDefense, data.MaxDefense or 0) -- Load CurrentDefense, default to MaxDefense if not saved
 		maxHealth.Value = convertDataType(data.MaxHealth, 0)
 		healthRegen.Value = convertDataType(data.HealthRegen, 0)
-		
+
 		-- Load MovementSpeed and AttackSpeed, but convert if they're old format (walk speed values > 1.5)
 		-- MovementSpeed and AttackSpeed should be animation multipliers starting at 1.0
 		local loadedMovementSpeed = convertDataType(data.MovementSpeed, 0)
@@ -2499,7 +2499,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		else
 			movementSpeed.Value = loadedMovementSpeed == 0 and 0 or loadedMovementSpeed
 		end
-		
+
 		local loadedAttackSpeed = convertDataType(data.AttackSpeed, 0)
 		-- AttackSpeed should be animation multiplier (1.0)
 		-- Old data might have it as 1 (which is correct) or > 1.5 (invalid)
@@ -2512,9 +2512,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 		else
 			attackSpeed.Value = loadedAttackSpeed == 0 and 0 or loadedAttackSpeed
 		end
-		
+
 		slavkoins.Value = convertDataType(data.Slavkoins, 0)
-		
+
 		-- Ensure CurrentXP doesn't exceed MaximumXP
 		if currxp.Value > maxxp.Value then
 			-- If CurrentXP exceeds MaximumXP, trigger level up logic
@@ -2525,7 +2525,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 				level.Value = level.Value + 1
 			end
 		end
-		
+
 	end
 
 	-- Ensure Slavkorian stays at starting level
@@ -2539,7 +2539,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 
 	-- Flag to track if stats have been initialized (to prevent applying multipliers on load)
 	local statsInitialized = false
-	
+
 	-- XP-based leveling: Level only increases when CurrentXP >= MaximumXP
 	-- Connect this OUTSIDE CharacterAdded so it works even before character spawns
 	-- Use a flag to prevent recursive triggers
@@ -2549,7 +2549,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		if isLevelingUp then
 			return
 		end
-		
+
 		-- DISABLE LEVELING WHEN CLASS IS SLAVKORIAN
 		if class.Value == "Slavkorian" then
 			if maxxp and maxxp.Value and newv > maxxp.Value then
@@ -2557,41 +2557,41 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end
 			return -- Don't allow leveling up when class is Slavkorian
 		end
-		
+
 		-- Ensure MaximumXP is valid
 		if not maxxp or not maxxp.Value then
 			return
 		end
-		
+
 		-- Check if we should level up (handle multiple level-ups in one go)
 		-- Level increases ONLY when XP reaches MaximumXP threshold
 		isLevelingUp = true
 		while newv >= maxxp.Value and level.Value < BaseStats.XP.maxLevel do
 			local overtop = newv - maxxp.Value
 			local currentLevel = level.Value
-			
+
 			-- Increment level (this will trigger level.Changed which recalculates MaximumXP)
 			level.Value = currentLevel + 1
 			-- LEVEL CAP: Clamp level to max level from config
 			level.Value = math.min(level.Value, BaseStats.XP.maxLevel)
-			
+
 			-- MaximumXP should be updated by level.Changed event, but let's ensure it's correct
 			-- Get the new MaximumXP for the new level
 			local newMaxXP = calculateMaximumXP(level.Value)
 			maxxp.Value = newMaxXP
-			
+
 			-- Set remaining XP
 			currxp.Value = overtop
 			newv = overtop -- Update for while loop condition
 		end
 		isLevelingUp = false
-		
+
 		-- If at max level, cap current XP to MaximumXP
 		if level.Value >= BaseStats.XP.maxLevel then
 			currxp.Value = math.min(currxp.Value, maxxp.Value)
 		end
 	end)
-	
+
 	-- Track previous level to detect actual level ups (not initial load)
 	local previousLevel = level.Value
 
@@ -2605,10 +2605,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 				-- Store old MaxHealth and old health before changing it
 				local oldMaxHealth = humanoid.MaxHealth
 				local oldHealth = humanoid.Health
-				
+
 				-- Update MaxHealth first
 				humanoid.MaxHealth = newMaxHealth
-				
+
 				-- Set health based on new MaxHealth
 				if newMaxHealth > 0 then
 					-- If MaxHealth is increasing or resetting (old was 0 or new >= old), set to full health
@@ -2645,17 +2645,17 @@ game.Players.PlayerAdded:Connect(function(plr)
 			previousLevel = BaseStats.XP.startLevel
 			return
 		end
-		
+
 		-- Recalculate MaximumXP when level changes (always, for resets too)
 		local newMaxXP = calculateMaximumXP(newLevel)
 		maxxp.Value = newMaxXP
-		
+
 		-- DISABLE LEVELING WHEN CLASS IS SLAVKORIAN
 		if class.Value == "Slavkorian" then
 			-- Don't apply multipliers when class is Slavkorian
 			return
 		end
-		
+
 		-- Only apply multipliers if stats are initialized AND level actually increased (not decreased/reset)
 		-- This prevents applying multipliers during initial load or reset
 		if not statsInitialized then
@@ -2664,7 +2664,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 			-- Level did not increase, skipping multipliers
 		else
 			local multipliers = BaseStats.LevelUpMultipliers[class.Value]
-			
+
 			if not multipliers then
 				-- No multipliers found for class
 			elseif newLevel > BaseStats.XP.maxLevel then
@@ -2824,65 +2824,65 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 			end
 		end
-		
+
 		-- Update previous level (important for detecting resets)
 		previousLevel = newLevel
 	end)
-	
+
 	-- Function to apply base stats (works before character spawns)
 	local function applyBaseStats()
 		-- Get base stats from BaseStats based on class
 		local baseStats = BaseStats[class.Value]
-		
+
 		-- If no base stats found for class, use Slavkorian defaults
 		if not baseStats then
 			baseStats = { HP = 1000, ATK = 100, D = 0, DP = 0, CR = 5, CM = 150, HR = 0, Mspd = 18, Aspd = 1 }
 		end
-		
+
 		-- Set all base stats if not already set (Value == 0 means uninitialized)
 		if leaderstats:FindFirstChild("MaxHealth").Value == 0 then
 			leaderstats.MaxHealth.Value = baseStats.HP
 		end
-		
+
 		if leaderstats:FindFirstChild("MaxAttack").Value == 0 then
 			leaderstats.MaxAttack.Value = baseStats.ATK
 		end
-		
+
 		if leaderstats:FindFirstChild("MaxDefense").Value == 0 then
 			leaderstats.MaxDefense.Value = baseStats.D
 		end
-		
+
 		-- Set CurrentDefense to MaxDefense if not set
 		if leaderstats:FindFirstChild("CurrentDefense") and leaderstats.CurrentDefense.Value == 0 then
 			leaderstats.CurrentDefense.Value = baseStats.D
 		end
-		
+
 		if leaderstats:FindFirstChild("DefensePenetration").Value == 0 then
 			leaderstats.DefensePenetration.Value = baseStats.DP or 0
 		end
-		
+
 		if leaderstats:FindFirstChild("CritRate").Value == 0 then
 			leaderstats.CritRate.Value = baseStats.CR or 5
 		end
-		
+
 		if leaderstats:FindFirstChild("CritMultiplier").Value == 0 then
 			leaderstats.CritMultiplier.Value = baseStats.CM or 150
 		end
-		
+
 		if leaderstats:FindFirstChild("HealthRegen").Value == 0 then
 			leaderstats.HealthRegen.Value = baseStats.HR or 0
 		end
-		
+
 		if leaderstats:FindFirstChild("MovementSpeed").Value == 0 then
 			-- MovementSpeed in leaderstats is the animation speed multiplier, should start at 1.0
 			leaderstats.MovementSpeed.Value = 1.0
 		end
-		
+
 		if leaderstats:FindFirstChild("AttackSpeed").Value == 0 then
 			-- AttackSpeed in leaderstats is the animation speed multiplier, should start at 1.0
 			leaderstats.AttackSpeed.Value = 1.0
 		end
-		
+
 		-- Initialize animation speeds in ServerConfigs based on MovementSpeed and AttackSpeed (animation multipliers)
 		if ServerConfigs and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[class.Value] then
 			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
@@ -2897,7 +2897,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 			ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
 		end
 	end
-	
+
 	-- Apply base stats when class changes (works immediately, even before character spawns)
 	class.Changed:Connect(function()
 		-- Reset all stats to 0 so base stats get applied
@@ -2929,7 +2929,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 			previousLevel = BaseStats.XP.startLevel
 		end
 	end)
-	
+
 	-- Apply base stats on initial load (if no saved data or if class was selected)
 	if not data or (data and class.Value ~= "Slavkorian") then
 		applyBaseStats()
@@ -2941,10 +2941,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 
 	-- Health regeneration system
 	local healthRegenConnections = {}
-	
+
 	-- Defense regeneration system
 	local defenseRegenConnections = {}
-	
+
 	-- Function to start health regeneration for a character
 	local function startHealthRegen(character, humanoid)
 		-- Clean up any existing thread for this character
@@ -2953,13 +2953,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 			task.cancel(healthRegenConnections[character])
 			healthRegenConnections[character] = nil
 		end
-		
+
 		-- Get HealthRegen stat
 		local healthRegenStat = leaderstats:FindFirstChild("HealthRegen")
 		if not healthRegenStat or healthRegenStat.Value <= 0 then
 			return -- No health regen, don't start system
 		end
-		
+
 		-- Run health regeneration every second
 		local regenThread = task.spawn(function()
 			while character and character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 do
@@ -2967,14 +2967,14 @@ game.Players.PlayerAdded:Connect(function(plr)
 				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 					break
 				end
-				
+
 				task.wait(1) -- Wait 1 second
-				
+
 				-- Check again after wait (character might have been removed)
 				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 					break
 				end
-				
+
 				-- Get current HealthRegen value
 				local currentHealthRegen = healthRegenStat.Value
 				if currentHealthRegen > 0 then
@@ -2986,14 +2986,14 @@ game.Players.PlayerAdded:Connect(function(plr)
 					break
 				end
 			end
-			
+
 			-- Clean up when done
 			healthRegenConnections[character] = nil
 		end)
-		
+
 		healthRegenConnections[character] = regenThread
 	end
-	
+
 	-- Function to start defense regeneration for a character
 	local function startDefenseRegen(character, humanoid)
 		-- Clean up any existing thread for this character
@@ -3001,13 +3001,13 @@ game.Players.PlayerAdded:Connect(function(plr)
 			task.cancel(defenseRegenConnections[character])
 			defenseRegenConnections[character] = nil
 		end
-		
+
 		-- Get defense regen config
 		local defenseRegenConfig = ServerConfigs.DefenseRegen
 		if not defenseRegenConfig or not defenseRegenConfig.enabled then
 			return
 		end
-		
+
 		-- Run defense regeneration every tick interval
 		local regenThread = task.spawn(function()
 			while character and character.Parent and humanoid and humanoid.Parent and humanoid.Health > 0 do
@@ -3015,19 +3015,19 @@ game.Players.PlayerAdded:Connect(function(plr)
 				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 					break
 				end
-				
+
 				task.wait(defenseRegenConfig.tickInterval) -- Wait for tick interval
-				
+
 				-- Check again after wait
 				if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 					break
 				end
-				
+
 				-- Defense only regenerates when health is full
 				if humanoid.Health >= humanoid.MaxHealth then
 					local currentDef = leaderstats.CurrentDefense.Value
 					local maxDef = leaderstats.MaxDefense.Value
-					
+
 					-- Only regen if defense is not at max
 					if currentDef < maxDef then
 						local newDef = math.min(currentDef + defenseRegenConfig.regenRate, maxDef)
@@ -3035,14 +3035,14 @@ game.Players.PlayerAdded:Connect(function(plr)
 					end
 				end
 			end
-			
+
 			-- Clean up when done
 			defenseRegenConnections[character] = nil
 		end)
-		
+
 		defenseRegenConnections[character] = regenThread
 	end
-	
+
 	-- Sa spawn
 	plr.CharacterAdded:Connect(function(char)
 		-- Clean up Bushido states when character is removed/respawned
@@ -3056,7 +3056,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 			end
 			playerBushidoStates[plr] = nil
 		end
-		
+
 		local humanoid = char:WaitForChild("Humanoid")
 
 		-- Reset equipment bonuses so we can recalculate with newly equipped tools
@@ -3068,7 +3068,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Apply stored MaxHealth to humanoid
 		humanoid.MaxHealth = leaderstats.MaxHealth.Value
 		humanoid.Health = humanoid.MaxHealth
-		
+
 		-- Reset CurrentDefense to MaxDefense on respawn
 		local currentDefense = leaderstats:FindFirstChild("CurrentDefense")
 		local maxDefense = leaderstats:FindFirstChild("MaxDefense")
@@ -3080,20 +3080,20 @@ game.Players.PlayerAdded:Connect(function(plr)
 			newCurrentDefense.Name = "CurrentDefense"
 			newCurrentDefense.Value = maxDefense.Value
 		end
-		
+
 		-- Apply Movement Speed: base Mspd (18) * MovementSpeed animation multiplier
 		if leaderstats:FindFirstChild("MovementSpeed") then
 			local baseStats = BaseStats[class.Value]
 			local baseMspd = baseStats and baseStats.Mspd or 18
 			humanoid.WalkSpeed = baseMspd * leaderstats.MovementSpeed.Value
 		end
-		
+
 		-- Start health regeneration system
 		startHealthRegen(char, humanoid)
-		
+
 		-- Start defense regeneration system
 		startDefenseRegen(char, humanoid)
-		
+
 		-- Initialize animation speeds based on MovementSpeed and AttackSpeed (animation multipliers)
 		if class.Value and class.Value ~= "Slavkorian" then
 			local movementAnimSpeedMultiplier = leaderstats.MovementSpeed.Value
@@ -3106,7 +3106,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 				ServerConfigs[class.Value].MovementSpeed = movementAnimSpeedMultiplier
 				ServerConfigs[class.Value].AttackSpeed = attackAnimSpeedMultiplier
 			end
-			
+
 			-- Sync animation speeds with action files
 			local classFuncs = {
 				Archer = _G.updateArcherAnimationSpeed,
@@ -3121,7 +3121,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 				updateFunc("attack", attackAnimSpeedMultiplier)
 			end
 		end
-		
+
 		-- Update animation speeds when MovementSpeed or AttackSpeed change
 		local movementSpeedStat = leaderstats:FindFirstChild("MovementSpeed")
 		if movementSpeedStat then
@@ -3154,7 +3154,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 			end)
 		end
-		
+
 		local attackSpeedStat = leaderstats:FindFirstChild("AttackSpeed")
 		if attackSpeedStat then
 			attackSpeedStat.Changed:Connect(function()
@@ -3180,7 +3180,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 			end)
 		end
-		
+
 		-- Update health regen when the stat changes
 		local healthRegenStat = leaderstats:FindFirstChild("HealthRegen")
 		if healthRegenStat then
@@ -3191,7 +3191,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 			end)
 		end
-		
+
 		-- Update MaxHealth in real-time when it changes (so resets work immediately)
 		local maxHealthStat = leaderstats:FindFirstChild("MaxHealth")
 		if maxHealthStat then
@@ -3201,10 +3201,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 					-- Store old MaxHealth and old health before changing it
 					local oldMaxHealth = humanoid.MaxHealth
 					local oldHealth = humanoid.Health
-					
+
 					-- Update MaxHealth first
 					humanoid.MaxHealth = newMaxHealth
-					
+
 					-- Set health based on new MaxHealth
 					if newMaxHealth > 0 then
 						-- If MaxHealth is increasing or resetting (old was 0 or new >= old), set to full health
@@ -3225,20 +3225,20 @@ game.Players.PlayerAdded:Connect(function(plr)
 				end
 			end)
 		end
-		
+
 		-- Ensure equipment bonuses are applied for the current character state
 		refreshEquipmentBonuses(plr)
-		
+
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
-		
+
 		-- Also initialize stats immediately when class is set (before character spawns)
 		-- This allows leveling up to work even before character spawns
 		if class.Value and class.Value ~= "Slavkorian" then
 			statsInitialized = true
 		end
 	end)
-	
+
 	-- Clean up health and defense regen when player leaves
 	plr.CharacterRemoving:Connect(function(char)
 		if healthRegenConnections[char] then
@@ -3248,7 +3248,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 			defenseRegenConnections[char] = nil
 		end
 	end)
-	
+
 end)
 
 -- Function to save player data
@@ -3257,11 +3257,11 @@ local function savePlayerData(plr)
 	if not leaderstats or not MainDataStore then
 		return
 	end
-	
+
 	-- Ensure MaximumXP is correct before saving
 	local currentLevel = leaderstats.Level.Value
 	leaderstats.MaximumXP.Value = calculateMaximumXP(currentLevel)
-	
+
 	-- LEVEL CAP: Clamp level before saving
 	leaderstats.Level.Value = math.min(leaderstats.Level.Value, BaseStats.XP.maxLevel)
 
@@ -3282,7 +3282,7 @@ local function savePlayerData(plr)
 		end
 		return defaultValue
 	end
-	
+
 	local dataToSave = {
 		Level = getStatValue("Level", 1),
 		CurrentXP = getStatValue("CurrentXP", 0),
@@ -3331,7 +3331,7 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 	if not leaderstats then
 		return
 	end
-	
+
 	if action == "setCurrentXP" then
 		if leaderstats:FindFirstChild("CurrentXP") then
 			leaderstats.CurrentXP.Value = tonumber(value) or 0
@@ -3360,35 +3360,35 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 	elseif action == "setClass" then
 		if leaderstats:FindFirstChild("Class") then
 			local newClass = tostring(value) or "Slavkorian"
-			
+
 			-- Reset level to 1
 			if leaderstats:FindFirstChild("Level") then
 				leaderstats.Level.Value = 1
 			end
-			
+
 			-- Reset XP to 0
 			if leaderstats:FindFirstChild("CurrentXP") then
 				leaderstats.CurrentXP.Value = 0
 			end
-			
+
 			-- Recalculate MaximumXP for level 1
 			if leaderstats:FindFirstChild("MaximumXP") then
 				leaderstats.MaximumXP.Value = calculateMaximumXP(1)
 			end
-			
-		-- Reset all stats to 0 first
-		local statsToReset = {"MaxAttack", "MaxDefense", "CurrentDefense", "MaxHealth", "DefensePenetration", 
-			"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
-			
+
+			-- Reset all stats to 0 first
+			local statsToReset = {"MaxAttack", "MaxDefense", "CurrentDefense", "MaxHealth", "DefensePenetration", 
+				"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
+
 			for _, statName in ipairs(statsToReset) do
 				if leaderstats:FindFirstChild(statName) then
 					leaderstats[statName].Value = 0
 				end
 			end
-			
+
 			-- Set class (this will trigger class.Changed event which applies base stats)
 			leaderstats.Class.Value = newClass
-			
+
 			-- Apply base stats immediately (don't wait for class.Changed event)
 			local baseStats = BaseStats[newClass]
 			if baseStats then
@@ -3425,31 +3425,31 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		end
 	elseif action == "fullReset" then
 		-- Full reset: Level 1, XP 0, MaximumXP recalculated, Class Slavkorian, all stats reset
-		
+
 		-- Reset level first (this will recalculate MaximumXP)
 		if leaderstats:FindFirstChild("Level") then
 			leaderstats.Level.Value = 1
 		end
-		
+
 		-- Reset XP
 		if leaderstats:FindFirstChild("CurrentXP") then
 			leaderstats.CurrentXP.Value = 0
 		end
-		
+
 		-- Recalculate MaximumXP for level 1
 		if leaderstats:FindFirstChild("MaximumXP") then
 			leaderstats.MaximumXP.Value = calculateMaximumXP(1)
 		end
-		
+
 		-- Reset class (this will trigger base stats application)
 		if leaderstats:FindFirstChild("Class") then
 			leaderstats.Class.Value = "Slavkorian"
 		end
-		
+
 		-- Reset all stats to 0 (base stats will be applied via class.Changed event)
 		local statsToReset = {"MaxAttack", "MaxDefense", "CurrentDefense", "MaxHealth", "DefensePenetration", 
 			"CritRate", "CritMultiplier", "HealthRegen", "MovementSpeed", "AttackSpeed"}
-		
+
 		for _, statName in ipairs(statsToReset) do
 			if leaderstats:FindFirstChild(statName) then
 				leaderstats[statName].Value = 0

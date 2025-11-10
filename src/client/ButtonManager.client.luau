@@ -11,10 +11,15 @@
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 
 local ConsumableEvent = ReplicatedStorage:WaitForChild("ConsumableEvent")
+local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local ConsumableEntries = ConsumableConfig.Entries or {}
+local detectCurrentClass
 
 -- Require all action modules
 local SamuraiActions = require(player.PlayerScripts.samurai.SamuraiActionModule)
@@ -340,6 +345,168 @@ local CONSUMABLE_SLOT_TAGS = {
 
 local CONSUMABLE_SLOT_COUNT = #CONSUMABLE_SLOT_TAGS
 
+local tooltipGui
+local tooltipFrame
+local tooltipLabel
+local tooltipResolver
+local tooltipConnection
+
+local function ensureTooltipGui()
+	if tooltipGui then
+		return
+	end
+
+	local playerGui = player:WaitForChild("PlayerGui")
+
+	tooltipGui = Instance.new("ScreenGui")
+	tooltipGui.Name = "ButtonTooltipGui"
+	tooltipGui.ResetOnSpawn = false
+	tooltipGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	tooltipGui.IgnoreGuiInset = true
+	tooltipGui.Parent = playerGui
+
+	tooltipFrame = Instance.new("Frame")
+	tooltipFrame.Name = "TooltipFrame"
+	tooltipFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	tooltipFrame.BackgroundTransparency = 0.15
+	tooltipFrame.BorderSizePixel = 0
+	tooltipFrame.AutomaticSize = Enum.AutomaticSize.XY
+	tooltipFrame.Visible = false
+	tooltipFrame.Parent = tooltipGui
+
+	local uiCorner = Instance.new("UICorner")
+	uiCorner.CornerRadius = UDim.new(0, 6)
+	uiCorner.Parent = tooltipFrame
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, 6)
+	padding.PaddingBottom = UDim.new(0, 6)
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.Parent = tooltipFrame
+
+	tooltipLabel = Instance.new("TextLabel")
+	tooltipLabel.Name = "TooltipLabel"
+	tooltipLabel.BackgroundTransparency = 1
+	tooltipLabel.Font = Enum.Font.GothamSemibold
+	tooltipLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	tooltipLabel.TextSize = 16
+	tooltipLabel.TextWrapped = true
+	tooltipLabel.TextXAlignment = Enum.TextXAlignment.Left
+	tooltipLabel.TextYAlignment = Enum.TextYAlignment.Top
+	tooltipLabel.AutomaticSize = Enum.AutomaticSize.XY
+	tooltipLabel.Parent = tooltipFrame
+end
+
+local function hideTooltip()
+	if tooltipConnection then
+		tooltipConnection:Disconnect()
+		tooltipConnection = nil
+	end
+
+	tooltipResolver = nil
+
+	if tooltipFrame then
+		tooltipFrame.Visible = false
+	end
+end
+
+local function updateTooltipPosition()
+	if not tooltipFrame then
+		return
+	end
+
+	local mousePosition = UserInputService:GetMouseLocation()
+	tooltipFrame.Position = UDim2.fromOffset(mousePosition.X + 14, mousePosition.Y + 18)
+end
+
+local function showTooltip(resolver, button)
+	ensureTooltipGui()
+
+	if not resolver or not button then
+		hideTooltip()
+		return
+	end
+
+	if tooltipConnection then
+		tooltipConnection:Disconnect()
+		tooltipConnection = nil
+	end
+
+	tooltipResolver = resolver
+
+	local function resolveText()
+		if tooltipResolver then
+			local text = tooltipResolver()
+			if typeof(text) == "string" then
+				return text
+			end
+		end
+		return ""
+	end
+
+	local initialText = resolveText()
+	if initialText == "" then
+		hideTooltip()
+		return
+	end
+
+	tooltipLabel.Text = initialText
+	tooltipFrame.Visible = true
+	updateTooltipPosition()
+
+	tooltipConnection = RunService.RenderStepped:Connect(function()
+		if not tooltipFrame or not tooltipFrame.Visible then
+			hideTooltip()
+			return
+		end
+
+		local text = resolveText()
+		if text == "" then
+			hideTooltip()
+			return
+		end
+
+		if tooltipLabel.Text ~= text then
+			tooltipLabel.Text = text
+		end
+
+		updateTooltipPosition()
+	end)
+end
+
+local function formatTooltipFromConfig(config)
+	if not config then
+		return ""
+	end
+
+	local lines = {}
+	if config.name and config.name ~= "" then
+		table.insert(lines, tostring(config.name))
+	end
+	if config.description and config.description ~= "" then
+		table.insert(lines, tostring(config.description))
+	end
+	return table.concat(lines, "\n")
+end
+
+local function createUnifiedTooltipResolver(tagConfig, globalConfig)
+	return function()
+		local class = detectCurrentClass()
+		local classConfig = class and tagConfig[class] or nil
+
+		if classConfig and (classConfig.description or classConfig.name) then
+			return formatTooltipFromConfig(classConfig)
+		end
+
+		if globalConfig and (globalConfig.description or globalConfig.name) then
+			return formatTooltipFromConfig(globalConfig)
+		end
+
+		return ""
+	end
+end
+
 local COOLDOWN_PROVIDERS = {
 	samurai = function(skillName)
 		return SamuraiActions.getCooldownRemaining(skillName)
@@ -378,7 +545,7 @@ end
 -- CLASS DETECTION
 -- ========================================
 
-local function detectCurrentClass()
+detectCurrentClass = function()
 	local character = player.Character
 	if not character then return nil end
 
@@ -428,6 +595,27 @@ local consumableSlots = {}
 local consumableButtons = {}
 for index = 1, CONSUMABLE_SLOT_COUNT do
 	consumableButtons[index] = {}
+end
+
+local function getConsumableTooltipText(slotIndex)
+	local slotData = consumableSlots[slotIndex]
+	if not slotData then
+		return "Empty Slot"
+	end
+
+	local canonicalName = slotData.canonicalName
+	local entry = canonicalName and ConsumableEntries[canonicalName]
+
+	local lines = {}
+	table.insert(lines, slotData.displayName or canonicalName or "Consumable")
+
+	if entry and entry.description and entry.description ~= "" then
+		table.insert(lines, entry.description)
+	elseif entry and entry.effects then
+		table.insert(lines, "Click to consume.")
+	end
+
+	return table.concat(lines, "\n")
 end
 
 local function removeConsumableButtonReference(slotIndex, button)
@@ -501,7 +689,16 @@ local function setupConsumableButton(button, slotIndex)
 		if consumableSlots[slotIndex] then
 			ConsumableEvent:FireServer("use", slotIndex)
 		end
+		hideTooltip()
 	end)
+
+	button.MouseEnter:Connect(function()
+		showTooltip(function()
+			return getConsumableTooltipText(slotIndex)
+		end, button)
+	end)
+	button.MouseLeave:Connect(hideTooltip)
+	button.Destroying:Connect(hideTooltip)
 end
 
 -- ========================================
@@ -518,6 +715,7 @@ local function setupUnifiedButton(button, tag)
 	end
 
 	local globalConfig = findGlobalConfig(tagConfig)
+	local tooltipResolver = createUnifiedTooltipResolver(tagConfig, globalConfig)
 
 	-- Click handler
 	button.MouseButton1Click:Connect(function()
@@ -532,7 +730,14 @@ local function setupUnifiedButton(button, tag)
 		if globalConfig and globalConfig.action then
 			globalConfig.action()
 		end
+		hideTooltip()
 	end)
+
+	button.MouseEnter:Connect(function()
+		showTooltip(tooltipResolver, button)
+	end)
+	button.MouseLeave:Connect(hideTooltip)
+	button.Destroying:Connect(hideTooltip)
 
 	-- Transparency updater
 	task.spawn(function()
@@ -634,6 +839,8 @@ local function setupUnifiedHoldButton(button, tag)
 		return
 	end
 
+	local tooltipResolver = createUnifiedTooltipResolver(tagConfig, nil)
+
 	local isActive = false
 
 	-- Press handler
@@ -680,6 +887,25 @@ local function setupUnifiedHoldButton(button, tag)
 			button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		end
 	end)
+
+	button.MouseEnter:Connect(function()
+		showTooltip(tooltipResolver, button)
+	end)
+	button.MouseLeave:Connect(function()
+		hideTooltip()
+		if isActive then
+			local class = detectCurrentClass()
+			if class then
+				local classConfig = tagConfig[class]
+				if classConfig and classConfig.stop then
+					classConfig.stop()
+				end
+			end
+			isActive = false
+			button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		end
+	end)
+	button.Destroying:Connect(hideTooltip)
 
 	-- Transparency updater
 	task.spawn(function()
