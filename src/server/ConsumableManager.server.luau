@@ -222,6 +222,41 @@ assignConsumables = function(player: Player, sourceList: {any}?)
 	sendConsumableUpdate(player)
 	debugPrint("Assigned slots for", player.Name, listToString(_G.getPlayerConsumables and _G.getPlayerConsumables(player) or {}))
 end
+
+local function setToolTouchEnabled(tool: Tool, enabled: boolean)
+	for _, descendant in ipairs(tool:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant.CanTouch = enabled
+		end
+	end
+end
+
+local function dropToolNearPlayer(player: Player, tool: Tool)
+	setToolTouchEnabled(tool, false)
+
+	local pivotCFrame = nil
+	local character = player.Character
+	if character then
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root then
+			pivotCFrame = root.CFrame * CFrame.new(0, 2, -6)
+		end
+	end
+
+	tool.Parent = workspace
+	if pivotCFrame then
+		pcall(function()
+			tool:PivotTo(pivotCFrame)
+		end)
+	end
+
+	task.delay(0.35, function()
+		if tool.Parent == workspace then
+			setToolTouchEnabled(tool, true)
+			tool:SetAttribute("ConsumableCollected", nil)
+		end
+	end)
+end
 local function loadConsumables(player: Player)
 	local inventoryData = MainDataStore.LoadInventory(player.UserId) or {}
 	local storedConsumables = inventoryData.consumables or {}
@@ -243,7 +278,7 @@ local function collectConsumable(player: Player, tool: Tool)
 	local entry, canonicalName = getConsumableEntryFromName(tool.Name)
 	if not entry or not canonicalName then
 		warn("[ConsumableManager] Unknown consumable:", tool.Name)
-		tool:Destroy()
+		dropToolNearPlayer(player, tool)
 		return
 	end
 
@@ -261,7 +296,7 @@ local function collectConsumable(player: Player, tool: Tool)
 	if not targetSlot then
 		-- Inventory full, drop consumable silently (could be enhanced with player feedback)
 		warn("[ConsumableManager] Consumable slots full for player:", player.Name)
-		tool:Destroy()
+		dropToolNearPlayer(player, tool)
 		return
 	end
 
