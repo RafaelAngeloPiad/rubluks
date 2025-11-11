@@ -321,6 +321,35 @@ local function shouldApplyDamage(attacker, target)
     return true
 end
 
+-- Track the last player who damaged a mob so death handlers can reward XP
+local function recordPlayerDamage(attacker, target)
+	if not attacker or not target then
+		return
+	end
+
+	local attackerPlayer = Players:GetPlayerFromCharacter(attacker)
+	if not attackerPlayer then
+		return
+	end
+
+	-- Ignore player-vs-player hits
+	if Players:GetPlayerFromCharacter(target) then
+		return
+	end
+
+	-- Only record for models (mobs/NPCs)
+	if not target:IsA("Model") then
+		target = target:FindFirstAncestorOfClass("Model")
+		if not target then
+			return
+		end
+	end
+
+	target:SetAttribute("LastDamagePlayerId", attackerPlayer.UserId)
+	target:SetAttribute("LastDamagePlayerName", attackerPlayer.Name)
+	target:SetAttribute("LastDamageTimestamp", os.clock())
+end
+
 -- Function to create damage flash effect using Highlight
 local function createDamageFlash(model, duration)
     duration = duration or ServerConfigs.Hitbox.highlighting.damageFlash.duration
@@ -867,6 +896,8 @@ function _G.createStaticHitbox(config)
 					if shouldApplyDamage(character, model) then
 						hitTargets[humanoid] = true
 						
+						recordPlayerDamage(character, model)
+						
 						-- Check if target is a player and if they're invincible (during skill/ult)
 						local targetPlayer = Players:GetPlayerFromCharacter(model)
 						local isInvincible = targetPlayer and _G.isPlayerInvincible and _G.isPlayerInvincible(targetPlayer)
@@ -1041,6 +1072,8 @@ function _G.createStaticDOTHitbox(config)
 						if shouldApplyDamage(character, model) then
 							-- Mark this humanoid as hit for this tick
 							hitHumanoids[humanoid] = true
+							
+							recordPlayerDamage(character, model)
 							
 							-- Check if target is a player and if they're invincible (during skill/ult)
 							local targetPlayer = Players:GetPlayerFromCharacter(model)
@@ -1249,6 +1282,8 @@ function _G.createTravelingHitbox(config)
 						-- Check if damage should be applied using new targeting system
 						if shouldApplyDamage(character, model) then
 							hitTargets[humanoid] = true
+							
+							recordPlayerDamage(character, model)
 							
 							-- Check if target is a player and if they're invincible (during skill/ult)
 							local targetPlayer = Players:GetPlayerFromCharacter(model)
@@ -1615,6 +1650,8 @@ function _G.createProjectileHitbox(config)
 							-- Check if damage should be applied using new targeting system
 							if shouldApplyDamage(character, model) then
 								hitTargets[humanoid] = true
+								
+								recordPlayerDamage(character, model)
 								
 								-- Check if target is a player and if they're invincible (during skill/ult)
 								local targetPlayer = Players:GetPlayerFromCharacter(model)
