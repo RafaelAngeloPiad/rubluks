@@ -105,7 +105,7 @@ local function createSlash(player, character, angle)
 		delay = ZANTETSUKEN_CONFIG.hitboxDelay, -- delay before hitbox appears (in seconds)
 		character = character,
 		name = "Zantetsuken",
-		showVisual = true,
+		showVisual = false,
 		visualColor = Color3.new(1, 0, 1), -- Purple
 		actionType = "zantetsuken",
 		classType = "Samurai"

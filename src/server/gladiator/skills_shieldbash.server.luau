@@ -152,7 +152,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damage = actualDamage,
 			character = character,
 			name = "ShieldBash",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.5, 0),
 			delay = SHIELDBASH_CONFIG.hitboxDelay,
 			actionType = "shieldbash",

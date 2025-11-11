@@ -263,7 +263,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 			damage = finalDamage, -- Use final damage (doubled if Headshot triggered)
 			character = character,
 			name = "PiercingArrow",
-			showVisual = true,
+			showVisual = false,
 			visualColor = visualColor, -- Use color based on Headshot trigger
 			delay = ServerConfigs.ArcherSkills.PiercingShot.hitboxDelay,
 			actionType = "piercingShot",

@@ -221,7 +221,7 @@ local function initializeZombie(zombie, variantName)
 					damage = damage,
 					character = zombie,
 					name = "ZombieBite",
-					showVisual = true,
+					showVisual = false,
 					visualColor = Color3.new(0, 0.6, 0),
 					delay = 0,
 					visualDuration = 0.5

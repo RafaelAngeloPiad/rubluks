@@ -179,7 +179,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword1",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
 			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
 			actionType = "sworddance",
@@ -220,7 +220,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword2",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
 			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
 			actionType = "sworddance",
@@ -261,7 +261,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword3",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
 			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
 			actionType = "sworddance",
@@ -302,7 +302,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damage = actualDamage,
 			character = character,
 			name = "SwordDanceSword4",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.8, 0), -- Gold
 			delay = SWORDDANCE_CONFIG.swordHitboxDelay,
 			actionType = "sworddance",

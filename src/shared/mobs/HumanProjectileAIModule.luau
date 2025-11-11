@@ -165,7 +165,7 @@ local function getArrowHitboxConfig()
 		hitboxSpeed = 180,
 		delay = 0,
 		anchorDelay = 0.2,
-		showVisual = true,
+		showVisual = false,
 		visualColor = HITBOX_VISUAL_COLOR,
 		preventPhysicsPush = true,
 	}
@@ -311,7 +311,7 @@ local function initializeHumanProjectile(character, variantName)
 			hitboxSpeed = arrowConfig.hitboxSpeed,
 			delay = arrowConfig.delay,
 			anchorDelay = arrowConfig.anchorDelay,
-			showVisual = arrowConfig.showVisual,
+			showVisual = false,
 			visualColor = HITBOX_VISUAL_COLOR,
 			preventPhysicsPush = arrowConfig.preventPhysicsPush,
 			statusAilment = stats and stats.StatusAilment or nil,

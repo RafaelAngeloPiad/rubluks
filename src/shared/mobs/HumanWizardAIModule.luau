@@ -382,7 +382,7 @@ local function initializeHumanWizard(character, variantName)
 			damage = damage,
 			character = character,
 			name = "ArawizardOrb",
-			showVisual = true,
+			showVisual = false,
 			visualColor = HITBOX_VISUAL_COLOR,
 			delay = 0,
 			actionType = nil,

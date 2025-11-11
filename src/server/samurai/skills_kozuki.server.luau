@@ -262,7 +262,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			delay = KOZUKI_CONFIG.hitboxDelay, -- delay before hitbox appears (in seconds)
 			character = character,
 			name = "Kozuki",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0, 0), -- Red
 			actionType = "kozuki",
 			classType = "Samurai"

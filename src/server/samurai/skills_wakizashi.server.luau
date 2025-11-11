@@ -204,7 +204,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			delay = WAKIZASHI_CONFIG.hitboxDelay, -- Base delay (will auto-scale with animation speed: 0.25s at 1x speed, 0.125s at 2x speed)
 			character = character,
 			name = "Wakizashi",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(0, 0.5, 1), -- Light blue
 			actionType = "wakizashi",
 			classType = "Samurai"

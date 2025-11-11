@@ -237,7 +237,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 			damage = finalDamage, -- Use final damage (doubled if Headshot triggered)
 			character = character,
 			name = "PowerArrow",
-			showVisual = true,
+			showVisual = false,
 			visualColor = visualColor, -- Use color based on Headshot trigger
 			delay = ServerConfigs.ArcherSkills.PowerShot.hitboxDelay,
 			actionType = "powerShot",
@@ -309,7 +309,7 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 				damageTickTime = ServerConfigs.ArcherSkills.PowerShot.damageTickTime or 1,
 				character = character,
 				name = "PowerTrail" .. i,
-				showVisual = true,
+				showVisual = false,
 				visualColor = Color3.new(1, 0.5, 0), -- Orange for trail
 				attachTo = vfx -- Will stop when VFX is destroyed
 			})

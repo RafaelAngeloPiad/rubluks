@@ -400,7 +400,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			duration = hitboxDuration,
 			character = character,
 			name = "MightyBlade Center DOT",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(0.8, 0.8, 0), -- Yellow
 			delay = MIGHTYBLADE_CONFIG.hitboxDelay,
 			actionType = "mightyblade",

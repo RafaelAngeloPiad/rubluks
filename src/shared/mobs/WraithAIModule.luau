@@ -131,7 +131,7 @@ local function initializeWraith(wraith, variantName)
 			damage = damage,
 			character = wraith,
 			name = "WraithHomingMissile",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.5, 0), -- Orange color
 			delay = 0,
 			actionType = nil, -- Mobs don't have animation speeds

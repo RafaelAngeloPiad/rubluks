@@ -299,7 +299,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			duration = hitboxDuration,
 			character = character,
 			name = "DemonicVorpalDance Center DOT",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0, 0.5), -- Pink/red color
 			delay = DEMONICVORPALDANCE_CONFIG.hitboxDelay,
 			actionType = "demonicvorpaldance",

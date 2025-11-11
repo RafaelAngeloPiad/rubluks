@@ -190,7 +190,7 @@ local function initializeGolem(monster, variantName)
 							damage = damage,
 							character = monster, -- Exclude the golem itself
 							name = "GolemAttack",
-							showVisual = true,
+							showVisual = false,
 							visualColor = Color3.new(1, 0.5, 0), -- Orange color
 							delay = 0.3, -- Delay to sync with animation
 							visualDuration = 0.8

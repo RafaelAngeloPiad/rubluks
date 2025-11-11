@@ -229,7 +229,7 @@ local function initializeHumanMelee(character, variantName)
 			damage = damage,
 			character = character,
 			name = hitboxName,
-			showVisual = true,
+			showVisual = false,
 			visualColor = HITBOX_VISUAL_COLOR,
 			delay = 0,
 		}

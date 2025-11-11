@@ -630,7 +630,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 				hitboxSpeed = _G.ARCHER_ARROW_HITBOX.hitboxSpeed,
 				delay = _G.ARCHER_ARROW_HITBOX.delay,
 				anchorDelay = _G.ARCHER_ARROW_HITBOX.anchorDelay,
-				showVisual = true,
+				showVisual = false,
 				visualColor = visualColor, -- Use color based on Headshot trigger
 				preventPhysicsPush = _G.ARCHER_ARROW_HITBOX.preventPhysicsPush
 			})
@@ -719,7 +719,7 @@ local function handleNormalAttack(player, cameraDirection, aimLockEnabled, isFir
 				hitboxSpeed = _G.ARCHER_ARROW_HITBOX.hitboxSpeed,
 				delay = _G.ARCHER_ARROW_HITBOX.delay,
 				anchorDelay = _G.ARCHER_ARROW_HITBOX.anchorDelay,
-				showVisual = true,
+				showVisual = false,
 				visualColor = visualColor, -- Use color based on Headshot trigger
 				preventPhysicsPush = _G.ARCHER_ARROW_HITBOX.preventPhysicsPush
 			})

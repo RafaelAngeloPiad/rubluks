@@ -122,7 +122,7 @@ local function initializeSpider(enemy, variantName)
 						damage = damage,
 						character = enemy,
 						name = "SpiderAttack",
-						showVisual = true,
+						showVisual = false,
 						visualColor = Color3.new(0.8, 0, 0.8),
 						delay = 0.2,
 						visualDuration = 0.6,

@@ -176,7 +176,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damageTickTime = CYCLONE_CONFIG.damageTickTime,
 			character = character,
 			name = "CycloneSlashSmall",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(0.3, 0, 0.6), -- Darker purple
 			delay = CYCLONE_CONFIG.smallHitboxDelay,
 			actionType = "cyclone_slash",
@@ -195,7 +195,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				damageTickTime = CYCLONE_CONFIG.bigDamageTickTime,
 				character = character,
 				name = "CycloneSlashBig",
-				showVisual = true,
+				showVisual = false,
 				visualColor = Color3.new(0.8, 0, 1), -- Brighter purple
 				delay = CYCLONE_CONFIG.bigHitboxDelay,
 				actionType = "cyclone_slash",

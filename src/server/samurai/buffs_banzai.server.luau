@@ -145,7 +145,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 					damage = actualDamage,
 					character = character,
 					name = "Banzai",
-					showVisual = true,
+					showVisual = false,
 					visualColor = Color3.new(1, 0.5, 0), -- Orange for Banzai
 					delay = 0,
 					actionType = "banzai",

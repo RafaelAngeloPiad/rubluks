@@ -150,7 +150,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			damage = actualDamage,
 			character = character,
 			name = "BrawlersRoar",
-			showVisual = true,
+			showVisual = false,
 			visualColor = Color3.new(1, 0.3, 0),
 			delay = ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxDelay,
 			actionType = "brawlersroar",
