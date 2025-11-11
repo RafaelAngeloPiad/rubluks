@@ -25,6 +25,14 @@ if ServerConfigs then
 	end
 end
 
+local DevStatsConfig = ConfigModule and ConfigModule.DevUI and ConfigModule.DevUI.displayStats
+local devDisplayEnabled = not (DevStatsConfig and DevStatsConfig.enabled == false)
+local showControlButtons = not (DevStatsConfig and DevStatsConfig.showControls == false)
+
+if not devDisplayEnabled then
+	return
+end
+
 -- Available classes
 local AvailableClasses = {"Knight", "Samurai", "Gladiator", "Brawler", "Archer"}
 
@@ -1918,99 +1926,105 @@ end
 -- UI Hidden state
 local isVisible = true
 
--- Control buttons
-local buttonLayoutOrder = 1
+if showControlButtons then
+	-- Control buttons
+	local buttonLayoutOrder = 1
 
--- Row 1: Control buttons
--- Hide/Show button
-createButton("👁️ Hide", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
-	isVisible = not isVisible
-	mainFrame.Visible = isVisible
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	-- Row 1: Control buttons
+	-- Hide/Show button
+	createButton("👁️ Hide", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
+		isVisible = not isVisible
+		mainFrame.Visible = isVisible
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
--- Reset button - resets everything to defaults (level 1, XP 0, base stats)
-createButton("Reset", Color3.fromRGB(150, 50, 50), buttonLayoutOrder, function()
-	if DevStatEvent then
-		-- Use fullReset action which handles everything in the correct order
-		DevStatEvent:FireServer("fullReset")
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	-- Reset button - resets everything to defaults (level 1, XP 0, base stats)
+	createButton("Reset", Color3.fromRGB(150, 50, 50), buttonLayoutOrder, function()
+		if DevStatEvent then
+			-- Use fullReset action which handles everything in the correct order
+			DevStatEvent:FireServer("fullReset")
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
--- Row 2: XP buttons
--- Add 5 XP button
-createButton("+5 XP", Color3.fromRGB(50, 150, 50), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("addCurrentXP", 5)
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	-- Row 2: XP buttons
+	-- Add 5 XP button
+	createButton("+5 XP", Color3.fromRGB(50, 150, 50), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("addCurrentXP", 5)
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("+10 XP", Color3.fromRGB(50, 180, 50), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("addCurrentXP", 10)
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("+10 XP", Color3.fromRGB(50, 180, 50), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("addCurrentXP", 10)
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
--- Add 500 XP button
-createButton("+500 XP", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("addCurrentXP", 500)
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	-- Add 500 XP button
+	createButton("+500 XP", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("addCurrentXP", 500)
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("+5000 XP", Color3.fromRGB(120, 220, 120), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("addCurrentXP", 5000)
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("+5000 XP", Color3.fromRGB(120, 220, 120), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("addCurrentXP", 5000)
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("+100000 XP", Color3.fromRGB(90, 200, 90), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("addCurrentXP", 100000)
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("+100000 XP", Color3.fromRGB(90, 200, 90), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("addCurrentXP", 100000)
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
--- Row 3: Class selection buttons
-createButton("Knight", Color3.fromRGB(100, 150, 200), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("setClass", "Knight")
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	-- Row 3: Class selection buttons
+	createButton("Knight", Color3.fromRGB(100, 150, 200), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("setClass", "Knight")
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("Samurai", Color3.fromRGB(150, 150, 150), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("setClass", "Samurai")
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("Samurai", Color3.fromRGB(150, 150, 150), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("setClass", "Samurai")
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("Gladiator", Color3.fromRGB(200, 100, 100), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("setClass", "Gladiator")
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("Gladiator", Color3.fromRGB(200, 100, 100), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("setClass", "Gladiator")
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("Brawler", Color3.fromRGB(150, 100, 50), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("setClass", "Brawler")
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("Brawler", Color3.fromRGB(150, 100, 50), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("setClass", "Brawler")
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
 
-createButton("Archer", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
-	if DevStatEvent then
-		DevStatEvent:FireServer("setClass", "Archer")
-	end
-end)
-buttonLayoutOrder = buttonLayoutOrder + 1
+	createButton("Archer", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
+		if DevStatEvent then
+			DevStatEvent:FireServer("setClass", "Archer")
+		end
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
+else
+	controlFrame.Visible = false
+	controlFrame.Size = UDim2.new(1, -10, 0, 0)
+	scrollFrame.Size = UDim2.new(1, -10, 1, -40)
+end
 
 -- Track connections to prevent duplicates
 local statConnections = {}

@@ -73,6 +73,10 @@ local function awardXPToLastDamager()
 	end
 
 	currentXP.Value = currentXP.Value + xpReward
+
+	if _G.createXpGainNumber then
+		_G.createXpGainNumber(player, xpReward)
+	end
 end
 
 -- Death trigger

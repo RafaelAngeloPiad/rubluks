@@ -30,8 +30,8 @@ ServerConfigs.Hitbox = {
 			font = Enum.Font.GothamBold, -- Font style
 			textSize = 28, -- Text size (reduced from 36 to prevent overlap)
 			textColor = Color3.new(1, 0.8, 0), -- Orange/yellow color
-			backgroundColor = Color3.new(0, 0, 0), -- Black background
-			backgroundTransparency = 0.5, -- Background transparency
+			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
+			backgroundTransparency = 1, -- Fully transparent background
 			strokeColor = Color3.new(0, 0, 0), -- Black stroke
 			strokeTransparency = 0, -- Solid stroke
 			duration = 0.8, -- How long the number stays visible (seconds) (reduced from 1.5 to prevent overlap)
@@ -40,6 +40,24 @@ ServerConfigs.Hitbox = {
 			fadeStart = 0.3, -- When to start fading (after this many seconds) (reduced from 0.5 to fade earlier)
 			offsetY = 2, -- Vertical offset from character head (studs)
 			randomOffsetX = 1, -- Random horizontal offset range (studs)
+		},
+
+		-- XP Gain Numbers Configuration (floating "+12 XP" popups for players)
+		xpNumbers = {
+			enabled = true, -- Enable/disable XP popups
+			font = Enum.Font.GothamBold, -- Font style to match damage numbers
+			textSize = 26, -- Slightly smaller than damage numbers for readability
+			textColor = Color3.fromRGB(120, 255, 120), -- Bright green
+			backgroundTransparency = 1, -- Fully transparent background
+			strokeColor = Color3.fromRGB(20, 120, 20), -- Dark green outline
+			strokeTransparency = 0.1, -- Slightly transparent outline for softness
+			duration = 1.1, -- Visible slightly longer than damage numbers
+			riseHeight = 3.2, -- How high the text rises (studs)
+			fadeStart = 0.4, -- When to start fading (seconds)
+			offsetY = 3, -- Vertical offset so it appears above damage numbers
+			randomOffsetX = 0.5, -- Subtle horizontal variation
+			prefix = "+", -- Text prefix before XP amount
+			suffix = " XP" -- Text suffix after XP amount
 		},
 		
 		-- Knockback Configuration
@@ -135,6 +153,17 @@ ServerConfigs.Hitbox = {
 				}
 			}
 		}
+}
+
+-- ========================================
+-- DEVELOPER TOOLING CONFIGURATION
+-- ========================================
+
+ServerConfigs.DevUI = {
+	displayStats = {
+		enabled = true, -- Toggle the developer stats overlay
+		showControls = true -- Toggle the control buttons at the bottom of the overlay
+	}
 }
 
 -- ========================================

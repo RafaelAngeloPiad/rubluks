@@ -19,6 +19,19 @@ local HITBOX_CONFIG = {
 	transparency = ServerConfigs.Hitbox.transparency, -- Global transparency for all hitbox visuals
 }
 
+-- Utility helper to clone configuration tables safely
+local function cloneConfig(config)
+	if table.clone then
+		return table.clone(config)
+	end
+
+	local copy = {}
+	for key, value in pairs(config) do
+		copy[key] = value
+	end
+	return copy
+end
+
 -- ========================================
 -- GLOBAL BLOCKING STATE TRACKER
 -- ========================================
@@ -398,124 +411,162 @@ local function createDamageFlash(model, duration)
     end)
 end
 
--- Function to create damage number display above character head
--- Exported as global function so StatusAilmentHandler can use it
-function _G.createDamageNumber(model, damage)
-	-- Check if damage numbers are enabled
-	local damageNumbersConfig = ServerConfigs.Hitbox.damageNumbers
-	if not damageNumbersConfig or not damageNumbersConfig.enabled then
+-- Shared helper to create floating number popups (damage, XP, etc.)
+local function createFloatingNumber(model, text, visualConfig)
+	if not model or not model.Parent or not visualConfig then
 		return
 	end
-	
-	-- Validate model exists
-	if not model or not model.Parent then
-		return
-	end
-	
-	-- Get character's head or HumanoidRootPart
+
 	local head = model:FindFirstChild("Head")
 	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
-	
-	if not head and not humanoidRootPart then
-		return
-	end
-	
-	-- Use head if available, otherwise use HumanoidRootPart
 	local attachPart = head or humanoidRootPart
 	if not attachPart then
 		return
 	end
-	
-	-- Create BillboardGui with unique name to avoid conflicts
+
+	local popupNamePrefix = visualConfig.namePrefix or "FloatingNumber"
 	local billboardGui = Instance.new("BillboardGui")
-	billboardGui.Name = "DamageNumber_" .. tostring(tick() * 1000) -- Unique name for each
-	billboardGui.Size = UDim2.new(0, 200, 0, 100)
-	billboardGui.StudsOffset = Vector3.new(
-		(math.random() - 0.5) * 2 * damageNumbersConfig.randomOffsetX, -- Random horizontal offset
-		damageNumbersConfig.offsetY, -- Vertical offset
-		0
-	)
+	billboardGui.Name = popupNamePrefix .. "_" .. tostring(tick() * 1000)
+	billboardGui.Size = UDim2.new(0, visualConfig.width or 200, 0, visualConfig.height or 100)
+
+	local randomOffsetRange = visualConfig.randomOffsetX or 0
+	local offsetX = (math.random() - 0.5) * 2 * randomOffsetRange
+	local offsetY = visualConfig.offsetY or 2
+	billboardGui.StudsOffset = Vector3.new(offsetX, offsetY, 0)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 0
 	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	billboardGui.Parent = attachPart
-	
-	-- Use Debris service as ultimate cleanup fallback - will destroy after duration
-	Debris:AddItem(billboardGui, damageNumbersConfig.duration + 0.2)
-	
-	-- Create TextLabel
+
+	local duration = visualConfig.duration or 1
+	Debris:AddItem(billboardGui, duration + 0.2)
+
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Size = UDim2.new(1, 0, 1, 0)
-	textLabel.BackgroundTransparency = 1
-	textLabel.Text = "-" .. tostring(math.floor(damage))
-	textLabel.TextColor3 = damageNumbersConfig.textColor
-	textLabel.TextSize = damageNumbersConfig.textSize
-	textLabel.Font = damageNumbersConfig.font
-	textLabel.TextStrokeTransparency = damageNumbersConfig.strokeTransparency
-	textLabel.TextStrokeColor3 = damageNumbersConfig.strokeColor
+	textLabel.BackgroundTransparency = visualConfig.backgroundTransparency ~= nil and visualConfig.backgroundTransparency or 1
+	if visualConfig.backgroundColor then
+		textLabel.BackgroundColor3 = visualConfig.backgroundColor
+	end
+	textLabel.Text = text
+	textLabel.TextColor3 = visualConfig.textColor or Color3.new(1, 1, 1)
+	textLabel.TextSize = visualConfig.textSize or 28
+	textLabel.Font = visualConfig.font or Enum.Font.GothamBold
+
+	local baseStrokeTransparency = visualConfig.strokeTransparency
+	if baseStrokeTransparency == nil then
+		baseStrokeTransparency = visualConfig.textStrokeTransparency
+	end
+	if baseStrokeTransparency == nil then
+		baseStrokeTransparency = 0
+	end
+
+	local strokeColor = visualConfig.strokeColor or visualConfig.textStrokeColor or Color3.new(0, 0, 0)
+	textLabel.TextStrokeColor3 = strokeColor
+	textLabel.TextStrokeTransparency = baseStrokeTransparency
+
 	textLabel.TextXAlignment = Enum.TextXAlignment.Center
 	textLabel.TextYAlignment = Enum.TextYAlignment.Center
 	textLabel.Parent = billboardGui
-	
-	-- Animate the damage number (rise and fade)
+
 	local startTime = tick()
-	local startY = billboardGui.StudsOffset.Y
+	local initialOffset = billboardGui.StudsOffset
+	local riseHeight = visualConfig.riseHeight or 3
+	local fadeStart = visualConfig.fadeStart or (duration * 0.5)
+
 	local connection
-	
-	-- Simple heartbeat animation - Debris will handle cleanup
 	connection = RunService.Heartbeat:Connect(function()
-		-- Safety check - if billboardGui or model was destroyed, disconnect
 		if not billboardGui or not billboardGui.Parent or not model or not model.Parent or not attachPart or not attachPart.Parent then
 			if connection then
 				connection:Disconnect()
 			end
 			return
 		end
-		
-		local currentTime = tick()
-		local elapsed = currentTime - startTime
-		
-		-- Stop animation after duration - Debris will clean it up
-		if elapsed >= damageNumbersConfig.duration then
+
+		local elapsed = tick() - startTime
+		if elapsed >= duration then
 			if connection then
 				connection:Disconnect()
 			end
 			return
 		end
-		
-		-- Calculate rise position
-		local progress = elapsed / damageNumbersConfig.duration
-		local currentY = startY + (damageNumbersConfig.riseHeight * progress)
-		
-		-- Update billboardGui position
+
+		local progress = elapsed / duration
 		billboardGui.StudsOffset = Vector3.new(
-			billboardGui.StudsOffset.X,
-			currentY,
-			0
+			initialOffset.X,
+			initialOffset.Y + (riseHeight * progress),
+			initialOffset.Z
 		)
-		
-		-- Calculate fade
-		local fadeProgress = 0
-		if elapsed >= damageNumbersConfig.fadeStart then
-			fadeProgress = (elapsed - damageNumbersConfig.fadeStart) / (damageNumbersConfig.duration - damageNumbersConfig.fadeStart)
-			fadeProgress = math.min(fadeProgress, 1)
+
+		if elapsed >= fadeStart then
+			local fadeDuration = math.max(duration - fadeStart, 0.0001)
+			local fadeProgress = math.min((elapsed - fadeStart) / fadeDuration, 1)
+			textLabel.TextTransparency = fadeProgress
+			textLabel.TextStrokeTransparency = math.min(baseStrokeTransparency + fadeProgress, 1)
 		end
-		
-		-- Apply fade to text - use pcall to be safe
-		pcall(function()
-			if textLabel and textLabel.Parent then
-				textLabel.TextTransparency = fadeProgress
-				textLabel.TextStrokeTransparency = math.min(damageNumbersConfig.strokeTransparency + fadeProgress, 1)
-			end
-		end)
 	end)
-	
-	-- Disconnect heartbeat after duration to avoid memory leaks
-	task.delay(damageNumbersConfig.duration + 0.2, function()
+
+	task.delay(duration + 0.2, function()
 		if connection then
 			connection:Disconnect()
 		end
 	end)
+end
+
+-- Function to create damage number display above character head
+-- Exported as global function so StatusAilmentHandler can use it
+function _G.createDamageNumber(model, damage)
+	local damageNumbersConfig = ServerConfigs.Hitbox.damageNumbers
+	if not damageNumbersConfig or not damageNumbersConfig.enabled then
+		return
+	end
+
+	if not model or not model.Parent then
+		return
+	end
+
+	local clone = cloneConfig(damageNumbersConfig)
+	clone.namePrefix = "DamageNumber"
+
+	local damageValue = damage or 0
+	local displayText = "-" .. tostring(math.floor(damageValue))
+	createFloatingNumber(model, displayText, clone)
+end
+
+-- Function to create XP gain popup above the player's character
+-- Accepts a Player instance, Model, or any descendant part of the player's character
+function _G.createXpGainNumber(target, xpAmount)
+	local xpConfig = ServerConfigs.Hitbox.xpNumbers
+	if not xpConfig or not xpConfig.enabled then
+		return
+	end
+
+	if not xpAmount or xpAmount <= 0 then
+		return
+	end
+
+	local character = nil
+	if typeof(target) == "Instance" then
+		if target:IsA("Player") then
+			character = target.Character
+		elseif target:IsA("Model") then
+			character = target
+		else
+			character = target:FindFirstAncestorOfClass("Model")
+		end
+	end
+
+	if not character or not character.Parent then
+		return
+	end
+
+	local clone = cloneConfig(xpConfig)
+	clone.namePrefix = "XpGain"
+
+	local prefix = clone.prefix or "+"
+	local suffix = clone.suffix or " XP"
+	local xpText = prefix .. tostring(math.floor(xpAmount)) .. suffix
+
+	createFloatingNumber(character, xpText, clone)
 end
 
 -- Function to apply status ailments from hitbox config
