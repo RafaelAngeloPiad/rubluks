@@ -23,7 +23,7 @@ local SKILLS_ENABLED = {
 	powerShot = true,
 	hunterInstinct = true,
 	hunterMark = true,
-	starfall = true,
+	starfall = false,
 }
 
 -- Internal state

@@ -22,7 +22,7 @@ local SKILLS_ENABLED = {
 	brawlersroar = true,
 	bloodthirst = true,
 	lastchance = true,
-	meteordive = true,
+	meteordive = false,
 }
 
 -- Internal state

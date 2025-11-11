@@ -22,7 +22,7 @@ local SKILLS_ENABLED = {
 	cyclone_slash = true,
 	warcry = true,
 	warriormight = true,
-	mightyblade = true,
+	mightyblade = false,
 }
 
 -- Internal state

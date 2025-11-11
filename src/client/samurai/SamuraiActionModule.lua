@@ -22,7 +22,7 @@ local SKILLS_ENABLED = {
 	wakizashi = true,
 	banzai = true,
 	bushido = true,
-	zantetsuken = true,
+	zantetsuken = false,
 }
 
 -- Internal state

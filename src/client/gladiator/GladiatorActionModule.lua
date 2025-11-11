@@ -22,7 +22,7 @@ local SKILLS_ENABLED = {
 	dragoonjump = true,
 	championsblood = true,
 	championscheer = true,
-	demonicvorpaldance = true,
+	demonicvorpaldance = false,
 }
 
 -- Internal state
