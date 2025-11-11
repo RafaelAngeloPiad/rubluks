@@ -31,10 +31,10 @@ local ANIMATION_IDS = {
 local HUMAN_TAG = "human_melee_entity"
 local DEFAULT_VARIANT = "Arabandit_Sand"
 
-local FOLLOW_RANGE = 100
-local ATTACK_RANGE = 8
-local MAX_RADIUS = 40
-local RETURN_RADIUS = 60
+local FOLLOW_RANGE = 20
+local ATTACK_RANGE = 3
+local MAX_RADIUS = 20
+local RETURN_RADIUS = 20
 local RETURN_WAIT = 2
 local UPDATE_RATE = 0.2
 
@@ -44,6 +44,8 @@ local POINT_COOLDOWN = 4
 local WALK_SPEED_THRESHOLD = 9
 local RUN_SPEED_THRESHOLD = 14
 local SWIM_SPEED_THRESHOLD = 6
+local FLEE_HEALTH_THRESHOLD = 0.3
+local FLEE_DISTANCE = 40
 
 local HITBOX_OFFSET = CFrame.new(0, 0, -4)
 local HITBOX_SIZE = Vector3.new(8, 8, 8)
@@ -170,6 +172,7 @@ local function initializeHumanMelee(character, variantName)
 	local attacking = false
 	local lastAttackTime = 0
 	local lastPointTime = 0
+	local fleeing = false
 
 	local function setMovementTrack(track, fade)
 		if movementLocked then
@@ -200,6 +203,10 @@ local function initializeHumanMelee(character, variantName)
 
 	local function unlockMovement()
 		movementLocked = false
+	end
+
+	if animations.idle then
+		setMovementTrack(animations.idle, 0)
 	end
 
 	local function spawnAttackHitbox(markerName)
@@ -510,11 +517,31 @@ local function initializeHumanMelee(character, variantName)
 
 			local position = root.Position
 			local distanceFromSpawn = (position - spawnPosition).Magnitude
+			local atSpawn = distanceFromSpawn <= 5
 
-			if returningHome and distanceFromSpawn <= MAX_RADIUS * 0.8 then
+			if returningHome and atSpawn then
 				returningHome = false
 			end
 			
+			local maxHealth = math.max(humanoid.MaxHealth, 1)
+			local healthPercent = humanoid.Health / maxHealth
+			local shouldFlee = FLEE_HEALTH_THRESHOLD > 0 and healthPercent <= FLEE_HEALTH_THRESHOLD
+
+			if shouldFlee and not fleeing then
+				-- interrupt point or attack animations when switching to flee state
+				if isPointing and animations.point and animations.point.IsPlaying then
+					pcall(function() animations.point:Stop(0.05) end)
+				end
+				if attacking and attackTrack and attackTrack.IsPlaying then
+					pcall(function() attackTrack:Stop(0.05) end)
+				end
+				isPointing = false
+				attacking = false
+				movementLocked = false
+			end
+
+			fleeing = shouldFlee
+
 			local previousTargetPlayer = currentTargetPlayer
 
 			if not returningHome then
@@ -526,7 +553,7 @@ local function initializeHumanMelee(character, variantName)
 
 					local isNewTarget = previousTargetPlayer ~= player
 
-					if isNewTarget and not attacking and distance > ATTACK_RANGE then
+					if atSpawn and isNewTarget and not attacking and distance > ATTACK_RANGE and not fleeing then
 						playPointAnimation(targetRoot)
 					end
 
@@ -547,13 +574,32 @@ local function initializeHumanMelee(character, variantName)
 					currentTargetPlayer = nil
 					returningHome = true
 					cancelPath()
+				elseif fleeing then
+					cancelPath()
+					returningHome = false
+					if not attacking and not isPointing then
+						resetNetworkOwner()
+						local fleeVector = position - currentTargetRoot.Position
+						fleeVector = Vector3.new(fleeVector.X, 0, fleeVector.Z)
+						if fleeVector.Magnitude < 1 then
+							fleeVector = -root.CFrame.LookVector
+							fleeVector = Vector3.new(fleeVector.X, 0, fleeVector.Z)
+						end
+						if fleeVector.Magnitude > 0 then
+							fleeVector = fleeVector.Unit
+							local fleeTarget = position + (fleeVector * FLEE_DISTANCE)
+							fleeTarget = Vector3.new(fleeTarget.X, spawnPosition.Y, fleeTarget.Z)
+							humanoid:MoveTo(fleeTarget)
+							setMovementTrack(animations.run, 0.1)
+						end
+					end
 				elseif targetDistance <= ATTACK_RANGE then
 					cancelPath()
-					if not attacking and not isPointing then
+					if not attacking and not isPointing and not fleeing then
 						playAttack()
 					end
 				else
-					if not attacking and not isPointing then
+					if not attacking and not isPointing and not fleeing then
 						if blocked(currentTargetRoot.Position, targetCharacter) or stuck() then
 							if not pathfindingTo then
 								task.spawn(pathfindTo, currentTargetRoot.Position, currentTargetRoot)
@@ -583,13 +629,18 @@ local function initializeHumanMelee(character, variantName)
 					resetNetworkOwner()
 					humanoid:MoveTo(spawnPosition)
 				end
-				if distanceFromSpawn <= 5 then
+				if atSpawn then
 					returningHome = false
+					if not currentTargetRoot and not attacking and not isPointing and not fleeing then
+						setMovementTrack(animations.idle)
+					end
 				end
 			else
 				if not currentTargetRoot and distanceFromSpawn > 5 and not attacking then
 					resetNetworkOwner()
 					humanoid:MoveTo(spawnPosition)
+				elseif not currentTargetRoot and atSpawn and not attacking and not isPointing and not fleeing then
+					setMovementTrack(animations.idle)
 				end
 			end
 		end
