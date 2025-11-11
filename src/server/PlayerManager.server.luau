@@ -4282,4 +4282,3 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 
 	enforceStatCaps(leaderstats)
 end)
-
