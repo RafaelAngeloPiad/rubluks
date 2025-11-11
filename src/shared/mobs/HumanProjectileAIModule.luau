@@ -1,12 +1,16 @@
--- Human Melee AI Module
--- Handles pathfinding, animation control, and attack logic for human-style melee mobs
+-- Human Projectile AI Module
+-- Handles pathfinding, animation control, and ranged attack logic for human-style projectile mobs
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
 
-local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
+
+local ArcherArrowFolder = ReplicatedStorage:WaitForChild("ArcherArrow")
+local ArrowTemplate = ArcherArrowFolder:WaitForChild("Arrow")
 
 local MobStatsDisplay = nil
 pcall(function()
@@ -24,21 +28,21 @@ local ANIMATION_IDS = {
 	fall = "507767968",
 	climb = "507765644",
 	point = "507770453",
-	attack = "108607323782800",
+	attack = "70754044037236",
 }
 
 -- Core behaviour tuning
-local HUMAN_TAG = "human_melee_entity"
-local DEFAULT_VARIANT = "Arabandit_Sand"
+local HUMAN_TAG = "human_projectile_entity"
+local DEFAULT_VARIANT = "Arrabow_Sand"
 
 local FOLLOW_RANGE = 50
-local ATTACK_RANGE = 3
+local ATTACK_RANGE = 35
 local MAX_RADIUS = 50
 local RETURN_RADIUS = 50
 local RETURN_WAIT = 2
 local UPDATE_RATE = 0.2
 
-local ATTACK_COOLDOWN = 1.4
+local ATTACK_COOLDOWN = 1.8
 local POINT_COOLDOWN = 4
 
 local WALK_SPEED_THRESHOLD = 9
@@ -47,9 +51,9 @@ local SWIM_SPEED_THRESHOLD = 6
 local FLEE_HEALTH_THRESHOLD = 0.3
 local FLEE_DISTANCE = 40
 
-local HITBOX_OFFSET = CFrame.new(0, 0, -4)
-local HITBOX_SIZE = Vector3.new(8, 8, 8)
-local HITBOX_VISUAL_COLOR = Color3.new(1, 0.2, 0.2)
+local HITBOX_VISUAL_COLOR = Color3.new(0, 1, 0)
+
+local DEFAULT_ARROW_OFFSET = Vector3.new(0, 2, -2)
 
 -- Pathfinding configuration
 local agentParameters = {
@@ -83,7 +87,7 @@ local function loadTrack(animator, id, looped, priority)
 	end)
 
 	if not success or not track then
-		warn("[HumanMelee] Failed to load animation", id)
+		warn("[HumanProjectile] Failed to load animation", id)
 		return nil
 	end
 
@@ -120,7 +124,7 @@ local function playTrack(track, fade)
 	end)
 
 	if not success then
-		warn("[HumanMelee] Failed to play animation:", err)
+		warn("[HumanProjectile] Failed to play animation:", err)
 	end
 end
 
@@ -134,11 +138,40 @@ local function stopTrack(track, fade)
 	end)
 
 	if not success then
-		warn("[HumanMelee] Failed to stop animation:", err)
+		warn("[HumanProjectile] Failed to stop animation:", err)
 	end
 end
 
-local function initializeHumanMelee(character, variantName)
+local function getArrowSpawnOffset()
+	if _G and _G.getArrowSpawnOffset then
+		local ok, offset = pcall(function()
+			return _G.getArrowSpawnOffset(false)
+		end)
+		if ok and offset then
+			return offset
+		end
+	end
+	return DEFAULT_ARROW_OFFSET
+end
+
+local function getArrowHitboxConfig()
+	if _G and _G.ARCHER_ARROW_HITBOX then
+		return _G.ARCHER_ARROW_HITBOX
+	end
+
+	return {
+		size = Vector3.new(2, 2, 6),
+		visualSpeed = 180,
+		hitboxSpeed = 180,
+		delay = 0,
+		anchorDelay = 0.2,
+		showVisual = true,
+		visualColor = HITBOX_VISUAL_COLOR,
+		preventPhysicsPush = true,
+	}
+end
+
+local function initializeHumanProjectile(character, variantName)
 	variantName = variantName or DEFAULT_VARIANT
 
 	if not character or not character:IsA("Model") then
@@ -149,13 +182,13 @@ local function initializeHumanMelee(character, variantName)
 	local root = character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart
 
 	if not humanoid or not root then
-		warn("[HumanMelee] Missing humanoid or root part for", character.Name)
+		warn("[HumanProjectile] Missing humanoid or root part for", character.Name)
 		return
 	end
 
 	local statsApplied = MobStatsConfig.applyStats(character, variantName)
 	if not statsApplied then
-		warn("[HumanMelee] Failed to apply stats for variant:", variantName)
+		warn("[HumanProjectile] Failed to apply stats for variant:", variantName)
 	end
 
 	CollectionService:AddTag(character, HUMAN_TAG)
@@ -173,6 +206,9 @@ local function initializeHumanMelee(character, variantName)
 	local lastAttackTime = 0
 	local lastPointTime = 0
 	local fleeing = false
+
+	local currentTargetPlayer = nil
+	local currentTargetRoot = nil
 
 	local function setMovementTrack(track, fade)
 		if movementLocked then
@@ -209,47 +245,101 @@ local function initializeHumanMelee(character, variantName)
 		setMovementTrack(animations.idle, 0)
 	end
 
-	local function spawnAttackHitbox(markerName)
+	local function getProjectileDamage(stats)
+		local damage = character:GetAttribute("Damage")
+		if damage and damage > 0 then
+			return damage
+		end
+
+		if stats and stats.Damage then
+			return stats.Damage
+		end
+
+		return 20
+	end
+
+	local function computeProjectileDirection()
+		if currentTargetRoot and currentTargetRoot.Parent then
+			local direction = currentTargetRoot.Position - root.Position
+			if direction.Magnitude > 0.01 then
+				return direction.Unit
+			end
+		end
+		return root.CFrame.LookVector
+	end
+
+	local function spawnProjectile()
 		if not attacking then
 			return
 		end
 
-		if not _G or not _G.createStaticHitbox then
+		if not _G or not _G.createProjectileHitbox then
 			return
 		end
 
-		local damage = character:GetAttribute("Damage") or 25
-		local stats = MobStatsConfig.getStats(variantName)
-		local hitboxName = string.format("HumanMelee_%s", markerName or "Attack")
+		local arrowInstance = ArrowTemplate:Clone()
+		arrowInstance.Parent = workspace
 
-		local hitboxConfig = {
-			attachTo = root,
-			offset = HITBOX_OFFSET,
-			size = HITBOX_SIZE,
-			damage = damage,
-			character = character,
-			name = hitboxName,
-			showVisual = true,
-			visualColor = HITBOX_VISUAL_COLOR,
-			delay = 0,
-		}
+		local spawnOffset = getArrowSpawnOffset()
+		local rotation = CFrame.Angles(0, math.rad(-90), 0)
 
-		if stats and stats.StatusAilment then
-			hitboxConfig.statusAilment = stats.StatusAilment
+		arrowInstance:PivotTo(root.CFrame * CFrame.new(spawnOffset.X, spawnOffset.Y, -spawnOffset.Z) * rotation)
+
+		for _, part in ipairs(arrowInstance:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = false
+				part.CanQuery = false
+				part.CanTouch = false
+			end
 		end
 
-		_G.createStaticHitbox(hitboxConfig)
+		local arrowMain = arrowInstance:FindFirstChildWhichIsA("BasePart") or arrowInstance
+		local stats = MobStatsConfig.getStats(variantName)
+		local damage = getProjectileDamage(stats)
+		local direction = computeProjectileDirection()
+		local arrowConfig = getArrowHitboxConfig()
+
+		_G.createProjectileHitbox({
+			visualPart = arrowMain,
+			direction = direction,
+			size = arrowConfig.size,
+			damage = damage,
+			character = character,
+			name = "ArrabowArrow",
+			visualSpeed = arrowConfig.visualSpeed,
+			hitboxSpeed = arrowConfig.hitboxSpeed,
+			delay = arrowConfig.delay,
+			anchorDelay = arrowConfig.anchorDelay,
+			showVisual = arrowConfig.showVisual,
+			visualColor = HITBOX_VISUAL_COLOR,
+			preventPhysicsPush = arrowConfig.preventPhysicsPush,
+			statusAilment = stats and stats.StatusAilment or nil,
+		})
+
+		Debris:AddItem(arrowInstance, 3)
 	end
 
 	local attackTrack = animations.attack
 	if attackTrack then
-		attackTrack:GetMarkerReachedSignal("slash1"):Connect(function()
-			spawnAttackHitbox("slash1")
-		end)
+		attackTrack:GetMarkerReachedSignal("Arrow"):Connect(spawnProjectile)
+	end
 
-		attackTrack:GetMarkerReachedSignal("slash2"):Connect(function()
-			spawnAttackHitbox("slash2")
-		end)
+	local function faceCurrentTarget()
+		if not currentTargetRoot or not root then
+			return
+		end
+
+		if not currentTargetRoot.Parent then
+			return
+		end
+
+		local targetPosition = currentTargetRoot.Position
+		local rootPosition = root.Position
+		local lookAtPosition = Vector3.new(targetPosition.X, rootPosition.Y, targetPosition.Z)
+		if (lookAtPosition - rootPosition).Magnitude > 0.01 then
+			root.CFrame = CFrame.lookAt(rootPosition, lookAtPosition)
+		end
 	end
 
 	local function playAttack()
@@ -270,6 +360,7 @@ local function initializeHumanMelee(character, variantName)
 		movementLocked = true
 
 		stopMovement()
+		faceCurrentTarget()
 
 		local connection
 		connection = attackTrack.Stopped:Connect(function()
@@ -382,8 +473,6 @@ local function initializeHumanMelee(character, variantName)
 	local spawnPosition = character:GetPivot().Position
 	local timeSinceTarget = 0
 	local returningHome = false
-	local currentTargetPlayer = nil
-	local currentTargetRoot = nil
 	local pathfindingTo = false
 	local pathsCreated = 0
 	local pathStarted = false
@@ -522,13 +611,12 @@ local function initializeHumanMelee(character, variantName)
 			if returningHome and atSpawn then
 				returningHome = false
 			end
-			
+
 			local maxHealth = math.max(humanoid.MaxHealth, 1)
 			local healthPercent = humanoid.Health / maxHealth
 			local shouldFlee = FLEE_HEALTH_THRESHOLD > 0 and healthPercent <= FLEE_HEALTH_THRESHOLD
 
 			if shouldFlee and not fleeing then
-				-- interrupt point or attack animations when switching to flee state
 				if isPointing and animations.point and animations.point.IsPlaying then
 					pcall(function() animations.point:Stop(0.05) end)
 				end
@@ -647,16 +735,16 @@ local function initializeHumanMelee(character, variantName)
 	end)
 end
 
-local HumanMeleeAIModule = {}
+local HumanProjectileAIModule = {}
 
-function HumanMeleeAIModule.initializeHumanMelee(model, variantName)
-	initializeHumanMelee(model, variantName)
+function HumanProjectileAIModule.initializeHumanProjectile(model, variantName)
+	initializeHumanProjectile(model, variantName)
 end
 
-function HumanMeleeAIModule.isInitialized(_model)
+function HumanProjectileAIModule.isInitialized(_model)
 	return false
 end
 
-return HumanMeleeAIModule
+return HumanProjectileAIModule
 
 

@@ -1,11 +1,13 @@
--- Human Melee AI Module
--- Handles pathfinding, animation control, and attack logic for human-style melee mobs
+-- Human Wizard AI Module
+-- Handles pathfinding, animation control, and homing projectile attack logic for human-style caster mobs
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
 
-local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
 
 local MobStatsDisplay = nil
@@ -24,21 +26,21 @@ local ANIMATION_IDS = {
 	fall = "507767968",
 	climb = "507765644",
 	point = "507770453",
-	attack = "108607323782800",
+	attack = "522635514",
 }
 
 -- Core behaviour tuning
-local HUMAN_TAG = "human_melee_entity"
-local DEFAULT_VARIANT = "Arabandit_Sand"
+local HUMAN_TAG = "human_wizard_entity"
+local DEFAULT_VARIANT = "Arawizard_Sand"
 
 local FOLLOW_RANGE = 50
-local ATTACK_RANGE = 3
+local ATTACK_RANGE = 38
 local MAX_RADIUS = 50
 local RETURN_RADIUS = 50
 local RETURN_WAIT = 2
 local UPDATE_RATE = 0.2
 
-local ATTACK_COOLDOWN = 1.4
+local ATTACK_COOLDOWN = 2
 local POINT_COOLDOWN = 4
 
 local WALK_SPEED_THRESHOLD = 9
@@ -47,9 +49,12 @@ local SWIM_SPEED_THRESHOLD = 6
 local FLEE_HEALTH_THRESHOLD = 0.3
 local FLEE_DISTANCE = 40
 
-local HITBOX_OFFSET = CFrame.new(0, 0, -4)
-local HITBOX_SIZE = Vector3.new(8, 8, 8)
-local HITBOX_VISUAL_COLOR = Color3.new(1, 0.2, 0.2)
+local HITBOX_VISUAL_COLOR = Color3.new(0.3, 0.8, 1)
+
+local ORB_SPAWN_OFFSET = Vector3.new(0, 2, -2)
+local ORB_SPEED = 90
+local ORB_LIFETIME = 0.5
+local ORB_HITBOX_SIZE = Vector3.new(5, 5, 5)
 
 -- Pathfinding configuration
 local agentParameters = {
@@ -83,7 +88,7 @@ local function loadTrack(animator, id, looped, priority)
 	end)
 
 	if not success or not track then
-		warn("[HumanMelee] Failed to load animation", id)
+		warn("[HumanWizard] Failed to load animation", id)
 		return nil
 	end
 
@@ -120,7 +125,7 @@ local function playTrack(track, fade)
 	end)
 
 	if not success then
-		warn("[HumanMelee] Failed to play animation:", err)
+		warn("[HumanWizard] Failed to play animation:", err)
 	end
 end
 
@@ -134,11 +139,25 @@ local function stopTrack(track, fade)
 	end)
 
 	if not success then
-		warn("[HumanMelee] Failed to stop animation:", err)
+		warn("[HumanWizard] Failed to stop animation:", err)
 	end
 end
 
-local function initializeHumanMelee(character, variantName)
+local function waitForTravelingHitbox()
+	if not _G then
+		return false
+	end
+
+	local retries = 0
+	while not _G.createTravelingHitbox and retries < 30 do
+		retries += 1
+		task.wait(0.1)
+	end
+
+	return _G.createTravelingHitbox ~= nil
+end
+
+local function initializeHumanWizard(character, variantName)
 	variantName = variantName or DEFAULT_VARIANT
 
 	if not character or not character:IsA("Model") then
@@ -149,19 +168,24 @@ local function initializeHumanMelee(character, variantName)
 	local root = character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart
 
 	if not humanoid or not root then
-		warn("[HumanMelee] Missing humanoid or root part for", character.Name)
+		warn("[HumanWizard] Missing humanoid or root part for", character.Name)
 		return
 	end
 
 	local statsApplied = MobStatsConfig.applyStats(character, variantName)
 	if not statsApplied then
-		warn("[HumanMelee] Failed to apply stats for variant:", variantName)
+		warn("[HumanWizard] Failed to apply stats for variant:", variantName)
 	end
 
 	CollectionService:AddTag(character, HUMAN_TAG)
 
 	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 		MobStatsDisplay.createMobStatsDisplay(character)
+	end
+
+	if not waitForTravelingHitbox() then
+		warn("[HumanWizard] createTravelingHitbox not available")
+		return
 	end
 
 	local animations = createAnimationSet(humanoid)
@@ -173,6 +197,9 @@ local function initializeHumanMelee(character, variantName)
 	local lastAttackTime = 0
 	local lastPointTime = 0
 	local fleeing = false
+
+	local currentTargetPlayer = nil
+	local currentTargetRoot = nil
 
 	local function setMovementTrack(track, fade)
 		if movementLocked then
@@ -209,47 +236,204 @@ local function initializeHumanMelee(character, variantName)
 		setMovementTrack(animations.idle, 0)
 	end
 
-	local function spawnAttackHitbox(markerName)
+	local function getProjectileDamage(stats)
+		local damage = character:GetAttribute("Damage")
+		if damage and damage > 0 then
+			return damage
+		end
+
+		if stats and stats.Damage then
+			return stats.Damage
+		end
+
+		return 20
+	end
+
+	local function getClosestPlayer()
+		local closestPlayer = nil
+		local closestRoot = nil
+		local closestDistance = FOLLOW_RANGE
+
+		for _, player in ipairs(Players:GetPlayers()) do
+			local playerCharacter = player.Character
+			if playerCharacter then
+				local playerRoot = playerCharacter:FindFirstChild("HumanoidRootPart")
+				local playerHumanoid = playerCharacter:FindFirstChildOfClass("Humanoid")
+
+				if playerRoot and playerHumanoid and playerHumanoid.Health > 0 then
+					local distance = (root.Position - playerRoot.Position).Magnitude
+					if distance < closestDistance then
+						closestDistance = distance
+						closestPlayer = player
+						closestRoot = playerRoot
+					end
+				end
+			end
+		end
+
+		return closestPlayer, closestRoot, closestDistance
+	end
+
+	local function getWizardTarget()
+		if currentTargetRoot and currentTargetRoot.Parent then
+			return currentTargetRoot
+		end
+
+		local _, targetRoot = getClosestPlayer()
+		return targetRoot
+	end
+
+	local function computeProjectileDirection()
+		local targetRoot = getWizardTarget()
+		if targetRoot and targetRoot.Parent then
+			local direction = targetRoot.Position - root.Position
+			if direction.Magnitude > 0.01 then
+				return direction.Unit
+			end
+		end
+
+		return root.CFrame.LookVector
+	end
+
+	local function realignProjectile(instance, basePart, direction)
+		if not instance or not basePart or direction.Magnitude <= 0 then
+			return
+		end
+
+		local lookCFrame = CFrame.lookAt(basePart.Position, basePart.Position + direction)
+		if instance:IsA("Model") then
+			instance:PivotTo(lookCFrame)
+		else
+			basePart.CFrame = lookCFrame
+		end
+	end
+
+	local function spawnProjectile()
 		if not attacking then
 			return
 		end
 
-		if not _G or not _G.createStaticHitbox then
+		if not _G or not _G.createTravelingHitbox then
 			return
 		end
 
-		local damage = character:GetAttribute("Damage") or 25
-		local stats = MobStatsConfig.getStats(variantName)
-		local hitboxName = string.format("HumanMelee_%s", markerName or "Attack")
+		local orbInstance = Instance.new("Part")
+		orbInstance.Name = "WizardOrbHoming"
+		orbInstance.Size = Vector3.new(2, 2, 2)
+		orbInstance.Shape = Enum.PartType.Ball
+		orbInstance.Material = Enum.Material.Neon
+		orbInstance.Color = Color3.fromRGB(90, 190, 255)
+		orbInstance.Transparency = 0.2
+		orbInstance.CanCollide = false
+		orbInstance.CanQuery = false
+		orbInstance.CanTouch = false
+		orbInstance.Anchored = false
+		orbInstance.Parent = workspace
 
-		local hitboxConfig = {
-			attachTo = root,
-			offset = HITBOX_OFFSET,
-			size = HITBOX_SIZE,
+		local orbMain: BasePart = orbInstance
+
+		local spawnCFrame = root.CFrame * CFrame.new(ORB_SPAWN_OFFSET.X, ORB_SPAWN_OFFSET.Y, ORB_SPAWN_OFFSET.Z)
+
+		orbInstance.CFrame = spawnCFrame
+
+		local stats = MobStatsConfig.getStats(variantName)
+		local damage = getProjectileDamage(stats)
+
+		local initialDirection = computeProjectileDirection()
+		if initialDirection.Magnitude <= 0 then
+			initialDirection = root.CFrame.LookVector
+		end
+
+		realignProjectile(orbInstance, orbMain, initialDirection)
+
+		local bodyVelocity = Instance.new("BodyVelocity")
+		bodyVelocity.Name = "WizardMissileVelocity"
+		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+		bodyVelocity.Velocity = initialDirection * ORB_SPEED
+		bodyVelocity.Parent = orbMain
+
+		local cleanupConnection
+		local homingConnection
+
+		local function cleanup()
+			if homingConnection then
+				homingConnection:Disconnect()
+				homingConnection = nil
+			end
+			if cleanupConnection then
+				cleanupConnection:Disconnect()
+				cleanupConnection = nil
+			end
+			if orbInstance and orbInstance.Parent then
+				orbInstance:Destroy()
+			end
+		end
+
+		cleanupConnection = orbMain.AncestryChanged:Connect(function(_, parent)
+			if not parent then
+				cleanup()
+			end
+		end)
+
+		_G.createTravelingHitbox({
+			attachTo = orbMain,
+			offset = CFrame.new(0, 0, 0),
+			size = ORB_HITBOX_SIZE,
 			damage = damage,
 			character = character,
-			name = hitboxName,
+			name = "ArawizardOrb",
 			showVisual = true,
 			visualColor = HITBOX_VISUAL_COLOR,
 			delay = 0,
-		}
+			actionType = nil,
+			classType = nil,
+			statusAilment = stats and stats.StatusAilment or nil,
+		})
 
-		if stats and stats.StatusAilment then
-			hitboxConfig.statusAilment = stats.StatusAilment
-		end
+		local spawnTime = tick()
 
-		_G.createStaticHitbox(hitboxConfig)
+		homingConnection = RunService.Heartbeat:Connect(function()
+			if not orbInstance or not orbInstance.Parent or not orbMain or not orbMain.Parent then
+				cleanup()
+				return
+			end
+
+			if tick() - spawnTime >= ORB_LIFETIME then
+				cleanup()
+				return
+			end
+
+			local targetRoot = getWizardTarget()
+			if targetRoot and targetRoot.Parent then
+				local directionVector = targetRoot.Position - orbMain.Position
+				if directionVector.Magnitude > 0.1 then
+					local direction = directionVector.Unit
+					bodyVelocity.Velocity = direction * ORB_SPEED
+					realignProjectile(orbInstance, orbMain, direction)
+				end
+			end
+		end)
+
+		Debris:AddItem(orbInstance, ORB_LIFETIME + 1)
 	end
 
 	local attackTrack = animations.attack
-	if attackTrack then
-		attackTrack:GetMarkerReachedSignal("slash1"):Connect(function()
-			spawnAttackHitbox("slash1")
-		end)
 
-		attackTrack:GetMarkerReachedSignal("slash2"):Connect(function()
-			spawnAttackHitbox("slash2")
-		end)
+	local function faceCurrentTarget()
+		if not currentTargetRoot or not root then
+			return
+		end
+
+		if not currentTargetRoot.Parent then
+			return
+		end
+
+		local targetPosition = currentTargetRoot.Position
+		local rootPosition = root.Position
+		local lookAtPosition = Vector3.new(targetPosition.X, rootPosition.Y, targetPosition.Z)
+		if (lookAtPosition - rootPosition).Magnitude > 0.01 then
+			root.CFrame = CFrame.lookAt(rootPosition, lookAtPosition)
+		end
 	end
 
 	local function playAttack()
@@ -270,18 +454,27 @@ local function initializeHumanMelee(character, variantName)
 		movementLocked = true
 
 		stopMovement()
+		faceCurrentTarget()
 
 		local connection
-		connection = attackTrack.Stopped:Connect(function()
-			attacking = false
-			movementLocked = false
-			if connection then
-				connection:Disconnect()
-				connection = nil
-			end
-		end)
+		if attackTrack then
+			connection = attackTrack.Stopped:Connect(function()
+				attacking = false
+				movementLocked = false
+				if connection then
+					connection:Disconnect()
+					connection = nil
+				end
+			end)
+		end
 
 		playTrack(attackTrack, 0.1)
+
+		task.delay(0.25, function()
+			if attacking then
+				spawnProjectile()
+			end
+		end)
 	end
 
 	local function playPointAnimation(targetRoot)
@@ -382,8 +575,6 @@ local function initializeHumanMelee(character, variantName)
 	local spawnPosition = character:GetPivot().Position
 	local timeSinceTarget = 0
 	local returningHome = false
-	local currentTargetPlayer = nil
-	local currentTargetRoot = nil
 	local pathfindingTo = false
 	local pathsCreated = 0
 	local pathStarted = false
@@ -423,6 +614,10 @@ local function initializeHumanMelee(character, variantName)
 		pathStarted = false
 		pathfindingTo = false
 		pathsCreated += 1
+	end
+
+	local function shouldReturnHome(currentPosition)
+		return (currentPosition - spawnPosition).Magnitude > MAX_RADIUS
 	end
 
 	local function pathfindTo(goalPosition, targetPart)
@@ -469,35 +664,6 @@ local function initializeHumanMelee(character, variantName)
 		end
 	end
 
-	local function getClosestPlayer()
-		local closestPlayer = nil
-		local closestRoot = nil
-		local closestDistance = FOLLOW_RANGE
-
-		for _, player in ipairs(Players:GetPlayers()) do
-			local playerCharacter = player.Character
-			if playerCharacter then
-				local playerRoot = playerCharacter:FindFirstChild("HumanoidRootPart")
-				local playerHumanoid = playerCharacter:FindFirstChildOfClass("Humanoid")
-
-				if playerRoot and playerHumanoid and playerHumanoid.Health > 0 then
-					local distance = (root.Position - playerRoot.Position).Magnitude
-					if distance < closestDistance then
-						closestDistance = distance
-						closestPlayer = player
-						closestRoot = playerRoot
-					end
-				end
-			end
-		end
-
-		return closestPlayer, closestRoot, closestDistance
-	end
-
-	local function shouldReturnHome(currentPosition)
-		return (currentPosition - spawnPosition).Magnitude > MAX_RADIUS
-	end
-
 	task.spawn(function()
 		while task.wait(UPDATE_RATE) do
 			if not character.Parent or not humanoid or humanoid.Health <= 0 then
@@ -522,13 +688,12 @@ local function initializeHumanMelee(character, variantName)
 			if returningHome and atSpawn then
 				returningHome = false
 			end
-			
+
 			local maxHealth = math.max(humanoid.MaxHealth, 1)
 			local healthPercent = humanoid.Health / maxHealth
 			local shouldFlee = FLEE_HEALTH_THRESHOLD > 0 and healthPercent <= FLEE_HEALTH_THRESHOLD
 
 			if shouldFlee and not fleeing then
-				-- interrupt point or attack animations when switching to flee state
 				if isPointing and animations.point and animations.point.IsPlaying then
 					pcall(function() animations.point:Stop(0.05) end)
 				end
@@ -647,16 +812,16 @@ local function initializeHumanMelee(character, variantName)
 	end)
 end
 
-local HumanMeleeAIModule = {}
+local HumanWizardAIModule = {}
 
-function HumanMeleeAIModule.initializeHumanMelee(model, variantName)
-	initializeHumanMelee(model, variantName)
+function HumanWizardAIModule.initializeHumanWizard(model, variantName)
+	initializeHumanWizard(model, variantName)
 end
 
-function HumanMeleeAIModule.isInitialized(_model)
+function HumanWizardAIModule.isInitialized(_model)
 	return false
 end
 
-return HumanMeleeAIModule
+return HumanWizardAIModule
 
 
