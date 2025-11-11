@@ -223,8 +223,8 @@ local function initializeGolem(monster, variantName)
 						task.wait(0.1)
 						timeout = timeout + 0.1
 						
-						-- Check if golem is still alive and in workspace
-						if not monster.Parent or monster.Parent ~= workspace or not humanoid or humanoid.Health <= 0 then
+						-- Check if golem is still alive and active in workspace
+						if not monster.Parent or not monster:IsDescendantOf(workspace) or not humanoid or humanoid.Health <= 0 then
 							break
 						end
 					end
@@ -245,7 +245,7 @@ local function initializeGolem(monster, variantName)
 	task.spawn(function()
 		while task.wait(UPDATE_RATE) do
 			-- Check if model still exists, is in workspace, or golem died
-			if not monster.Parent or monster.Parent ~= workspace or not humanoid or humanoid.Health <= 0 then 
+			if not monster.Parent or not monster:IsDescendantOf(workspace) or not humanoid or humanoid.Health <= 0 then 
 				break 
 			end
 			if not root then root = monster:FindFirstChild("HumanoidRootPart") or monster.PrimaryPart end

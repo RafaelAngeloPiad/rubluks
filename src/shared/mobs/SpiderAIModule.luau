@@ -146,7 +146,7 @@ local function initializeSpider(enemy, variantName)
 					task.wait(0.1)
 					timeout += 0.1
 
-					if not enemy.Parent or enemy.Parent ~= workspace or not hum or hum.Health <= 0 then
+					if not enemy.Parent or not enemy:IsDescendantOf(workspace) or not hum or hum.Health <= 0 then
 						break
 					end
 				end
@@ -200,7 +200,7 @@ local function initializeSpider(enemy, variantName)
 
 	coroutine.wrap(function()
 		while task.wait(0.25) do
-			if not enemy.Parent or enemy.Parent ~= workspace or not hum or hum.Health <= 0 then
+			if not enemy.Parent or not enemy:IsDescendantOf(workspace) or not hum or hum.Health <= 0 then
 				cleanupConnections()
 				break
 			end

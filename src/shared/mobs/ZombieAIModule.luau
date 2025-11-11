@@ -249,7 +249,7 @@ local function initializeZombie(zombie, variantName)
 	task.spawn(function()
 		while task.wait(UPDATE_RATE) do
 			-- Check if zombie still exists and is alive
-			if not zombie or not zombie.Parent or zombie.Parent ~= workspace or not humanoid or humanoid.Health <= 0 then
+			if not zombie or not zombie.Parent or not zombie:IsDescendantOf(workspace) or not humanoid or humanoid.Health <= 0 then
 				break
 			end
 			
