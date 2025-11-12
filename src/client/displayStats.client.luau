@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
 -- RemoteEvent for dev stat changes
@@ -42,6 +43,12 @@ end
 -- Available classes
 local AvailableClasses = {"Knight", "Samurai", "Gladiator", "Brawler", "Archer"}
 
+local BASE_FRAME_SIZE = Vector2.new(350, 320)
+local BASE_MARGIN = 10
+local BASE_POSITION_OFFSET = Vector2.new(BASE_FRAME_SIZE.X + BASE_MARGIN, BASE_FRAME_SIZE.Y + BASE_MARGIN)
+local hasCustomPosition = false
+local cameraViewportConn = nil
+
 -- Create UI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "StatsDisplay"
@@ -52,12 +59,16 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 -- Main frame in bottom right corner
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 350, 0, 700)
-mainFrame.Position = UDim2.new(1, -360, 1, -710)
+mainFrame.Size = UDim2.new(0, BASE_FRAME_SIZE.X, 0, BASE_FRAME_SIZE.Y)
+mainFrame.Position = UDim2.new(1, -BASE_POSITION_OFFSET.X, 1, -BASE_POSITION_OFFSET.Y)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.BackgroundTransparency = 0.3
 mainFrame.Parent = screenGui
+
+local uiScale = Instance.new("UIScale")
+uiScale.Parent = mainFrame
+local currentScale = 1
 
 -- Corner rounding
 local corner = Instance.new("UICorner")
@@ -87,6 +98,7 @@ local isDragging = false
 local dragOffset = Vector2.zero
 title.MouseButton1Down:Connect(function()
 	isDragging = true
+	hasCustomPosition = true
 	local mousePos = UserInputService:GetMouseLocation()
 	local framePos = mainFrame.AbsolutePosition
 	dragOffset = mousePos - Vector2.new(framePos.X, framePos.Y)
@@ -130,6 +142,69 @@ local listLayout = Instance.new("UIListLayout")
 listLayout.Padding = UDim.new(0, 5)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrollFrame
+
+local function determineUIScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1920, 1080)
+	local minDimension = math.min(viewport.X, viewport.Y)
+
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		if minDimension <= 720 then
+			return 0.5
+		elseif minDimension <= 900 then
+			return 0.6
+		end
+		return 0.7
+	end
+
+	if viewport.X <= 1440 then
+		return 0.85
+	end
+
+	return 0.9
+end
+
+local function applyUIScaling()
+	local newScale = determineUIScale()
+	if math.abs(newScale - currentScale) > 1e-3 then
+		currentScale = newScale
+		uiScale.Scale = newScale
+	end
+
+	if not hasCustomPosition then
+		local scaledOffset = BASE_POSITION_OFFSET * currentScale
+		mainFrame.Position = UDim2.new(1, -math.round(scaledOffset.X), 1, -math.round(scaledOffset.Y))
+	end
+
+	scrollFrame.ScrollBarThickness = math.max(3, math.floor(5 * currentScale))
+end
+
+local function bindViewportListener(camera)
+	if cameraViewportConn then
+		cameraViewportConn:Disconnect()
+		cameraViewportConn = nil
+	end
+	if camera then
+		cameraViewportConn = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			task.defer(applyUIScaling)
+		end)
+	end
+end
+
+local function refreshViewportScaling()
+	bindViewportListener(Workspace.CurrentCamera)
+	applyUIScaling()
+end
+
+if Workspace.CurrentCamera then
+	refreshViewportScaling()
+else
+	task.defer(applyUIScaling)
+end
+
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	task.defer(refreshViewportScaling)
+end)
 
 local function updateCanvasSize()
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 40)

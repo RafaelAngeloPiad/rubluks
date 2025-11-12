@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local leaderstats = player:WaitForChild("leaderstats")
@@ -39,14 +40,24 @@ screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
+local BASE_FRAME_SIZE = Vector2.new(350, 320)
+local BASE_MARGIN = 10
+local BASE_POSITION_OFFSET = Vector2.new(BASE_FRAME_SIZE.X + BASE_MARGIN, BASE_FRAME_SIZE.Y + BASE_MARGIN)
+local hasCustomPosition = false
+local cameraViewportConn = nil
+
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "ControlFrame"
-mainFrame.Size = UDim2.new(0, 350, 0, 320)
-mainFrame.Position = UDim2.new(1, -360, 1, -240)
+mainFrame.Size = UDim2.new(0, BASE_FRAME_SIZE.X, 0, BASE_FRAME_SIZE.Y)
+mainFrame.Position = UDim2.new(1, -BASE_POSITION_OFFSET.X, 1, -BASE_POSITION_OFFSET.Y)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
+
+local uiScale = Instance.new("UIScale")
+uiScale.Parent = mainFrame
+local currentScale = 1
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 8)
@@ -73,6 +84,7 @@ local dragOffset = Vector2.zero
 
 title.MouseButton1Down:Connect(function()
 	isDragging = true
+	hasCustomPosition = true
 	local mousePos = UserInputService:GetMouseLocation()
 	local framePos = mainFrame.AbsolutePosition
 	dragOffset = mousePos - Vector2.new(framePos.X, framePos.Y)
@@ -112,6 +124,67 @@ buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
 buttonLayout.FillDirection = Enum.FillDirection.Horizontal
 buttonLayout.Parent = contentFrame
+
+local function determineUIScale()
+	local camera = Workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1920, 1080)
+	local minDimension = math.min(viewport.X, viewport.Y)
+
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		if minDimension <= 720 then
+			return 0.5
+		elseif minDimension <= 900 then
+			return 0.6
+		end
+		return 0.7
+	end
+
+	if viewport.X <= 1440 then
+		return 0.85
+	end
+
+	return 0.9
+end
+
+local function applyUIScaling()
+	local newScale = determineUIScale()
+	if math.abs(newScale - currentScale) > 1e-3 then
+		currentScale = newScale
+		uiScale.Scale = newScale
+	end
+
+	if not hasCustomPosition then
+		local scaledOffset = BASE_POSITION_OFFSET * currentScale
+		mainFrame.Position = UDim2.new(1, -math.round(scaledOffset.X), 1, -math.round(scaledOffset.Y))
+	end
+end
+
+local function bindViewportListener(camera)
+	if cameraViewportConn then
+		cameraViewportConn:Disconnect()
+		cameraViewportConn = nil
+	end
+	if camera then
+		cameraViewportConn = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			task.defer(applyUIScaling)
+		end)
+	end
+end
+
+local function refreshViewportScaling()
+	bindViewportListener(Workspace.CurrentCamera)
+	applyUIScaling()
+end
+
+if Workspace.CurrentCamera then
+	refreshViewportScaling()
+else
+	task.defer(applyUIScaling)
+end
+
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	task.defer(refreshViewportScaling)
+end)
 
 local function createButton(text, color, layoutOrder, onClick)
 	local button = Instance.new("TextButton")
