@@ -137,13 +137,14 @@ end
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
 
 -- Function to create a stat row with vertical layout (name on top, value on bottom) to prevent truncation
-local function createStatRow(statName, value, color, layoutOrder)
+local function createStatRow(statName, value, color, layoutOrder, parent)
+	parent = parent or scrollFrame
 	local statFrame = Instance.new("Frame")
 	statFrame.Name = HttpService:GenerateGUID(false)
 	statFrame.Size = UDim2.new(1, -10, 0, 0) -- Height will be set automatically based on content
 	statFrame.BackgroundTransparency = 1
-	statFrame.LayoutOrder = layoutOrder
-	statFrame.Parent = scrollFrame
+	statFrame.LayoutOrder = layoutOrder or 0
+	statFrame.Parent = parent
 	
 	-- Use automatic sizing
 	local statFrameLayout = Instance.new("UIListLayout")
@@ -192,6 +193,89 @@ local function createStatRow(statName, value, color, layoutOrder)
 	end)
 	
 	return statValueLabel
+end
+
+local function createStatPairRow(entries, layoutOrder)
+	local rowFrame = Instance.new("Frame")
+	rowFrame.Name = "StatPairRow_" .. tostring(layoutOrder or 0)
+	rowFrame.Size = UDim2.new(1, -10, 0, 0)
+	rowFrame.BackgroundTransparency = 1
+	rowFrame.LayoutOrder = layoutOrder or 0
+	rowFrame.AutomaticSize = Enum.AutomaticSize.Y
+	rowFrame.Parent = scrollFrame
+
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+	layout.Padding = UDim.new(0, 5)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = rowFrame
+
+	local valueLabels = {}
+	local count = #entries
+
+	for index, entry in ipairs(entries) do
+		local widthScale = 1 / math.max(1, count)
+		local columnFrame = Instance.new("Frame")
+		columnFrame.Name = (entry.key or ("Column" .. index)) .. "_Column"
+		columnFrame.Size = UDim2.new(widthScale, count == 1 and 0 or -5, 0, 0)
+		columnFrame.BackgroundTransparency = 1
+		columnFrame.AutomaticSize = Enum.AutomaticSize.Y
+		columnFrame.Parent = rowFrame
+
+		local columnLayout = Instance.new("UIListLayout")
+		columnLayout.FillDirection = Enum.FillDirection.Vertical
+		columnLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		columnLayout.Padding = UDim.new(0, 2)
+		columnLayout.Parent = columnFrame
+
+		local statNameLabel = Instance.new("TextLabel")
+		statNameLabel.Name = (entry.key or ("Column" .. index)) .. "_Name"
+		statNameLabel.Size = UDim2.new(1, -10, 0, 0)
+		statNameLabel.Position = UDim2.new(0, 5, 0, 0)
+		statNameLabel.BackgroundTransparency = 1
+		local labelText = entry.label
+		if labelText == nil then
+			labelText = "Stat"
+		end
+		if labelText == "" then
+			statNameLabel.Text = ""
+		else
+			statNameLabel.Text = tostring(labelText) .. ":"
+		end
+		statNameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+		statNameLabel.TextSize = 12
+		statNameLabel.Font = Enum.Font.Gotham
+		statNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		statNameLabel.TextYAlignment = Enum.TextYAlignment.Top
+		statNameLabel.TextWrapped = true
+		statNameLabel.TextScaled = false
+		statNameLabel.AutomaticSize = Enum.AutomaticSize.Y
+		statNameLabel.LayoutOrder = 1
+		statNameLabel.Parent = columnFrame
+
+		local statValueLabel = Instance.new("TextLabel")
+		statValueLabel.Name = (entry.key or ("Column" .. index)) .. "_Value"
+		statValueLabel.Size = UDim2.new(1, -10, 0, 0)
+		statValueLabel.Position = UDim2.new(0, 5, 0, 0)
+		statValueLabel.BackgroundTransparency = 1
+		statValueLabel.Text = entry.value ~= nil and tostring(entry.value) or "—"
+		statValueLabel.TextColor3 = entry.color or Color3.fromRGB(255, 255, 255)
+		statValueLabel.TextSize = 12
+		statValueLabel.Font = Enum.Font.GothamBold
+		statValueLabel.TextXAlignment = Enum.TextXAlignment.Left
+		statValueLabel.TextYAlignment = Enum.TextYAlignment.Top
+		statValueLabel.TextWrapped = true
+		statValueLabel.TextScaled = false
+		statValueLabel.AutomaticSize = Enum.AutomaticSize.Y
+		statValueLabel.LayoutOrder = 2
+		statValueLabel.Parent = columnFrame
+
+		valueLabels[entry.key or ("Column" .. index)] = statValueLabel
+	end
+
+	return valueLabels
 end
 
 local function formatBonus(amount)
@@ -367,95 +451,158 @@ local function updateStatsDisplay()
 	layoutOrder = layoutOrder + 1
 	
 	-- Display live stats from leaderstats
-	if leaderstats:FindFirstChild("Level") then
-		statLabels["Level"] = createStatRow("Level", leaderstats.Level.Value, getStatColor("Level"), layoutOrder)
-		layoutOrder = layoutOrder + 1
-	end
-	
+	local classValue = leaderstats:FindFirstChild("Class") and leaderstats.Class.Value or "N/A"
+	local levelValue = leaderstats:FindFirstChild("Level") and leaderstats.Level.Value or "N/A"
+
+	local xpText = "N/A"
 	if leaderstats:FindFirstChild("CurrentXP") and leaderstats:FindFirstChild("MaximumXP") then
-		local xpText = string.format("%d / %d", leaderstats.CurrentXP.Value, leaderstats.MaximumXP.Value)
-		statLabels["CurrentXP"] = createStatRow("XP", xpText, getStatColor("CurrentXP"), layoutOrder)
-		layoutOrder = layoutOrder + 1
+		xpText = string.format("%d / %d", leaderstats.CurrentXP.Value, leaderstats.MaximumXP.Value)
 	end
-	
-	if leaderstats:FindFirstChild("Class") then
-		statLabels["Class"] = createStatRow("Class", leaderstats.Class.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
-		layoutOrder = layoutOrder + 1
-	end
-	
+
+	local slavkoinsText = leaderstats:FindFirstChild("Slavkoins") and leaderstats.Slavkoins.Value or 0
+
+	local healthText = "N/A"
 	if leaderstats:FindFirstChild("MaxHealth") then
-		local healthText = leaderstats.MaxHealth.Value
-		
-		-- Try to get current health from humanoid
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			local humanoid = player.Character.Humanoid
-			local currentHealth = humanoid.Health
-			local maxHealth = humanoid.MaxHealth
-			healthText = string.format("%.0f / %.0f", currentHealth, maxHealth)
+			healthText = string.format("%.0f / %.0f", humanoid.Health, humanoid.MaxHealth)
 		else
-			-- No character yet, just show max health
 			healthText = tostring(leaderstats.MaxHealth.Value)
 		end
-		statLabels["MaxHealth"] = createStatRow("HP", healthText, getStatColor("MaxHealth"), layoutOrder)
-		layoutOrder = layoutOrder + 1
 	end
-	
-	if leaderstats:FindFirstChild("MaxAttack") then
-		local attackText = tostring(leaderstats.MaxAttack.Value)
-		statLabels["MaxAttack"] = createStatRow("Attack", attackText, getStatColor("MaxAttack"), layoutOrder)
-		layoutOrder = layoutOrder + 1
-	end
-	
+
+	local defenseText = "N/A"
 	if leaderstats:FindFirstChild("MaxDefense") then
-		local defenseText = leaderstats.MaxDefense.Value
-		
-		-- Add current defense if it exists
 		if leaderstats:FindFirstChild("CurrentDefense") then
 			local currentDef = leaderstats.CurrentDefense.Value
 			local maxDef = leaderstats.MaxDefense.Value
 			defenseText = string.format("%.0f / %.0f", currentDef, maxDef)
 		else
-			-- No current defense, just show max
 			defenseText = tostring(leaderstats.MaxDefense.Value)
 		end
-		statLabels["MaxDefense"] = createStatRow("Defense", defenseText, getStatColor("MaxDefense"), layoutOrder)
-		layoutOrder = layoutOrder + 1
 	end
-	
-	if leaderstats:FindFirstChild("DefensePenetration") then
-		statLabels["DefensePenetration"] = createStatRow("DP", leaderstats.DefensePenetration.Value, getStatColor("DefensePenetration"), layoutOrder)
-		layoutOrder = layoutOrder + 1
+
+	local dpText = leaderstats:FindFirstChild("DefensePenetration") and leaderstats.DefensePenetration.Value or 0
+	local healthRegenText = leaderstats:FindFirstChild("HealthRegen") and leaderstats.HealthRegen.Value or 0
+
+	local classLevelLabels = createStatPairRow({
+		{key = "Class", label = "Class", value = classValue, color = Color3.fromRGB(255, 255, 255)},
+		{key = "Level", label = "Level", value = levelValue, color = getStatColor("Level")}
+	}, layoutOrder)
+	for key, label in pairs(classLevelLabels) do
+		statLabels[key] = label
 	end
-	
-	if leaderstats:FindFirstChild("CritRate") then
-		statLabels["CritRate"] = createStatRow("Crit Rate", leaderstats.CritRate.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
-		layoutOrder = layoutOrder + 1
+	layoutOrder = layoutOrder + 1
+
+	local xpCoinLabels = createStatPairRow({
+		{key = "CurrentXP", label = "XP", value = xpText, color = getStatColor("CurrentXP")},
+		{key = "Slavkoins", label = "Slavkoins", value = slavkoinsText, color = getStatColor("Slavkoins")}
+	}, layoutOrder)
+	for key, label in pairs(xpCoinLabels) do
+		statLabels[key] = label
 	end
-	
-	if leaderstats:FindFirstChild("CritMultiplier") then
-		statLabels["CritMultiplier"] = createStatRow("Crit Mult", leaderstats.CritMultiplier.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
-		layoutOrder = layoutOrder + 1
+	layoutOrder = layoutOrder + 1
+
+	local hpDefenseLabels = createStatPairRow({
+		{key = "MaxHealth", label = "HP", value = healthText, color = getStatColor("MaxHealth")},
+		{key = "MaxDefense", label = "Defense", value = defenseText, color = getStatColor("MaxDefense")}
+	}, layoutOrder)
+	for key, label in pairs(hpDefenseLabels) do
+		statLabels[key] = label
 	end
-	
-	if leaderstats:FindFirstChild("HealthRegen") then
-		statLabels["HealthRegen"] = createStatRow("Health Regen", leaderstats.HealthRegen.Value, getStatColor("HealthRegen"), layoutOrder)
-		layoutOrder = layoutOrder + 1
+	layoutOrder = layoutOrder + 1
+
+	local dpRegenLabels = createStatPairRow({
+		{key = "DefensePenetration", label = "Defense Pen", value = dpText, color = getStatColor("DefensePenetration")},
+		{key = "HealthRegen", label = "Health Regen", value = healthRegenText, color = getStatColor("HealthRegen")}
+	}, layoutOrder)
+	for key, label in pairs(dpRegenLabels) do
+		statLabels[key] = label
 	end
-	
-	if leaderstats:FindFirstChild("MovementSpeed") then
-		statLabels["MovementSpeed"] = createStatRow("Move Speed", leaderstats.MovementSpeed.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
-		layoutOrder = layoutOrder + 1
+	layoutOrder = layoutOrder + 1
+
+	local damageTexts = {
+		normal = "Select a class to see damage",
+		skill1 = "Select a class to see damage",
+		skill2 = "Select a class to see damage",
+		ult = "Select a class to see damage"
+	}
+
+	local className = leaderstats:FindFirstChild("Class") and leaderstats.Class.Value or nil
+	local maxAttackValue = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0
+	local critMultiplierValue = leaderstats:FindFirstChild("CritMultiplier") and leaderstats.CritMultiplier.Value or 150
+
+	if className and className ~= "" and className ~= "Slavkorian" then
+		local classConfig = ConfigModule and ConfigModule.Hitboxes and ConfigModule.Hitboxes.UnifiedAttacks and ConfigModule.Hitboxes.UnifiedAttacks[className]
+		if classConfig then
+			if maxAttackValue > 0 then
+				if classConfig.damage then
+					local normalDamage = math.floor(maxAttackValue * classConfig.damage)
+					local normalCritDamage = math.floor(normalDamage * (critMultiplierValue / 100))
+					damageTexts.normal = string.format("%d (Crit: %d)", normalDamage, normalCritDamage)
+				else
+					damageTexts.normal = "N/A"
+				end
+
+				if classConfig.skill1Damage then
+					local skill1Damage = math.floor(maxAttackValue * classConfig.skill1Damage)
+					local skill1CritDamage = math.floor(skill1Damage * (critMultiplierValue / 100))
+					damageTexts.skill1 = string.format("%d (Crit: %d)", skill1Damage, skill1CritDamage)
+				else
+					damageTexts.skill1 = "N/A"
+				end
+
+				if classConfig.skill2Damage then
+					local skill2Damage = math.floor(maxAttackValue * classConfig.skill2Damage)
+					local skill2CritDamage = math.floor(skill2Damage * (critMultiplierValue / 100))
+					damageTexts.skill2 = string.format("%d (Crit: %d)", skill2Damage, skill2CritDamage)
+				else
+					damageTexts.skill2 = "N/A"
+				end
+
+				if classConfig.ultDamage then
+					local ultDamage = math.floor(maxAttackValue * classConfig.ultDamage)
+					local ultCritDamage = math.floor(ultDamage * (critMultiplierValue / 100))
+					damageTexts.ult = string.format("%d (Crit: %d)", ultDamage, ultCritDamage)
+				else
+					damageTexts.ult = "N/A"
+				end
+			else
+				damageTexts.normal = "Waiting for stats..."
+				damageTexts.skill1 = "Waiting for stats..."
+				damageTexts.skill2 = "Waiting for stats..."
+				damageTexts.ult = "Waiting for stats..."
+			end
+		else
+			damageTexts.normal = "Unavailable for class"
+			damageTexts.skill1 = "Unavailable for class"
+			damageTexts.skill2 = "Unavailable for class"
+			damageTexts.ult = "Unavailable for class"
+		end
+	elseif className == "Slavkorian" then
+		damageTexts.normal = "Select a class to see damage"
+		damageTexts.skill1 = "Select a class to see damage"
+		damageTexts.skill2 = "Select a class to see damage"
+		damageTexts.ult = "Select a class to see damage"
 	end
-	
-	if leaderstats:FindFirstChild("AttackSpeed") then
-		statLabels["AttackSpeed"] = createStatRow("Atk Speed", leaderstats.AttackSpeed.Value, Color3.fromRGB(255, 255, 255), layoutOrder)
-		layoutOrder = layoutOrder + 1
+
+	local skillDamageLabels = createStatPairRow({
+		{key = "DamageSkill1", label = "Skill 1", value = damageTexts.skill1, color = Color3.fromRGB(200, 150, 255)},
+		{key = "DamageSkill2", label = "Skill 2", value = damageTexts.skill2, color = Color3.fromRGB(200, 150, 255)}
+	}, layoutOrder)
+	for key, label in pairs(skillDamageLabels) do
+		statLabels[key] = label
 	end
-	
-	if leaderstats:FindFirstChild("Slavkoins") then
-		statLabels["Slavkoins"] = createStatRow("Slavkoins", leaderstats.Slavkoins.Value, getStatColor("Slavkoins"), layoutOrder)
-		layoutOrder = layoutOrder + 1
+	layoutOrder = layoutOrder + 1
+
+	local normalUltDamageLabels = createStatPairRow({
+		{key = "DamageNormal", label = "Normal Attack", value = damageTexts.normal, color = Color3.fromRGB(255, 200, 100)},
+		{key = "DamageUlt", label = "Ultimate", value = damageTexts.ult, color = Color3.fromRGB(255, 100, 100)}
+	}, layoutOrder)
+	for key, label in pairs(normalUltDamageLabels) do
+		statLabels[key] = label
 	end
+	layoutOrder = layoutOrder + 1
 	
 	-- Add divider
 	local divider = Instance.new("Frame")
@@ -1677,65 +1824,89 @@ local function updateStatsDisplay()
 		noBuffsPassivesLabel.Parent = scrollFrame
 		layoutOrder = layoutOrder + 1
 	end
-	
-	-- Add divider
-	local divider = Instance.new("Frame")
-	divider.Size = UDim2.new(1, -10, 0, 2)
-	divider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	divider.BorderSizePixel = 0
-	divider.LayoutOrder = layoutOrder
-	divider.Parent = scrollFrame
+
+	-- Base stats section
+	local baseDivider = Instance.new("Frame")
+	baseDivider.Size = UDim2.new(1, -10, 0, 2)
+	baseDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	baseDivider.BorderSizePixel = 0
+	baseDivider.LayoutOrder = layoutOrder
+	baseDivider.Parent = scrollFrame
 	layoutOrder = layoutOrder + 1
-	
-	-- Base Stats header
+
 	local baseHeader = Instance.new("TextLabel")
-	baseHeader.Name = "BaseHeader"
+	baseHeader.Name = "BaseStatsHeader"
 	baseHeader.Size = UDim2.new(1, -10, 0, 25)
 	baseHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	baseHeader.BorderSizePixel = 0
-	baseHeader.Text = "BASE STATS (Config)"
+	baseHeader.Text = "BASE STATS"
 	baseHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 	baseHeader.TextSize = 11
 	baseHeader.Font = Enum.Font.GothamBold
 	baseHeader.LayoutOrder = layoutOrder
 	baseHeader.Parent = scrollFrame
 	layoutOrder = layoutOrder + 1
-	
-	-- Display base stats from config if available
-	if BaseStats and leaderstats:FindFirstChild("Class") then
-		local className = leaderstats.Class.Value
-		local classStats = BaseStats[className]
-		
-		if classStats then
-			statLabels["BaseHP"] = createStatRow("Base HP", classStats.HP, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseAttack"] = createStatRow("Base ATK", classStats.ATK, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseDefense"] = createStatRow("Base DEF", classStats.D, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseDP"] = createStatRow("Base DP", classStats.DP or 0, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseCR"] = createStatRow("Base CR", classStats.CR or 5, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseCM"] = createStatRow("Base CM", classStats.CM or 150, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseHR"] = createStatRow("Base HR", classStats.HR or 0, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseMspd"] = createStatRow("Base Mspd", classStats.Mspd or 18, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-			
-			statLabels["BaseAspd"] = createStatRow("Base Aspd", classStats.Aspd or 1, Color3.fromRGB(100, 255, 100), layoutOrder)
-			layoutOrder = layoutOrder + 1
-		end
+
+	local baseRowOneEntries = {}
+	if leaderstats:FindFirstChild("MaxAttack") then
+		table.insert(baseRowOneEntries, {
+			key = "MaxAttack",
+			label = "Attack",
+			value = leaderstats.MaxAttack.Value,
+			color = getStatColor("MaxAttack"),
+		})
 	end
-	
+	if leaderstats:FindFirstChild("CritRate") then
+		table.insert(baseRowOneEntries, {
+			key = "CritRate",
+			label = "Crit Rate",
+			value = leaderstats.CritRate.Value,
+			color = Color3.fromRGB(255, 255, 255),
+		})
+	end
+	if leaderstats:FindFirstChild("CritMultiplier") then
+		table.insert(baseRowOneEntries, {
+			key = "CritMultiplier",
+			label = "Crit Mult",
+			value = leaderstats.CritMultiplier.Value,
+			color = Color3.fromRGB(255, 255, 255),
+		})
+	end
+
+	if #baseRowOneEntries > 0 then
+		local baseRowOneLabels = createStatPairRow(baseRowOneEntries, layoutOrder)
+		for key, label in pairs(baseRowOneLabels) do
+			statLabels[key] = label
+		end
+		layoutOrder = layoutOrder + 1
+	end
+
+	local baseRowTwoEntries = {}
+	if leaderstats:FindFirstChild("MovementSpeed") then
+		table.insert(baseRowTwoEntries, {
+			key = "MovementSpeed",
+			label = "Move Speed",
+			value = leaderstats.MovementSpeed.Value,
+			color = Color3.fromRGB(255, 255, 255),
+		})
+	end
+	if leaderstats:FindFirstChild("AttackSpeed") then
+		table.insert(baseRowTwoEntries, {
+			key = "AttackSpeed",
+			label = "Atk Speed",
+			value = leaderstats.AttackSpeed.Value,
+			color = Color3.fromRGB(255, 255, 255),
+		})
+	end
+
+	if #baseRowTwoEntries > 0 then
+		local baseRowTwoLabels = createStatPairRow(baseRowTwoEntries, layoutOrder)
+		for key, label in pairs(baseRowTwoLabels) do
+			statLabels[key] = label
+		end
+		layoutOrder = layoutOrder + 1
+	end
+
 	-- Add divider
 	local divider2 = Instance.new("Frame")
 	divider2.Size = UDim2.new(1, -10, 0, 2)
@@ -1744,98 +1915,6 @@ local function updateStatsDisplay()
 	divider2.LayoutOrder = layoutOrder
 	divider2.Parent = scrollFrame
 	layoutOrder = layoutOrder + 1
-	
-	-- Calculated Damage header
-	local damageHeader = Instance.new("TextLabel")
-	damageHeader.Name = "DamageHeader"
-	damageHeader.Size = UDim2.new(1, -10, 0, 25)
-	damageHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	damageHeader.BorderSizePixel = 0
-	damageHeader.Text = "CALCULATED DAMAGE (Current MaxAttack)"
-	damageHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-	damageHeader.TextSize = 11
-	damageHeader.Font = Enum.Font.GothamBold
-	damageHeader.LayoutOrder = layoutOrder
-	damageHeader.Parent = scrollFrame
-	layoutOrder = layoutOrder + 1
-	
-	-- Display calculated damage values
-	if ConfigModule and ConfigModule.Hitboxes and ConfigModule.Hitboxes.UnifiedAttacks and leaderstats:FindFirstChild("Class") and leaderstats:FindFirstChild("MaxAttack") then
-		local className = leaderstats.Class.Value
-		local maxAttack = leaderstats.MaxAttack.Value
-		
-		-- Skip if class is Slavkorian (no damage config for Slavkorian)
-		if className == "Slavkorian" then
-			local noDamageLabel = Instance.new("TextLabel")
-			noDamageLabel.Name = "NoDamageLabel"
-			noDamageLabel.Size = UDim2.new(1, -10, 0, 20)
-			noDamageLabel.BackgroundTransparency = 1
-			noDamageLabel.Text = "Select a class to see damage"
-			noDamageLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-			noDamageLabel.TextSize = 11
-			noDamageLabel.Font = Enum.Font.Gotham
-			noDamageLabel.LayoutOrder = layoutOrder
-			noDamageLabel.Parent = scrollFrame
-			layoutOrder = layoutOrder + 1
-		else
-			local classConfig = ConfigModule.Hitboxes.UnifiedAttacks[className]
-			
-			if classConfig and maxAttack > 0 then
-				-- Get CritMultiplier for crit damage calculation
-				local critMultiplier = 150 -- Default
-				if leaderstats:FindFirstChild("CritMultiplier") then
-					critMultiplier = leaderstats.CritMultiplier.Value
-				end
-				
-				-- Normal attack damage
-				local normalMultiplier = classConfig.damage or 0
-				local normalDamage = math.floor(maxAttack * normalMultiplier)
-				local normalCritDamage = math.floor(normalDamage * (critMultiplier / 100))
-				statLabels["DamageNormal"] = createStatRow("Normal Attack", normalDamage .. " (Crit: " .. normalCritDamage .. ")", Color3.fromRGB(255, 200, 100), layoutOrder)
-				layoutOrder = layoutOrder + 1
-				
-				-- Skill 1 damage
-				if classConfig.skill1Damage then
-					local skill1Multiplier = classConfig.skill1Damage
-					local skill1Damage = math.floor(maxAttack * skill1Multiplier)
-					local skill1CritDamage = math.floor(skill1Damage * (critMultiplier / 100))
-					statLabels["DamageSkill1"] = createStatRow("Skill 1", skill1Damage .. " (Crit: " .. skill1CritDamage .. ")", Color3.fromRGB(200, 150, 255), layoutOrder)
-					layoutOrder = layoutOrder + 1
-				end
-				
-				-- Skill 2 damage
-				if classConfig.skill2Damage then
-					local skill2Multiplier = classConfig.skill2Damage
-					local skill2Damage = math.floor(maxAttack * skill2Multiplier)
-					local skill2CritDamage = math.floor(skill2Damage * (critMultiplier / 100))
-					statLabels["DamageSkill2"] = createStatRow("Skill 2", skill2Damage .. " (Crit: " .. skill2CritDamage .. ")", Color3.fromRGB(200, 150, 255), layoutOrder)
-					layoutOrder = layoutOrder + 1
-				end
-				
-				-- Ult damage
-				if classConfig.ultDamage then
-					local ultMultiplier = classConfig.ultDamage
-					local ultDamage = math.floor(maxAttack * ultMultiplier)
-					local ultCritDamage = math.floor(ultDamage * (critMultiplier / 100))
-					statLabels["DamageUlt"] = createStatRow("Ultimate", ultDamage .. " (Crit: " .. ultCritDamage .. ")", Color3.fromRGB(255, 100, 100), layoutOrder)
-					layoutOrder = layoutOrder + 1
-				end
-			else
-				-- Class config exists but MaxAttack is 0 or invalid
-				local noDamageLabel = Instance.new("TextLabel")
-				noDamageLabel.Name = "NoDamageLabel"
-				noDamageLabel.Size = UDim2.new(1, -10, 0, 20)
-				noDamageLabel.BackgroundTransparency = 1
-				noDamageLabel.Text = "Waiting for stats to initialize..."
-				noDamageLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-				noDamageLabel.TextSize = 11
-				noDamageLabel.Font = Enum.Font.Gotham
-				noDamageLabel.LayoutOrder = layoutOrder
-				noDamageLabel.Parent = scrollFrame
-				layoutOrder = layoutOrder + 1
-			end
-		end
-	end
 	
 	-- Update canvas size
 	updateCanvasSize()
