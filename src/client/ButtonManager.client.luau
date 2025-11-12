@@ -350,7 +350,7 @@ local tooltipFrame
 local tooltipLabel
 local tooltipResolver
 local tooltipConnection
-local CONSUMABLE_TOOLTIP_DELAY = 20
+local CONSUMABLE_TOOLTIP_DELAY = 10
 
 local function ensureTooltipGui()
 	if tooltipGui then
