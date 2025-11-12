@@ -345,158 +345,17 @@ local CONSUMABLE_SLOT_TAGS = {
 
 local CONSUMABLE_SLOT_COUNT = #CONSUMABLE_SLOT_TAGS
 
-local tooltipGui
-local tooltipFrame
-local tooltipLabel
-local tooltipResolver
-local tooltipConnection
-local CONSUMABLE_TOOLTIP_DELAY = 10
-
-local function ensureTooltipGui()
-	if tooltipGui then
-		return
-	end
-
-	local playerGui = player:WaitForChild("PlayerGui")
-
-	tooltipGui = Instance.new("ScreenGui")
-	tooltipGui.Name = "ButtonTooltipGui"
-	tooltipGui.ResetOnSpawn = false
-	tooltipGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	tooltipGui.IgnoreGuiInset = true
-	tooltipGui.Parent = playerGui
-
-	tooltipFrame = Instance.new("Frame")
-	tooltipFrame.Name = "TooltipFrame"
-	tooltipFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	tooltipFrame.BackgroundTransparency = 0.15
-	tooltipFrame.BorderSizePixel = 0
-	tooltipFrame.AutomaticSize = Enum.AutomaticSize.XY
-	tooltipFrame.Visible = false
-	tooltipFrame.Parent = tooltipGui
-
-	local uiCorner = Instance.new("UICorner")
-	uiCorner.CornerRadius = UDim.new(0, 6)
-	uiCorner.Parent = tooltipFrame
-
-	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 6)
-	padding.PaddingBottom = UDim.new(0, 6)
-	padding.PaddingLeft = UDim.new(0, 10)
-	padding.PaddingRight = UDim.new(0, 10)
-	padding.Parent = tooltipFrame
-
-	tooltipLabel = Instance.new("TextLabel")
-	tooltipLabel.Name = "TooltipLabel"
-	tooltipLabel.BackgroundTransparency = 1
-	tooltipLabel.Font = Enum.Font.GothamSemibold
-	tooltipLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	tooltipLabel.TextSize = 16
-	tooltipLabel.TextWrapped = true
-	tooltipLabel.TextXAlignment = Enum.TextXAlignment.Left
-	tooltipLabel.TextYAlignment = Enum.TextYAlignment.Top
-	tooltipLabel.AutomaticSize = Enum.AutomaticSize.XY
-	tooltipLabel.Parent = tooltipFrame
-end
-
 local function hideTooltip()
-	if tooltipConnection then
-		tooltipConnection:Disconnect()
-		tooltipConnection = nil
-	end
-
-	tooltipResolver = nil
-
-	if tooltipFrame then
-		tooltipFrame.Visible = false
-	end
 end
 
-local function updateTooltipPosition()
-	if not tooltipFrame then
-		return
-	end
-
-	local mousePosition = UserInputService:GetMouseLocation()
-	tooltipFrame.Position = UDim2.fromOffset(mousePosition.X + 14, mousePosition.Y + 18)
-end
-
-local function showTooltip(resolver, button)
-	ensureTooltipGui()
-
-	if not resolver or not button then
-		hideTooltip()
-		return
-	end
-
-	if tooltipConnection then
-		tooltipConnection:Disconnect()
-		tooltipConnection = nil
-	end
-
-	tooltipResolver = resolver
-
-	local function resolveText()
-		if tooltipResolver then
-			local text = tooltipResolver()
-			if typeof(text) == "string" then
-				return text
-			end
-		end
-		return ""
-	end
-
-	local initialText = resolveText()
-	if initialText == "" then
-		hideTooltip()
-		return
-	end
-
-	tooltipLabel.Text = initialText
-	tooltipFrame.Visible = true
-	updateTooltipPosition()
-
-	tooltipConnection = RunService.RenderStepped:Connect(function()
-		if not tooltipFrame or not tooltipFrame.Visible then
-			hideTooltip()
-			return
-		end
-
-		local text = resolveText()
-		if text == "" then
-			hideTooltip()
-			return
-		end
-
-		if tooltipLabel.Text ~= text then
-			tooltipLabel.Text = text
-		end
-
-		updateTooltipPosition()
-	end)
+local function showTooltip()
 end
 
 local function createConsumableTooltipHandlers(button, resolver)
-	local token = 0
-
-	local function scheduleTooltip()
-		token += 1
-		local currentToken = token
-
-		task.spawn(function()
-			task.wait(CONSUMABLE_TOOLTIP_DELAY)
-			if token == currentToken then
-				showTooltip(resolver, button)
-			end
-		end)
+	local function noop()
 	end
 
-	local function cancelTooltip()
-		token += 1
-		hideTooltip()
-	end
-
-	return scheduleTooltip, cancelTooltip
+	return noop, noop
 end
 
 local function formatTooltipFromConfig(config)
@@ -1107,6 +966,116 @@ end)
 -- Initialize when script runs
 initializeButtons()
 ConsumableEvent:FireServer("sync")
+
+local function isGuiVisible(screenGui, frameName)
+	if not screenGui then
+		return false
+	end
+
+	if screenGui:IsA("ScreenGui") and screenGui.Enabled == false then
+		return false
+	end
+
+	if frameName then
+		local frame = screenGui:FindFirstChild(frameName)
+		if frame and frame:IsA("GuiObject") then
+			return frame.Visible
+		end
+	end
+
+	return true
+end
+
+local function setGuiVisible(screenGui, frameName, state)
+	if not screenGui then
+		return
+	end
+
+	if screenGui:IsA("ScreenGui") then
+		screenGui.Enabled = state
+	end
+
+	if frameName then
+		local frame = screenGui:FindFirstChild(frameName)
+		if frame and frame:IsA("GuiObject") then
+			frame.Visible = state
+		end
+	end
+end
+
+local function setupPanelsToggleButton()
+	local playerGui = player:WaitForChild("PlayerGui")
+
+	local container = playerGui:FindFirstChild("ToolsToggleGui")
+	if not container then
+		container = Instance.new("ScreenGui")
+		container.Name = "ToolsToggleGui"
+		container.ResetOnSpawn = false
+		container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		container.Parent = playerGui
+	end
+
+	local button = container:FindFirstChild("TogglePanels")
+	if not button then
+		button = Instance.new("TextButton")
+		button.Name = "TogglePanels"
+		button.Size = UDim2.new(0, 150, 0, 32)
+		button.AnchorPoint = Vector2.new(1, 1)
+		button.Position = UDim2.new(1, -20, 1, -20)
+		button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		button.BorderSizePixel = 0
+		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.TextSize = 14
+		button.Font = Enum.Font.GothamBold
+		button.Text = "Toggle Panels"
+		button.Parent = container
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 6)
+		corner.Parent = button
+	end
+
+	if button:GetAttribute("PanelsToggleConnected") then
+		return
+	end
+
+	local function updateLabel()
+		local statsGui = playerGui:FindFirstChild("StatsDisplay")
+		local masterGui = playerGui:FindFirstChild("MasterControlDisplay")
+		local statsVisible = isGuiVisible(statsGui, "MainFrame")
+		local masterVisible = isGuiVisible(masterGui, "ControlFrame")
+
+		if statsVisible or masterVisible then
+			button.Text = "Hide Panels"
+		else
+			button.Text = "Show Panels"
+		end
+	end
+
+	button.MouseButton1Click:Connect(function()
+		local statsGui = playerGui:FindFirstChild("StatsDisplay")
+		local masterGui = playerGui:FindFirstChild("MasterControlDisplay")
+		local statsVisible = isGuiVisible(statsGui, "MainFrame")
+		local masterVisible = isGuiVisible(masterGui, "ControlFrame")
+
+		local newState = not (statsVisible or masterVisible)
+		setGuiVisible(statsGui, "MainFrame", newState)
+		setGuiVisible(masterGui, "ControlFrame", newState)
+
+		updateLabel()
+	end)
+
+	button:SetAttribute("PanelsToggleConnected", true)
+
+	task.spawn(function()
+		while button.Parent do
+			updateLabel()
+			task.wait(0.5)
+		end
+	end)
+end
+
+task.defer(setupPanelsToggleButton)
 
 
 

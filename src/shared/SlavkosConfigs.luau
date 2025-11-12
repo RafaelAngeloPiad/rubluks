@@ -159,10 +159,13 @@ ServerConfigs.Hitbox = {
 -- DEVELOPER TOOLING CONFIGURATION
 -- ========================================
 
-ServerConfigs.DevUI = {
+ServerConfigs.ControlUI = {
 	displayStats = {
 		enabled = true, -- Toggle the developer stats overlay
-		showControls = true -- Toggle the control buttons at the bottom of the overlay
+		showControls = true -- Toggle the control buttons at the bottom of the overlay (legacy; stats panel no longer hosts controls)
+	},
+	masterControls = {
+		enabled = true -- Toggle the developer master control panel (XP/class/friendly fire tools)
 	}
 }
 

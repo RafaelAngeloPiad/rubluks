@@ -31,11 +31,10 @@ if ServerConfigs then
 	end
 end
 
-local DevStatsConfig = ConfigModule and ConfigModule.DevUI and ConfigModule.DevUI.displayStats
-local devDisplayEnabled = not (DevStatsConfig and DevStatsConfig.enabled == false)
-local showControlButtons = not (DevStatsConfig and DevStatsConfig.showControls == false)
+local StatsUIConfig = ConfigModule and ConfigModule.ControlUI and ConfigModule.ControlUI.displayStats
+local statsDisplayEnabled = not (StatsUIConfig and StatsUIConfig.enabled == false)
 
-if not devDisplayEnabled then
+if not statsDisplayEnabled then
 	return
 end
 
@@ -44,7 +43,7 @@ local AvailableClasses = {"Knight", "Samurai", "Gladiator", "Brawler", "Archer"}
 
 -- Create UI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DevStatsDisplay"
+screenGui.Name = "StatsDisplay"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
@@ -71,7 +70,7 @@ title.Size = UDim2.new(1, 0, 0, 30)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 title.BorderSizePixel = 0
-title.Text = "📊 DEV STATS (Drag to Move)"
+title.Text = "📊 STATS DASHBOARD (Drag to Move)"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -84,8 +83,16 @@ titleCorner.Parent = title
 
 -- Make title draggable
 local isDragging = false
+local dragOffset = Vector2.zero
 title.MouseButton1Down:Connect(function()
 	isDragging = true
+	local mousePos = UserInputService:GetMouseLocation()
+	local framePos = mainFrame.AbsolutePosition
+	dragOffset = mousePos - Vector2.new(framePos.X, framePos.Y)
+end)
+
+title.MouseButton1Up:Connect(function()
+	isDragging = false
 end)
 
 UserInputService.InputEnded:Connect(function(input, gameProcessed)
@@ -99,7 +106,9 @@ UserInputService.InputChanged:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.UserInputType == Enum.UserInputType.MouseMovement and isDragging then
 		local mousePos = UserInputService:GetMouseLocation()
-		local newPos = UDim2.new(0, mousePos.X - mainFrame.AbsoluteSize.X/2, 0, mousePos.Y - mainFrame.AbsoluteSize.Y/2)
+		local offsetX = mousePos.X - dragOffset.X
+		local offsetY = mousePos.Y - dragOffset.Y
+		local newPos = UDim2.new(0, offsetX, 0, offsetY)
 		mainFrame.Position = newPos
 	end
 end)
@@ -107,7 +116,7 @@ end)
 -- Scrolling frame for all stats
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Name = "StatsScroll"
-scrollFrame.Size = UDim2.new(1, -10, 1, -220)
+scrollFrame.Size = UDim2.new(1, -10, 1, -45)
 scrollFrame.Position = UDim2.new(0, 5, 0, 35)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
@@ -120,55 +129,6 @@ local listLayout = Instance.new("UIListLayout")
 listLayout.Padding = UDim.new(0, 5)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrollFrame
-
--- Control buttons frame at bottom
-local controlFrame = Instance.new("Frame")
-controlFrame.Name = "Controls"
-controlFrame.Size = UDim2.new(1, -10, 0, 180)
-controlFrame.Position = UDim2.new(0, 5, 1, -185)
-controlFrame.BackgroundTransparency = 1
-controlFrame.Parent = mainFrame
-
-local controlLayout = Instance.new("UIGridLayout")
-controlLayout.CellSize = UDim2.new(0.49, 0, 0, 25)
-controlLayout.CellPadding = UDim2.new(0.01, 0, 0.02, 0)
-controlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
-controlLayout.FillDirection = Enum.FillDirection.Horizontal
-controlLayout.Parent = controlFrame
-
--- Function to create a button
-local function createButton(text, color, layoutOrder, onClick)
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, 0, 1, 0)
-	local baseColor = color or Color3.fromRGB(50, 50, 50)
-	button.BackgroundColor3 = baseColor
-	button:SetAttribute("BaseColor", baseColor)
-	button.BorderSizePixel = 0
-	button.Text = text
-	button.TextColor3 = Color3.fromRGB(255, 255, 255)
-	button.TextSize = 12
-	button.Font = Enum.Font.GothamBold
-	button.LayoutOrder = layoutOrder
-	button.Parent = controlFrame
-	
-	local buttonCorner = Instance.new("UICorner")
-	buttonCorner.CornerRadius = UDim.new(0, 5)
-	buttonCorner.Parent = button
-	
-	button.MouseButton1Click:Connect(onClick)
-	
-	-- Hover effect
-	button.MouseEnter:Connect(function()
-		button.BackgroundColor3 = button.BackgroundColor3:Lerp(Color3.new(1, 1, 1), 0.2)
-	end)
-	button.MouseLeave:Connect(function()
-		local storedBase = button:GetAttribute("BaseColor")
-		button.BackgroundColor3 = storedBase or baseColor
-	end)
-	
-	return button
-end
 
 -- Function to create a stat row with vertical layout (name on top, value on bottom) to prevent truncation
 local function createStatRow(statName, value, color, layoutOrder)
@@ -1934,184 +1894,6 @@ end
 
 -- UI Hidden state
 local isVisible = true
-
-if showControlButtons then
-	-- Control buttons
-	local buttonLayoutOrder = 1
-
-	-- Row 1: Control buttons
-	-- Hide/Show button
-	createButton("👁️ Hide", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
-		isVisible = not isVisible
-		mainFrame.Visible = isVisible
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	-- Reset button - resets everything to defaults (level 1, XP 0, base stats)
-	createButton("Reset", Color3.fromRGB(150, 50, 50), buttonLayoutOrder, function()
-		if DevStatEvent then
-			-- Use fullReset action which handles everything in the correct order
-			DevStatEvent:FireServer("fullReset")
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	-- Row 2: XP buttons
-	-- Add 5 XP button
-	createButton("+5 XP", Color3.fromRGB(50, 150, 50), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("addCurrentXP", 5)
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("+10 XP", Color3.fromRGB(50, 180, 50), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("addCurrentXP", 10)
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	-- Add 500 XP button
-	createButton("+500 XP", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("addCurrentXP", 500)
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("+5000 XP", Color3.fromRGB(120, 220, 120), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("addCurrentXP", 5000)
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("+100000 XP", Color3.fromRGB(90, 200, 90), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("addCurrentXP", 100000)
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	-- Row 3: Class selection buttons
-	createButton("Knight", Color3.fromRGB(100, 150, 200), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("setClass", "Knight")
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("Samurai", Color3.fromRGB(150, 150, 150), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("setClass", "Samurai")
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("Gladiator", Color3.fromRGB(200, 100, 100), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("setClass", "Gladiator")
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("Brawler", Color3.fromRGB(150, 100, 50), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("setClass", "Brawler")
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	createButton("Archer", Color3.fromRGB(100, 200, 100), buttonLayoutOrder, function()
-		if DevStatEvent then
-			DevStatEvent:FireServer("setClass", "Archer")
-		end
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	-- Row 4: Friendly fire toggles
-	local playerFriendlyLocalState = playerFriendlyFireValue and playerFriendlyFireValue.Value or false
-	local mobFriendlyLocalState = mobFriendlyFireValue and mobFriendlyFireValue.Value or false
-
-	local playerFriendlyButton
-	local mobFriendlyButton
-
-	local function updatePlayerFriendlyButton()
-		if not playerFriendlyButton then
-			return
-		end
-		local enabled = playerFriendlyFireValue and playerFriendlyFireValue.Value or playerFriendlyLocalState
-		playerFriendlyLocalState = enabled
-		playerFriendlyButton.Text = enabled and "PVP: ON" or "PVP: OFF"
-		local color = enabled and Color3.fromRGB(180, 60, 60) or Color3.fromRGB(60, 60, 60)
-		playerFriendlyButton:SetAttribute("BaseColor", color)
-		playerFriendlyButton.BackgroundColor3 = color
-	end
-
-	local function updateMobFriendlyButton()
-		if not mobFriendlyButton then
-			return
-		end
-		local enabled = mobFriendlyFireValue and mobFriendlyFireValue.Value or mobFriendlyLocalState
-		mobFriendlyLocalState = enabled
-		mobFriendlyButton.Text = enabled and "Mob FF: ON" or "Mob FF: OFF"
-		local color = enabled and Color3.fromRGB(100, 150, 220) or Color3.fromRGB(60, 60, 60)
-		mobFriendlyButton:SetAttribute("BaseColor", color)
-		mobFriendlyButton.BackgroundColor3 = color
-	end
-
-	playerFriendlyButton = createButton("PVP: OFF", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
-		local newValue
-		if playerFriendlyFireValue then
-			newValue = not playerFriendlyFireValue.Value
-		else
-			newValue = not playerFriendlyLocalState
-			playerFriendlyLocalState = newValue
-		end
-		if DevStatEvent then
-			DevStatEvent:FireServer("setPlayerFriendlyFire", newValue)
-		end
-		updatePlayerFriendlyButton()
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	mobFriendlyButton = createButton("Mob FF: OFF", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
-		local newValue
-		if mobFriendlyFireValue then
-			newValue = not mobFriendlyFireValue.Value
-		else
-			newValue = not mobFriendlyLocalState
-			mobFriendlyLocalState = newValue
-		end
-		if DevStatEvent then
-			DevStatEvent:FireServer("setMobFriendlyFire", newValue)
-		end
-		updateMobFriendlyButton()
-	end)
-	buttonLayoutOrder = buttonLayoutOrder + 1
-
-	updatePlayerFriendlyButton()
-	updateMobFriendlyButton()
-
-	if playerFriendlyFireValue then
-		playerFriendlyFireValue:GetPropertyChangedSignal("Value"):Connect(function()
-			playerFriendlyLocalState = playerFriendlyFireValue.Value
-			updatePlayerFriendlyButton()
-		end)
-	end
-
-	if mobFriendlyFireValue then
-		mobFriendlyFireValue:GetPropertyChangedSignal("Value"):Connect(function()
-			mobFriendlyLocalState = mobFriendlyFireValue.Value
-			updateMobFriendlyButton()
-		end)
-	end
-else
-	controlFrame.Visible = false
-	controlFrame.Size = UDim2.new(1, -10, 0, 0)
-	scrollFrame.Size = UDim2.new(1, -10, 1, -40)
-end
 
 -- Track connections to prevent duplicates
 local statConnections = {}
