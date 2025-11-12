@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
+local CollectionService = game:GetService("CollectionService")
 
 -- ========================================
 -- CONFIGURATION
@@ -14,6 +15,8 @@ local Debris = game:GetService("Debris")
 
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+local EquipmentAssetLookup = EquipmentBonusConfig.AssetLookup or {}
 
 local HITBOX_CONFIG = {
 	transparency = ServerConfigs.Hitbox.transparency, -- Global transparency for all hitbox visuals
@@ -30,6 +33,92 @@ local function cloneConfig(config)
 		copy[key] = value
 	end
 	return copy
+end
+
+local function cloneStatusAilmentConfig(statusAilment)
+	if not statusAilment then
+		return nil
+	end
+	return cloneConfig(statusAilment)
+end
+
+local function getWeaponTagForClass(className)
+	if not className or typeof(className) ~= "string" then
+		return nil
+	end
+
+	local weaponTags = ServerConfigs.Client and ServerConfigs.Client.WeaponTags
+	if not weaponTags then
+		return nil
+	end
+
+	local lower = string.lower(className)
+	return weaponTags[lower] or weaponTags[className]
+end
+
+local function getEquippedWeaponStatusAilment(character)
+	if not character then
+		return nil
+	end
+
+	local player = Players:GetPlayerFromCharacter(character)
+	if not player then
+		return nil
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return nil
+	end
+
+	local classStat = leaderstats:FindFirstChild("Class")
+	local className = classStat and classStat.Value
+	if not className or className == "" then
+		return nil
+	end
+
+	local weaponTag = getWeaponTagForClass(className)
+	if not weaponTag then
+		return nil
+	end
+
+	for _, child in ipairs(character:GetChildren()) do
+		if child:IsA("Tool") and CollectionService:HasTag(child, weaponTag) then
+			local entry = EquipmentAssetLookup[child.Name]
+			if not entry then
+				local canonicalName = child:GetAttribute("canonicalName")
+				if typeof(canonicalName) == "string" then
+					entry = EquipmentAssetLookup[canonicalName]
+				end
+			end
+
+			if entry and entry.statusAilment then
+				return cloneStatusAilmentConfig(entry.statusAilment)
+			end
+		end
+	end
+
+	return nil
+end
+
+local function getAttackerCharacterFromConfig(config)
+	if not config then
+		return nil
+	end
+
+	local potentialKeys = {"character", "owner", "sourceCharacter", "sourceModel", "attacker", "player"}
+	for _, key in ipairs(potentialKeys) do
+		local value = config[key]
+		if typeof(value) == "Instance" then
+			if value:IsA("Model") then
+				return value
+			elseif value:IsA("Player") then
+				return value.Character
+			end
+		end
+	end
+
+	return nil
 end
 
 -- ========================================
@@ -637,8 +726,17 @@ end
 local function applyStatusAilmentFromConfig(model, config)
 	if not model or not config then return end
 	
-	-- Check if status ailment is configured
+	-- Check if status ailment is configured, otherwise fall back to equipped weapon configuration
 	local statusAilment = config.statusAilment
+	if statusAilment then
+		statusAilment = cloneStatusAilmentConfig(statusAilment)
+	else
+		local attackerCharacter = getAttackerCharacterFromConfig(config)
+		if attackerCharacter then
+			statusAilment = getEquippedWeaponStatusAilment(attackerCharacter)
+		end
+	end
+
 	if not statusAilment then return end
 	
 	-- Check for status immunity (LastChance buff) - only for players

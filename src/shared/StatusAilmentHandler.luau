@@ -39,6 +39,14 @@ local AilmentTypes = {
 	SLOW = "slow"            -- Reduces movement speed
 }
 
+local AilmentDisplayInfo = {
+	[AilmentTypes.STUN] = {text = "STUNNED", color = Color3.new(0.5, 0.5, 0.5)}, -- Gray
+	[AilmentTypes.POISON] = {text = "POISONED", color = Color3.new(0.5, 0, 0.5)}, -- Purple
+	[AilmentTypes.BURN] = {text = "BURNED", color = Color3.new(1, 0.5, 0)}, -- Orange
+	[AilmentTypes.ICE] = {text = "FROZEN", color = Color3.new(0, 0.5, 1)}, -- Blue
+	[AilmentTypes.SLOW] = {text = "SLOWED", color = Color3.new(0.5, 0.5, 1)} -- Light Blue
+}
+
 -- ========================================
 -- HELPER FUNCTIONS
 -- ========================================
@@ -229,6 +237,24 @@ local function createAilmentHighlight(model, ailmentType)
 	return highlight
 end
 
+local function shouldDisplayStatusText(model)
+	if not model then
+		return false
+	end
+
+	local player = getPlayer(model)
+	if player then
+		if _G.hasStatusImmunity then
+			local hasImmunity = _G.hasStatusImmunity(player)
+			if hasImmunity then
+				return false
+			end
+		end
+	end
+
+	return true
+end
+
 -- Function to apply ailment effects
 local function applyAilmentEffects(model, ailmentType, config)
 	if not model then return end
@@ -319,36 +345,15 @@ local function applyAilmentEffects(model, ailmentType, config)
 	-- Create visual highlight
 	createAilmentHighlight(model, ailmentType)
 	
-	-- Create status text above head (only for players, not mobs)
-	if player then
-		-- Check if player has status immunity (defensive check)
-		local hasImmunity = false
-		if _G.hasStatusImmunity then
-			hasImmunity = _G.hasStatusImmunity(player)
-		end
-		
-		-- Only show ailment text if player is NOT immune
-		if not hasImmunity then
-			-- Map ailment types to display text and colors
-			local ailmentTexts = {
-				[AilmentTypes.STUN] = {text = "STUNNED", color = Color3.new(0.5, 0.5, 0.5)}, -- Gray
-				[AilmentTypes.POISON] = {text = "POISONED", color = Color3.new(0.5, 0, 0.5)}, -- Purple
-				[AilmentTypes.BURN] = {text = "BURNED", color = Color3.new(1, 0.5, 0)}, -- Orange
-				[AilmentTypes.ICE] = {text = "FROZEN", color = Color3.new(0, 0.5, 1)}, -- Blue
-				[AilmentTypes.SLOW] = {text = "SLOWED", color = Color3.new(0.5, 0.5, 1)} -- Light Blue
-			}
-			
-			local ailmentInfo = ailmentTexts[ailmentType]
-			if ailmentInfo then
-				-- Get ailment data to get start time and duration
-				local ailmentData = activeAilments[model] and activeAilments[model][ailmentType]
-				if ailmentData then
-					local startTime = ailmentData.startTime
-					local duration = ailmentData.duration or config.duration or 5.0
-					
-					-- Create or update status text
-					createOrUpdateStatusText(model, ailmentType, ailmentInfo.text, ailmentInfo.color, startTime, duration)
-				end
+	-- Create status text above head for players and mobs when applicable
+	if shouldDisplayStatusText(model) then
+		local ailmentInfo = AilmentDisplayInfo[ailmentType]
+		if ailmentInfo then
+			local ailmentData = activeAilments[model] and activeAilments[model][ailmentType]
+			if ailmentData then
+				local startTime = ailmentData.startTime
+				local duration = ailmentData.duration or config.duration or 5.0
+				createOrUpdateStatusText(model, ailmentType, ailmentInfo.text, ailmentInfo.color, startTime, duration)
 			end
 		end
 	end
@@ -721,43 +726,20 @@ RunService.Heartbeat:Connect(function()
 						removeAilmentEffects(model, ailmentType)
 					else
 						-- Update status text if it exists (refresh duration)
-						local player = getPlayer(model)
-						if player then
-							-- Check if player has status immunity
-							local hasImmunity = false
-							if _G.hasStatusImmunity then
-								hasImmunity = _G.hasStatusImmunity(player)
-							end
-							
-							-- Only show/update text if player is NOT immune
-							if not hasImmunity then
-								local ailmentTexts = {
-									[AilmentTypes.STUN] = {text = "STUNNED", color = Color3.new(0.5, 0.5, 0.5)},
-									[AilmentTypes.POISON] = {text = "POISONED", color = Color3.new(0.5, 0, 0.5)},
-									[AilmentTypes.BURN] = {text = "BURNED", color = Color3.new(1, 0.5, 0)},
-									[AilmentTypes.ICE] = {text = "FROZEN", color = Color3.new(0, 0.5, 1)},
-									[AilmentTypes.SLOW] = {text = "SLOWED", color = Color3.new(0.5, 0.5, 1)}
-								}
-								
-								local ailmentInfo = ailmentTexts[ailmentType]
-								if ailmentInfo then
-									-- Update status text display with current duration
-									if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
-										local textData = statusTextDisplays[model][ailmentType]
-										if textData then
-											-- Update duration if it's a table format
-											if type(textData) == "table" and textData.billboardGui then
-												textData.startTime = ailmentData.startTime
-												textData.duration = ailmentData.duration
-											end
-										end
-									else
-										-- Create new status text if it doesn't exist
-										createOrUpdateStatusText(model, ailmentType, ailmentInfo.text, ailmentInfo.color, ailmentData.startTime, ailmentData.duration)
+						local displayText = shouldDisplayStatusText(model)
+						if displayText then
+							local ailmentInfo = AilmentDisplayInfo[ailmentType]
+							if ailmentInfo then
+								if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+									local textData = statusTextDisplays[model][ailmentType]
+									if textData and type(textData) == "table" and textData.billboardGui then
+										textData.startTime = ailmentData.startTime
+										textData.duration = ailmentData.duration
 									end
+								else
+									createOrUpdateStatusText(model, ailmentType, ailmentInfo.text, ailmentInfo.color, ailmentData.startTime, ailmentData.duration)
 								end
 							else
-								-- Player has immunity, remove any existing ailment text
 								if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
 									local textData = statusTextDisplays[model][ailmentType]
 									local billboardGui = textData.billboardGui or textData
@@ -766,6 +748,18 @@ RunService.Heartbeat:Connect(function()
 									end
 									statusTextDisplays[model][ailmentType] = nil
 								end
+							end
+						end
+						
+						-- Remove text if it should no longer be displayed (e.g., immunity gained)
+						if not displayText then
+							if statusTextDisplays[model] and statusTextDisplays[model][ailmentType] then
+								local textData = statusTextDisplays[model][ailmentType]
+								local billboardGui = textData.billboardGui or textData
+								if billboardGui and billboardGui.Parent then
+									billboardGui:Destroy()
+								end
+								statusTextDisplays[model][ailmentType] = nil
 							end
 						end
 						

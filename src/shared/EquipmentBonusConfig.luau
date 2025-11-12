@@ -2,10 +2,13 @@
 	EquipmentBonusConfig
 	--------------------
 	Maps weapon / accessory names (as stored in InventoryStore and tool instances) to stat bonuses.
-	Each entry can optionally provide an `assetName` field if the actual Tool instance name differs
-	from the canonical inventory name stored in the DataStore. All other keys should match the
-	stat modifiers recognised by PlayerManager (HPPlus, AttackPlus, DefensePlus, DefensePenPlus,
-	CritRatePlus, CritMultiplierPlus).
+	Each entry can optionally provide:
+		- `assetName` when the Tool instance name differs from the canonical inventory name.
+		- Stat modifiers recognised by PlayerManager (HPPlus, AttackPlus, DefensePlus,
+		  DefensePenPlus, CritRatePlus, CritMultiplierPlus).
+		- `statusAilment` to automatically apply a status effect when the weapon hits an enemy.
+		  Supported keys mirror hitbox configuration: `type`, `chance`, `duration`, `dps`,
+		  `tickInterval`, `slowMultiplier`, `skipDefense`.
 
 	Example:
 	["Samurai Weapon Trailed"] = {
@@ -36,7 +39,14 @@
 local Entries = {
 	-- Example configuration entries (replace with your own values)
 	["Samurai Weapon Trailed"] = {
-		AttackPlus = 500000000,
+		AttackPlus = 5,
+		statusAilment = {
+			type = "burn",
+			chance = 100,
+			duration = 5.0,
+			dps = 5,
+			tickInterval = 1.0,
+		},
 	},
 	["Archer Weapon"] = {
 		assetName = "Archer Weapon Bonus",
