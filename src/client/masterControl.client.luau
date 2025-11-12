@@ -37,7 +37,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "ControlFrame"
-mainFrame.Size = UDim2.new(0, 350, 0, 220)
+mainFrame.Size = UDim2.new(0, 350, 0, 320)
 mainFrame.Position = UDim2.new(1, -360, 1, -240)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BackgroundTransparency = 0.3

@@ -45,6 +45,11 @@ local function findGlobalConfig(tagConfig)
 	return nil
 end
 
+local toggleStatsPanel
+local toggleMasterPanel
+local getStatsPanelLabel
+local getMasterPanelLabel
+
 -- ========================================
 -- UNIFIED BUTTON TAG CONFIGURATION
 -- One tag per action, works for ALL classes!
@@ -141,6 +146,34 @@ local UNIFIED_TAGS = {
 			name = "[Shift] Dash",
 			description = "Dash",
 			isGlobal = true,
+		}
+	},
+
+	stats_panel_toggle = {
+		global = {
+			action = function()
+				toggleStatsPanel()
+			end,
+			name = "Stats Panel",
+			description = "Toggle stats dashboard visibility",
+			isGlobal = true,
+			textProvider = function()
+				return getStatsPanelLabel()
+			end,
+		}
+	},
+
+	master_panel_toggle = {
+		global = {
+			action = function()
+				toggleMasterPanel()
+			end,
+			name = "Master Control",
+			description = "Toggle master control visibility",
+			isGlobal = true,
+			textProvider = function()
+				return getMasterPanelLabel()
+			end,
 		}
 	},
 
@@ -675,7 +708,6 @@ local function setupUnifiedButton(button, tag)
 					end
 				end
 
-				-- Special handling for dynamic aim mode toggle button
 				if classConfig.isDynamic and class == "archer" then
 					local currentMode = ArcherActions.getCurrentAimMode()
 					local modeText = ""
@@ -687,12 +719,17 @@ local function setupUnifiedButton(button, tag)
 						modeText = "Dynamic"
 					end
 					textToSet = "[T] " .. modeText
+				elseif classConfig.textProvider then
+					textToSet = classConfig.textProvider()
 				else
-					-- Update button text to show current class's skill name
 					textToSet = classConfig.name or "???"
 				end
 			elseif globalConfig then
-				textToSet = globalConfig.name or "???"
+				if globalConfig.textProvider then
+					textToSet = globalConfig.textProvider()
+				else
+					textToSet = globalConfig.name or "???"
+				end
 			else
 				textToSet = "---"
 			end
@@ -727,7 +764,8 @@ local function setupUnifiedHoldButton(button, tag)
 		return
 	end
 
-	local tooltipResolver = createUnifiedTooltipResolver(tagConfig, nil)
+	local globalConfig = findGlobalConfig(tagConfig)
+	local tooltipResolver = createUnifiedTooltipResolver(tagConfig, globalConfig)
 
 	local isActive = false
 
@@ -847,7 +885,6 @@ local function setupUnifiedHoldButton(button, tag)
 						end
 					end
 
-					-- Special handling for dynamic aim mode toggle button
 					if classConfig.isDynamic and class == "archer" then
 						local currentMode = ArcherActions.getCurrentAimMode()
 						local modeText = ""
@@ -859,9 +896,17 @@ local function setupUnifiedHoldButton(button, tag)
 							modeText = "Dynamic"
 						end
 						textToSet = "[T] " .. modeText
+					elseif classConfig.textProvider then
+						textToSet = classConfig.textProvider()
 					else
 						textToSet = classConfig.name or "???"
 					end
+				end
+			elseif globalConfig then
+				if globalConfig.textProvider then
+					textToSet = globalConfig.textProvider()
+				else
+					textToSet = globalConfig.name or "???"
 				end
 			else
 				textToSet = "---"
@@ -1003,79 +1048,56 @@ local function setGuiVisible(screenGui, frameName, state)
 	end
 end
 
-local function setupPanelsToggleButton()
-	local playerGui = player:WaitForChild("PlayerGui")
-
-	local container = playerGui:FindFirstChild("ToolsToggleGui")
-	if not container then
-		container = Instance.new("ScreenGui")
-		container.Name = "ToolsToggleGui"
-		container.ResetOnSpawn = false
-		container.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-		container.Parent = playerGui
-	end
-
-	local button = container:FindFirstChild("TogglePanels")
-	if not button then
-		button = Instance.new("TextButton")
-		button.Name = "TogglePanels"
-		button.Size = UDim2.new(0, 150, 0, 32)
-		button.AnchorPoint = Vector2.new(1, 1)
-		button.Position = UDim2.new(1, -20, 1, -20)
-		button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-		button.BorderSizePixel = 0
-		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		button.TextSize = 14
-		button.Font = Enum.Font.GothamBold
-		button.Text = "Toggle Panels"
-		button.Parent = container
-
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0, 6)
-		corner.Parent = button
-	end
-
-	if button:GetAttribute("PanelsToggleConnected") then
+local function togglePanelVisibility(screenGuiName, frameName)
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if not playerGui then
 		return
 	end
 
-	local function updateLabel()
-		local statsGui = playerGui:FindFirstChild("StatsDisplay")
-		local masterGui = playerGui:FindFirstChild("MasterControlDisplay")
-		local statsVisible = isGuiVisible(statsGui, "MainFrame")
-		local masterVisible = isGuiVisible(masterGui, "ControlFrame")
-
-		if statsVisible or masterVisible then
-			button.Text = "Hide Panels"
-		else
-			button.Text = "Show Panels"
-		end
+	local screenGui = playerGui:FindFirstChild(screenGuiName)
+	if not screenGui then
+		return
 	end
 
-	button.MouseButton1Click:Connect(function()
-		local statsGui = playerGui:FindFirstChild("StatsDisplay")
-		local masterGui = playerGui:FindFirstChild("MasterControlDisplay")
-		local statsVisible = isGuiVisible(statsGui, "MainFrame")
-		local masterVisible = isGuiVisible(masterGui, "ControlFrame")
-
-		local newState = not (statsVisible or masterVisible)
-		setGuiVisible(statsGui, "MainFrame", newState)
-		setGuiVisible(masterGui, "ControlFrame", newState)
-
-		updateLabel()
-	end)
-
-	button:SetAttribute("PanelsToggleConnected", true)
-
-	task.spawn(function()
-		while button.Parent do
-			updateLabel()
-			task.wait(0.5)
-		end
-	end)
+	local visible = isGuiVisible(screenGui, frameName)
+	setGuiVisible(screenGui, frameName, not visible)
+	return not visible
 end
 
-task.defer(setupPanelsToggleButton)
+local function getPanelToggleLabel(screenGuiName, frameName, hideLabel, showLabel)
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if not playerGui then
+		return showLabel
+	end
+
+	local screenGui = playerGui:FindFirstChild(screenGuiName)
+	if not screenGui then
+		return showLabel
+	end
+
+	local visible = isGuiVisible(screenGui, frameName)
+	if visible then
+		return hideLabel
+	else
+		return showLabel
+	end
+end
+
+toggleStatsPanel = function()
+	togglePanelVisibility("StatsDisplay", "MainFrame")
+end
+
+getStatsPanelLabel = function()
+	return getPanelToggleLabel("StatsDisplay", "MainFrame", "Hide Stats", "Show Stats")
+end
+
+toggleMasterPanel = function()
+	togglePanelVisibility("MasterControlDisplay", "ControlFrame")
+end
+
+getMasterPanelLabel = function()
+	return getPanelToggleLabel("MasterControlDisplay", "ControlFrame", "Hide Control", "Show Control")
+end
 
 
 

@@ -130,6 +130,12 @@ listLayout.Padding = UDim.new(0, 5)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrollFrame
 
+local function updateCanvasSize()
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 40)
+end
+
+listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
+
 -- Function to create a stat row with vertical layout (name on top, value on bottom) to prevent truncation
 local function createStatRow(statName, value, color, layoutOrder)
 	local statFrame = Instance.new("Frame")
@@ -1832,7 +1838,7 @@ local function updateStatsDisplay()
 	end
 	
 	-- Update canvas size
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, (layoutOrder - 1) * 27)
+	updateCanvasSize()
 end
 
 -- Function to update calculated damage values without rebuilding entire display
