@@ -4246,6 +4246,75 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 		if leaderstats:FindFirstChild(statName) then
 			leaderstats[statName].Value = 0
 		end
+	elseif action == "setPlayerFriendlyFire" then
+		if _G.setPlayerFriendlyFire and _G.getPlayerFriendlyFire then
+			local targetState = value
+			if targetState == nil then
+				targetState = not _G.getPlayerFriendlyFire()
+			end
+			if typeof(targetState) == "number" then
+				targetState = targetState ~= 0
+			elseif typeof(targetState) == "string" then
+				local lower = string.lower(targetState)
+				if lower == "true" or lower == "1" or lower == "on" then
+					targetState = true
+				else
+					targetState = false
+				end
+			elseif typeof(targetState) ~= "boolean" then
+				targetState = false
+			end
+			_G.setPlayerFriendlyFire(targetState)
+		end
+	elseif action == "setMobFriendlyFire" then
+		if _G.setMobFriendlyFire and _G.getMobFriendlyFire then
+			local targetState = value
+			if targetState == nil then
+				targetState = not _G.getMobFriendlyFire()
+			end
+			if typeof(targetState) == "number" then
+				targetState = targetState ~= 0
+			elseif typeof(targetState) == "string" then
+				local lower = string.lower(targetState)
+				if lower == "true" or lower == "1" or lower == "on" then
+					targetState = true
+				else
+					targetState = false
+				end
+			elseif typeof(targetState) ~= "boolean" then
+				targetState = false
+			end
+			_G.setMobFriendlyFire(targetState)
+		end
+	elseif action == "setFriendlyFire" then
+		if _G.setFriendlyFire and typeof(value) == "table" then
+			local playerValue = value.player
+			local mobValue = value.mob
+
+			local function normalize(v)
+				if v == nil then
+					return nil
+				end
+				if typeof(v) == "boolean" then
+					return v
+				end
+				if typeof(v) == "number" then
+					return v ~= 0
+				end
+				if typeof(v) == "string" then
+					local lower = string.lower(v)
+					if lower == "true" or lower == "1" or lower == "on" then
+						return true
+					end
+					if lower == "false" or lower == "0" or lower == "off" then
+						return false
+					end
+				end
+				return nil
+			end
+
+			_G.setFriendlyFire(normalize(playerValue), normalize(mobValue))
+		end
 	elseif action == "fullReset" then
 		-- Full reset: Level 1, XP 0, MaximumXP recalculated, Class Slavkorian, all stats reset
 		

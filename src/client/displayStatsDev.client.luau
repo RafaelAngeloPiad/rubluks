@@ -8,6 +8,12 @@ local player = Players.LocalPlayer
 -- RemoteEvent for dev stat changes
 local DevStatEvent = ReplicatedStorage:WaitForChild("DevStatEvent", 10)
 
+-- Shared developer settings (for replicated toggles)
+local DevSettingsFolder = ReplicatedStorage:FindFirstChild("DevSettings") or ReplicatedStorage:WaitForChild("DevSettings", 5)
+local FriendlyFireFolder = DevSettingsFolder and (DevSettingsFolder:FindFirstChild("FriendlyFire") or DevSettingsFolder:WaitForChild("FriendlyFire", 5))
+local playerFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Players") or FriendlyFireFolder:WaitForChild("Players", 5))
+local mobFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Mobs") or FriendlyFireFolder:WaitForChild("Mobs", 5))
+
 -- Wait for player and leaderstats
 local leaderstats = player:WaitForChild("leaderstats")
 
@@ -135,7 +141,9 @@ controlLayout.Parent = controlFrame
 local function createButton(text, color, layoutOrder, onClick)
 	local button = Instance.new("TextButton")
 	button.Size = UDim2.new(1, 0, 1, 0)
-	button.BackgroundColor3 = color or Color3.fromRGB(50, 50, 50)
+	local baseColor = color or Color3.fromRGB(50, 50, 50)
+	button.BackgroundColor3 = baseColor
+	button:SetAttribute("BaseColor", baseColor)
 	button.BorderSizePixel = 0
 	button.Text = text
 	button.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -155,7 +163,8 @@ local function createButton(text, color, layoutOrder, onClick)
 		button.BackgroundColor3 = button.BackgroundColor3:Lerp(Color3.new(1, 1, 1), 0.2)
 	end)
 	button.MouseLeave:Connect(function()
-		button.BackgroundColor3 = color or Color3.fromRGB(50, 50, 50)
+		local storedBase = button:GetAttribute("BaseColor")
+		button.BackgroundColor3 = storedBase or baseColor
 	end)
 	
 	return button
@@ -2020,6 +2029,84 @@ if showControlButtons then
 		end
 	end)
 	buttonLayoutOrder = buttonLayoutOrder + 1
+
+	-- Row 4: Friendly fire toggles
+	local playerFriendlyLocalState = playerFriendlyFireValue and playerFriendlyFireValue.Value or false
+	local mobFriendlyLocalState = mobFriendlyFireValue and mobFriendlyFireValue.Value or false
+
+	local playerFriendlyButton
+	local mobFriendlyButton
+
+	local function updatePlayerFriendlyButton()
+		if not playerFriendlyButton then
+			return
+		end
+		local enabled = playerFriendlyFireValue and playerFriendlyFireValue.Value or playerFriendlyLocalState
+		playerFriendlyLocalState = enabled
+		playerFriendlyButton.Text = enabled and "PVP: ON" or "PVP: OFF"
+		local color = enabled and Color3.fromRGB(180, 60, 60) or Color3.fromRGB(60, 60, 60)
+		playerFriendlyButton:SetAttribute("BaseColor", color)
+		playerFriendlyButton.BackgroundColor3 = color
+	end
+
+	local function updateMobFriendlyButton()
+		if not mobFriendlyButton then
+			return
+		end
+		local enabled = mobFriendlyFireValue and mobFriendlyFireValue.Value or mobFriendlyLocalState
+		mobFriendlyLocalState = enabled
+		mobFriendlyButton.Text = enabled and "Mob FF: ON" or "Mob FF: OFF"
+		local color = enabled and Color3.fromRGB(100, 150, 220) or Color3.fromRGB(60, 60, 60)
+		mobFriendlyButton:SetAttribute("BaseColor", color)
+		mobFriendlyButton.BackgroundColor3 = color
+	end
+
+	playerFriendlyButton = createButton("PVP: OFF", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
+		local newValue
+		if playerFriendlyFireValue then
+			newValue = not playerFriendlyFireValue.Value
+		else
+			newValue = not playerFriendlyLocalState
+			playerFriendlyLocalState = newValue
+		end
+		if DevStatEvent then
+			DevStatEvent:FireServer("setPlayerFriendlyFire", newValue)
+		end
+		updatePlayerFriendlyButton()
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
+
+	mobFriendlyButton = createButton("Mob FF: OFF", Color3.fromRGB(60, 60, 60), buttonLayoutOrder, function()
+		local newValue
+		if mobFriendlyFireValue then
+			newValue = not mobFriendlyFireValue.Value
+		else
+			newValue = not mobFriendlyLocalState
+			mobFriendlyLocalState = newValue
+		end
+		if DevStatEvent then
+			DevStatEvent:FireServer("setMobFriendlyFire", newValue)
+		end
+		updateMobFriendlyButton()
+	end)
+	buttonLayoutOrder = buttonLayoutOrder + 1
+
+	updatePlayerFriendlyButton()
+	updateMobFriendlyButton()
+
+	if playerFriendlyFireValue then
+		playerFriendlyFireValue:GetPropertyChangedSignal("Value"):Connect(function()
+			playerFriendlyLocalState = playerFriendlyFireValue.Value
+			updatePlayerFriendlyButton()
+		end)
+	end
+
+	if mobFriendlyFireValue then
+		mobFriendlyFireValue:GetPropertyChangedSignal("Value"):Connect(function()
+			mobFriendlyLocalState = mobFriendlyFireValue.Value
+			updateMobFriendlyButton()
+		end)
+	end
 else
 	controlFrame.Visible = false
 	controlFrame.Size = UDim2.new(1, -10, 0, 0)

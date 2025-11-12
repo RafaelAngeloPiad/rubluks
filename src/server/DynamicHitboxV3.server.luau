@@ -285,8 +285,42 @@ local function calculateDamageWithDefense(rawDamage, attacker, target)
 end
 
 -- Friendly fire configuration - separate controls for players and mobs
-local PLAYER_FRIENDLY_FIRE = false -- Set to true to allow players to damage each other
-local MOB_FRIENDLY_FIRE = false -- Set to true to allow mobs to damage each other
+local DevSettingsFolder = ReplicatedStorage:FindFirstChild("DevSettings")
+if not DevSettingsFolder then
+	DevSettingsFolder = Instance.new("Folder")
+	DevSettingsFolder.Name = "DevSettings"
+	DevSettingsFolder.Parent = ReplicatedStorage
+end
+
+local FriendlyFireFolder = DevSettingsFolder:FindFirstChild("FriendlyFire") or Instance.new("Folder")
+FriendlyFireFolder.Name = "FriendlyFire"
+FriendlyFireFolder.Parent = DevSettingsFolder
+
+local PlayerFriendlyFireValue = FriendlyFireFolder:FindFirstChild("Players")
+if not PlayerFriendlyFireValue then
+	PlayerFriendlyFireValue = Instance.new("BoolValue")
+	PlayerFriendlyFireValue.Name = "Players"
+	PlayerFriendlyFireValue.Value = false
+	PlayerFriendlyFireValue.Parent = FriendlyFireFolder
+end
+
+local MobFriendlyFireValue = FriendlyFireFolder:FindFirstChild("Mobs")
+if not MobFriendlyFireValue then
+	MobFriendlyFireValue = Instance.new("BoolValue")
+	MobFriendlyFireValue.Name = "Mobs"
+	MobFriendlyFireValue.Value = false
+	MobFriendlyFireValue.Parent = FriendlyFireFolder
+end
+
+local PLAYER_FRIENDLY_FIRE = PlayerFriendlyFireValue.Value -- Set to true to allow players to damage each other
+local MOB_FRIENDLY_FIRE = MobFriendlyFireValue.Value -- Set to true to allow mobs to damage each other
+
+local function syncFriendlyFireReplicatedValues()
+	PlayerFriendlyFireValue.Value = PLAYER_FRIENDLY_FIRE
+	MobFriendlyFireValue.Value = MOB_FRIENDLY_FIRE
+end
+
+syncFriendlyFireReplicatedValues()
 
 -- Function to check if a model is a player
 local function isPlayer(model)
@@ -818,7 +852,8 @@ end
 
 -- Function to set player friendly fire setting
 function _G.setPlayerFriendlyFire(enabled)
-    PLAYER_FRIENDLY_FIRE = enabled
+    PLAYER_FRIENDLY_FIRE = enabled and true or false
+    syncFriendlyFireReplicatedValues()
 end
 
 -- Function to get player friendly fire setting
@@ -828,7 +863,8 @@ end
 
 -- Function to set mob friendly fire setting
 function _G.setMobFriendlyFire(enabled)
-    MOB_FRIENDLY_FIRE = enabled
+    MOB_FRIENDLY_FIRE = enabled and true or false
+    syncFriendlyFireReplicatedValues()
 end
 
 -- Function to get mob friendly fire setting
@@ -839,11 +875,12 @@ end
 -- Function to set both friendly fire settings at once (for convenience)
 function _G.setFriendlyFire(playerEnabled, mobEnabled)
     if playerEnabled ~= nil then
-        PLAYER_FRIENDLY_FIRE = playerEnabled
+        PLAYER_FRIENDLY_FIRE = playerEnabled and true or false
     end
     if mobEnabled ~= nil then
-        MOB_FRIENDLY_FIRE = mobEnabled
+        MOB_FRIENDLY_FIRE = mobEnabled and true or false
     end
+    syncFriendlyFireReplicatedValues()
 end
 
 -- Function to get both friendly fire settings
