@@ -50,6 +50,34 @@ local HITBOX_OFFSET = CFrame.new(0, 0, -4)
 local HITBOX_SIZE = Vector3.new(8, 8, 8)
 local HITBOX_VISUAL_COLOR = Color3.new(1, 0.2, 0.2)
 
+local PLAYER_CONTROL_TAG = "player_transformed"
+local PLAYER_ATTACK_ATTRIBUTE = "PlayerAttackRequest"
+
+local function isPlayerControlled(character)
+	return CollectionService:HasTag(character, PLAYER_CONTROL_TAG)
+end
+
+local function bindPlayerControl(character, humanoid, attackCallback)
+	if not isPlayerControlled(character) then
+		return false
+	end
+
+	humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+
+	humanoid:GetAttributeChangedSignal(PLAYER_ATTACK_ATTRIBUTE):Connect(function()
+		if not isPlayerControlled(character) then
+			return
+		end
+
+		if humanoid:GetAttribute(PLAYER_ATTACK_ATTRIBUTE) then
+			humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+			attackCallback()
+		end
+	end)
+
+	return true
+end
+
 -- Pathfinding configuration
 local agentParameters = {
 	AgentRadius = 4,
@@ -283,6 +311,8 @@ local function initializeHumanMelee(character, variantName)
 		playTrack(attackTrack, 0.1)
 	end
 
+	local playerControlled = bindPlayerControl(character, humanoid, playAttack)
+
 	local function playPointAnimation(targetRoot)
 		if isPointing or movementLocked then
 			return
@@ -377,6 +407,10 @@ local function initializeHumanMelee(character, variantName)
 			stopMovement()
 		end
 	end)
+
+	if playerControlled then
+		return
+	end
 
 	local spawnPosition = character:GetPivot().Position
 	local timeSinceTarget = 0

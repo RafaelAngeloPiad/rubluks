@@ -25,6 +25,34 @@ local MISSILE_LIFETIME = 1 -- Seconds before missile despawns
 local FLOAT_HEIGHT = 5  -- Height in studs to float above ground
 local FLOAT_SPEED = 0.08  -- Lerp speed (0.08 = smooth, low performance)
 
+local PLAYER_CONTROL_TAG = "player_transformed"
+local PLAYER_ATTACK_ATTRIBUTE = "PlayerAttackRequest"
+
+local function isPlayerControlled(monster)
+	return CollectionService:HasTag(monster, PLAYER_CONTROL_TAG)
+end
+
+local function bindPlayerControl(monster, humanoid, attackCallback)
+	if not isPlayerControlled(monster) then
+		return false
+	end
+
+	humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+
+	humanoid:GetAttributeChangedSignal(PLAYER_ATTACK_ATTRIBUTE):Connect(function()
+		if not isPlayerControlled(monster) then
+			return
+		end
+
+		if humanoid:GetAttribute(PLAYER_ATTACK_ATTRIBUTE) then
+			humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+			attackCallback()
+		end
+	end)
+
+	return true
+end
+
 -- === HELPERS ===
 -- === WRAITH INITIALIZATION ===
 local function initializeWraith(wraith, variantName)
@@ -163,80 +191,97 @@ local function initializeWraith(wraith, variantName)
 		end)
 	end
 	
-	-- Rotation and attack loop - always face nearest player
-	task.spawn(function()
-		while task.wait(0.1) do
-			if not wraith or not wraith.Parent or not humanoid or humanoid.Health <= 0 then
-				break
-			end
-			
-			local position = root.Position
-			local targetModel, nearest, _, nearestDist = HitboxExclusions.findClosestHostile(wraith, position, DETECTION_RANGE)
-			
-			-- Face nearest player if found and control fire/attacks
-			if nearest then
-				currentTargetModel = targetModel
-				-- Turn fire on when target detected
-				if fire then
-					fire.Enabled = true
-				end
-				
-				-- Anchor and disable collision when floating to prevent physics interference
-				root.Anchored = true
-				root.CanCollide = false
-				
-				-- Float up
-				targetY = groundY + FLOAT_HEIGHT
-				
-				currentTarget = nearest
-				
-				-- Attack if cooldown is ready
-				if tick() - lastAttack >= ATTACK_COOLDOWN then
-					lastAttack = tick()
-					shootHomingProjectile(nearest)
-				end
-				
-				-- Update lerp float - only affects Y position
-				currentY = currentY + (targetY - currentY) * FLOAT_SPEED
-				
-				-- Preserve original X/Z position, only update Y
-				local targetPos = Vector3.new(position.X, currentY, position.Z)
-				
-				local lookDirection = (nearest.Position - position).Unit
-				if lookDirection.Magnitude > 0.1 then
-					-- Only rotate on Y axis (horizontal rotation), preserve the floating Y position
-					local lookDirection2D = Vector3.new(lookDirection.X, 0, lookDirection.Z).Unit
-					local lookCFrame = CFrame.lookAt(targetPos, targetPos + lookDirection2D)
-					-- Lerp only the rotation part, keep the position fixed
-					local currentRotation = root.CFrame - root.CFrame.Position
-					local targetRotation = lookCFrame - lookCFrame.Position
-					root.CFrame = CFrame.new(targetPos) * currentRotation:Lerp(targetRotation, 0.3)
-				else
-					-- Just update position if no rotation needed
-					root.Position = targetPos
-				end
-			else
-				-- No player detected, turn fire off
-				if fire then
-					fire.Enabled = false
-				end
-				currentTargetModel = nil
-				
-				-- Unanchor and enable collision before falling back down
-				root.Anchored = false
-				root.CanCollide = true
-				
-				-- Fall back down
-				targetY = groundY
-				
-				currentTarget = nil
-				
-				-- Update lerp float - only affects Y position
-				currentY = currentY + (targetY - currentY) * FLOAT_SPEED
-				root.Position = Vector3.new(position.X, currentY, position.Z)
-			end
+	local function manualAttack()
+		local _, nearest = HitboxExclusions.findClosestHostile(wraith, root.Position, DETECTION_RANGE)
+		if nearest then
+			shootHomingProjectile(nearest)
 		end
-	end)
+	end
+
+	local playerControlled = bindPlayerControl(wraith, humanoid, manualAttack)
+
+	if playerControlled then
+		root.Anchored = false
+		root.CanCollide = true
+		if fire then
+			fire.Enabled = false
+		end
+	else
+		-- Rotation and attack loop - always face nearest player
+		task.spawn(function()
+			while task.wait(0.1) do
+				if not wraith or not wraith.Parent or not humanoid or humanoid.Health <= 0 then
+					break
+				end
+				
+				local position = root.Position
+				local targetModel, nearest, _, nearestDist = HitboxExclusions.findClosestHostile(wraith, position, DETECTION_RANGE)
+				
+				-- Face nearest player if found and control fire/attacks
+				if nearest then
+					currentTargetModel = targetModel
+					-- Turn fire on when target detected
+					if fire then
+						fire.Enabled = true
+					end
+					
+					-- Anchor and disable collision when floating to prevent physics interference
+					root.Anchored = true
+					root.CanCollide = false
+					
+					-- Float up
+					targetY = groundY + FLOAT_HEIGHT
+					
+					currentTarget = nearest
+					
+					-- Attack if cooldown is ready
+					if tick() - lastAttack >= ATTACK_COOLDOWN then
+						lastAttack = tick()
+						shootHomingProjectile(nearest)
+					end
+					
+					-- Update lerp float - only affects Y position
+					currentY = currentY + (targetY - currentY) * FLOAT_SPEED
+					
+					-- Preserve original X/Z position, only update Y
+					local targetPos = Vector3.new(position.X, currentY, position.Z)
+					
+					local lookDirection = (nearest.Position - position).Unit
+					if lookDirection.Magnitude > 0.1 then
+						-- Only rotate on Y axis (horizontal rotation), preserve the floating Y position
+						local lookDirection2D = Vector3.new(lookDirection.X, 0, lookDirection.Z).Unit
+						local lookCFrame = CFrame.lookAt(targetPos, targetPos + lookDirection2D)
+						-- Lerp only the rotation part, keep the position fixed
+						local currentRotation = root.CFrame - root.CFrame.Position
+						local targetRotation = lookCFrame - lookCFrame.Position
+						root.CFrame = CFrame.new(targetPos) * currentRotation:Lerp(targetRotation, 0.3)
+					else
+						-- Just update position if no rotation needed
+						root.Position = targetPos
+					end
+				else
+					-- No player detected, turn fire off
+					if fire then
+						fire.Enabled = false
+					end
+					currentTargetModel = nil
+					
+					-- Unanchor and enable collision before falling back down
+					root.Anchored = false
+					root.CanCollide = true
+					
+					-- Fall back down
+					targetY = groundY
+					
+					currentTarget = nil
+					
+					-- Update lerp float - only affects Y position
+					currentY = currentY + (targetY - currentY) * FLOAT_SPEED
+					root.Position = Vector3.new(position.X, currentY, position.Z)
+				end
+			end
+		end)
+	end
 end
 
 -- === MODULE EXPORTS ===

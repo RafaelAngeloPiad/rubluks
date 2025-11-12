@@ -56,6 +56,34 @@ local ORB_SPEED = 90
 local ORB_LIFETIME = 0.5
 local ORB_HITBOX_SIZE = Vector3.new(5, 5, 5)
 
+local PLAYER_CONTROL_TAG = "player_transformed"
+local PLAYER_ATTACK_ATTRIBUTE = "PlayerAttackRequest"
+
+local function isPlayerControlled(character)
+	return CollectionService:HasTag(character, PLAYER_CONTROL_TAG)
+end
+
+local function bindPlayerControl(character, humanoid, attackCallback)
+	if not isPlayerControlled(character) then
+		return false
+	end
+
+	humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+
+	humanoid:GetAttributeChangedSignal(PLAYER_ATTACK_ATTRIBUTE):Connect(function()
+		if not isPlayerControlled(character) then
+			return
+		end
+
+		if humanoid:GetAttribute(PLAYER_ATTACK_ATTRIBUTE) then
+			humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+			attackCallback()
+		end
+	end)
+
+	return true
+end
+
 -- Pathfinding configuration
 local agentParameters = {
 	AgentRadius = 4,
@@ -465,6 +493,15 @@ local function initializeHumanWizard(character, variantName)
 		end)
 	end
 
+	local function manualAttack()
+		local targetModel, targetRoot = HitboxExclusions.findClosestHostile(character, root.Position, ATTACK_RANGE)
+		currentTargetModel = targetModel
+		currentTargetRoot = targetRoot
+		playAttack()
+	end
+
+	local playerControlled = bindPlayerControl(character, humanoid, manualAttack)
+
 	local function playPointAnimation(targetRoot)
 		if isPointing or movementLocked then
 			return
@@ -559,6 +596,10 @@ local function initializeHumanWizard(character, variantName)
 			stopMovement()
 		end
 	end)
+
+	if playerControlled then
+		return
+	end
 
 	local spawnPosition = character:GetPivot().Position
 	local timeSinceTarget = 0

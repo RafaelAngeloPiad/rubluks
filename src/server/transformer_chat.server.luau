@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 
 local COMMAND_PREFIX = "/transform"
 
@@ -68,6 +69,9 @@ local function transformPlayer(player: Player, modelPath: string)
 	local cloned = template:Clone()
 	cloned.Name = player.Name
 	cloned.Parent = workspace
+
+	CollectionService:AddTag(cloned, "player_transformed")
+	cloned:SetAttribute("ControlledByPlayer", player.UserId)
 
 	if not cloned.PrimaryPart then
 		local humanoidRoot = cloned:FindFirstChild("HumanoidRootPart")

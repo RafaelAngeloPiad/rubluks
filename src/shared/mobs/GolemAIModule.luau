@@ -29,6 +29,34 @@ local WALK_SPEED_SCALE = 16
 local MIN_WALK_SPEED = 0.5
 local STOP_DELAY = 0.25
 
+local PLAYER_CONTROL_TAG = "player_transformed"
+local PLAYER_ATTACK_ATTRIBUTE = "PlayerAttackRequest"
+
+local function isPlayerControlled(monster)
+	return CollectionService:HasTag(monster, PLAYER_CONTROL_TAG)
+end
+
+local function bindPlayerControl(monster, humanoid, attackCallback)
+	if not isPlayerControlled(monster) then
+		return false
+	end
+
+	humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+
+	humanoid:GetAttributeChangedSignal(PLAYER_ATTACK_ATTRIBUTE):Connect(function()
+		if not isPlayerControlled(monster) then
+			return
+		end
+
+		if humanoid:GetAttribute(PLAYER_ATTACK_ATTRIBUTE) then
+			humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+			attackCallback()
+		end
+	end)
+
+	return true
+end
+
 -- === TRACKING ===
 -- No need for tracking since each model has its own initializer
 
@@ -225,6 +253,28 @@ local function initializeGolem(monster, variantName)
 				attacking = false
 			end)()
 		end
+	end
+
+	local playerControlled = bindPlayerControl(monster, humanoid, playAttack)
+
+	if playerControlled then
+		humanoid.Running:Connect(function(speed)
+			if attacking then
+				if speed <= MIN_WALK_SPEED then
+					stopWalk()
+				end
+				return
+			end
+
+			if speed > MIN_WALK_SPEED then
+				playWalk()
+				setWalkSpeed(speed)
+			else
+				stopWalk()
+			end
+		end)
+
+		return
 	end
 	
 	-- Main AI loop for this golem

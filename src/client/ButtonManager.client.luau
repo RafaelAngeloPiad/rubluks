@@ -27,6 +27,7 @@ local ArcherActions = require(player.PlayerScripts.archer.ArcherActionModule)
 local KnightActions = require(player.PlayerScripts.knight.KnightActionModule)
 local GladiatorActions = require(player.PlayerScripts.gladiator.GladiatorActionModule)
 local BrawlerActions = require(player.PlayerScripts.brawler.BrawlerActionModule)
+local MobActions = require(player.PlayerScripts.mob.MobActionModule)
 
 local function triggerPlatformerSpecial()
 	if typeof(_G.performPlatformerSpecial) == "function" then
@@ -83,6 +84,11 @@ local UNIFIED_TAGS = {
 			action = function() return BrawlerActions.basicAttack() end,
 			name = "[LMB] Attack",
 			description = "Basic attack (2-hit combo, move, or jump attack)"
+		},
+		mob = {
+			action = function() return MobActions.basicAttack() end,
+			name = "[LMB] Attack",
+			description = "Manual attack while transformed"
 		}
 	},
 
@@ -438,6 +444,9 @@ local COOLDOWN_PROVIDERS = {
 	end,
 	brawler = function(skillName)
 		return BrawlerActions.getCooldownRemaining(skillName)
+	end,
+	mob = function()
+		return MobActions.getCooldownRemaining()
 	end
 }
 
@@ -464,6 +473,10 @@ end
 detectCurrentClass = function()
 	local character = player.Character
 	if not character then return nil end
+
+	if CollectionService:HasTag(character, "player_transformed") then
+		return "mob"
+	end
 
 	-- Check for samurai weapon
 	for _, item in character:GetChildren() do
@@ -504,7 +517,12 @@ detectCurrentClass = function()
 end
 
 local function isWeaponEquipped()
-	return SamuraiActions.isWeaponEquipped() or ArcherActions.isWeaponEquipped() or KnightActions.isWeaponEquipped() or GladiatorActions.isWeaponEquipped() or BrawlerActions.isWeaponEquipped()
+	return SamuraiActions.isWeaponEquipped()
+		or ArcherActions.isWeaponEquipped()
+		or KnightActions.isWeaponEquipped()
+		or GladiatorActions.isWeaponEquipped()
+		or BrawlerActions.isWeaponEquipped()
+		or MobActions.isWeaponEquipped()
 end
 
 local consumableSlots = {}

@@ -14,6 +14,34 @@ end)
 local MOVE_ANIMATION_ID = "rbxassetid://108903327900347"
 local ATTACK_ANIMATION_ID = "rbxassetid://132697102857784"
 
+local PLAYER_CONTROL_TAG = "player_transformed"
+local PLAYER_ATTACK_ATTRIBUTE = "PlayerAttackRequest"
+
+local function isPlayerControlled(enemy)
+	return CollectionService:HasTag(enemy, PLAYER_CONTROL_TAG)
+end
+
+local function bindPlayerControl(enemy, humanoid, attackCallback)
+	if not isPlayerControlled(enemy) then
+		return false
+	end
+
+	humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+
+	humanoid:GetAttributeChangedSignal(PLAYER_ATTACK_ATTRIBUTE):Connect(function()
+		if not isPlayerControlled(enemy) then
+			return
+		end
+
+		if humanoid:GetAttribute(PLAYER_ATTACK_ATTRIBUTE) then
+			humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+			attackCallback()
+		end
+	end)
+
+	return true
+end
+
 local function initializeSpider(enemy, variantName)
 	variantName = variantName or "Spider_Sand"
 
@@ -172,6 +200,8 @@ local function initializeSpider(enemy, variantName)
 		end)()
 	end
 
+	local playerControlled = bindPlayerControl(enemy, hum, playAttack)
+
 	local function findClosestPlayer(position)
 		local nearest
 		local nearestDist = spottingRadius
@@ -196,40 +226,42 @@ local function initializeSpider(enemy, variantName)
 		return nearest
 	end
 
-	coroutine.wrap(function()
-		while task.wait(0.25) do
-			if not enemy.Parent or not enemy:IsDescendantOf(workspace) or not hum or hum.Health <= 0 then
-				cleanupConnections()
-				break
-			end
-
-			if attacking and tick() - lastAttackTime > 5 then
-				attacking = false
-				movementEnabled = true
-				if attackTrack.IsPlaying then
-					attackTrack:Stop(0.1)
+	if not playerControlled then
+		coroutine.wrap(function()
+			while task.wait(0.25) do
+				if not enemy.Parent or not enemy:IsDescendantOf(workspace) or not hum or hum.Health <= 0 then
+					cleanupConnections()
+					break
 				end
-				handleRunning(lastRunningSpeed)
-			end
 
-			local currentPosition = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
-			local distanceFromSpawn = (currentPosition - spawnPosition).Magnitude
-			local target = findClosestPlayer(currentPosition)
+				if attacking and tick() - lastAttackTime > 5 then
+					attacking = false
+					movementEnabled = true
+					if attackTrack.IsPlaying then
+						attackTrack:Stop(0.1)
+					end
+					handleRunning(lastRunningSpeed)
+				end
 
-			if distanceFromSpawn > maxRadius then
-				hum:MoveTo(spawnPosition)
-			elseif target then
-				local targetDistance = (target.Position - currentPosition).Magnitude
+				local currentPosition = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
+				local distanceFromSpawn = (currentPosition - spawnPosition).Magnitude
+				local target = findClosestPlayer(currentPosition)
 
-				if targetDistance <= attackRange then
-					hum:MoveTo(root.Position)
-					playAttack()
-				elseif not attacking then
-					hum:MoveTo(target.Position, target)
+				if distanceFromSpawn > maxRadius then
+					hum:MoveTo(spawnPosition)
+				elseif target then
+					local targetDistance = (target.Position - currentPosition).Magnitude
+
+					if targetDistance <= attackRange then
+						hum:MoveTo(root.Position)
+						playAttack()
+					elseif not attacking then
+						hum:MoveTo(target.Position, target)
+					end
 				end
 			end
-		end
-	end)()
+		end)()
+	end
 end
 
 local SpiderAIModule = {}

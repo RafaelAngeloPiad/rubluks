@@ -29,6 +29,34 @@ local IDLE_ANIMATION_IDS = {
 }
 local MOVE_SPEED_THRESHOLD = 1.0
 
+local PLAYER_CONTROL_TAG = "player_transformed"
+local PLAYER_ATTACK_ATTRIBUTE = "PlayerAttackRequest"
+
+local function isPlayerControlled(monster)
+	return CollectionService:HasTag(monster, PLAYER_CONTROL_TAG)
+end
+
+local function bindPlayerControl(monster, humanoid, attackCallback)
+	if not isPlayerControlled(monster) then
+		return false
+	end
+
+	humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+
+	humanoid:GetAttributeChangedSignal(PLAYER_ATTACK_ATTRIBUTE):Connect(function()
+		if not isPlayerControlled(monster) then
+			return
+		end
+
+		if humanoid:GetAttribute(PLAYER_ATTACK_ATTRIBUTE) then
+			humanoid:SetAttribute(PLAYER_ATTACK_ATTRIBUTE, false)
+			attackCallback()
+		end
+	end)
+
+	return true
+end
+
 -- === HELPERS ===
 local function FindNearestTarget(attacker, origin)
 	local nearest, nearestDist = nil, DETECTION_RANGE
@@ -232,6 +260,8 @@ local function initializeZombie(zombie, variantName)
 
 	playIdle()
 
+	local playerControlled = bindPlayerControl(zombie, humanoid, playAttack)
+
 	-- Setup ragdoll disable
 	humanoid.StateChanged:Connect(function(oldState, newState)
 		if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
@@ -242,54 +272,56 @@ local function initializeZombie(zombie, variantName)
 	
 	-- Main AI loop - simple follow on radius detect
 	local lastAttackTime = 0
-	task.spawn(function()
-		while task.wait(UPDATE_RATE) do
-			-- Check if zombie still exists and is alive
-			if not zombie or not zombie.Parent or not zombie:IsDescendantOf(workspace) or not humanoid or humanoid.Health <= 0 then
-				break
-			end
-			
-			if not root then 
-				root = zombie:FindFirstChild("HumanoidRootPart") or zombie.PrimaryPart 
-			end
-			if not root then 
-				continue 
-			end
-			
-			local position = root.Position
-			
-			-- Find nearest target within detection radius
-			local target = FindNearestTarget(zombie, position)
-			
-			if target then
-				local targetDist = (target.Position - position).Magnitude
-				if targetDist <= ATTACK_RANGE then
-					humanoid:MoveTo(position)
-					local now = tick()
-					if not attacking and now - lastAttackTime >= ATTACK_COOLDOWN then
-						lastAttackTime = now
-						playAttack()
+	if not playerControlled then
+		task.spawn(function()
+			while task.wait(UPDATE_RATE) do
+				-- Check if zombie still exists and is alive
+				if not zombie or not zombie.Parent or not zombie:IsDescendantOf(workspace) or not humanoid or humanoid.Health <= 0 then
+					break
+				end
+				
+				if not root then 
+					root = zombie:FindFirstChild("HumanoidRootPart") or zombie.PrimaryPart 
+				end
+				if not root then 
+					continue 
+				end
+				
+				local position = root.Position
+				
+				-- Find nearest target within detection radius
+				local target = FindNearestTarget(zombie, position)
+				
+				if target then
+					local targetDist = (target.Position - position).Magnitude
+					if targetDist <= ATTACK_RANGE then
+						humanoid:MoveTo(position)
+						local now = tick()
+						if not attacking and now - lastAttackTime >= ATTACK_COOLDOWN then
+							lastAttackTime = now
+							playAttack()
+						end
+					else
+						if not attacking then
+							humanoid:MoveTo(target.Position)
+						end
 					end
 				else
 					if not attacking then
-						humanoid:MoveTo(target.Position)
+						humanoid:MoveTo(position)
 					end
 				end
-			else
+				local horizontalSpeed = (root.Velocity * Vector3.new(1, 0, 1)).Magnitude
 				if not attacking then
-					humanoid:MoveTo(position)
+					if horizontalSpeed > MOVE_SPEED_THRESHOLD then
+						playRun()
+					else
+						playIdle()
+					end
 				end
 			end
-			local horizontalSpeed = (root.Velocity * Vector3.new(1, 0, 1)).Magnitude
-			if not attacking then
-				if horizontalSpeed > MOVE_SPEED_THRESHOLD then
-					playRun()
-				else
-					playIdle()
-				end
-			end
-		end
-	end)
+		end)
+	end
 end
 
 -- === MODULE EXPORTS ===
