@@ -350,6 +350,7 @@ local tooltipFrame
 local tooltipLabel
 local tooltipResolver
 local tooltipConnection
+local CONSUMABLE_TOOLTIP_DELAY = 20
 
 local function ensureTooltipGui()
 	if tooltipGui then
@@ -473,6 +474,29 @@ local function showTooltip(resolver, button)
 
 		updateTooltipPosition()
 	end)
+end
+
+local function createConsumableTooltipHandlers(button, resolver)
+	local token = 0
+
+	local function scheduleTooltip()
+		token += 1
+		local currentToken = token
+
+		task.spawn(function()
+			task.wait(CONSUMABLE_TOOLTIP_DELAY)
+			if token == currentToken then
+				showTooltip(resolver, button)
+			end
+		end)
+	end
+
+	local function cancelTooltip()
+		token += 1
+		hideTooltip()
+	end
+
+	return scheduleTooltip, cancelTooltip
 end
 
 local function formatTooltipFromConfig(config)
@@ -653,6 +677,7 @@ local function updateConsumableButtonVisual(button, slotIndex)
 
 	if button:IsA("GuiButton") then
 		button.AutoButtonColor = hasConsumable
+		button.Active = hasConsumable
 	end
 end
 
@@ -685,20 +710,22 @@ end
 local function setupConsumableButton(button, slotIndex)
 	registerConsumableButton(slotIndex, button)
 
+	local tooltipResolver = function()
+		return getConsumableTooltipText(slotIndex)
+	end
+	local scheduleTooltip, cancelTooltip = createConsumableTooltipHandlers(button, tooltipResolver)
+
 	button.MouseButton1Click:Connect(function()
 		if consumableSlots[slotIndex] then
 			ConsumableEvent:FireServer("use", slotIndex)
 		end
 		hideTooltip()
+		cancelTooltip()
 	end)
 
-	button.MouseEnter:Connect(function()
-		showTooltip(function()
-			return getConsumableTooltipText(slotIndex)
-		end, button)
-	end)
-	button.MouseLeave:Connect(hideTooltip)
-	button.Destroying:Connect(hideTooltip)
+	button.MouseEnter:Connect(scheduleTooltip)
+	button.MouseLeave:Connect(cancelTooltip)
+	button.Destroying:Connect(cancelTooltip)
 end
 
 -- ========================================
@@ -751,6 +778,7 @@ local function setupUnifiedButton(button, tag)
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 0
+				button.Active = true
 				-- Update TextLabel child transparency if it exists
 				local textLabel = button:FindFirstChildOfClass("TextLabel")
 				if textLabel then
@@ -760,6 +788,7 @@ local function setupUnifiedButton(button, tag)
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 1
+				button.Active = false
 				-- Update TextLabel child transparency if it exists
 				local textLabel = button:FindFirstChildOfClass("TextLabel")
 				if textLabel then
@@ -920,6 +949,7 @@ local function setupUnifiedHoldButton(button, tag)
 					button.BackgroundTransparency = 1
 				end
 				button.ImageTransparency = 0
+				button.Active = true
 				-- Update TextLabel child transparency if it exists
 				local textLabel = button:FindFirstChildOfClass("TextLabel")
 				if textLabel then
@@ -929,6 +959,7 @@ local function setupUnifiedHoldButton(button, tag)
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 1
+				button.Active = false
 				-- Update TextLabel child transparency if it exists
 				local textLabel = button:FindFirstChildOfClass("TextLabel")
 				if textLabel then
