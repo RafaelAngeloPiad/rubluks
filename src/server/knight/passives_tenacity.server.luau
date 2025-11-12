@@ -9,6 +9,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+local function canUseKnightPassives(player)
+	if ServerConfigs.isWeaponClassMatch(player) then
+		return true
+	end
+
+	local mismatchedConfig = ServerConfigs.Client and ServerConfigs.Client.MismatchedWeaponPenalty
+	if mismatchedConfig and mismatchedConfig.allowSkills == false then
+		warn("[KnightPassives] Passive blocked: Player " .. player.Name .. " tried to use Knight passives with mismatched weapon.")
+		return false
+	end
+
+	return true
+end
+
 -- Store player state for Tenacity passive
 local playerTenacityStates = {}
 
@@ -164,6 +178,13 @@ local function checkTenacityPassive(player)
 	
 	if not class or class.Value ~= "Knight" or not level then
 		-- Not a Knight or no level, remove passive if active
+		if playerTenacityStates[player] and playerTenacityStates[player].isActive then
+			removeTenacityDefense(player)
+		end
+		return
+	end
+
+	if not canUseKnightPassives(player) then
 		if playerTenacityStates[player] and playerTenacityStates[player].isActive then
 			removeTenacityDefense(player)
 		end

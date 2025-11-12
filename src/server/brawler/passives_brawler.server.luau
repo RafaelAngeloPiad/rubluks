@@ -13,6 +13,20 @@ local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfig
 -- Store player state for Brawler passives
 local playerBrawlerPassiveStates = {}
 
+local function canUseBrawlerPassives(player)
+	if ServerConfigs.isWeaponClassMatch(player) then
+		return true
+	end
+
+	local mismatchedConfig = ServerConfigs.Client and ServerConfigs.Client.MismatchedWeaponPenalty
+	if mismatchedConfig and mismatchedConfig.allowSkills == false then
+		warn("[BrawlerPassives] Passive blocked: Player " .. player.Name .. " tried to use Brawler passives with mismatched weapon.")
+		return false
+	end
+
+	return true
+end
+
 -- Function to apply Rage passive bonuses
 local function applyRagePassive(player, attackIncrease, attackSpeedIncrease)
 	local leaderstats = player:FindFirstChild("leaderstats")
@@ -169,6 +183,33 @@ local function checkBrawlerPassives(player)
 		if playerBrawlerPassiveStates[player] then
 			if playerBrawlerPassiveStates[player].rageActive then
 				removeRagePassive(player)
+			end
+		end
+		return
+	end
+
+	if not canUseBrawlerPassives(player) then
+		if playerBrawlerPassiveStates[player] then
+			if playerBrawlerPassiveStates[player].rageActive then
+				removeRagePassive(player)
+			end
+
+			if playerBrawlerPassiveStates[player].madnessActive then
+				playerBrawlerPassiveStates[player].madnessActive = false
+				playerBrawlerPassiveStates[player].madnessStunChance = 0
+
+				local activePassives = leaderstats:FindFirstChild("ActivePassives")
+				if activePassives then
+					local currentPassives = activePassives.Value
+					local passiveList = {}
+					for passiveName in string.gmatch(currentPassives, "([^,]+)") do
+						passiveName = passiveName:match("^%s*(.-)%s*$")
+						if passiveName ~= "Madness" then
+							table.insert(passiveList, passiveName)
+						end
+					end
+					activePassives.Value = table.concat(passiveList, ",")
+				end
 			end
 		end
 		return

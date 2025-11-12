@@ -11,6 +11,20 @@ local RunService = game:GetService("RunService")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+local function canUseGladiatorPassives(player)
+	if ServerConfigs.isWeaponClassMatch(player) then
+		return true
+	end
+
+	local mismatchedConfig = ServerConfigs.Client and ServerConfigs.Client.MismatchedWeaponPenalty
+	if mismatchedConfig and mismatchedConfig.allowSkills == false then
+		warn("[GladiatorPassives] Passive blocked: Player " .. player.Name .. " tried to use Gladiator passives with mismatched weapon.")
+		return false
+	end
+
+	return true
+end
+
 -- Function to check if Champion's Rebuke passive should trigger
 -- @param player: Player instance
 -- @return: boolean indicating if passive should trigger
@@ -27,6 +41,10 @@ function _G.checkChampionsRebukePassive(player)
 	-- Check if player is Gladiator class
 	local class = leaderstats:FindFirstChild("Class")
 	if not class or class.Value ~= "Gladiator" then
+		return false
+	end
+
+	if not canUseGladiatorPassives(player) then
 		return false
 	end
 	
@@ -108,6 +126,10 @@ local function handleOneLastChanceResurrection(player, character, humanoid, pass
 	
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
+		return false
+	end
+
+	if not canUseGladiatorPassives(player) then
 		return false
 	end
 	

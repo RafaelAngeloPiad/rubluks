@@ -59,6 +59,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		return
 	end
 	
+	-- Prevent buff usage if weapon does not match player's class (respect allowSkills flag)
+	if not ServerConfigs.isWeaponClassMatch(player) then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[Banzai] Buff blocked: Player " .. player.Name .. " tried to use Samurai buff with mismatched weapon.")
+			return
+		end
+	end
+	
 	-- Check cooldown using centralized system
 	if _G.samuraiIsSkillOnCooldown(player, "banzai") then
 		local remainingTime = _G.samuraiGetRemainingCooldown(player, "banzai")

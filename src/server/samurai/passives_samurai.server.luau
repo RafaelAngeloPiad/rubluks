@@ -13,6 +13,20 @@ local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfig
 -- Store player state for Samurai passives
 local playerSamuraiPassiveStates = {}
 
+local function canUseSamuraiPassives(player)
+	if ServerConfigs.isWeaponClassMatch(player) then
+		return true
+	end
+
+	local mismatchedConfig = ServerConfigs.Client and ServerConfigs.Client.MismatchedWeaponPenalty
+	if mismatchedConfig and mismatchedConfig.allowSkills == false then
+		warn("[SamuraiPassives] Passive blocked: Player " .. player.Name .. " tried to use Samurai passive with mismatched weapon.")
+		return false
+	end
+
+	return true
+end
+
 -- Function to check if Burst passive should trigger
 -- @param player: Player instance
 -- @return: boolean indicating if passive should trigger
@@ -32,6 +46,10 @@ function _G.checkSamuraiBurstPassive(player)
 		return false
 	end
 	
+	if not canUseSamuraiPassives(player) then
+		return false
+	end
+
 	-- Get player level
 	local level = leaderstats:FindFirstChild("Level")
 	if not level then
@@ -109,6 +127,10 @@ function _G.checkSamuraiBladeDancePassive(player)
 		return nil
 	end
 	
+	if not canUseSamuraiPassives(player) then
+		return nil
+	end
+
 	-- Get player level
 	local level = leaderstats:FindFirstChild("Level")
 	if not level then

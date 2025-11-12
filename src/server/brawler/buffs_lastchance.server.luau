@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
@@ -22,6 +23,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle lastchance buff requests
 	if skillType ~= "lastchance" then
 		return
+	end
+	
+	-- Prevent buff usage if weapon does not match player's class (respect allowSkills flag)
+	if not ServerConfigs.isWeaponClassMatch(player) then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[LastChance] Buff blocked: Player " .. player.Name .. " tried to use Brawler buff with mismatched weapon.")
+			return
+		end
 	end
 	
 	-- Check cooldown using centralized system
@@ -61,7 +70,6 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	-- AURA marker (from original Last Chance.lua)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 		-- Apply buff when aura starts
-		local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 		local leaderstats = player:FindFirstChild("leaderstats")
 		if leaderstats then
 			local level = leaderstats:FindFirstChild("Level")

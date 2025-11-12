@@ -7,6 +7,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
+local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
+
 -- Remote setup
 local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
@@ -21,6 +23,14 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	-- Only handle bushido buff requests
 	if skillType ~= "bushido" then
 		return
+	end
+	
+	-- Prevent buff usage if weapon does not match player's class (respect allowSkills flag)
+	if not ServerConfigs.isWeaponClassMatch(player) then
+		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
+			warn("[Bushido] Buff blocked: Player " .. player.Name .. " tried to use Samurai buff with mismatched weapon.")
+			return
+		end
 	end
 	
 	-- Check cooldown using centralized system

@@ -10,6 +10,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+local function canUseArcherPassives(player)
+	if ServerConfigs.isWeaponClassMatch(player) then
+		return true
+	end
+
+	local mismatchedConfig = ServerConfigs.Client and ServerConfigs.Client.MismatchedWeaponPenalty
+	if mismatchedConfig and mismatchedConfig.allowSkills == false then
+		warn("[ArcherPassives] Passive blocked: Player " .. player.Name .. " tried to use Archer passives with mismatched weapon.")
+		return false
+	end
+
+	return true
+end
+
 -- Function to check if Headshot passive should trigger
 -- @param player: Player instance
 -- @return: boolean indicating if passive should trigger
@@ -26,6 +40,10 @@ function _G.checkHeadshotPassive(player)
 	-- Check if player is Archer class
 	local class = leaderstats:FindFirstChild("Class")
 	if not class or class.Value ~= "Archer" then
+		return false
+	end
+
+	if not canUseArcherPassives(player) then
 		return false
 	end
 	
@@ -75,6 +93,10 @@ function _G.getArcherImmobilizeStunChance(player)
 	if not class or class.Value ~= "Archer" then
 		return nil
 	end
+
+	if not canUseArcherPassives(player) then
+		return nil
+	end
 	
 	-- Get player level
 	local level = leaderstats:FindFirstChild("Level")
@@ -114,6 +136,27 @@ local function checkImmobilizePassive(player)
 				-- Parse and rebuild list without Immobilize
 				for passiveName in string.gmatch(currentPassives, "([^,]+)") do
 					passiveName = passiveName:match("^%s*(.-)%s*$") -- Trim whitespace
+					if passiveName ~= "Immobilize" then
+						table.insert(passiveList, passiveName)
+					end
+				end
+				activePassives.Value = table.concat(passiveList, ",")
+			end
+		end
+		return
+	end
+
+	if not canUseArcherPassives(player) then
+		if playerArcherPassiveStates[player] then
+			playerArcherPassiveStates[player].immobilizeActive = false
+			playerArcherPassiveStates[player].immobilizeStunChance = 0
+
+			local activePassives = leaderstats:FindFirstChild("ActivePassives")
+			if activePassives then
+				local currentPassives = activePassives.Value
+				local passiveList = {}
+				for passiveName in string.gmatch(currentPassives, "([^,]+)") do
+					passiveName = passiveName:match("^%s*(.-)%s*$")
 					if passiveName ~= "Immobilize" then
 						table.insert(passiveList, passiveName)
 					end

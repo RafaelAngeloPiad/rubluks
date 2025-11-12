@@ -8,6 +8,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+local function canUseKnightPassives(player)
+	if ServerConfigs.isWeaponClassMatch(player) then
+		return true
+	end
+
+	local mismatchedConfig = ServerConfigs.Client and ServerConfigs.Client.MismatchedWeaponPenalty
+	if mismatchedConfig and mismatchedConfig.allowSkills == false then
+		warn("[KnightPassives] Passive blocked: Player " .. player.Name .. " tried to use Knight passives with mismatched weapon.")
+		return false
+	end
+
+	return true
+end
+
 -- Function to check if Knights Blade passive should trigger
 -- @param player: Player instance
 -- @return: boolean indicating if passive should trigger
@@ -24,6 +38,10 @@ function _G.checkKnightsBladePassive(player)
 	-- Check if player is Knight class
 	local class = leaderstats:FindFirstChild("Class")
 	if not class or class.Value ~= "Knight" then
+		return false
+	end
+
+	if not canUseKnightPassives(player) then
 		return false
 	end
 	
