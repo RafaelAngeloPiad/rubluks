@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
+local leaderstats = player:WaitForChild("leaderstats")
 
 local DevStatEvent = ReplicatedStorage:WaitForChild("DevStatEvent", 10)
 
@@ -11,6 +12,8 @@ local FriendlyFireFolder = DevSettingsFolder and (DevSettingsFolder:FindFirstChi
 local playerFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Players") or FriendlyFireFolder:WaitForChild("Players", 5))
 local mobFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Mobs") or FriendlyFireFolder:WaitForChild("Mobs", 5))
 local mobCombatModeValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("MobCombatMode") or FriendlyFireFolder:WaitForChild("MobCombatMode", 5))
+local godModeValue = leaderstats:FindFirstChild("GodMode") or leaderstats:WaitForChild("GodMode", 5)
+local statusImmunityValue = leaderstats:FindFirstChild("StatusImmunity") or leaderstats:WaitForChild("StatusImmunity", 5)
 
 local ServerConfigs = ReplicatedStorage:WaitForChild("SlavkosConfigs", 10)
 local ConfigModule = nil
@@ -198,6 +201,8 @@ end
 local playerFriendlyLocalState = playerFriendlyFireValue and playerFriendlyFireValue.Value or false
 local mobFriendlyLocalState = mobFriendlyFireValue and mobFriendlyFireValue.Value or false
 local mobCombatModeLocalState = mobCombatModeValue and mobCombatModeValue.Value or "excluded"
+local godModeLocalState = godModeValue and godModeValue.Value or false
+local statusImmuneLocalState = statusImmunityValue and statusImmunityValue.Value or false
 
 local playerFriendlyButton = createButton("PVP: OFF", Color3.fromRGB(60, 60, 60), layoutOrder, function()
 	local newValue
@@ -255,6 +260,30 @@ local function getNextMobCombatMode(current)
 	return MobCombatModeOrder[index]
 end
 
+local godModeButton = nil
+local statusImmunityButton = nil
+
+local function updateGodModeButton(forceState)
+	if not godModeButton then
+		return
+	end
+	local enabled = forceState
+	if enabled == nil then
+		enabled = godModeValue and godModeValue.Value
+		if enabled == nil then
+			enabled = godModeLocalState
+		end
+	end
+	godModeLocalState = enabled and true or false
+
+	local text = godModeLocalState and "God Mode: ON" or "God Mode: OFF"
+	local color = godModeLocalState and Color3.fromRGB(200, 80, 80) or Color3.fromRGB(60, 60, 60)
+
+	godModeButton.Text = text
+	godModeButton:SetAttribute("BaseColor", color)
+	godModeButton.BackgroundColor3 = color
+end
+
 local mobModeButton
 mobModeButton = createButton("Mob Mode: Excluded", Color3.fromRGB(60, 60, 60), layoutOrder, function()
 	local nextMode = getNextMobCombatMode(mobCombatModeLocalState)
@@ -289,6 +318,63 @@ updateMobModeButton()
 if mobCombatModeValue then
 	mobCombatModeValue:GetPropertyChangedSignal("Value"):Connect(function()
 		updateMobModeButton()
+	end)
+end
+
+godModeButton = createButton("God Mode: OFF", Color3.fromRGB(60, 60, 60), layoutOrder, function()
+	local nextState = not godModeLocalState
+	godModeLocalState = nextState
+	if DevStatEvent then
+		DevStatEvent:FireServer("setGodMode", nextState)
+	end
+	updateGodModeButton(nextState)
+end)
+layoutOrder += 1
+
+updateGodModeButton()
+
+if godModeValue then
+	godModeValue:GetPropertyChangedSignal("Value"):Connect(function()
+		updateGodModeButton()
+	end)
+end
+
+local function updateStatusImmunityButton(forceState)
+	if not statusImmunityButton then
+		return
+	end
+	local enabled = forceState
+	if enabled == nil then
+		enabled = statusImmunityValue and statusImmunityValue.Value
+		if enabled == nil then
+			enabled = statusImmuneLocalState
+		end
+	end
+	statusImmuneLocalState = enabled and true or false
+
+	local text = statusImmuneLocalState and "Status Immunity: ON" or "Status Immunity: OFF"
+	local color = statusImmuneLocalState and Color3.fromRGB(100, 180, 220) or Color3.fromRGB(60, 60, 60)
+
+	statusImmunityButton.Text = text
+	statusImmunityButton:SetAttribute("BaseColor", color)
+	statusImmunityButton.BackgroundColor3 = color
+end
+
+statusImmunityButton = createButton("Status Immunity: OFF", Color3.fromRGB(60, 60, 60), layoutOrder, function()
+	local nextState = not statusImmuneLocalState
+	statusImmuneLocalState = nextState
+	if DevStatEvent then
+		DevStatEvent:FireServer("setStatusImmunity", nextState)
+	end
+	updateStatusImmunityButton(nextState)
+end)
+layoutOrder += 1
+
+updateStatusImmunityButton()
+
+if statusImmunityValue then
+	statusImmunityValue:GetPropertyChangedSignal("Value"):Connect(function()
+		updateStatusImmunityButton()
 	end)
 end
 

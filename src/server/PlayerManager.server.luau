@@ -182,6 +182,8 @@ local function extractConsumableBonuses(entry)
 	return next(bonuses) and bonuses or nil
 end
 
+local playerStatusImmunity = {}
+
 local function applySunfireWaterRestore(player, effectConfig)
 	if not player or typeof(effectConfig) ~= "table" then
 		return false
@@ -2981,7 +2983,23 @@ end
 -- @param player: Player instance
 -- @return: true if player has status immunity, false otherwise
 function _G.hasStatusImmunity(player)
-	if not player or not playerBuffs[player] then
+	if not player then
+		return false
+	end
+
+	if playerStatusImmunity[player] then
+		return true
+	end
+
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local overrideValue = leaderstats:FindFirstChild("StatusImmunity")
+		if overrideValue and overrideValue.Value then
+			return true
+		end
+	end
+
+	if not playerBuffs[player] then
 		return false
 	end
 	
@@ -3066,6 +3084,8 @@ end)
 -- Key: player, Value: boolean (true = invincible, false/nil = not invincible)
 -- This freezes health - no damage is applied while invincible (health stays the same)
 local playerInvincibility = {}
+local playerGodMode = {}
+local playerGodModeHealthConnections = {}
 
 -- Function to enable invincibility for a player (freezes health, prevents damage)
 -- @param player: Player instance
@@ -3089,10 +3109,114 @@ function _G.isPlayerInvincible(player)
 	return playerInvincibility[player] == true
 end
 
+local function updateGodModeValue(player, enabled)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local godModeValue = leaderstats:FindFirstChild("GodMode")
+		if godModeValue then
+			godModeValue.Value = enabled and true or false
+		end
+	end
+end
+
+local function disconnectGodModeConnection(player)
+	if playerGodModeHealthConnections[player] then
+		playerGodModeHealthConnections[player]:Disconnect()
+		playerGodModeHealthConnections[player] = nil
+	end
+end
+
+local function applyGodModeToCharacter(player, character)
+	if not playerGodMode[player] then
+		return
+	end
+
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	disconnectGodModeConnection(player)
+
+	humanoid.MaxHealth = math.max(humanoid.MaxHealth, 1)
+	humanoid.Health = humanoid.MaxHealth
+
+	playerGodModeHealthConnections[player] = humanoid.HealthChanged:Connect(function(newHealth)
+		if playerGodMode[player] and humanoid.Parent then
+			local targetHealth = humanoid.MaxHealth
+			if newHealth < targetHealth then
+				humanoid.Health = targetHealth
+			end
+		end
+	end)
+end
+
+local function disableGodModeInternal(player)
+	playerGodMode[player] = nil
+	disconnectGodModeConnection(player)
+	_G.disablePlayerInvincibility(player)
+	updateGodModeValue(player, false)
+end
+
+function _G.setPlayerGodMode(player, enabled)
+	if not player then
+		return false
+	end
+
+	if enabled then
+		playerGodMode[player] = true
+		updateGodModeValue(player, true)
+		_G.enablePlayerInvincibility(player)
+		if player.Character then
+			applyGodModeToCharacter(player, player.Character)
+		end
+	else
+		disableGodModeInternal(player)
+	end
+
+	return playerGodMode[player] == true
+end
+
+local function updateStatusImmunityValue(player, enabled)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local statusValue = leaderstats:FindFirstChild("StatusImmunity")
+		if statusValue then
+			statusValue.Value = enabled and true or false
+		end
+	end
+end
+
+local function disableStatusImmunityInternal(player)
+	playerStatusImmunity[player] = nil
+	updateStatusImmunityValue(player, false)
+end
+
+function _G.setPlayerStatusImmunity(player, enabled)
+	if not player then
+		return false
+	end
+
+	if enabled then
+		playerStatusImmunity[player] = true
+		updateStatusImmunityValue(player, true)
+	else
+		disableStatusImmunityInternal(player)
+	end
+
+	return playerStatusImmunity[player] == true
+end
+
 -- Clean up invincibility when player leaves
 game.Players.PlayerRemoving:Connect(function(player)
 	if playerInvincibility[player] then
 		playerInvincibility[player] = nil
+	end
+	if playerGodMode[player] then
+		disableGodModeInternal(player)
+	end
+	if playerStatusImmunity[player] then
+		disableStatusImmunityInternal(player)
 	end
 	
 	-- Clean up Bushido states when player leaves
@@ -3264,6 +3388,14 @@ game.Players.PlayerAdded:Connect(function(plr)
 	local activePassives = Instance.new("StringValue", leaderstats)
 	activePassives.Name = "ActivePassives"
 	activePassives.Value = "" -- Comma-separated list of active passives (e.g., "Tenacity")
+	
+	local godModeValue = Instance.new("BoolValue", leaderstats)
+	godModeValue.Name = "GodMode"
+	godModeValue.Value = false
+
+local statusImmunityValue = Instance.new("BoolValue", leaderstats)
+statusImmunityValue.Name = "StatusImmunity"
+statusImmunityValue.Value = false
 	
 	-- Equipment bonus tracking (set by Inventory/Equipment systems)
 	local equipmentBonusesFolder = Instance.new("Folder", leaderstats)
@@ -4037,6 +4169,11 @@ game.Players.PlayerAdded:Connect(function(plr)
 		-- Ensure equipment bonuses are applied for the current character state
 		refreshEquipmentBonuses(plr)
 		
+		if playerGodMode[plr] then
+			_G.enablePlayerInvincibility(plr)
+			applyGodModeToCharacter(plr, char)
+		end
+		
 		-- Mark stats as initialized after first spawn
 		statsInitialized = true
 		
@@ -4286,6 +4423,18 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 			end
 			_G.setMobFriendlyFire(targetState)
 		end
+	elseif action == "setGodMode" then
+		local targetState = value
+		if typeof(targetState) ~= "boolean" then
+			targetState = not (playerGodMode[plr] == true)
+		end
+		_G.setPlayerGodMode(plr, targetState)
+	elseif action == "setStatusImmunity" then
+		local targetState = value
+		if typeof(targetState) ~= "boolean" then
+			targetState = not (playerStatusImmunity[plr] == true)
+		end
+		_G.setPlayerStatusImmunity(plr, targetState)
 	elseif action == "setMobCombatMode" then
 		if (value == nil or value == "cycle") and _G.cycleMobCombatMode then
 			_G.cycleMobCombatMode()

@@ -16,6 +16,7 @@ local mobFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirs
 
 -- Wait for player and leaderstats
 local leaderstats = player:WaitForChild("leaderstats")
+local godModeValue = leaderstats:FindFirstChild("GodMode") or leaderstats:WaitForChild("GodMode", 5)
 
 -- Wait for config (optional, for base stats display)
 local ServerConfigs = ReplicatedStorage:WaitForChild("SlavkosConfigs", 10)
@@ -316,6 +317,9 @@ for _, entry in ipairs(EquipmentStatDisplayOrder) do
 end
 
 local activeConsumableTimers = {}
+local function isGodModeEnabled()
+	return godModeValue and godModeValue.Value == true
+end
 
 
 local function createConsumableRow(valueObj, payload, layoutOrder)
@@ -463,7 +467,9 @@ local function updateStatsDisplay()
 	local slavkoinsText = leaderstats:FindFirstChild("Slavkoins") and leaderstats.Slavkoins.Value or 0
 
 	local healthText = "N/A"
-	if leaderstats:FindFirstChild("MaxHealth") then
+	if isGodModeEnabled() then
+		healthText = "GOD MODE"
+	elseif leaderstats:FindFirstChild("MaxHealth") then
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			local humanoid = player.Character.Humanoid
 			healthText = string.format("%.0f / %.0f", humanoid.Health, humanoid.MaxHealth)
@@ -2014,14 +2020,17 @@ local function setupStatConnections()
 						-- Update calculated damage when MaxAttack changes
 						updateCalculatedDamage()
 					elseif stat.Name == "MaxHealth" and statLabels["MaxHealth"] then
-						-- Update health (simple display)
-						if player.Character and player.Character:FindFirstChild("Humanoid") then
-							local humanoid = player.Character.Humanoid
-							local currentHealth = humanoid.Health
-							local maxHealth = humanoid.MaxHealth
-							statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
+						if isGodModeEnabled() then
+							statLabels["MaxHealth"].Text = "GOD MODE"
 						else
-							statLabels["MaxHealth"].Text = tostring(stat.Value)
+							if player.Character and player.Character:FindFirstChild("Humanoid") then
+								local humanoid = player.Character.Humanoid
+								local currentHealth = humanoid.Health
+								local maxHealth = humanoid.MaxHealth
+								statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
+							else
+								statLabels["MaxHealth"].Text = tostring(stat.Value)
+							end
 						end
 					elseif statLabels[stat.Name] then
 						statLabels[stat.Name].Text = tostring(stat.Value)
@@ -2246,11 +2255,14 @@ local function setupStatConnections()
 					statConnections["HumanoidHealth"]:Disconnect()
 				end
 				local conn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-					if statLabels["MaxHealth"] and humanoid.MaxHealth then
-						-- Update health (simple display)
-						local currentHealth = humanoid.Health
-						local maxHealth = humanoid.MaxHealth
-						statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
+					if statLabels["MaxHealth"] then
+						if isGodModeEnabled() then
+							statLabels["MaxHealth"].Text = "GOD MODE"
+						elseif humanoid.MaxHealth then
+							local currentHealth = humanoid.Health
+							local maxHealth = humanoid.MaxHealth
+							statLabels["MaxHealth"].Text = string.format("%.0f / %.0f", currentHealth, maxHealth)
+						end
 					end
 					
 					-- Refresh buffs and passives display when health changes (Tenacity might activate/deactivate)
@@ -2298,6 +2310,12 @@ task.defer(function()
 	task.wait(0.2)
 	updateStatsDisplay()
 end)
+
+if godModeValue then
+	godModeValue:GetPropertyChangedSignal("Value"):Connect(function()
+		updateStatsDisplay()
+	end)
+end
 
 
 RunService.RenderStepped:Connect(function()
