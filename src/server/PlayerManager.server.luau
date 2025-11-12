@@ -4286,6 +4286,12 @@ DevStatEvent.OnServerEvent:Connect(function(plr, action, value)
 			end
 			_G.setMobFriendlyFire(targetState)
 		end
+	elseif action == "setMobCombatMode" then
+		if (value == nil or value == "cycle") and _G.cycleMobCombatMode then
+			_G.cycleMobCombatMode()
+		elseif _G.setMobCombatMode and value ~= nil then
+			_G.setMobCombatMode(tostring(value))
+		end
 	elseif action == "setFriendlyFire" then
 		if _G.setFriendlyFire and typeof(value) == "table" then
 			local playerValue = value.player

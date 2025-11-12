@@ -13,6 +13,7 @@ local DevSettingsFolder = ReplicatedStorage:FindFirstChild("DevSettings") or Rep
 local FriendlyFireFolder = DevSettingsFolder and (DevSettingsFolder:FindFirstChild("FriendlyFire") or DevSettingsFolder:WaitForChild("FriendlyFire", 5))
 local playerFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Players") or FriendlyFireFolder:WaitForChild("Players", 5))
 local mobFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Mobs") or FriendlyFireFolder:WaitForChild("Mobs", 5))
+local mobCombatModeValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("MobCombatMode") or FriendlyFireFolder:WaitForChild("MobCombatMode", 5))
 
 -- Wait for player and leaderstats
 local leaderstats = player:WaitForChild("leaderstats")
@@ -317,6 +318,22 @@ end
 
 local activeConsumableTimers = {}
 
+local mobCombatModeLocalState = mobCombatModeValue and mobCombatModeValue.Value or "excluded"
+local MobCombatModeMetadata = {
+	excluded = {
+		label = "Excluded (Same-tag safe)",
+		color = Color3.fromRGB(200, 200, 200),
+	},
+	versus = {
+		label = "Versus (Cross-tag fights)",
+		color = Color3.fromRGB(255, 200, 140),
+	},
+	frenzy = {
+		label = "Frenzy (All mobs hostile)",
+		color = Color3.fromRGB(255, 140, 140),
+	},
+}
+
 local function createConsumableRow(valueObj, payload, layoutOrder)
 	local frame = Instance.new("Frame")
 	frame.Name = "Consumable_" .. (payload.displayName or payload.name or valueObj.Name)
@@ -448,6 +465,11 @@ local function updateStatsDisplay()
 	liveHeader.Font = Enum.Font.GothamBold
 	liveHeader.LayoutOrder = layoutOrder
 	liveHeader.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+
+	local mobModeMeta = MobCombatModeMetadata[mobCombatModeValue and mobCombatModeValue.Value or mobCombatModeLocalState] or MobCombatModeMetadata.excluded
+	mobCombatModeLocalState = mobCombatModeValue and mobCombatModeValue.Value or mobCombatModeLocalState
+	statLabels["MobCombatMode"] = createStatRow("Mob Combat Mode", mobModeMeta.label, mobModeMeta.color, layoutOrder)
 	layoutOrder = layoutOrder + 1
 	
 	-- Display live stats from leaderstats
@@ -2297,6 +2319,13 @@ task.defer(function()
 	task.wait(0.2)
 	updateStatsDisplay()
 end)
+
+if mobCombatModeValue then
+	mobCombatModeValue:GetPropertyChangedSignal("Value"):Connect(function()
+		mobCombatModeLocalState = mobCombatModeValue.Value ~= "" and mobCombatModeValue.Value or "excluded"
+		task.defer(updateStatsDisplay)
+	end)
+end
 
 RunService.RenderStepped:Connect(function()
 	local now = tick()

@@ -10,6 +10,7 @@ local DevSettingsFolder = ReplicatedStorage:FindFirstChild("DevSettings") or Rep
 local FriendlyFireFolder = DevSettingsFolder and (DevSettingsFolder:FindFirstChild("FriendlyFire") or DevSettingsFolder:WaitForChild("FriendlyFire", 5))
 local playerFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Players") or FriendlyFireFolder:WaitForChild("Players", 5))
 local mobFriendlyFireValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("Mobs") or FriendlyFireFolder:WaitForChild("Mobs", 5))
+local mobCombatModeValue = FriendlyFireFolder and (FriendlyFireFolder:FindFirstChild("MobCombatMode") or FriendlyFireFolder:WaitForChild("MobCombatMode", 5))
 
 local ServerConfigs = ReplicatedStorage:WaitForChild("SlavkosConfigs", 10)
 local ConfigModule = nil
@@ -196,6 +197,7 @@ end
 
 local playerFriendlyLocalState = playerFriendlyFireValue and playerFriendlyFireValue.Value or false
 local mobFriendlyLocalState = mobFriendlyFireValue and mobFriendlyFireValue.Value or false
+local mobCombatModeLocalState = mobCombatModeValue and mobCombatModeValue.Value or "excluded"
 
 local playerFriendlyButton = createButton("PVP: OFF", Color3.fromRGB(60, 60, 60), layoutOrder, function()
 	local newValue
@@ -224,6 +226,71 @@ local mobFriendlyButton = createButton("Mob FF: OFF", Color3.fromRGB(60, 60, 60)
 	end
 end)
 layoutOrder += 1
+
+local MobCombatModeOrder = {"excluded", "versus", "frenzy"}
+local MobCombatModeMetadata = {
+	excluded = {
+		label = "Mob Mode: Excluded",
+		color = Color3.fromRGB(60, 60, 60),
+	},
+	versus = {
+		label = "Mob Mode: Versus",
+		color = Color3.fromRGB(180, 140, 60),
+	},
+	frenzy = {
+		label = "Mob Mode: Frenzy",
+		color = Color3.fromRGB(180, 60, 60),
+	},
+}
+
+local function getNextMobCombatMode(current)
+	local index = table.find(MobCombatModeOrder, current)
+	if not index then
+		return MobCombatModeOrder[1]
+	end
+	index += 1
+	if index > #MobCombatModeOrder then
+		index = 1
+	end
+	return MobCombatModeOrder[index]
+end
+
+local mobModeButton
+mobModeButton = createButton("Mob Mode: Excluded", Color3.fromRGB(60, 60, 60), layoutOrder, function()
+	local nextMode = getNextMobCombatMode(mobCombatModeLocalState)
+	mobCombatModeLocalState = nextMode
+	local metadata = MobCombatModeMetadata[nextMode] or MobCombatModeMetadata.excluded
+	mobModeButton.Text = metadata.label
+	mobModeButton:SetAttribute("BaseColor", metadata.color)
+	mobModeButton.BackgroundColor3 = metadata.color
+	if DevStatEvent then
+		DevStatEvent:FireServer("setMobCombatMode", nextMode)
+	end
+end)
+layoutOrder += 1
+
+local function updateMobModeButton()
+	if not mobModeButton then
+		return
+	end
+	local currentMode = mobCombatModeValue and mobCombatModeValue.Value or mobCombatModeLocalState
+	if currentMode == nil or currentMode == "" then
+		currentMode = "excluded"
+	end
+	mobCombatModeLocalState = currentMode
+	local metadata = MobCombatModeMetadata[currentMode] or MobCombatModeMetadata.excluded
+	mobModeButton.Text = metadata.label
+	mobModeButton:SetAttribute("BaseColor", metadata.color)
+	mobModeButton.BackgroundColor3 = metadata.color
+end
+
+updateMobModeButton()
+
+if mobCombatModeValue then
+	mobCombatModeValue:GetPropertyChangedSignal("Value"):Connect(function()
+		updateMobModeButton()
+	end)
+end
 
 local function updatePlayerFriendlyButton()
 	if not playerFriendlyButton then

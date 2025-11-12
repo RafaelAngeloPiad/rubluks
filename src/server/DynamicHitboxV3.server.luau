@@ -315,9 +315,37 @@ end
 local PLAYER_FRIENDLY_FIRE = PlayerFriendlyFireValue.Value -- Set to true to allow players to damage each other
 local MOB_FRIENDLY_FIRE = MobFriendlyFireValue.Value -- Set to true to allow mobs to damage each other
 
+local MOB_COMBAT_MODES = {
+	EXCLUDED = "excluded",
+	VERSUS = "versus",
+	FRENZY = "frenzy",
+}
+
+local mobCombatMode = MOB_COMBAT_MODES.EXCLUDED
+
+local function normalizeMobCombatMode(mode)
+	if mode == MOB_COMBAT_MODES.VERSUS or mode == MOB_COMBAT_MODES.FRENZY then
+		return mode
+	end
+	return MOB_COMBAT_MODES.EXCLUDED
+end
+
+local MobCombatModeValue = FriendlyFireFolder:FindFirstChild("MobCombatMode")
+if not MobCombatModeValue then
+	MobCombatModeValue = Instance.new("StringValue")
+	MobCombatModeValue.Name = "MobCombatMode"
+	MobCombatModeValue.Value = mobCombatMode
+	MobCombatModeValue.Parent = FriendlyFireFolder
+else
+	mobCombatMode = normalizeMobCombatMode(MobCombatModeValue.Value)
+end
+
 local function syncFriendlyFireReplicatedValues()
 	PlayerFriendlyFireValue.Value = PLAYER_FRIENDLY_FIRE
 	MobFriendlyFireValue.Value = MOB_FRIENDLY_FIRE
+	if MobCombatModeValue.Value ~= mobCombatMode then
+		MobCombatModeValue.Value = mobCombatMode
+	end
 end
 
 syncFriendlyFireReplicatedValues()
@@ -360,9 +388,9 @@ local function shouldApplyDamage(attacker, target)
     end
     
     -- Mob attacking mob
-    if attackerIsMob and targetIsMob then
-        return MOB_FRIENDLY_FIRE
-    end
+	if attackerIsMob and targetIsMob then
+		return HitboxExclusions.shouldAttack(attacker, target)
+	end
     
     -- Default: allow damage
     return true
@@ -863,8 +891,8 @@ end
 
 -- Function to set mob friendly fire setting
 function _G.setMobFriendlyFire(enabled)
-    MOB_FRIENDLY_FIRE = enabled and true or false
-    syncFriendlyFireReplicatedValues()
+	MOB_FRIENDLY_FIRE = enabled and true or false
+	syncFriendlyFireReplicatedValues()
 end
 
 -- Function to get mob friendly fire setting
@@ -874,21 +902,53 @@ end
 
 -- Function to set both friendly fire settings at once (for convenience)
 function _G.setFriendlyFire(playerEnabled, mobEnabled)
-    if playerEnabled ~= nil then
-        PLAYER_FRIENDLY_FIRE = playerEnabled and true or false
-    end
-    if mobEnabled ~= nil then
-        MOB_FRIENDLY_FIRE = mobEnabled and true or false
-    end
-    syncFriendlyFireReplicatedValues()
+	if playerEnabled ~= nil then
+		PLAYER_FRIENDLY_FIRE = playerEnabled and true or false
+	end
+	if mobEnabled ~= nil then
+		MOB_FRIENDLY_FIRE = mobEnabled and true or false
+	end
+	syncFriendlyFireReplicatedValues()
 end
 
 -- Function to get both friendly fire settings
 function _G.getFriendlyFire()
-    return {
-        player = PLAYER_FRIENDLY_FIRE,
-        mob = MOB_FRIENDLY_FIRE
-    }
+	return {
+		player = PLAYER_FRIENDLY_FIRE,
+		mob = MOB_FRIENDLY_FIRE,
+		mode = mobCombatMode,
+	}
+end
+
+local function setMobCombatModeInternal(mode)
+	local normalized = normalizeMobCombatMode(mode)
+	if mobCombatMode ~= normalized then
+		mobCombatMode = normalized
+	end
+	syncFriendlyFireReplicatedValues()
+	return mobCombatMode
+end
+
+function _G.setMobCombatMode(mode)
+	return setMobCombatModeInternal(mode)
+end
+
+function _G.getMobCombatMode()
+	return mobCombatMode
+end
+
+function _G.cycleMobCombatMode()
+	local order = {
+		MOB_COMBAT_MODES.EXCLUDED,
+		MOB_COMBAT_MODES.VERSUS,
+		MOB_COMBAT_MODES.FRENZY,
+	}
+	local currentIndex = table.find(order, mobCombatMode) or 1
+	local nextIndex = currentIndex + 1
+	if nextIndex > #order then
+		nextIndex = 1
+	end
+	return setMobCombatModeInternal(order[nextIndex])
 end
 
 -- ========================================
@@ -1884,6 +1944,9 @@ DynamicHitboxV3.setMobFriendlyFire = _G.setMobFriendlyFire
 DynamicHitboxV3.getMobFriendlyFire = _G.getMobFriendlyFire
 DynamicHitboxV3.setFriendlyFire = _G.setFriendlyFire
 DynamicHitboxV3.getFriendlyFire = _G.getFriendlyFire
+DynamicHitboxV3.setMobCombatMode = _G.setMobCombatMode
+DynamicHitboxV3.getMobCombatMode = _G.getMobCombatMode
+DynamicHitboxV3.cycleMobCombatMode = _G.cycleMobCombatMode
 
 return DynamicHitboxV3
 

@@ -172,24 +172,22 @@ local function initializeSpider(enemy, variantName)
 		end)()
 	end
 
-	local function hasAnyExcludedTag(model)
-		return HitboxExclusions.hasExcludedTag(model)
-	end
-
 	local function findClosestPlayer(position)
 		local nearest
 		local nearestDist = spottingRadius
 
 		for _, candidate in ipairs(workspace:GetChildren()) do
-			if candidate:IsA("Model") and candidate ~= enemy and not hasAnyExcludedTag(candidate) then
+		if candidate:IsA("Model") and candidate ~= enemy then
 				local hrp = candidate:FindFirstChild("HumanoidRootPart")
 				local candidateHum = candidate:FindFirstChild("Humanoid")
 
 				if hrp and candidateHum and candidateHum.Health > 0 then
+				if HitboxExclusions.shouldAttack(enemy, candidate) then
 					local distance = (hrp.Position - position).Magnitude
 					if distance < nearestDist then
 						nearestDist = distance
 						nearest = hrp
+					end
 					end
 				end
 			end

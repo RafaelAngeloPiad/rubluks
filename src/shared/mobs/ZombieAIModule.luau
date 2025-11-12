@@ -30,17 +30,13 @@ local IDLE_ANIMATION_IDS = {
 local MOVE_SPEED_THRESHOLD = 1.0
 
 -- === HELPERS ===
-local function HasAnyExcludedTag(model)
-	return HitboxExclusions.hasExcludedTag(model)
-end
-
-local function FindNearestTarget(origin)
+local function FindNearestTarget(attacker, origin)
 	local nearest, nearestDist = nil, DETECTION_RANGE
 	for _, model in ipairs(workspace:GetChildren()) do
-		if model:IsA("Model") and not HasAnyExcludedTag(model) then
+		if model ~= attacker and model:IsA("Model") then
 			local root = model:FindFirstChild("HumanoidRootPart")
 			local hum = model:FindFirstChildOfClass("Humanoid")
-			if root and hum and hum.Health > 0 then
+			if root and hum and hum.Health > 0 and HitboxExclusions.shouldAttack(attacker, model) then
 				local dist = (root.Position - origin).Magnitude
 				if dist < nearestDist then
 					nearest = root
@@ -263,7 +259,7 @@ local function initializeZombie(zombie, variantName)
 			local position = root.Position
 			
 			-- Find nearest target within detection radius
-			local target = FindNearestTarget(position)
+			local target = FindNearestTarget(zombie, position)
 			
 			if target then
 				local targetDist = (target.Position - position).Magnitude

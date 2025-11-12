@@ -52,26 +52,12 @@ local function createAnimations(humanoid)
 end
 
 -- === HELPERS ===
-local function HasAnyExcludedTag(model)
-	return HitboxExclusions.hasExcludedTag(model)
-end
-
-local function FindNearestTarget(origin)
-	local nearest, nearestDist = nil, FOLLOW_RANGE
-	for _, model in ipairs(workspace:GetChildren()) do
-		if model:IsA("Model") and not HasAnyExcludedTag(model) then
-			local root = model:FindFirstChild("HumanoidRootPart")
-			local hum = model:FindFirstChildOfClass("Humanoid")
-			if root and hum and hum.Health > 0 then
-				local dist = (root.Position - origin).Magnitude
-				if dist < nearestDist then
-					nearest = root
-					nearestDist = dist
-				end
-			end
-		end
+local function FindNearestTarget(monster, origin)
+	local targetModel, targetRoot = HitboxExclusions.findClosestHostile(monster, origin, FOLLOW_RANGE)
+	if targetModel and targetRoot then
+		return targetRoot
 	end
-	return nearest
+	return nil
 end
 
 -- === GOLEM INITIALIZATION ===
@@ -275,7 +261,8 @@ local function initializeGolem(monster, variantName)
 					local targetModel = target:FindFirstAncestorOfClass("Model")
 					local targetHum = targetModel and targetModel:FindFirstChild("Humanoid")
 					-- Invalidate target if it died or is too far
-					if not targetHum or targetHum.Health <= 0 or (target.Position - position).Magnitude > FOLLOW_RANGE then
+					local stillValid = targetModel and HitboxExclusions.shouldAttack(monster, targetModel)
+					if not targetHum or targetHum.Health <= 0 or (target.Position - position).Magnitude > FOLLOW_RANGE or not stillValid then
 						target = nil
 						currentTarget = nil
 					end
@@ -283,7 +270,7 @@ local function initializeGolem(monster, variantName)
 				
 				-- Find new target if needed
 				if not target then
-					target = FindNearestTarget(position)
+					target = FindNearestTarget(monster, position)
 					currentTarget = target
 				end
 

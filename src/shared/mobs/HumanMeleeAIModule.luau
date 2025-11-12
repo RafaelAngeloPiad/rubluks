@@ -1,7 +1,6 @@
 -- Human Melee AI Module
 -- Handles pathfinding, animation control, and attack logic for human-style melee mobs
 
-local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
 
@@ -382,7 +381,7 @@ local function initializeHumanMelee(character, variantName)
 	local spawnPosition = character:GetPivot().Position
 	local timeSinceTarget = 0
 	local returningHome = false
-	local currentTargetPlayer = nil
+	local currentTargetModel = nil
 	local currentTargetRoot = nil
 	local pathfindingTo = false
 	local pathsCreated = 0
@@ -469,29 +468,17 @@ local function initializeHumanMelee(character, variantName)
 		end
 	end
 
-	local function getClosestPlayer()
-		local closestPlayer = nil
-		local closestRoot = nil
-		local closestDistance = FOLLOW_RANGE
-
-		for _, player in ipairs(Players:GetPlayers()) do
-			local playerCharacter = player.Character
-			if playerCharacter then
-				local playerRoot = playerCharacter:FindFirstChild("HumanoidRootPart")
-				local playerHumanoid = playerCharacter:FindFirstChildOfClass("Humanoid")
-
-				if playerRoot and playerHumanoid and playerHumanoid.Health > 0 then
-					local distance = (root.Position - playerRoot.Position).Magnitude
-					if distance < closestDistance then
-						closestDistance = distance
-						closestPlayer = player
-						closestRoot = playerRoot
-					end
-				end
-			end
+	local function getClosestTarget()
+		if not root or not root.Parent then
+			return nil, nil, FOLLOW_RANGE
 		end
 
-		return closestPlayer, closestRoot, closestDistance
+		local targetModel, targetRoot, _, distance = HitboxExclusions.findClosestHostile(character, root.Position, FOLLOW_RANGE)
+		if targetModel and targetRoot then
+			return targetModel, targetRoot, distance or FOLLOW_RANGE
+		end
+
+		return nil, nil, FOLLOW_RANGE
 	end
 
 	local function shouldReturnHome(currentPosition)
@@ -542,16 +529,16 @@ local function initializeHumanMelee(character, variantName)
 
 			fleeing = shouldFlee
 
-			local previousTargetPlayer = currentTargetPlayer
+			local previousTargetModel = currentTargetModel
 
 			if not returningHome then
-				local player, targetRoot, distance = getClosestPlayer()
+				local targetModel, targetRoot, distance = getClosestTarget()
 
-				if player and targetRoot then
-					currentTargetPlayer = player
+				if targetModel and targetRoot then
+					currentTargetModel = targetModel
 					currentTargetRoot = targetRoot
 
-					local isNewTarget = previousTargetPlayer ~= player
+					local isNewTarget = previousTargetModel ~= targetModel
 
 					if atSpawn and isNewTarget and not attacking and distance > ATTACK_RANGE and not fleeing then
 						playPointAnimation(targetRoot)
@@ -559,19 +546,19 @@ local function initializeHumanMelee(character, variantName)
 
 					timeSinceTarget = 0
 				else
-					currentTargetPlayer = nil
+					currentTargetModel = nil
 					currentTargetRoot = nil
 				end
 			end
 
-			if currentTargetRoot and currentTargetPlayer then
-				local targetCharacter = currentTargetPlayer.Character
+			if currentTargetRoot and currentTargetModel then
+				local targetCharacter = currentTargetModel
 				local targetDistance = (currentTargetRoot.Position - position).Magnitude
 				local targetDistanceFromSpawn = (currentTargetRoot.Position - spawnPosition).Magnitude
 
 				if targetDistanceFromSpawn > RETURN_RADIUS then
 					currentTargetRoot = nil
-					currentTargetPlayer = nil
+					currentTargetModel = nil
 					returningHome = true
 					cancelPath()
 				elseif fleeing then

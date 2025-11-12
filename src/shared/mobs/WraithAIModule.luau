@@ -26,10 +26,6 @@ local FLOAT_HEIGHT = 5  -- Height in studs to float above ground
 local FLOAT_SPEED = 0.08  -- Lerp speed (0.08 = smooth, low performance)
 
 -- === HELPERS ===
-local function HasAnyExcludedTag(model)
-	return HitboxExclusions.hasExcludedTag(model)
-end
-
 -- === WRAITH INITIALIZATION ===
 local function initializeWraith(wraith, variantName)
 	-- Default variant if not provided
@@ -100,6 +96,7 @@ local function initializeWraith(wraith, variantName)
 	-- Attack tracking
 	local lastAttack = 0
 	local currentTarget = nil
+	local currentTargetModel = nil
 	
 	-- Function to shoot homing projectile
 	local function shootHomingProjectile(target)
@@ -156,25 +153,11 @@ local function initializeWraith(wraith, variantName)
 			end
 			
 			-- Find current target (may have moved)
-			local currentTargetPart = nil
-			local nearestDist = 100
-			for _, player in pairs(game.Players:GetPlayers()) do
-				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					local targetModel = player.Character
-					-- Exclude the wraith itself and any excluded tags
-					if targetModel ~= wraith and not HasAnyExcludedTag(targetModel) then
-						local dist = (player.Character.HumanoidRootPart.Position - missile.Position).Magnitude
-						if dist < nearestDist then
-							nearestDist = dist
-							currentTargetPart = player.Character.HumanoidRootPart
-						end
-					end
-				end
-			end
+			local _, targetRoot = HitboxExclusions.findClosestHostile(wraith, missile.Position, DETECTION_RANGE * 2)
 			
-			if currentTargetPart then
+			if targetRoot then
 				-- Update direction towards target
-				local direction = (currentTargetPart.Position - missile.Position).Unit
+				local direction = (targetRoot.Position - missile.Position).Unit
 				bodyVelocity.Velocity = direction * MISSILE_SPEED
 			end
 		end)
@@ -188,27 +171,12 @@ local function initializeWraith(wraith, variantName)
 			end
 			
 			local position = root.Position
-			local nearest = nil
-			local nearestDist = DETECTION_RANGE
-			
-			-- Find nearest player
-			for _, player in pairs(game.Players:GetPlayers()) do
-				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					local targetModel = player.Character
-					-- Exclude the wraith itself and any excluded tags
-					if targetModel ~= wraith and not HasAnyExcludedTag(targetModel) then
-						local dist = (player.Character.HumanoidRootPart.Position - position).Magnitude
-						if dist < nearestDist then
-							nearestDist = dist
-							nearest = player.Character.HumanoidRootPart
-						end
-					end
-				end
-			end
+			local targetModel, nearest, _, nearestDist = HitboxExclusions.findClosestHostile(wraith, position, DETECTION_RANGE)
 			
 			-- Face nearest player if found and control fire/attacks
 			if nearest then
-				-- Turn fire on when player detected
+				currentTargetModel = targetModel
+				-- Turn fire on when target detected
 				if fire then
 					fire.Enabled = true
 				end
@@ -252,6 +220,7 @@ local function initializeWraith(wraith, variantName)
 				if fire then
 					fire.Enabled = false
 				end
+				currentTargetModel = nil
 				
 				-- Unanchor and enable collision before falling back down
 				root.Anchored = false
