@@ -96,33 +96,76 @@ titleCorner.Parent = title
 -- Make title draggable
 local isDragging = false
 local dragOffset = Vector2.zero
-title.MouseButton1Down:Connect(function()
+local dragInput = nil
+
+local function getInputPosition(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		local position = input.Position
+		return Vector2.new(position.X, position.Y)
+	end
+	return UserInputService:GetMouseLocation()
+end
+
+local function beginDrag(input)
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
 	isDragging = true
 	hasCustomPosition = true
-	local mousePos = UserInputService:GetMouseLocation()
+	dragInput = input
+
+	local inputPos = getInputPosition(input)
 	local framePos = mainFrame.AbsolutePosition
-	dragOffset = mousePos - Vector2.new(framePos.X, framePos.Y)
+	dragOffset = inputPos - Vector2.new(framePos.X, framePos.Y)
+
+	input.Changed:Connect(function()
+		if input.UserInputState == Enum.UserInputState.End then
+			isDragging = false
+			if dragInput == input then
+				dragInput = nil
+			end
+		end
+	end)
+end
+
+title.InputBegan:Connect(function(input)
+	beginDrag(input)
 end)
 
-title.MouseButton1Up:Connect(function()
-	isDragging = false
-end)
+local function updateDragPosition(input)
+	if not isDragging then
+		return
+	end
 
-UserInputService.InputEnded:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		isDragging = false
+	if input ~= dragInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then
+		return
+	end
+
+	local inputPos = getInputPosition(input)
+	local offsetX = inputPos.X - dragOffset.X
+	local offsetY = inputPos.Y - dragOffset.Y
+	mainFrame.Position = UDim2.new(0, offsetX, 0, offsetY)
+end
+
+UserInputService.InputChanged:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+	if input == dragInput or input.UserInputType == Enum.UserInputType.MouseMovement then
+		updateDragPosition(input)
 	end
 end)
 
-UserInputService.InputChanged:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.UserInputType == Enum.UserInputType.MouseMovement and isDragging then
-		local mousePos = UserInputService:GetMouseLocation()
-		local offsetX = mousePos.X - dragOffset.X
-		local offsetY = mousePos.Y - dragOffset.Y
-		local newPos = UDim2.new(0, offsetX, 0, offsetY)
-		mainFrame.Position = newPos
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+	if input == dragInput or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isDragging = false
+		if input == dragInput then
+			dragInput = nil
+		end
 	end
 end)
 
