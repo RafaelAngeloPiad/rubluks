@@ -42,14 +42,16 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local BASE_FRAME_SIZE = Vector2.new(370, 340)
 local BASE_MARGIN = 10
-local BASE_POSITION_OFFSET = Vector2.new(BASE_FRAME_SIZE.X + BASE_MARGIN, BASE_FRAME_SIZE.Y + BASE_MARGIN)
+local BASE_POSITION = UDim2.new(1, -BASE_MARGIN, 0.5, -BASE_FRAME_SIZE.Y)
+local BASE_ANCHOR_POINT = Vector2.new(1, 0)
 local hasCustomPosition = false
 local cameraViewportConn = nil
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "ControlFrame"
 mainFrame.Size = UDim2.new(0, BASE_FRAME_SIZE.X, 0, BASE_FRAME_SIZE.Y)
-mainFrame.Position = UDim2.new(1, -BASE_POSITION_OFFSET.X, 1, -BASE_POSITION_OFFSET.Y)
+mainFrame.AnchorPoint = BASE_ANCHOR_POINT
+mainFrame.Position = BASE_POSITION
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 0
@@ -197,8 +199,7 @@ local function applyUIScaling()
 	end
 
 	if not hasCustomPosition then
-		local scaledOffset = BASE_POSITION_OFFSET * currentScale
-		mainFrame.Position = UDim2.new(1, -math.round(scaledOffset.X), 1, -math.round(scaledOffset.Y))
+		mainFrame.Position = BASE_POSITION
 	end
 end
 

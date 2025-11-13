@@ -5,6 +5,9 @@
 
 local MobStatsConfig = {}
 
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
 local DEFAULT_HEALTH_COLOR = Color3.fromRGB(120, 220, 120)
 
 local COLOR_THEMES = {
@@ -65,7 +68,76 @@ Default = {
 local function applyTheme(stats, themeKey)
 	local theme = COLOR_THEMES[themeKey] or COLOR_THEMES.Default
 	stats.HealthBarColor = stats.HealthBarColor or theme.health
+	stats.SlavkoinGain = stats.SlavkoinGain or stats.XPGain or 0
 	return stats
+end
+
+local function bindRewardHandler(model)
+	if not RunService:IsServer() then
+		return
+	end
+
+	if not model or not model:IsA("Model") then
+		return
+	end
+
+	if model:GetAttribute("RewardHandlerBound") then
+		return
+	end
+
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	model:SetAttribute("RewardHandlerBound", true)
+
+	humanoid.Died:Connect(function()
+		if model:GetAttribute("RewardsGranted") then
+			return
+		end
+
+		model:SetAttribute("RewardsGranted", true)
+
+		local killerUserId = model:GetAttribute("LastDamagePlayerId")
+		if not killerUserId then
+			return
+		end
+
+		local player = Players:GetPlayerByUserId(killerUserId)
+		if not player then
+			return
+		end
+
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if not leaderstats then
+			return
+		end
+
+		local xpGain = model:GetAttribute("XPGain")
+		if xpGain and xpGain > 0 then
+			local currentXP = leaderstats:FindFirstChild("CurrentXP")
+			if currentXP then
+				currentXP.Value = currentXP.Value + xpGain
+
+				if _G.createXpGainNumber then
+					_G.createXpGainNumber(player, xpGain)
+				end
+			end
+		end
+
+		local coinGain = model:GetAttribute("SlavkoinGain")
+		if coinGain and coinGain > 0 then
+			local slavkoins = leaderstats:FindFirstChild("Slavkoins")
+			if slavkoins then
+				slavkoins.Value = slavkoins.Value + coinGain
+
+				if _G.createSlavkoinGainNumber then
+					_G.createSlavkoinGainNumber(player, coinGain)
+				end
+			end
+		end
+	end)
 end
 
 -- ========================================
@@ -84,6 +156,7 @@ MobStatsConfig.Spider_Sand = applyTheme({
 	Damage = 30,
 	WalkSpeed = 18,
 	XPGain = 8,
+	SlavkoinGain = 8,
 	StatusAilment = {
 		type = "poison",
 		chance = 30,
@@ -106,6 +179,7 @@ MobStatsConfig.Spider_Ice = applyTheme({
 	Damage = 39,
 	WalkSpeed = 18,
 	XPGain = 11,
+	SlavkoinGain = 11,
 	StatusAilment = {
 		type = "poison",
 		chance = 34,
@@ -128,6 +202,7 @@ MobStatsConfig.Spider_Fire = applyTheme({
 	Damage = 48,
 	WalkSpeed = 19,
 	XPGain = 14,
+	SlavkoinGain = 14,
 	StatusAilment = {
 		type = "poison",
 		chance = 39,
@@ -150,6 +225,7 @@ MobStatsConfig.Spider_Woodland = applyTheme({
 	Damage = 57,
 	WalkSpeed = 19,
 	XPGain = 17,
+	SlavkoinGain = 17,
 	StatusAilment = {
 		type = "poison",
 		chance = 44,
@@ -172,6 +248,7 @@ MobStatsConfig.Spider_Lightning = applyTheme({
 	Damage = 65,
 	WalkSpeed = 20,
 	XPGain = 19,
+	SlavkoinGain = 19,
 	StatusAilment = {
 		type = "poison",
 		chance = 49,
@@ -194,6 +271,7 @@ MobStatsConfig.Spider_Crystal = applyTheme({
 	Damage = 74,
 	WalkSpeed = 20,
 	XPGain = 22,
+	SlavkoinGain = 22,
 	StatusAilment = {
 		type = "poison",
 		chance = 54,
@@ -216,6 +294,7 @@ MobStatsConfig.Spider_Poison = applyTheme({
 	Damage = 83,
 	WalkSpeed = 21,
 	XPGain = 25,
+	SlavkoinGain = 25,
 	StatusAilment = {
 		type = "poison",
 		chance = 58,
@@ -238,6 +317,7 @@ MobStatsConfig.Spider_Dark = applyTheme({
 	Damage = 91,
 	WalkSpeed = 21,
 	XPGain = 27,
+	SlavkoinGain = 27,
 	StatusAilment = {
 		type = "poison",
 		chance = 63,
@@ -264,6 +344,7 @@ MobStatsConfig.Golem_Sand = applyTheme({
 	Damage = 28,
 	WalkSpeed = 10,
 	XPGain = 22,
+	SlavkoinGain = 22,
 	StatusAilment = {
 		type = "stun",
 		chance = 35,
@@ -283,6 +364,7 @@ MobStatsConfig.Golem_Ice = applyTheme({
 	Damage = 36,
 	WalkSpeed = 10,
 	XPGain = 28,
+	SlavkoinGain = 28,
 	StatusAilment = {
 		type = "stun",
 		chance = 38,
@@ -302,6 +384,7 @@ MobStatsConfig.Golem_Lava = applyTheme({
 	Damage = 44,
 	WalkSpeed = 10,
 	XPGain = 33,
+	SlavkoinGain = 33,
 	StatusAilment = {
 		type = "stun",
 		chance = 42,
@@ -321,6 +404,7 @@ MobStatsConfig.Golem_Woodland = applyTheme({
 	Damage = 52,
 	WalkSpeed = 11,
 	XPGain = 38,
+	SlavkoinGain = 38,
 	StatusAilment = {
 		type = "stun",
 		chance = 46,
@@ -340,6 +424,7 @@ MobStatsConfig.Golem_Lightning = applyTheme({
 	Damage = 60,
 	WalkSpeed = 11,
 	XPGain = 44,
+	SlavkoinGain = 44,
 	StatusAilment = {
 		type = "stun",
 		chance = 50,
@@ -359,6 +444,7 @@ MobStatsConfig.Golem_Crystal = applyTheme({
 	Damage = 68,
 	WalkSpeed = 11,
 	XPGain = 49,
+	SlavkoinGain = 49,
 	StatusAilment = {
 		type = "stun",
 		chance = 53,
@@ -378,6 +464,7 @@ MobStatsConfig.Golem_Poison = applyTheme({
 	Damage = 76,
 	WalkSpeed = 12,
 	XPGain = 55,
+	SlavkoinGain = 55,
 	StatusAilment = {
 		type = "stun",
 		chance = 57,
@@ -397,6 +484,7 @@ MobStatsConfig.Golem_Dark = applyTheme({
 	Damage = 84,
 	WalkSpeed = 12,
 	XPGain = 60,
+	SlavkoinGain = 60,
 	StatusAilment = {
 		type = "stun",
 		chance = 61,
@@ -419,7 +507,8 @@ MobStatsConfig.Arabandit_Sand = applyTheme({
 	CritMultiplier = 155,
 	Damage = 24,
 	WalkSpeed = 17,
-	XPGain = 12
+	XPGain = 12,
+	SlavkoinGain = 12
 }, "Sand")
 
 MobStatsConfig.Arrabow_Sand = applyTheme({
@@ -433,7 +522,8 @@ MobStatsConfig.Arrabow_Sand = applyTheme({
 	CritMultiplier = 160,
 	Damage = 26,
 	WalkSpeed = 18,
-	XPGain = 13
+	XPGain = 13,
+	SlavkoinGain = 13
 }, "Sand")
 
 MobStatsConfig.Arawizard_Sand = applyTheme({
@@ -447,7 +537,8 @@ MobStatsConfig.Arawizard_Sand = applyTheme({
 	CritMultiplier = 165,
 	Damage = 29,
 	WalkSpeed = 17,
-	XPGain = 14
+	XPGain = 14,
+	SlavkoinGain = 14
 }, "Sand")
 
 -- ========================================
@@ -465,7 +556,8 @@ MobStatsConfig.Pirate_Ice = applyTheme({
 	CritMultiplier = 158,
 	Damage = 36,
 	WalkSpeed = 18,
-	XPGain = 20
+	XPGain = 20,
+	SlavkoinGain = 20
 }, "Ice")
 
 MobStatsConfig.GunPirate_Ice = applyTheme({
@@ -479,7 +571,8 @@ MobStatsConfig.GunPirate_Ice = applyTheme({
 	CritMultiplier = 164,
 	Damage = 39,
 	WalkSpeed = 18,
-	XPGain = 22
+	XPGain = 22,
+	SlavkoinGain = 22
 }, "Ice")
 
 MobStatsConfig.Jakalapati_Ice = applyTheme({
@@ -493,7 +586,8 @@ MobStatsConfig.Jakalapati_Ice = applyTheme({
 	CritMultiplier = 168,
 	Damage = 42,
 	WalkSpeed = 19,
-	XPGain = 24
+	XPGain = 24,
+	SlavkoinGain = 24
 }, "Ice")
 
 -- ========================================
@@ -511,7 +605,8 @@ MobStatsConfig.BurningDemon_Lava = applyTheme({
 	CritMultiplier = 170,
 	Damage = 48,
 	WalkSpeed = 19,
-	XPGain = 30
+	XPGain = 30,
+	SlavkoinGain = 30
 }, "Lava")
 
 MobStatsConfig.FlamingDemon_Lava = applyTheme({
@@ -525,7 +620,8 @@ MobStatsConfig.FlamingDemon_Lava = applyTheme({
 	CritMultiplier = 172,
 	Damage = 50,
 	WalkSpeed = 19,
-	XPGain = 32
+	XPGain = 32,
+	SlavkoinGain = 32
 }, "Lava")
 
 MobStatsConfig.HotDemon_Lava = applyTheme({
@@ -539,7 +635,8 @@ MobStatsConfig.HotDemon_Lava = applyTheme({
 	CritMultiplier = 174,
 	Damage = 52,
 	WalkSpeed = 19,
-	XPGain = 34
+	XPGain = 34,
+	SlavkoinGain = 34
 }, "Lava")
 
 -- ========================================
@@ -557,7 +654,8 @@ MobStatsConfig.EvilElf_Woodland = applyTheme({
 	CritMultiplier = 176,
 	Damage = 55,
 	WalkSpeed = 19,
-	XPGain = 36
+	XPGain = 36,
+	SlavkoinGain = 36
 }, "Woodland")
 
 MobStatsConfig.EvilerElf_Woodland = applyTheme({
@@ -571,7 +669,8 @@ MobStatsConfig.EvilerElf_Woodland = applyTheme({
 	CritMultiplier = 178,
 	Damage = 58,
 	WalkSpeed = 19,
-	XPGain = 38
+	XPGain = 38,
+	SlavkoinGain = 38
 }, "Woodland")
 
 MobStatsConfig.EvilistElf_Woodland = applyTheme({
@@ -585,7 +684,8 @@ MobStatsConfig.EvilistElf_Woodland = applyTheme({
 	CritMultiplier = 180,
 	Damage = 60,
 	WalkSpeed = 20,
-	XPGain = 40
+	XPGain = 40,
+	SlavkoinGain = 40
 }, "Woodland")
 
 -- ========================================
@@ -603,7 +703,8 @@ MobStatsConfig.LightningRaider_Lightning = applyTheme({
 	CritMultiplier = 182,
 	Damage = 62,
 	WalkSpeed = 20,
-	XPGain = 42
+	XPGain = 42,
+	SlavkoinGain = 42
 }, "Lightning")
 
 MobStatsConfig.EvilMonk_Lightning = applyTheme({
@@ -617,7 +718,8 @@ MobStatsConfig.EvilMonk_Lightning = applyTheme({
 	CritMultiplier = 184,
 	Damage = 64,
 	WalkSpeed = 20,
-	XPGain = 44
+	XPGain = 44,
+	SlavkoinGain = 44
 }, "Lightning")
 
 MobStatsConfig.EvilerMonk_Lightning = applyTheme({
@@ -631,7 +733,8 @@ MobStatsConfig.EvilerMonk_Lightning = applyTheme({
 	CritMultiplier = 186,
 	Damage = 66,
 	WalkSpeed = 21,
-	XPGain = 46
+	XPGain = 46,
+	SlavkoinGain = 46
 }, "Lightning")
 
 MobStatsConfig.EvilistMonk_Lightning = applyTheme({
@@ -645,7 +748,8 @@ MobStatsConfig.EvilistMonk_Lightning = applyTheme({
 	CritMultiplier = 188,
 	Damage = 68,
 	WalkSpeed = 21,
-	XPGain = 48
+	XPGain = 48,
+	SlavkoinGain = 48
 }, "Lightning")
 
 -- ========================================
@@ -663,7 +767,8 @@ MobStatsConfig.DwarvenMiner_Crystal = applyTheme({
 	CritMultiplier = 182,
 	Damage = 72,
 	WalkSpeed = 18,
-	XPGain = 52
+	XPGain = 52,
+	SlavkoinGain = 52
 }, "Crystal")
 
 MobStatsConfig.DwarvenSniper_Crystal = applyTheme({
@@ -677,7 +782,8 @@ MobStatsConfig.DwarvenSniper_Crystal = applyTheme({
 	CritMultiplier = 190,
 	Damage = 75,
 	WalkSpeed = 19,
-	XPGain = 54
+	XPGain = 54,
+	SlavkoinGain = 54
 }, "Crystal")
 
 MobStatsConfig.Cardelist_Crystal = applyTheme({
@@ -691,7 +797,8 @@ MobStatsConfig.Cardelist_Crystal = applyTheme({
 	CritMultiplier = 188,
 	Damage = 78,
 	WalkSpeed = 19,
-	XPGain = 56
+	XPGain = 56,
+	SlavkoinGain = 56
 }, "Crystal")
 
 -- ========================================
@@ -709,7 +816,8 @@ MobStatsConfig.BoyLason_Poison = applyTheme({
 	CritMultiplier = 186,
 	Damage = 82,
 	WalkSpeed = 19,
-	XPGain = 60
+	XPGain = 60,
+	SlavkoinGain = 60
 }, "Poison")
 
 MobStatsConfig.BoyDura_Poison = applyTheme({
@@ -723,7 +831,8 @@ MobStatsConfig.BoyDura_Poison = applyTheme({
 	CritMultiplier = 188,
 	Damage = 84,
 	WalkSpeed = 19,
-	XPGain = 62
+	XPGain = 62,
+	SlavkoinGain = 62
 }, "Poison")
 
 MobStatsConfig.PlemaBoy_Poison = applyTheme({
@@ -737,7 +846,8 @@ MobStatsConfig.PlemaBoy_Poison = applyTheme({
 	CritMultiplier = 190,
 	Damage = 86,
 	WalkSpeed = 20,
-	XPGain = 64
+	XPGain = 64,
+	SlavkoinGain = 64
 }, "Poison")
 
 -- ========================================
@@ -755,7 +865,8 @@ MobStatsConfig.DarkBoi_Dark = applyTheme({
 	CritMultiplier = 192,
 	Damage = 92,
 	WalkSpeed = 20,
-	XPGain = 72
+	XPGain = 72,
+	SlavkoinGain = 72
 }, "Dark")
 
 MobStatsConfig.DarkBai_Dark = applyTheme({
@@ -769,7 +880,8 @@ MobStatsConfig.DarkBai_Dark = applyTheme({
 	CritMultiplier = 194,
 	Damage = 95,
 	WalkSpeed = 20,
-	XPGain = 74
+	XPGain = 74,
+	SlavkoinGain = 74
 }, "Dark")
 
 MobStatsConfig.Libagerist_Dark = applyTheme({
@@ -783,7 +895,8 @@ MobStatsConfig.Libagerist_Dark = applyTheme({
 	CritMultiplier = 196,
 	Damage = 98,
 	WalkSpeed = 20,
-	XPGain = 76
+	XPGain = 76,
+	SlavkoinGain = 76
 }, "Dark")
 
 -- ========================================
@@ -801,7 +914,8 @@ MobStatsConfig.Zombie_Sand = applyTheme({
 	CritMultiplier = 155,
 	Damage = 27,
 	WalkSpeed = 11,
-	XPGain = 16
+	XPGain = 16,
+	SlavkoinGain = 16
 }, "Sand")
 
 MobStatsConfig.Zombie_Ice = applyTheme({
@@ -815,7 +929,8 @@ MobStatsConfig.Zombie_Ice = applyTheme({
 	CritMultiplier = 159,
 	Damage = 34,
 	WalkSpeed = 12,
-	XPGain = 21
+	XPGain = 21,
+	SlavkoinGain = 21
 }, "Ice")
 
 MobStatsConfig.Zombie_Lava = applyTheme({
@@ -829,7 +944,8 @@ MobStatsConfig.Zombie_Lava = applyTheme({
 	CritMultiplier = 164,
 	Damage = 42,
 	WalkSpeed = 12,
-	XPGain = 27
+	XPGain = 27,
+	SlavkoinGain = 27
 }, "Lava")
 
 MobStatsConfig.Zombie_Woodland = applyTheme({
@@ -843,7 +959,8 @@ MobStatsConfig.Zombie_Woodland = applyTheme({
 	CritMultiplier = 168,
 	Damage = 50,
 	WalkSpeed = 13,
-	XPGain = 32
+	XPGain = 32,
+	SlavkoinGain = 32
 }, "Woodland")
 
 MobStatsConfig.Zombie_Lightning = applyTheme({
@@ -857,7 +974,8 @@ MobStatsConfig.Zombie_Lightning = applyTheme({
 	CritMultiplier = 173,
 	Damage = 58,
 	WalkSpeed = 13,
-	XPGain = 38
+	XPGain = 38,
+	SlavkoinGain = 38
 }, "Lightning")
 
 MobStatsConfig.Zombie_Crystal = applyTheme({
@@ -871,7 +989,8 @@ MobStatsConfig.Zombie_Crystal = applyTheme({
 	CritMultiplier = 177,
 	Damage = 66,
 	WalkSpeed = 14,
-	XPGain = 43
+	XPGain = 43,
+	SlavkoinGain = 43
 }, "Crystal")
 
 MobStatsConfig.Zombie_Poison = applyTheme({
@@ -885,7 +1004,8 @@ MobStatsConfig.Zombie_Poison = applyTheme({
 	CritMultiplier = 182,
 	Damage = 74,
 	WalkSpeed = 14,
-	XPGain = 48
+	XPGain = 48,
+	SlavkoinGain = 48
 }, "Toxic")
 
 MobStatsConfig.Zombie_Dark = applyTheme({
@@ -899,7 +1019,8 @@ MobStatsConfig.Zombie_Dark = applyTheme({
 	CritMultiplier = 186,
 	Damage = 82,
 	WalkSpeed = 15,
-	XPGain = 54
+	XPGain = 54,
+	SlavkoinGain = 54
 }, "Dark")
 
 -- ========================================
@@ -918,6 +1039,7 @@ MobStatsConfig.Wraith_Sand = applyTheme({
 	Damage = 86,
 	WalkSpeed = 15,
 	XPGain = 82,
+	SlavkoinGain = 82,
 	StatusAilment = {
 		type = "burn",
 		chance = 58,
@@ -940,6 +1062,7 @@ MobStatsConfig.Wraith_Ice = applyTheme({
 	Damage = 87,
 	WalkSpeed = 15,
 	XPGain = 84,
+	SlavkoinGain = 84,
 	StatusAilment = {
 		type = "burn",
 		chance = 59,
@@ -962,6 +1085,7 @@ MobStatsConfig.Wraith_Lava = applyTheme({
 	Damage = 88,
 	WalkSpeed = 15,
 	XPGain = 85,
+	SlavkoinGain = 85,
 	StatusAilment = {
 		type = "burn",
 		chance = 60,
@@ -984,6 +1108,7 @@ MobStatsConfig.Wraith_Woodland = applyTheme({
 	Damage = 90,
 	WalkSpeed = 15,
 	XPGain = 86,
+	SlavkoinGain = 86,
 	StatusAilment = {
 		type = "burn",
 		chance = 60,
@@ -1006,6 +1131,7 @@ MobStatsConfig.Wraith_Lightning = applyTheme({
 	Damage = 91,
 	WalkSpeed = 15,
 	XPGain = 88,
+	SlavkoinGain = 88,
 	StatusAilment = {
 		type = "burn",
 		chance = 61,
@@ -1028,6 +1154,7 @@ MobStatsConfig.Wraith_Crystal = applyTheme({
 	Damage = 93,
 	WalkSpeed = 15,
 	XPGain = 89,
+	SlavkoinGain = 89,
 	StatusAilment = {
 		type = "burn",
 		chance = 62,
@@ -1050,6 +1177,7 @@ MobStatsConfig.Wraith_Poison = applyTheme({
 	Damage = 94,
 	WalkSpeed = 16,
 	XPGain = 90,
+	SlavkoinGain = 90,
 	StatusAilment = {
 		type = "burn",
 		chance = 62,
@@ -1072,6 +1200,7 @@ MobStatsConfig.Wraith_Dark = applyTheme({
 	Damage = 95,
 	WalkSpeed = 16,
 	XPGain = 91,
+	SlavkoinGain = 91,
 	StatusAilment = {
 		type = "burn",
 		chance = 63,
@@ -1130,12 +1259,16 @@ function MobStatsConfig.applyStats(model, variantName)
 	model:SetAttribute("Damage", stats.Damage or 0)
 	model:SetAttribute("WalkSpeed", stats.WalkSpeed or humanoid and humanoid.WalkSpeed or 0)
 	model:SetAttribute("XPGain", stats.XPGain or 0)
+	model:SetAttribute("SlavkoinGain", stats.SlavkoinGain or stats.XPGain or 0)
 	model:SetAttribute("MobDisplayName", stats.DisplayName or variantName)
 	model:SetAttribute("MobLevel", stats.Level or 0)
 	model:SetAttribute("MobHealthBarColor", stats.HealthBarColor or DEFAULT_HEALTH_COLOR)
+
 	
 	-- Store variant name for easy access
 	model:SetAttribute("MobVariant", variantName)
+
+	bindRewardHandler(model)
 	
 	return true
 end

@@ -48,16 +48,38 @@ ServerConfigs.Hitbox = {
 			font = Enum.Font.GothamBold, -- Font style to match damage numbers
 			textSize = 26, -- Slightly smaller than damage numbers for readability
 			textColor = Color3.fromRGB(120, 255, 120), -- Bright green
+			offsetX = -2.5, -- Shift to the left side of the character
+			offsetY = -2.5, -- Position near the feet instead of above the head
 			backgroundTransparency = 1, -- Fully transparent background
 			strokeColor = Color3.fromRGB(20, 120, 20), -- Dark green outline
 			strokeTransparency = 0.1, -- Slightly transparent outline for softness
-			duration = 1.1, -- Visible slightly longer than damage numbers
-			riseHeight = 3.2, -- How high the text rises (studs)
+			duration = 1.2, -- Visible slightly longer than damage numbers
+			riseHeight = 1.8, -- How high the text rises (studs)
 			fadeStart = 0.4, -- When to start fading (seconds)
-			offsetY = 3, -- Vertical offset so it appears above damage numbers
-			randomOffsetX = 0.5, -- Subtle horizontal variation
+			randomOffsetX = 0.2, -- Subtle horizontal variation
+			attachTo = "Root", -- Anchor to humanoid root for lower positioning
 			prefix = "+", -- Text prefix before XP amount
 			suffix = " XP" -- Text suffix after XP amount
+		},
+
+		-- Slavkoin Gain Numbers Configuration (floating "+5 Slavkoins" popups for players)
+		slavkoinNumbers = {
+			enabled = true, -- Enable/disable Slavkoin popups
+			font = Enum.Font.GothamBold, -- Font style to match XP numbers
+			textSize = 26, -- Keep consistent sizing with XP numbers
+			textColor = Color3.fromRGB(255, 223, 93), -- Gold color
+			offsetX = 2.5, -- Shift to the right side of the character
+			offsetY = -2.5, -- Position near the feet instead of above the head
+			backgroundTransparency = 1, -- Fully transparent background
+			strokeColor = Color3.fromRGB(140, 95, 20), -- Dark gold outline
+			strokeTransparency = 0.1, -- Slightly transparent outline
+			duration = 1.2, -- Match XP popup duration
+			riseHeight = 1.8, -- Match rise height
+			fadeStart = 0.4, -- Match fade timing
+			randomOffsetX = 0.2, -- Subtle horizontal variation
+			attachTo = "Root", -- Anchor to humanoid root for lower positioning
+			prefix = "+", -- Text prefix before Slavkoin amount
+			suffix = " Slavkoins" -- Text suffix after Slavkoin amount
 		},
 		
 		-- Knockback Configuration

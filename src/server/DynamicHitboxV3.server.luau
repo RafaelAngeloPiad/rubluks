@@ -570,7 +570,16 @@ local function createFloatingNumber(model, text, visualConfig)
 
 	local head = model:FindFirstChild("Head")
 	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
-	local attachPart = head or humanoidRootPart
+	local attachPreference = visualConfig.attachTo
+	local attachPart
+
+	if attachPreference == "Root" then
+		attachPart = humanoidRootPart or head
+	elseif attachPreference == "Head" then
+		attachPart = head or humanoidRootPart
+	else
+		attachPart = head or humanoidRootPart
+	end
 	if not attachPart then
 		return
 	end
@@ -580,10 +589,15 @@ local function createFloatingNumber(model, text, visualConfig)
 	billboardGui.Name = popupNamePrefix .. "_" .. tostring(tick() * 1000)
 	billboardGui.Size = UDim2.new(0, visualConfig.width or 200, 0, visualConfig.height or 100)
 
+	local baseOffsetX = visualConfig.offsetX or 0
 	local randomOffsetRange = visualConfig.randomOffsetX or 0
-	local offsetX = (math.random() - 0.5) * 2 * randomOffsetRange
+	local offsetX = baseOffsetX
+	if randomOffsetRange ~= 0 then
+		offsetX = offsetX + ((math.random() - 0.5) * 2 * randomOffsetRange)
+	end
 	local offsetY = visualConfig.offsetY or 2
-	billboardGui.StudsOffset = Vector3.new(offsetX, offsetY, 0)
+	local offsetZ = visualConfig.offsetZ or 0
+	billboardGui.StudsOffset = Vector3.new(offsetX, offsetY, offsetZ)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 0
 	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
@@ -718,6 +732,48 @@ function _G.createXpGainNumber(target, xpAmount)
 	local xpText = prefix .. tostring(math.floor(xpAmount)) .. suffix
 
 	createFloatingNumber(character, xpText, clone)
+end
+
+-- Function to create Slavkoin gain popup above the player's character
+-- Mirrors XP popup behavior but allows separate configuration
+function _G.createSlavkoinGainNumber(target, amount)
+	if not amount or amount <= 0 then
+		return
+	end
+
+	local baseConfig = ServerConfigs.Hitbox.slavkoinNumbers or ServerConfigs.Hitbox.xpNumbers
+	if not baseConfig or not baseConfig.enabled then
+		return
+	end
+
+	local character = nil
+	if typeof(target) == "Instance" then
+		if target:IsA("Player") then
+			character = target.Character
+		elseif target:IsA("Model") then
+			character = target
+		else
+			character = target:FindFirstAncestorOfClass("Model")
+		end
+	end
+
+	if not character or not character.Parent then
+		return
+	end
+
+	local clone = cloneConfig(baseConfig)
+	clone.namePrefix = "SlavkoinGain"
+	clone.prefix = clone.prefix or "+"
+	clone.suffix = clone.suffix or " Slavkoins"
+	if clone.suffix == " XP" then
+		clone.suffix = " Slavkoins"
+	end
+	clone.textColor = clone.textColor or Color3.fromRGB(255, 215, 0)
+	clone.strokeColor = clone.strokeColor or Color3.fromRGB(120, 80, 10)
+	clone.offsetY = clone.offsetY or 2.5
+
+	local displayText = clone.prefix .. tostring(math.floor(amount)) .. clone.suffix
+	createFloatingNumber(character, displayText, clone)
 end
 
 -- Function to apply status ailments from hitbox config
