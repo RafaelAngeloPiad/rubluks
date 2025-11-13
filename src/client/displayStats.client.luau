@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
@@ -98,15 +99,23 @@ titleCorner.Parent = title
 
 -- Make title draggable
 local isDragging = false
-local dragOffset = Vector2.zero
 local dragInput = nil
+local dragStartInput = nil
+local dragStartPosition = nil
 
 local function getInputPosition(input)
+	local topLeftInset = Vector2.zero
+	if GuiService then
+		local inset, _ = GuiService:GetGuiInset()
+		topLeftInset = inset
+	end
+
 	if input.UserInputType == Enum.UserInputType.Touch then
 		local position = input.Position
-		return Vector2.new(position.X, position.Y)
+		return Vector2.new(position.X, position.Y) - topLeftInset
 	end
-	return UserInputService:GetMouseLocation()
+
+	return UserInputService:GetMouseLocation() - topLeftInset
 end
 
 local function beginDrag(input)
@@ -117,16 +126,16 @@ local function beginDrag(input)
 	isDragging = true
 	hasCustomPosition = true
 	dragInput = input
-
-	local inputPos = getInputPosition(input)
-	local framePos = mainFrame.AbsolutePosition
-	dragOffset = inputPos - Vector2.new(framePos.X, framePos.Y)
+	dragStartInput = getInputPosition(input)
+	dragStartPosition = mainFrame.Position
 
 	input.Changed:Connect(function()
 		if input.UserInputState == Enum.UserInputState.End then
 			isDragging = false
 			if dragInput == input then
 				dragInput = nil
+				dragStartInput = nil
+				dragStartPosition = nil
 			end
 		end
 	end)
@@ -141,14 +150,23 @@ local function updateDragPosition(input)
 		return
 	end
 
-	if input ~= dragInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then
+	if input ~= dragInput and input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
 		return
 	end
 
-	local inputPos = getInputPosition(input)
-	local offsetX = inputPos.X - dragOffset.X
-	local offsetY = inputPos.Y - dragOffset.Y
-	mainFrame.Position = UDim2.new(0, offsetX, 0, offsetY)
+	if not dragStartInput or not dragStartPosition then
+		return
+	end
+
+	local currentPos = getInputPosition(input)
+	local delta = currentPos - dragStartInput
+
+	mainFrame.Position = UDim2.new(
+		dragStartPosition.X.Scale,
+		dragStartPosition.X.Offset + delta.X,
+		dragStartPosition.Y.Scale,
+		dragStartPosition.Y.Offset + delta.Y
+	)
 end
 
 UserInputService.InputChanged:Connect(function(input, gameProcessed)
@@ -168,6 +186,8 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
 		isDragging = false
 		if input == dragInput then
 			dragInput = nil
+			dragStartInput = nil
+			dragStartPosition = nil
 		end
 	end
 end)
