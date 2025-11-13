@@ -118,7 +118,7 @@ local function bindRewardHandler()
 		if coinGain and coinGain > 0 then
 			local slavkoins = leaderstats:FindFirstChild("Slavkoins")
 			if slavkoins then
-				savkoins.Value = slavkoins.Value + coinGain
+				slavkoins.Value = slavkoins.Value + coinGain
 				if _G.createSlavkoinGainNumber then
 					_G.createSlavkoinGainNumber(player, coinGain)
 				end
