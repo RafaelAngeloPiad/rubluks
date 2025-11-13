@@ -40,7 +40,7 @@ screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local BASE_FRAME_SIZE = Vector2.new(350, 320)
+local BASE_FRAME_SIZE = Vector2.new(370, 340)
 local BASE_MARGIN = 10
 local BASE_POSITION_OFFSET = Vector2.new(BASE_FRAME_SIZE.X + BASE_MARGIN, BASE_FRAME_SIZE.Y + BASE_MARGIN)
 local hasCustomPosition = false
@@ -175,18 +175,18 @@ local function determineUIScale()
 
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		if minDimension <= 720 then
-			return 0.5
+			return 0.55
 		elseif minDimension <= 900 then
-			return 0.6
+			return 0.65
 		end
-		return 0.7
+		return 0.75
 	end
 
 	if viewport.X <= 1440 then
-		return 0.85
+		return 0.9
 	end
 
-	return 0.9
+	return 0.95
 end
 
 local function applyUIScaling()
@@ -266,12 +266,6 @@ end
 
 local layoutOrder = 1
 local isVisible = true
-
-createButton("👁️ Hide", Color3.fromRGB(60, 60, 60), layoutOrder, function()
-	isVisible = not isVisible
-	mainFrame.Visible = isVisible
-end)
-layoutOrder += 1
 
 createButton("Reset", Color3.fromRGB(150, 50, 50), layoutOrder, function()
 	if DevStatEvent then

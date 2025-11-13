@@ -43,11 +43,12 @@ end
 -- Available classes
 local AvailableClasses = {"Knight", "Samurai", "Gladiator", "Brawler", "Archer"}
 
-local BASE_FRAME_SIZE = Vector2.new(350, 320)
+local BASE_FRAME_SIZE = Vector2.new(370, 340)
 local BASE_MARGIN = 10
 local BASE_POSITION_OFFSET = Vector2.new(BASE_FRAME_SIZE.X + BASE_MARGIN, BASE_FRAME_SIZE.Y + BASE_MARGIN)
 local hasCustomPosition = false
 local cameraViewportConn = nil
+local CANVAS_EXTRA_PADDING = 80
 
 -- Create UI
 local screenGui = Instance.new("ScreenGui")
@@ -180,6 +181,13 @@ scrollFrame.ScrollBarThickness = 5
 scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 scrollFrame.Parent = mainFrame
 
+local scrollPadding = Instance.new("UIPadding")
+scrollPadding.PaddingBottom = UDim.new(0, 24)
+scrollPadding.PaddingTop = UDim.new(0, 0)
+scrollPadding.PaddingLeft = UDim.new(0, 0)
+scrollPadding.PaddingRight = UDim.new(0, 0)
+scrollPadding.Parent = scrollFrame
+
 -- UI List Layout
 local listLayout = Instance.new("UIListLayout")
 listLayout.Padding = UDim.new(0, 5)
@@ -193,18 +201,18 @@ local function determineUIScale()
 
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		if minDimension <= 720 then
-			return 0.5
+			return 0.55
 		elseif minDimension <= 900 then
-			return 0.6
+			return 0.65
 		end
-		return 0.7
+		return 0.75
 	end
 
 	if viewport.X <= 1440 then
-		return 0.85
+		return 0.9
 	end
 
-	return 0.9
+	return 0.95
 end
 
 local function applyUIScaling()
@@ -250,7 +258,7 @@ Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 end)
 
 local function updateCanvasSize()
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 40)
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + CANVAS_EXTRA_PADDING)
 end
 
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)

@@ -127,9 +127,27 @@ local function initializeWraith(wraith, variantName)
 	local currentTargetModel = nil
 	
 	-- Function to shoot homing projectile
-	local function shootHomingProjectile(target)
-		if not target or not target.Parent then return end
-		
+	local function shootHomingProjectile(target, launchDirection)
+		local resolvedTarget = target
+		if resolvedTarget and not resolvedTarget.Parent then
+			resolvedTarget = nil
+		end
+
+		local direction = nil
+		if resolvedTarget then
+			direction = (resolvedTarget.Position - root.Position)
+		elseif launchDirection then
+			direction = launchDirection
+		else
+			direction = root.CFrame.LookVector
+		end
+
+		if not direction or direction.Magnitude < 0.05 then
+			direction = Vector3.new(0, 0, -1)
+		end
+
+		direction = direction.Unit
+
 		-- Create missile part
 		local missile = Instance.new("Part")
 		missile.Name = "WraithHomingMissile"
@@ -141,13 +159,13 @@ local function initializeWraith(wraith, variantName)
 		missile.Color = Color3.new(1, 0.5, 0) -- Orange color for burn
 		missile.Transparency = 0.3
 		missile.Parent = workspace
-		
+
 		-- Add body velocity to missile
 		local bodyVelocity = Instance.new("BodyVelocity")
 		bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-		bodyVelocity.Velocity = root.CFrame.LookVector * MISSILE_SPEED
+		bodyVelocity.Velocity = direction * MISSILE_SPEED
 		bodyVelocity.Parent = missile
-		
+
 		-- Create traveling hitbox with burn status ailment
 		_G.createTravelingHitbox({
 			attachTo = missile,
@@ -163,7 +181,11 @@ local function initializeWraith(wraith, variantName)
 			classType = nil, -- Mobs don't have classes
 			statusAilment = statusAilment -- Add burn status ailment from stats
 		})
-		
+
+		if not resolvedTarget then
+			return
+		end
+
 		-- Homing behavior - update direction towards target
 		local homingConnection
 		local startTime = tick()
@@ -172,41 +194,97 @@ local function initializeWraith(wraith, variantName)
 				homingConnection:Disconnect()
 				return
 			end
-			
+
 			-- Check lifetime
 			if tick() - startTime >= MISSILE_LIFETIME then
 				homingConnection:Disconnect()
 				missile:Destroy()
 				return
 			end
-			
+
 			-- Find current target (may have moved)
 			local _, targetRoot = HitboxExclusions.findClosestHostile(wraith, missile.Position, DETECTION_RANGE * 2)
-			
+
 			if targetRoot then
 				-- Update direction towards target
-				local direction = (targetRoot.Position - missile.Position).Unit
-				bodyVelocity.Velocity = direction * MISSILE_SPEED
+				local newDirection = (targetRoot.Position - missile.Position).Unit
+				bodyVelocity.Velocity = newDirection * MISSILE_SPEED
 			end
 		end)
 	end
 	
-	local function manualAttack()
+	local function manualAttackCore()
 		local _, nearest = HitboxExclusions.findClosestHostile(wraith, root.Position, DETECTION_RANGE)
 		if nearest then
 			shootHomingProjectile(nearest)
+		else
+			local forward = root and root.CFrame.LookVector or Vector3.new(0, 0, -1)
+			shootHomingProjectile(nil, forward)
 		end
 	end
 
-	local playerControlled = bindPlayerControl(wraith, humanoid, manualAttack)
+	local performPlayerAttack = manualAttackCore
+
+	local playerControlled = bindPlayerControl(wraith, humanoid, function()
+		performPlayerAttack()
+	end)
 
 	if playerControlled then
+		local originalHipHeight = humanoid.HipHeight
+		local floatHipHeight = originalHipHeight + FLOAT_HEIGHT
+		local floating = false
+
+		local function setFloating(enabled)
+			if floating == enabled then
+				return
+			end
+
+			floating = enabled
+
+			if floating then
+				humanoid.HipHeight = floatHipHeight
+				if fire then
+					fire.Enabled = true
+				end
+				root.CanCollide = false
+			else
+				humanoid.HipHeight = originalHipHeight
+				if fire then
+					fire.Enabled = false
+				end
+				root.CanCollide = true
+			end
+		end
+
+		setFloating(false)
+
 		root.Anchored = false
 		root.CanCollide = true
-		if fire then
-			fire.Enabled = false
+
+		humanoid.Running:Connect(function(speed)
+			if humanoid.Health <= 0 then
+				return
+			end
+
+			if speed > 1 then
+				setFloating(true)
+			else
+				setFloating(false)
+			end
+		end)
+
+		humanoid.Died:Connect(function()
+			setFloating(false)
+		end)
+
+		performPlayerAttack = function()
+			setFloating(true)
+			manualAttackCore()
 		end
+
+		return
 	else
+		performPlayerAttack = manualAttackCore
 		-- Rotation and attack loop - always face nearest player
 		task.spawn(function()
 			while task.wait(0.1) do

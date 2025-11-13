@@ -203,6 +203,18 @@ local function initializeZombie(zombie, variantName)
 		end)
 	end
 
+	local function updateMovementAnimation(speed)
+		if attacking then
+			return
+		end
+
+		if speed > MOVE_SPEED_THRESHOLD then
+			playRun()
+		else
+			playIdle()
+		end
+	end
+
 	local function onAttackFinished()
 		attacking = false
 		playIdle()
@@ -259,6 +271,12 @@ local function initializeZombie(zombie, variantName)
 	end
 
 	playIdle()
+
+	pcall(function()
+		humanoid.Running:Connect(function(speed)
+			updateMovementAnimation(speed)
+		end)
+	end)
 
 	local playerControlled = bindPlayerControl(zombie, humanoid, playAttack)
 
