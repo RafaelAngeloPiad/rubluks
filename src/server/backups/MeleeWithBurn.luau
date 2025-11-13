@@ -5,6 +5,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 
 -- Configuration
 local MOB_STATS = {
@@ -17,6 +18,14 @@ local MOB_STATS = {
 	AttackCooldown = 1.5,
 	AttackRange = 8,
 	WalkSpeed = 16
+}
+
+local REWARD_CONFIG = {
+	XPGain = 25,
+	SlavkoinGain = 20,
+	MobLevel = 12,
+	DisplayName = "Burning Marauder",
+	HealthBarColor = Color3.fromRGB(255, 140, 100)
 }
 
 -- Burn configuration
@@ -56,15 +65,75 @@ model:SetAttribute("CritRate", MOB_STATS.CritRate)
 model:SetAttribute("CritMultiplier", MOB_STATS.CritMultiplier)
 model:SetAttribute("Damage", MOB_STATS.Damage)
 model:SetAttribute("MobVariant", MOB_VARIANT_NAME)
+model:SetAttribute("XPGain", REWARD_CONFIG.XPGain)
+model:SetAttribute("SlavkoinGain", REWARD_CONFIG.SlavkoinGain)
+model:SetAttribute("MobDisplayName", REWARD_CONFIG.DisplayName)
+model:SetAttribute("MobLevel", REWARD_CONFIG.MobLevel)
+model:SetAttribute("MobHealthBarColor", REWARD_CONFIG.HealthBarColor)
 
 -- Add exclusion tag so mobs don't damage each other
 CollectionService:AddTag(model, "simple_entity")
+
+local function bindRewardHandler()
+	if model:GetAttribute("RewardHandlerBound") then
+		return
+	end
+
+	model:SetAttribute("RewardHandlerBound", true)
+
+	humanoid.Died:Connect(function()
+		if model:GetAttribute("RewardsGranted") then
+			return
+		end
+
+		model:SetAttribute("RewardsGranted", true)
+
+		local killerUserId = model:GetAttribute("LastDamagePlayerId")
+		if not killerUserId then
+			return
+		end
+
+		local player = Players:GetPlayerByUserId(killerUserId)
+		if not player then
+			return
+		end
+
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if not leaderstats then
+			return
+		end
+
+		local xpGain = model:GetAttribute("XPGain")
+		if xpGain and xpGain > 0 then
+			local currentXP = leaderstats:FindFirstChild("CurrentXP")
+			if currentXP then
+				currentXP.Value = currentXP.Value + xpGain
+				if _G.createXpGainNumber then
+					_G.createXpGainNumber(player, xpGain)
+				end
+			end
+		end
+
+		local coinGain = model:GetAttribute("SlavkoinGain")
+		if coinGain and coinGain > 0 then
+			local slavkoins = leaderstats:FindFirstChild("Slavkoins")
+			if slavkoins then
+				savkoins.Value = slavkoins.Value + coinGain
+				if _G.createSlavkoinGainNumber then
+					_G.createSlavkoinGainNumber(player, coinGain)
+				end
+			end
+		end
+	end)
+end
 
 -- Create floating stats display
 local MobStatsDisplay = require(ReplicatedStorage:WaitForChild("MobStatsDisplay"))
 if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 	MobStatsDisplay.createMobStatsDisplay(model)
 end
+
+bindRewardHandler()
 
 -- Wait for hitbox functions to be available
 while not _G.createStaticHitbox do
@@ -148,7 +217,7 @@ task.spawn(function()
 				end
 			else
 				-- No target found
-				timeSinceTarget += UPDATE_RATE
+				timeSinceTarget = timeSinceTarget + UPDATE_RATE
 				if timeSinceTarget >= RETURN_WAIT then
 					returningHome = true
 					humanoid:MoveTo(spawnPosition)

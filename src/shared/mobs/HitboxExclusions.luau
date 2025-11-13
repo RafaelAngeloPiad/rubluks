@@ -17,6 +17,7 @@ HitboxExclusions.EXCLUDE_TAGS = {
 	"human_melee_entity",
 	"human_projectile_entity",
 	"human_wizard_entity",
+	"object_entity"
 }
 
 -- Function to check if a model has any excluded tags
