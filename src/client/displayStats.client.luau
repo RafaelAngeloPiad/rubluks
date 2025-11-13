@@ -57,6 +57,7 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "StatsDisplay"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Enabled = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Main frame in bottom right corner
@@ -68,6 +69,7 @@ mainFrame.Position = BASE_POSITION
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.BackgroundTransparency = 0.3
+mainFrame.Visible = false
 mainFrame.Parent = screenGui
 
 local uiScale = Instance.new("UIScale")
@@ -216,6 +218,15 @@ listLayout.Padding = UDim.new(0, 5)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrollFrame
 
+local function updateCanvasSize()
+	local contentHeight = listLayout.AbsoluteContentSize.Y
+	local scale = uiScale and uiScale.Scale or currentScale or 1
+	if scale and scale < 1 then
+		contentHeight = math.ceil(contentHeight / math.max(scale, 1e-3))
+	end
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight + CANVAS_EXTRA_PADDING)
+end
+
 local function determineUIScale()
 	local camera = Workspace.CurrentCamera
 	local viewport = camera and camera.ViewportSize or Vector2.new(1920, 1080)
@@ -249,6 +260,7 @@ local function applyUIScaling()
 	end
 
 	scrollFrame.ScrollBarThickness = math.max(3, math.floor(5 * currentScale))
+	updateCanvasSize()
 end
 
 local function bindViewportListener(camera)
@@ -277,10 +289,6 @@ end
 Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 	task.defer(refreshViewportScaling)
 end)
-
-local function updateCanvasSize()
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + CANVAS_EXTRA_PADDING)
-end
 
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
 
@@ -2131,8 +2139,7 @@ local function updateCalculatedDamage()
 	end
 end
 
--- UI Hidden state
-local isVisible = true
+local isVisible = false
 
 -- Track connections to prevent duplicates
 local statConnections = {}
@@ -2491,6 +2498,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.PageDown then
 		isVisible = not isVisible
 		mainFrame.Visible = isVisible
+		screenGui.Enabled = isVisible
 	end
 end)
 

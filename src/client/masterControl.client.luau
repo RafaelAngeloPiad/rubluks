@@ -39,6 +39,7 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MasterControlDisplay"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Enabled = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local BASE_FRAME_SIZE = Vector2.new(370, 340)
@@ -56,6 +57,7 @@ mainFrame.Position = BASE_POSITION
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
 mainFrame.Parent = screenGui
 
 local uiScale = Instance.new("UIScale")
@@ -287,7 +289,7 @@ local function createButton(text, color, layoutOrder, onClick)
 end
 
 local layoutOrder = 1
-local isVisible = true
+local isVisible = false
 
 createButton("Reset", Color3.fromRGB(150, 50, 50), layoutOrder, function()
 	if DevStatEvent then
@@ -556,6 +558,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.PageUp then
 		isVisible = not isVisible
 		mainFrame.Visible = isVisible
+		screenGui.Enabled = isVisible
 	end
 end)
 
