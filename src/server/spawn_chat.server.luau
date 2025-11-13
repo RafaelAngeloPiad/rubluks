@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local COMMAND_PREFIX = "/spawn"
-local MAX_SPAWN_COUNT = 20
+local MAX_SPAWN_COUNT = 100
 
 local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
 local mobsFolder = ReplicatedStorage:FindFirstChild("Mobs")
@@ -133,13 +133,23 @@ local function spawnInstanceAtPosition(template: Instance, templateType: string?
 	return clone
 end
 
-local function computeSpawnPosition(origin: Vector3, forward: Vector3, right: Vector3, baseDistance: number)
-	local distance = baseDistance + rng:NextNumber(-2, 6)
-	local lateral = rng:NextNumber(-6, 6)
-	local depthVariance = rng:NextNumber(-2, 2)
-	local heightOffset = rng:NextNumber(0, 2)
+local GOLDEN_ANGLE = math.pi * (3 - math.sqrt(5))
 
-	return origin + forward * (distance + depthVariance) + right * lateral + Vector3.new(0, heightOffset, 0)
+local function computeSpawnPosition(origin: Vector3, forward: Vector3, right: Vector3, baseDistance: number, index: number, total: number)
+	local forwardUnit = forward.Magnitude > 0 and forward.Unit or Vector3.new(0, 0, -1)
+	local rightUnit = right.Magnitude > 0 and right.Unit or Vector3.new(1, 0, 0)
+
+	local angle = index * GOLDEN_ANGLE + rng:NextNumber(-0.25, 0.25)
+	local radialStep = math.max(total, 1)
+	local radius = baseDistance + math.sqrt(index / radialStep) * 10 + rng:NextNumber(-1, 1)
+
+	local planarOffset = (rightUnit * math.cos(angle) + forwardUnit * math.sin(angle)) * radius
+	local heightOffset = rng:NextNumber(-1, 3)
+
+	-- small random jitter to avoid perfect patterns
+	local jitter = Vector3.new(rng:NextNumber(-1.5, 1.5), 0, rng:NextNumber(-1.5, 1.5))
+
+	return origin + planarOffset + Vector3.new(0, heightOffset, 0) + jitter
 end
 
 local function spawnTemplates(player: Player, path: string, amount: number)
@@ -166,8 +176,8 @@ local function spawnTemplates(player: Player, path: string, amount: number)
 	local origin = root.Position
 	local baseDistance = templateType == "mob" and 10 or 8
 
-	for _ = 1, amount do
-		local spawnPosition = computeSpawnPosition(origin, forward, right, baseDistance)
+	for index = 1, amount do
+		local spawnPosition = computeSpawnPosition(origin, forward, right, baseDistance, index, amount)
 		spawnInstanceAtPosition(template, templateType, spawnPosition, forward)
 	end
 end
