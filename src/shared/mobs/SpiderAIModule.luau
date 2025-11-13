@@ -11,7 +11,7 @@ pcall(function()
 	MobStatsDisplay = require(game.ReplicatedStorage.MobStatsDisplay)
 end)
 
-local MOVE_ANIMATION_ID = "rbxassetid://108903327900347"
+local MOVE_ANIMATION_ID = "rbxassetid://73515999132205"
 local ATTACK_ANIMATION_ID = "rbxassetid://132697102857784"
 
 local PLAYER_CONTROL_TAG = "player_transformed"

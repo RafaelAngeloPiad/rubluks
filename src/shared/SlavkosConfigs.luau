@@ -93,7 +93,7 @@ ServerConfigs.Hitbox = {
 			enabled = true, -- Enable/disable floating mob stats GUI
 			offsetY = 2, -- Vertical offset from character head (studs) - above damage numbers
 			offsetYNoStat = 2, -- Vertical offset when stat details are hidden
-			size = Vector2.new(200, 150), -- GUI size in pixels
+			size = Vector2.new(170, 120), -- GUI size in pixels
 			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
 			backgroundTransparency = 1, -- Background transparency (1 = invisible overlay)
 			borderColor = Color3.new(0, 0, 0), -- Border color (unused when border size is 0)
@@ -103,18 +103,24 @@ ServerConfigs.Hitbox = {
 			textStrokeColor = Color3.new(0, 0, 0), -- Outline color (black)
 			textStrokeTransparency = 0, -- Outline opacity
 			textStrokeThickness = 0, -- Outline thickness
-			textSize = 14, -- Font size
+			textSize = 12, -- Font size
 			font = Enum.Font.Gotham, -- Font style
 			headerColor = Color3.new(1, 1, 1), -- Header text color (white)
-			headerSize = 18, -- Header font size
+			headerSize = 16, -- Header font size
 			headerStrokeTransparency = 1, -- Outline around header text (0 = solid, 1 = none)
 			showStatDetails = false, -- Toggle to show/hide extra stat rows beneath the name
-			healthBarHeight = 12, -- Pixel height of health bar
+			healthBarHeight = 10, -- Pixel height of health bar
 			healthBarBackgroundColor = Color3.fromRGB(35, 35, 35), -- Color behind the health bar fill
 			healthBarBorderColor = Color3.fromRGB(10, 10, 10), -- Health bar outline color
 			healthBarCornerRadius = 4, -- Health bar roundness
 			healthBarDefaultColor = Color3.fromRGB(120, 220, 120), -- Default health bar fill if mob doesn't specify one
 			healthBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the health bar
+			defenseBarHeight = 9, -- Pixel height of defense bar
+			defenseBarBackgroundColor = Color3.fromRGB(40, 40, 40), -- Color behind the defense bar fill
+			defenseBarBorderColor = Color3.fromRGB(15, 15, 15), -- Defense bar outline color
+			defenseBarCornerRadius = 4, -- Defense bar roundness
+			defenseBarDefaultColor = Color3.fromRGB(120, 170, 220), -- Default defense bar fill
+			defenseBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the defense bar
 			levelLabelColor = Color3.fromRGB(255, 255, 255), -- Level label text color
 			updateRate = 0.1 -- Update frequency in seconds
 		},

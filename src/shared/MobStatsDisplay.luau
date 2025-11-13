@@ -97,6 +97,7 @@ local function createMobStatsDisplay(model)
 	local textStrokeColor = statsConfig.textStrokeColor or Color3.new(0, 0, 0)
 	local textStrokeTransparency = statsConfig.textStrokeTransparency or 0
 	local textStrokeThickness = statsConfig.textStrokeThickness or 0
+	local defenseBarBackground, defenseBarFill, defenseBarLabel
 
 	local function applyStrokeToLabel(label, strokeTransparency)
 		local effectiveTransparency
@@ -136,7 +137,8 @@ local function createMobStatsDisplay(model)
 	headerLabel.TextColor3 = statsConfig.headerColor or statsConfig.textColor
 	headerLabel.TextSize = statsConfig.headerSize
 	headerLabel.Font = statsConfig.font
-	headerLabel.TextXAlignment = Enum.TextXAlignment.Left
+	headerLabel.TextXAlignment = Enum.TextXAlignment.Center
+	headerLabel.TextYAlignment = Enum.TextYAlignment.Center
 	headerLabel.LayoutOrder = 1
 	headerLabel.Parent = mainFrame
 	applyStrokeToLabel(headerLabel, statsConfig.headerStrokeTransparency or textStrokeTransparency)
@@ -185,14 +187,59 @@ local function createMobStatsDisplay(model)
 	healthBarLabel.TextYAlignment = Enum.TextYAlignment.Center
 	healthBarLabel.Parent = healthBarBackground
 
+	local defenseBarHeight = statsConfig.defenseBarHeight or math.max((statsConfig.healthBarHeight or 10) - 1, 6)
+	defenseBarBackground = Instance.new("Frame")
+	defenseBarBackground.Name = "DefenseBar"
+	defenseBarBackground.Size = UDim2.new(1, 0, 0, defenseBarHeight)
+	defenseBarBackground.BackgroundColor3 = statsConfig.defenseBarBackgroundColor or Color3.fromRGB(40, 40, 40)
+	defenseBarBackground.BackgroundTransparency = 0
+	defenseBarBackground.BorderSizePixel = 0
+	defenseBarBackground.LayoutOrder = 3
+	defenseBarBackground.Parent = mainFrame
+
+	local defenseBarStroke = Instance.new("UIStroke")
+	defenseBarStroke.Name = "DefenseBarStroke"
+	defenseBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	defenseBarStroke.Thickness = 1
+	defenseBarStroke.Color = statsConfig.defenseBarBorderColor or Color3.fromRGB(15, 15, 15)
+	defenseBarStroke.Parent = defenseBarBackground
+
+	local defenseBarCorner = Instance.new("UICorner")
+	defenseBarCorner.CornerRadius = UDim.new(0, statsConfig.defenseBarCornerRadius or statsConfig.healthBarCornerRadius or 4)
+	defenseBarCorner.Parent = defenseBarBackground
+
+	defenseBarFill = Instance.new("Frame")
+	defenseBarFill.Name = "Fill"
+	defenseBarFill.Size = UDim2.new(0, 0, 1, 0)
+	defenseBarFill.BackgroundColor3 = statsConfig.defenseBarDefaultColor or Color3.fromRGB(120, 170, 220)
+	defenseBarFill.BorderSizePixel = 0
+	defenseBarFill.Parent = defenseBarBackground
+
+	local defenseBarFillCorner = Instance.new("UICorner")
+	defenseBarFillCorner.CornerRadius = UDim.new(0, statsConfig.defenseBarCornerRadius or statsConfig.healthBarCornerRadius or 4)
+	defenseBarFillCorner.Parent = defenseBarFill
+
+	defenseBarLabel = Instance.new("TextLabel")
+	defenseBarLabel.Name = "DefenseText"
+	defenseBarLabel.Size = UDim2.new(1, 0, 1, 0)
+	defenseBarLabel.BackgroundTransparency = 1
+	defenseBarLabel.Text = "Defense: --/--"
+	defenseBarLabel.TextColor3 = statsConfig.defenseBarTextColor or statsConfig.textColor or Color3.new(1, 1, 1)
+	defenseBarLabel.TextSize = statsConfig.textSize
+	defenseBarLabel.Font = statsConfig.font
+	defenseBarLabel.TextXAlignment = Enum.TextXAlignment.Center
+	defenseBarLabel.TextYAlignment = Enum.TextYAlignment.Center
+	defenseBarLabel.Parent = defenseBarBackground
+
+	local statsContainerOffset = statsConfig.headerSize + healthBarHeight + defenseBarHeight + 12
 	local levelLabel, defenseLabel, critRateLabel, critMultLabel, dmgLabel, defensePenLabel, xpLabel
 	if showStatDetails then
 		-- Create stat labels container
 		local statsContainer = Instance.new("Frame")
 		statsContainer.Name = "StatsContainer"
-		statsContainer.Size = UDim2.new(1, 0, 1, -statsConfig.headerSize - healthBarHeight - 10)
+		statsContainer.Size = UDim2.new(1, 0, 1, -statsContainerOffset)
 		statsContainer.BackgroundTransparency = 1
-		statsContainer.LayoutOrder = 3
+		statsContainer.LayoutOrder = 4
 		statsContainer.Parent = mainFrame
 
 		local statsLayout = Instance.new("UIListLayout")
@@ -274,11 +321,34 @@ local function createMobStatsDisplay(model)
 			healthBarFill.BackgroundColor3 = statsConfig.healthBarDefaultColor or Color3.fromRGB(120, 220, 120)
 		end
 		
+		local currentDefenseAttr = model:GetAttribute("CurrentDefense")
+		local maxDefenseAttr = model:GetAttribute("MaxDefense")
+		local currentDefense = (typeof(currentDefenseAttr) == "number" and currentDefenseAttr) or 0
+		local maxDefense = (typeof(maxDefenseAttr) == "number" and maxDefenseAttr) or 0
+
+		if defenseBarFill and defenseBarLabel and defenseBarBackground then
+			if maxDefense > 0 then
+				local defensePercent = math.clamp(currentDefense / maxDefense, 0, 1)
+				defenseBarFill.Size = UDim2.new(defensePercent, 0, 1, 0)
+				local defenseBarColor = model:GetAttribute("MobDefenseBarColor")
+				if typeof(defenseBarColor) == "Color3" then
+					defenseBarFill.BackgroundColor3 = defenseBarColor
+				else
+					defenseBarFill.BackgroundColor3 = statsConfig.defenseBarDefaultColor or Color3.fromRGB(120, 170, 220)
+				end
+				defenseBarLabel.Text = string.format("Defense: %.0f/%.0f", currentDefense, maxDefense)
+				defenseBarLabel.TextColor3 = statsConfig.defenseBarTextColor or statsConfig.textColor or Color3.new(1, 1, 1)
+			else
+				defenseBarFill.Size = UDim2.new(0, 0, 1, 0)
+				defenseBarFill.BackgroundColor3 = statsConfig.defenseBarDefaultColor or Color3.fromRGB(120, 170, 220)
+				defenseBarLabel.Text = "Defense: None"
+				defenseBarLabel.TextColor3 = Color3.new(0.6, 0.6, 0.6)
+			end
+			defenseBarBackground.Visible = true
+		end
+
 		-- Get defense stats from attributes (these are updated by DynamicHitboxV3 when defense is damaged)
 		if showStatDetails then
-			local currentDefense = model:GetAttribute("CurrentDefense") or 0
-			local maxDefense = model:GetAttribute("MaxDefense") or 0
-			
 			if defenseLabel then
 				if maxDefense > 0 then
 					defenseLabel.Text = string.format("Defense: %.0f/%.0f", currentDefense, maxDefense)
@@ -343,12 +413,13 @@ local function createMobStatsDisplay(model)
 			"MobVariant",
 			"MobDisplayName",
 			"MobHealthBarColor",
+			"MobDefenseBarColor",
 			"MobLevel",
-			"XPGain"
+			"XPGain",
+			"CurrentDefense",
+			"MaxDefense"
 		}
 		if showStatDetails then
-			table.insert(attributesToWatch, "CurrentDefense")
-			table.insert(attributesToWatch, "MaxDefense")
 			table.insert(attributesToWatch, "Damage")
 			table.insert(attributesToWatch, "DefensePenetration")
 			table.insert(attributesToWatch, "CritRate")
