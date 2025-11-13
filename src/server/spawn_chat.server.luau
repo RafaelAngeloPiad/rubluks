@@ -1,0 +1,199 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local COMMAND_PREFIX = "/spawn"
+local MAX_SPAWN_COUNT = 20
+
+local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+local mobsFolder = ReplicatedStorage:FindFirstChild("Mobs")
+
+if not assetsFolder and not mobsFolder then
+	warn("[SpawnChat] No assets or mobs folder found in ReplicatedStorage. Chat spawn command disabled.")
+	return
+end
+
+local rng = Random.new()
+
+local function resolveFromFolder(root: Instance?, path: string): Instance?
+	if not root or path == "" then
+		return nil
+	end
+
+	local current: Instance? = root
+
+	for segment in string.gmatch(path, "[^/]+") do
+		if not current then
+			return nil
+		end
+
+		current = current:FindFirstChild(segment)
+	end
+
+	return current
+end
+
+local function resolveTemplate(path: string): (Instance?, string?)
+	local assetInstance = resolveFromFolder(assetsFolder, path)
+	if assetInstance then
+		return assetInstance, "asset"
+	end
+
+	local mobInstance = resolveFromFolder(mobsFolder, path)
+	if mobInstance and mobInstance:IsA("Model") then
+		return mobInstance, "mob"
+	end
+
+	return nil, nil
+end
+
+local function parseCommand(message: string): (string?, number?)
+	if #message < #COMMAND_PREFIX then
+		return nil, nil
+	end
+
+	if string.sub(string.lower(message), 1, #COMMAND_PREFIX) ~= COMMAND_PREFIX then
+		return nil, nil
+	end
+
+	local remainder = string.sub(message, #COMMAND_PREFIX + 1)
+	remainder = string.gsub(remainder, "^%s+", "")
+	remainder = string.gsub(remainder, "%s+$", "")
+
+	if remainder == "" then
+		return nil, nil
+		end
+
+	local count = 1
+	local countMatch = remainder:match("(%d+)$")
+	if countMatch then
+		count = tonumber(countMatch) or 1
+		remainder = string.gsub(remainder, "%s*" .. countMatch .. "%s*$", "")
+		remainder = string.gsub(remainder, "%s+$", "")
+	end
+
+	if remainder == "" then
+		return nil, nil
+	end
+
+	count = math.clamp(count, 1, MAX_SPAWN_COUNT)
+
+	return remainder, count
+end
+
+local function ensurePrimaryPart(model: Model): BasePart?
+	if model.PrimaryPart then
+		return model.PrimaryPart
+	end
+
+	local humanoidRoot = model:FindFirstChild("HumanoidRootPart")
+	if humanoidRoot and humanoidRoot:IsA("BasePart") then
+		model.PrimaryPart = humanoidRoot
+		return humanoidRoot
+	end
+
+	local basePart = model:FindFirstChildWhichIsA("BasePart")
+	if basePart then
+		model.PrimaryPart = basePart
+		return basePart
+	end
+
+	return nil
+end
+
+local function spawnInstanceAtPosition(template: Instance, templateType: string?, position: Vector3, lookVector: Vector3)
+	local clone = template:Clone()
+	clone.Name = template.Name
+
+	if clone:IsA("Tool") then
+		clone.Parent = workspace
+		local handle = clone:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
+			local forward = lookVector.Magnitude > 0 and lookVector.Unit or Vector3.new(0, 0, -1)
+			local spawnCFrame = CFrame.new(position, position + forward)
+			handle.CFrame = spawnCFrame
+		end
+	elseif clone:IsA("Model") then
+		clone.Parent = workspace
+		local primary = ensurePrimaryPart(clone)
+		if primary then
+			local forward = lookVector.Magnitude > 0 and lookVector.Unit or Vector3.new(0, 0, -1)
+			local spawnCFrame = CFrame.new(position, position + forward)
+			clone:PivotTo(spawnCFrame)
+		else
+			clone:MoveTo(position)
+		end
+	elseif clone:IsA("BasePart") then
+		clone.CFrame = CFrame.new(position)
+		clone.Parent = workspace
+	else
+		clone.Parent = workspace
+	end
+
+	return clone
+end
+
+local function computeSpawnPosition(origin: Vector3, forward: Vector3, right: Vector3, baseDistance: number)
+	local distance = baseDistance + rng:NextNumber(-2, 6)
+	local lateral = rng:NextNumber(-6, 6)
+	local depthVariance = rng:NextNumber(-2, 2)
+	local heightOffset = rng:NextNumber(0, 2)
+
+	return origin + forward * (distance + depthVariance) + right * lateral + Vector3.new(0, heightOffset, 0)
+end
+
+local function spawnTemplates(player: Player, path: string, amount: number)
+	local template, templateType = resolveTemplate(path)
+	if not template then
+		warn(("[SpawnChat] No template found for path '%s'"):format(path))
+		return
+	end
+
+	local character = player.Character
+	if not character then
+		warn("[SpawnChat] Cannot spawn: player has no character.")
+		return
+	end
+
+	local root = character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart
+	if not root or not root:IsA("BasePart") then
+		warn("[SpawnChat] Cannot spawn: character missing HumanoidRootPart/PrimaryPart.")
+		return
+	end
+
+	local forward = root.CFrame.LookVector
+	local right = root.CFrame.RightVector
+	local origin = root.Position
+	local baseDistance = templateType == "mob" and 10 or 8
+
+	for _ = 1, amount do
+		local spawnPosition = computeSpawnPosition(origin, forward, right, baseDistance)
+		spawnInstanceAtPosition(template, templateType, spawnPosition, forward)
+	end
+end
+
+local function onPlayerChatted(player: Player, message: string)
+	local path, amount = parseCommand(message)
+	if not path then
+		return
+	end
+
+	spawnTemplates(player, path, amount or 1)
+end
+
+local function connectPlayer(player: Player)
+	player.Chatted:Connect(function(message: string)
+		onPlayerChatted(player, message)
+	end)
+end
+
+Players.PlayerAdded:Connect(connectPlayer)
+
+for _, player in ipairs(Players:GetPlayers()) do
+	connectPlayer(player)
+end
+
+if RunService:IsStudio() then
+	print("[SpawnChat] Spawn chat command ready. Use /spawn <NameOrPath> [count]")
+end
+

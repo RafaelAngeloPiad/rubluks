@@ -144,6 +144,19 @@ local UNIFIED_TAGS = {
 		}
 	},
 
+point_trigger = {
+	global = {
+		action = function()
+			local remote = game:GetService("ReplicatedStorage"):WaitForChild("ActionEvent")
+			remote:FireServer("global_point")
+			return true
+		end,
+		name = "[P] Point",
+		description = "Point emote",
+		isGlobal = true
+	}
+},
+
 	platformer_special_trigger = {
 		global = {
 			action = function()

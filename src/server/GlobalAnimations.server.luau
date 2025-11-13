@@ -26,6 +26,7 @@ _G.GLOBAL_ANIMATION_SPEEDS = {
 	
 	-- Global animations
 	wave = 1.0, -- Wave emote speed
+	point = 1.0, -- Point emote speed
 }
 
 -- ========================================
@@ -96,7 +97,15 @@ local function setupPlayerAnimations(player)
 	waveTrack.Looped = false
 	waveTrack.Priority = Enum.AnimationPriority.Action
 	
+	-- Point Animation
+	local pointAnim = Instance.new("Animation")
+	pointAnim.AnimationId = "rbxassetid://507770453"
+	local pointTrack = animator:LoadAnimation(pointAnim)
+	pointTrack.Looped = false
+	pointTrack.Priority = Enum.AnimationPriority.Action
+	
 	data.waveTrack = waveTrack
+	data.pointTrack = pointTrack
 	data.character = character
 	data.humanoid = humanoid
 	data.animator = animator
@@ -109,6 +118,10 @@ local function cleanupPlayerAnimations(player)
 		if data.waveTrack then
 			data.waveTrack:Stop()
 			data.waveTrack:Destroy()
+		end
+		if data.pointTrack then
+			data.pointTrack:Stop()
+			data.pointTrack:Destroy()
 		end
 		
 		playerAnimationData[player.UserId] = nil
@@ -147,6 +160,30 @@ local function handleWave(player)
 	end
 end
 
+local function handlePoint(player)
+	local data = playerAnimationData[player.UserId]
+	if not data then
+		warn("No animation data for player:", player.Name)
+		return
+	end
+	
+	if not data.character or not data.character.Parent then
+		warn("Character not found for player:", player.Name)
+		return
+	end
+	
+	if data.pointTrack then
+		data.pointTrack:Play()
+		applyAnimationSpeed(data.pointTrack, "point")
+		
+		_G.setGlobalWalkingSpeed(player, "slow")
+		
+		data.pointTrack.Stopped:Connect(function()
+			_G.setGlobalWalkingSpeed(player, "normal")
+		end)
+	end
+end
+
 -- ========================================
 -- REMOTE EVENT HANDLING
 -- ========================================
@@ -155,6 +192,8 @@ remote.OnServerEvent:Connect(function(player, actionName, ...)
 	-- Only handle global actions
 	if actionName == "global_wave" then
 		handleWave(player)
+	elseif actionName == "global_point" then
+		handlePoint(player)
 	end
 end)
 
