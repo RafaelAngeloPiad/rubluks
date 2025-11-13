@@ -18,6 +18,7 @@ local player = Players.LocalPlayer
 
 local ConsumableEvent = ReplicatedStorage:WaitForChild("ConsumableEvent")
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 local ConsumableEntries = ConsumableConfig.Entries or {}
 local detectCurrentClass
 
@@ -479,6 +480,41 @@ local function formatCooldown(remaining)
 	return string.format("%.1fs", remaining)
 end
 
+local function getPlayerBaseClass()
+	local baseClass = ServerConfigs.getPlayerClass and ServerConfigs.getPlayerClass(player)
+	if not baseClass or baseClass == "" or baseClass == "Slavkorian" then
+		return nil
+	end
+
+	return string.lower(baseClass)
+end
+
+local function getEquippedWeaponClass()
+	local weaponClass = ServerConfigs.getEquippedWeaponClass and ServerConfigs.getEquippedWeaponClass(player)
+	if not weaponClass or weaponClass == "" then
+		return nil
+	end
+
+	return string.lower(weaponClass)
+end
+
+local function hasMatchingWeaponEquipped()
+	-- Always allow transformed players to use mob actions
+	local character = player.Character
+	if character and CollectionService:HasTag(character, "player_transformed") then
+		return true
+	end
+
+	local baseClass = getPlayerBaseClass()
+	local weaponClass = getEquippedWeaponClass()
+
+	if not baseClass or not weaponClass then
+		return false
+	end
+
+	return baseClass == weaponClass
+end
+
 -- ========================================
 -- CLASS DETECTION
 -- ========================================
@@ -491,42 +527,11 @@ detectCurrentClass = function()
 		return "mob"
 	end
 
-	-- Check for samurai weapon
-	for _, item in character:GetChildren() do
-		if item:IsA("Tool") and CollectionService:HasTag(item, "samurai_wpn") then
-			return "samurai"
-		end
+	if not hasMatchingWeaponEquipped() then
+		return nil
 	end
 
-	-- Check for archer weapon
-	for _, item in character:GetChildren() do
-		if item:IsA("Tool") and CollectionService:HasTag(item, "archer_wpn") then
-			return "archer"
-		end
-	end
-
-	-- Check for knight weapon
-	for _, item in character:GetChildren() do
-		if item:IsA("Tool") and CollectionService:HasTag(item, "knight_wpn") then
-			return "knight"
-		end
-	end
-
-	-- Check for gladiator weapon
-	for _, item in character:GetChildren() do
-		if item:IsA("Tool") and CollectionService:HasTag(item, "gladiator_wpn") then
-			return "gladiator"
-		end
-	end
-
-	-- Check for brawler weapon
-	for _, item in character:GetChildren() do
-		if item:IsA("Tool") and CollectionService:HasTag(item, "brawler_wpn") then
-			return "brawler"
-		end
-	end
-
-	return nil
+	return getPlayerBaseClass()
 end
 
 local function isWeaponEquipped()
@@ -697,7 +702,15 @@ local function setupUnifiedButton(button, tag)
 			local classConfig = class and tagConfig[class] or nil
 
 			-- Show button if: (weapon equipped AND has class config) OR (is global action)
-			if (isWeaponEquipped() and classConfig) or isGlobalAction then
+			local shouldShow = false
+			if isGlobalAction then
+				shouldShow = true
+			elseif classConfig and hasMatchingWeaponEquipped() and isWeaponEquipped() then
+				shouldShow = true
+			end
+
+			if shouldShow then
+				button.Visible = true
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 0
@@ -708,14 +721,15 @@ local function setupUnifiedButton(button, tag)
 					textLabel.TextTransparency = 0
 				end
 			else
+				button.Visible = isGlobalAction
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 1
-				button.Active = false
+				button.Active = isGlobalAction
 				-- Update TextLabel child transparency if it exists
 				local textLabel = button:FindFirstChildOfClass("TextLabel")
 				if textLabel then
-					textLabel.TextTransparency = 1
+					textLabel.TextTransparency = isGlobalAction and 0 or 1
 				end
 			end
 			task.wait(0.5)
@@ -871,7 +885,10 @@ local function setupUnifiedHoldButton(button, tag)
 			local classConfig = tagConfig[class]
 
 			-- Only show button if weapon is equipped AND class has config for this button
-			if isWeaponEquipped() and classConfig then
+			local shouldShow = classConfig ~= nil and hasMatchingWeaponEquipped() and isWeaponEquipped()
+
+			if shouldShow then
+				button.Visible = true
 				--button.TextTransparency = 0
 				if not isActive then
 					button.BackgroundTransparency = 1
@@ -884,6 +901,7 @@ local function setupUnifiedHoldButton(button, tag)
 					textLabel.TextTransparency = 0
 				end
 			else
+				button.Visible = false
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 1
@@ -1039,10 +1057,6 @@ ConsumableEvent.OnClientEvent:Connect(function(action, payload)
 	end
 end)
 
--- Initialize when script runs
-initializeButtons()
-ConsumableEvent:FireServer("sync")
-
 local function isGuiVisible(screenGui, frameName)
 	if not screenGui then
 		return false
@@ -1129,6 +1143,10 @@ end
 getMasterPanelLabel = function()
 	return getPanelToggleLabel("MasterControlDisplay", "ControlFrame", "Hide Control", "Show Control")
 end
+
+-- Initialize when script runs (after helper functions are defined)
+initializeButtons()
+ConsumableEvent:FireServer("sync")
 
 
 
