@@ -45,8 +45,8 @@ local AvailableClasses = {"Knight", "Samurai", "Gladiator", "Brawler", "Archer"}
 
 local BASE_FRAME_SIZE = Vector2.new(370, 340)
 local BASE_MARGIN = 10
-local BASE_POSITION = UDim2.new(0, BASE_MARGIN, 0.5, -BASE_FRAME_SIZE.Y)
-local BASE_ANCHOR_POINT = Vector2.new(0, 0)
+local BASE_POSITION = UDim2.new(0, BASE_MARGIN, 0.5, 0)
+local BASE_ANCHOR_POINT = Vector2.new(0, 0.5)
 local hasCustomPosition = false
 local cameraViewportConn = nil
 local CANVAS_EXTRA_PADDING = 80
