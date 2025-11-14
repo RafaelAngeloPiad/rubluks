@@ -9,8 +9,8 @@ if not spawner or not spawner:IsA("BasePart") then
 end
 
 local DEFAULTS = {
-	ChestModelPath = "chests/RedChest",
-	ChestRespawnDelay = 60,
+	ChestModelPath = "chests/Random Weapon Chest",
+	ChestRespawnDelay = 30,
 	CheckInterval = 1,
 	ChestHeightOffset = 0,
 	SpawnFolderName = "ChestSpawns",

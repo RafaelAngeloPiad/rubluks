@@ -8,6 +8,177 @@ local RunService = game:GetService("RunService")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
+local IS_CLIENT = RunService:IsClient()
+local trackedDisplays = {}
+local visibilityUpdateConnection = nil
+
+local function getFocusPart(model)
+	if not model then
+		return nil
+	end
+
+	if model.PrimaryPart then
+		return model.PrimaryPart
+	end
+
+	return model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
+end
+
+local function computeScale(distance, config)
+	local referenceDistance = config.scaleReferenceDistance or 45
+	local minScale = config.minScale or 0.6
+	local maxScale = config.maxScale or 1.1
+	local falloff = config.scaleFalloff or 1
+
+	distance = math.max(distance, 1)
+	local scale = referenceDistance / (distance ^ falloff)
+	return math.clamp(scale, minScale, maxScale)
+end
+
+local function applyScale(displayInfo, scale)
+	local billboard = displayInfo.billboard
+	if not billboard or not billboard.Parent then
+		return
+	end
+
+	local baseSize = displayInfo.baseSize
+	if baseSize then
+		billboard.Size = UDim2.new(0, math.floor(baseSize.X * scale), 0, math.floor(baseSize.Y * scale))
+	end
+
+	for _, entry in ipairs(displayInfo.textElements) do
+		local label = entry.label
+		if label and label.Parent then
+			label.TextSize = math.max(8, math.floor(entry.baseSize * scale))
+		end
+	end
+end
+
+local function cleanupTracking(billboard)
+	trackedDisplays[billboard] = nil
+	if visibilityUpdateConnection and next(trackedDisplays) == nil then
+		visibilityUpdateConnection:Disconnect()
+		visibilityUpdateConnection = nil
+	end
+end
+
+local function updateClientDisplayVisibility()
+	if not IS_CLIENT then
+		return
+	end
+
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return
+	end
+
+	local statsConfig = ServerConfigs.Hitbox.mobStatsDisplay
+	if not statsConfig then
+		return
+	end
+
+	local maxVisible = math.max(0, statsConfig.maxVisible or 10)
+	local visibilityRadius = statsConfig.visibilityRadius or statsConfig.maxDistance or 120
+	local distanceScalingEnabled = statsConfig.distanceScaling ~= false
+
+	local entries = {}
+	local toRemove = {}
+
+	for billboard, info in pairs(trackedDisplays) do
+		if billboard.Parent and info.model and info.model.Parent then
+			local focusPart = info.focusPart
+			if not focusPart or not focusPart.Parent then
+				focusPart = getFocusPart(info.model)
+				info.focusPart = focusPart
+			end
+
+			if focusPart then
+				local distance = (camera.CFrame.Position - focusPart.Position).Magnitude
+				info.distance = distance
+				table.insert(entries, info)
+			else
+				table.insert(toRemove, billboard)
+			end
+		else
+			table.insert(toRemove, billboard)
+		end
+	end
+
+	for _, billboard in ipairs(toRemove) do
+		local info = trackedDisplays[billboard]
+		if billboard then
+			billboard.Enabled = false
+		end
+		cleanupTracking(billboard)
+		if info then
+			info.distance = nil
+		end
+	end
+
+	table.sort(entries, function(a, b)
+		return (a.distance or math.huge) < (b.distance or math.huge)
+	end)
+
+	for index, info in ipairs(entries) do
+		local visible = false
+		if info.distance then
+			if info.distance <= visibilityRadius and index <= maxVisible then
+				visible = true
+			end
+		end
+
+		info.billboard.Enabled = visible
+		if visible then
+			if distanceScalingEnabled then
+				local scale = computeScale(info.distance, statsConfig)
+				applyScale(info, scale)
+			else
+				applyScale(info, 1)
+			end
+		end
+	end
+
+	for i = maxVisible + 1, #entries do
+		local info = entries[i]
+		if info and info.billboard then
+			info.billboard.Enabled = false
+		end
+	end
+end
+
+local function registerClientDisplay(billboardGui, model, focusPart, textElements)
+	if not IS_CLIENT then
+		return
+	end
+
+	local statsConfig = ServerConfigs.Hitbox.mobStatsDisplay
+	if not statsConfig then
+		return
+	end
+
+	local baseSize = statsConfig.size or Vector2.new(170, 120)
+
+	trackedDisplays[billboardGui] = {
+		billboard = billboardGui,
+		model = model,
+		focusPart = focusPart,
+		textElements = textElements,
+		baseSize = baseSize,
+	}
+
+	if not visibilityUpdateConnection then
+		visibilityUpdateConnection = RunService.RenderStepped:Connect(updateClientDisplayVisibility)
+	end
+
+	updateClientDisplayVisibility()
+
+	billboardGui.AncestryChanged:Connect(function(_, parent)
+		if not parent then
+			cleanupTracking(billboardGui)
+		end
+	end)
+end
+
 -- ========================================
 -- MOB STATS DISPLAY CREATION
 -- ========================================
@@ -56,11 +227,21 @@ local function createMobStatsDisplay(model)
 	billboardGui.StudsOffset = Vector3.new(0, offsetY, 0)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 1
-	billboardGui.MaxDistance = 50 -- Hide beyond this distance
+	billboardGui.MaxDistance = 10000 -- Set very high so our custom visibility logic controls it
 	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-	billboardGui.Enabled = true
+	billboardGui.Enabled = false -- Start disabled, visibility function will enable it
 	billboardGui.Parent = head
 	
+	local textElements = {}
+	local function addTextElement(label, baseSize)
+		if label then
+			table.insert(textElements, {
+				label = label,
+				baseSize = baseSize or statsConfig.textSize
+			})
+		end
+	end
+
 	-- Create main frame with rounded corners
 	local mainFrame = Instance.new("Frame")
 	mainFrame.Name = "MainFrame"
@@ -142,6 +323,7 @@ local function createMobStatsDisplay(model)
 	headerLabel.LayoutOrder = 1
 	headerLabel.Parent = mainFrame
 	applyStrokeToLabel(headerLabel, statsConfig.headerStrokeTransparency or textStrokeTransparency)
+	addTextElement(headerLabel, statsConfig.headerSize)
 
 	local healthBarHeight = statsConfig.healthBarHeight or 12
 	local healthBarBackground = Instance.new("Frame")
@@ -186,6 +368,7 @@ local function createMobStatsDisplay(model)
 	healthBarLabel.TextXAlignment = Enum.TextXAlignment.Center
 	healthBarLabel.TextYAlignment = Enum.TextYAlignment.Center
 	healthBarLabel.Parent = healthBarBackground
+	addTextElement(healthBarLabel, statsConfig.textSize)
 
 	local defenseBarHeight = statsConfig.defenseBarHeight or math.max((statsConfig.healthBarHeight or 10) - 1, 6)
 	defenseBarBackground = Instance.new("Frame")
@@ -230,6 +413,7 @@ local function createMobStatsDisplay(model)
 	defenseBarLabel.TextXAlignment = Enum.TextXAlignment.Center
 	defenseBarLabel.TextYAlignment = Enum.TextYAlignment.Center
 	defenseBarLabel.Parent = defenseBarBackground
+	addTextElement(defenseBarLabel, statsConfig.textSize)
 
 	local statsContainerOffset = statsConfig.headerSize + healthBarHeight + defenseBarHeight + 12
 	local levelLabel, defenseLabel, critRateLabel, critMultLabel, dmgLabel, defensePenLabel, xpLabel
@@ -270,6 +454,7 @@ local function createMobStatsDisplay(model)
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Parent = row
 			applyStrokeToLabel(label)
+			addTextElement(label, statsConfig.textSize)
 			
 			return label
 		end
@@ -289,6 +474,7 @@ local function createMobStatsDisplay(model)
 		-- Check if model still exists
 		if not model.Parent or not humanoid.Parent then
 			billboardGui:Destroy()
+			cleanupTracking(billboardGui)
 			return
 		end
 		
@@ -437,6 +623,7 @@ local function createMobStatsDisplay(model)
 	-- Cleanup on model removal
 	model.AncestryChanged:Connect(function()
 		if not model.Parent then
+			cleanupTracking(billboardGui)
 			if connection then
 				connection:Disconnect()
 			end
@@ -449,6 +636,9 @@ local function createMobStatsDisplay(model)
 			billboardGui:Destroy()
 		end
 	end)
+
+	local focusPart = getFocusPart(model) or head
+	registerClientDisplay(billboardGui, model, focusPart, textElements)
 end
 
 -- ========================================

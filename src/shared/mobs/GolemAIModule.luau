@@ -196,6 +196,7 @@ local function initializeGolem(monster, variantName)
 						-- Get status ailment config from MobStatsConfig
 						local stats = MobStatsConfig.getStats(variantName)
 						local statusAilment = stats and stats.StatusAilment or nil
+						local lifesteal = stats and stats.Lifesteal or nil
 						
 						local hitboxConfig = {
 							attachTo = root,
@@ -213,6 +214,9 @@ local function initializeGolem(monster, variantName)
 						-- Add status ailment if configured
 						if statusAilment then
 							hitboxConfig.statusAilment = statusAilment
+						end
+						if lifesteal then
+							hitboxConfig.lifesteal = lifesteal
 						end
 						
 						_G.createStaticHitbox(hitboxConfig)

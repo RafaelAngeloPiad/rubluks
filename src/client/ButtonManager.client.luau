@@ -426,23 +426,6 @@ local function formatTooltipFromConfig(config)
 	return table.concat(lines, "\n")
 end
 
-local function createUnifiedTooltipResolver(tagConfig, globalConfig)
-	return function()
-		local class = detectCurrentClass()
-		local classConfig = class and tagConfig[class] or nil
-
-		if classConfig and (classConfig.description or classConfig.name) then
-			return formatTooltipFromConfig(classConfig)
-		end
-
-		if globalConfig and (globalConfig.description or globalConfig.name) then
-			return formatTooltipFromConfig(globalConfig)
-		end
-
-		return ""
-	end
-end
-
 local COOLDOWN_PROVIDERS = {
 	samurai = function(skillName)
 		return SamuraiActions.getCooldownRemaining(skillName)
@@ -496,6 +479,39 @@ local function getEquippedWeaponClass()
 	end
 
 	return string.lower(weaponClass)
+end
+
+local function resolveClassForTag(tag)
+	local class = detectCurrentClass()
+	if class then
+		return class
+	end
+
+	if tag == "attack_trigger" then
+		local weaponClass = getEquippedWeaponClass()
+		if weaponClass then
+			return weaponClass
+		end
+	end
+
+	return nil
+end
+
+local function createUnifiedTooltipResolver(tag, tagConfig, globalConfig)
+	return function()
+		local class = resolveClassForTag(tag)
+		local classConfig = class and tagConfig[class] or nil
+
+		if classConfig and (classConfig.description or classConfig.name) then
+			return formatTooltipFromConfig(classConfig)
+		end
+
+		if globalConfig and (globalConfig.description or globalConfig.name) then
+			return formatTooltipFromConfig(globalConfig)
+		end
+
+		return ""
+	end
 end
 
 local function hasMatchingWeaponEquipped()
@@ -670,11 +686,11 @@ local function setupUnifiedButton(button, tag)
 	end
 
 	local globalConfig = findGlobalConfig(tagConfig)
-	local tooltipResolver = createUnifiedTooltipResolver(tagConfig, globalConfig)
+	local tooltipResolver = createUnifiedTooltipResolver(tag, tagConfig, globalConfig)
 
 	-- Click handler
 	button.MouseButton1Click:Connect(function()
-		local class = detectCurrentClass()
+		local class = resolveClassForTag(tag)
 
 		local classConfig = class and tagConfig[class] or nil
 		if classConfig and classConfig.action then
@@ -698,15 +714,19 @@ local function setupUnifiedButton(button, tag)
 	task.spawn(function()
 		local isGlobalAction = globalConfig ~= nil
 		while button and button.Parent do
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			local classConfig = class and tagConfig[class] or nil
 
 			-- Show button if: (weapon equipped AND has class config) OR (is global action)
 			local shouldShow = false
 			if isGlobalAction then
 				shouldShow = true
-			elseif classConfig and hasMatchingWeaponEquipped() and isWeaponEquipped() then
-				shouldShow = true
+			elseif classConfig then
+				if tag == "attack_trigger" then
+					shouldShow = isWeaponEquipped()
+				else
+					shouldShow = hasMatchingWeaponEquipped() and isWeaponEquipped()
+				end
 			end
 
 			if shouldShow then
@@ -739,7 +759,7 @@ local function setupUnifiedButton(button, tag)
 	-- Text updater (updates based on equipped weapon)
 	task.spawn(function()
 		while button and button.Parent do
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			local textToSet = ""
 			local cooldownText = nil
 			local classConfig = class and tagConfig[class] or nil
@@ -810,14 +830,14 @@ local function setupUnifiedHoldButton(button, tag)
 	end
 
 	local globalConfig = findGlobalConfig(tagConfig)
-	local tooltipResolver = createUnifiedTooltipResolver(tagConfig, globalConfig)
+	local tooltipResolver = createUnifiedTooltipResolver(tag, tagConfig, globalConfig)
 
 	local isActive = false
 
 	-- Press handler
 	button.MouseButton1Down:Connect(function()
 		if not isActive then
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			if not class then return end
 
 			local classConfig = tagConfig[class]
@@ -832,7 +852,7 @@ local function setupUnifiedHoldButton(button, tag)
 	-- Release handler
 	button.MouseButton1Up:Connect(function()
 		if isActive then
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			if not class then return end
 
 			local classConfig = tagConfig[class]
@@ -847,7 +867,7 @@ local function setupUnifiedHoldButton(button, tag)
 	-- Handle case where mouse leaves button while holding
 	button.MouseLeave:Connect(function()
 		if isActive then
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			if class then
 				local classConfig = tagConfig[class]
 				if classConfig and classConfig.stop then
@@ -881,7 +901,7 @@ local function setupUnifiedHoldButton(button, tag)
 	-- Transparency updater
 	task.spawn(function()
 		while button and button.Parent do
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			local classConfig = tagConfig[class]
 
 			-- Only show button if weapon is equipped AND class has config for this button
@@ -919,7 +939,7 @@ local function setupUnifiedHoldButton(button, tag)
 	-- Text updater
 	task.spawn(function()
 		while button and button.Parent do
-			local class = detectCurrentClass()
+			local class = resolveClassForTag(tag)
 			local textToSet = ""
 			local cooldownText = nil
 

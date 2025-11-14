@@ -242,6 +242,7 @@ local function initializeZombie(zombie, variantName)
 			local damage = zombie:GetAttribute("Damage") or 15
 			local stats = MobStatsConfig.getStats(variantName)
 			local statusAilment = stats and stats.StatusAilment or nil
+			local lifesteal = stats and stats.Lifesteal or nil
 			task.delay(0.2, function()
 				if not zombie or not zombie.Parent or not humanoid or humanoid.Health <= 0 then
 					return
@@ -264,6 +265,9 @@ local function initializeZombie(zombie, variantName)
 				}
 				if statusAilment then
 					hitboxConfig.statusAilment = statusAilment
+				end
+				if lifesteal then
+					hitboxConfig.lifesteal = lifesteal
 				end
 				_G.createStaticHitbox(hitboxConfig)
 			end)

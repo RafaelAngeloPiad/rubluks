@@ -26,7 +26,7 @@ end
 ]]
 
 local DEFAULTS = {
-	MobModelPath = "Mobs/Arawizard",
+	MobModelPath = "Mobs/Arabandit",
 	SpawnCount = 5,
 	SpawnRadius = 25,
 	DetectionRadius = 120,

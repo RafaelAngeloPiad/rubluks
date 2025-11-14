@@ -115,6 +115,7 @@ local function initializeWraith(wraith, variantName)
 	end
 	local damage = stats.Damage or 25
 	local statusAilment = stats.StatusAilment
+	local lifesteal = stats.Lifesteal
 	
 	-- Wait for hitbox functions to be available
 	while not _G.createTravelingHitbox do
@@ -179,7 +180,8 @@ local function initializeWraith(wraith, variantName)
 			delay = 0,
 			actionType = nil, -- Mobs don't have animation speeds
 			classType = nil, -- Mobs don't have classes
-			statusAilment = statusAilment -- Add burn status ailment from stats
+			statusAilment = statusAilment, -- Add burn status ailment from stats
+			lifesteal = lifesteal
 		})
 
 		if not resolvedTarget then

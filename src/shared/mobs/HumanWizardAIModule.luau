@@ -353,6 +353,7 @@ local function initializeHumanWizard(character, variantName)
 		orbInstance.CFrame = spawnCFrame
 
 		local stats = MobStatsConfig.getStats(variantName)
+		local lifesteal = stats and stats.Lifesteal or nil
 		local damage = getProjectileDamage(stats)
 
 		local initialDirection = computeProjectileDirection()
@@ -404,6 +405,7 @@ local function initializeHumanWizard(character, variantName)
 			actionType = nil,
 			classType = nil,
 			statusAilment = stats and stats.StatusAilment or nil,
+			lifesteal = lifesteal,
 		})
 
 		local spawnTime = tick()

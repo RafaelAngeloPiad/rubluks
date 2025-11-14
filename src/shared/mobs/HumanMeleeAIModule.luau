@@ -264,6 +264,9 @@ local function initializeHumanMelee(character, variantName)
 		if stats and stats.StatusAilment then
 			hitboxConfig.statusAilment = stats.StatusAilment
 		end
+		if stats and stats.Lifesteal then
+			hitboxConfig.lifesteal = stats.Lifesteal
+		end
 
 		_G.createStaticHitbox(hitboxConfig)
 	end

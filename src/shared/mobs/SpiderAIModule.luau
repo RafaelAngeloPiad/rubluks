@@ -142,6 +142,7 @@ local function initializeSpider(enemy, variantName)
 					local damage = enemy:GetAttribute("Damage") or 50
 					local stats = MobStatsConfig.getStats(variantName)
 					local statusAilment = stats and stats.StatusAilment or nil
+					local lifesteal = stats and stats.Lifesteal or nil
 
 					local hitboxConfig = {
 						attachTo = root,
@@ -158,6 +159,9 @@ local function initializeSpider(enemy, variantName)
 
 					if statusAilment then
 						hitboxConfig.statusAilment = statusAilment
+					end
+					if lifesteal then
+						hitboxConfig.lifesteal = lifesteal
 					end
 
 					_G.createStaticHitbox(hitboxConfig)

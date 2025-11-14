@@ -40,67 +40,24 @@ ServerConfigs.Hitbox = {
 			fadeStart = 0.3, -- When to start fading (after this many seconds) (reduced from 0.5 to fade earlier)
 			offsetY = 2, -- Vertical offset from character head (studs)
 			randomOffsetX = 1, -- Random horizontal offset range (studs)
-			width = 180,
-			height = 90,
-			maxDistance = 110,
-			scaleReferenceDistance = 28,
-			minScale = 0.55,
-			maxScale = 1.05,
-			scaleFalloff = 1,
 		},
 
 		-- XP Gain Numbers Configuration (floating "+12 XP" popups for players)
 		xpNumbers = {
 			enabled = true, -- Enable/disable XP popups
 			font = Enum.Font.GothamBold, -- Font style to match damage numbers
-			textSize = 20, -- Smaller for less intrusive display
+			textSize = 26, -- Slightly smaller than damage numbers for readability
 			textColor = Color3.fromRGB(120, 255, 120), -- Bright green
-			offsetX = -2.5, -- Shift to the left side of the character
-			offsetY = -2.5, -- Position near the feet instead of above the head
 			backgroundTransparency = 1, -- Fully transparent background
 			strokeColor = Color3.fromRGB(20, 120, 20), -- Dark green outline
 			strokeTransparency = 0.1, -- Slightly transparent outline for softness
-			duration = 0.6, -- Faster cleanup
-			riseHeight = 1.2, -- How high the text rises (studs)
-			fadeStart = 0.2, -- Earlier fade
-			randomOffsetX = 0.2, -- Subtle horizontal variation
-			attachTo = "Root", -- Anchor to humanoid root for lower positioning
+			duration = 1.1, -- Visible slightly longer than damage numbers
+			riseHeight = 3.2, -- How high the text rises (studs)
+			fadeStart = 0.4, -- When to start fading (seconds)
+			offsetY = 3, -- Vertical offset so it appears above damage numbers
+			randomOffsetX = 0.5, -- Subtle horizontal variation
 			prefix = "+", -- Text prefix before XP amount
-			suffix = " XP", -- Text suffix after XP amount
-			width = 160,
-			height = 70,
-			maxDistance = 85,
-			scaleReferenceDistance = 25,
-			minScale = 0.45,
-			maxScale = 0.95,
-			scaleFalloff = 1.1,
-		},
-
-		-- Slavkoin Gain Numbers Configuration (floating "+5 Slavkoins" popups for players)
-		slavkoinNumbers = {
-			enabled = true, -- Enable/disable Slavkoin popups
-			font = Enum.Font.GothamBold, -- Font style to match XP numbers
-			textSize = 20, -- Keep consistent sizing with XP numbers
-			textColor = Color3.fromRGB(255, 223, 93), -- Gold color
-			offsetX = 2.5, -- Shift to the right side of the character
-			offsetY = -2.5, -- Position near the feet instead of above the head
-			backgroundTransparency = 1, -- Fully transparent background
-			strokeColor = Color3.fromRGB(140, 95, 20), -- Dark gold outline
-			strokeTransparency = 0.1, -- Slightly transparent outline
-			duration = 0.6, -- Faster cleanup
-			riseHeight = 1.2, -- Match rise height
-			fadeStart = 0.2, -- Match fade timing
-			randomOffsetX = 0.2, -- Subtle horizontal variation
-			attachTo = "Root", -- Anchor to humanoid root for lower positioning
-			prefix = "+", -- Text prefix before Slavkoin amount
-			suffix = " Slavkoins", -- Text suffix after Slavkoin amount
-			width = 160,
-			height = 70,
-			maxDistance = 85,
-			scaleReferenceDistance = 25,
-			minScale = 0.45,
-			maxScale = 0.95,
-			scaleFalloff = 1.1,
+			suffix = " XP" -- Text suffix after XP amount
 		},
 		
 		-- Knockback Configuration
@@ -112,16 +69,9 @@ ServerConfigs.Hitbox = {
 		-- Mob Stats Display Configuration
 		mobStatsDisplay = {
 			enabled = true, -- Enable/disable floating mob stats GUI
-			offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
-			offsetYNoStat = 1.9, -- Vertical offset when stat details are hidden
-			size = Vector2.new(170, 120), -- GUI size in pixels
-			maxVisible = 10, -- Maximum number of mob stat displays shown at once
-			visibilityRadius = 110, -- Only show stats for mobs within this radius
-			distanceScaling = true, -- Scale UI based on distance
-			scaleReferenceDistance = 45, -- Distance at which scale is 1.0
-			minScale = 0.6, -- Minimum scale factor
-			maxScale = 1.1, -- Maximum scale factor
-			scaleFalloff = 1.0, -- How aggressively scale changes with distance
+			offsetY = 2, -- Vertical offset from character head (studs) - above damage numbers
+			offsetYNoStat = 2, -- Vertical offset when stat details are hidden
+			size = Vector2.new(200, 150), -- GUI size in pixels
 			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
 			backgroundTransparency = 1, -- Background transparency (1 = invisible overlay)
 			borderColor = Color3.new(0, 0, 0), -- Border color (unused when border size is 0)
@@ -131,24 +81,18 @@ ServerConfigs.Hitbox = {
 			textStrokeColor = Color3.new(0, 0, 0), -- Outline color (black)
 			textStrokeTransparency = 0, -- Outline opacity
 			textStrokeThickness = 0, -- Outline thickness
-			textSize = 12, -- Font size
+			textSize = 14, -- Font size
 			font = Enum.Font.Gotham, -- Font style
 			headerColor = Color3.new(1, 1, 1), -- Header text color (white)
-			headerSize = 16, -- Header font size
+			headerSize = 18, -- Header font size
 			headerStrokeTransparency = 1, -- Outline around header text (0 = solid, 1 = none)
 			showStatDetails = false, -- Toggle to show/hide extra stat rows beneath the name
-			healthBarHeight = 10, -- Pixel height of health bar
+			healthBarHeight = 12, -- Pixel height of health bar
 			healthBarBackgroundColor = Color3.fromRGB(35, 35, 35), -- Color behind the health bar fill
 			healthBarBorderColor = Color3.fromRGB(10, 10, 10), -- Health bar outline color
 			healthBarCornerRadius = 4, -- Health bar roundness
 			healthBarDefaultColor = Color3.fromRGB(120, 220, 120), -- Default health bar fill if mob doesn't specify one
 			healthBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the health bar
-			defenseBarHeight = 9, -- Pixel height of defense bar
-			defenseBarBackgroundColor = Color3.fromRGB(40, 40, 40), -- Color behind the defense bar fill
-			defenseBarBorderColor = Color3.fromRGB(15, 15, 15), -- Defense bar outline color
-			defenseBarCornerRadius = 4, -- Defense bar roundness
-			defenseBarDefaultColor = Color3.fromRGB(120, 170, 220), -- Default defense bar fill
-			defenseBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the defense bar
 			levelLabelColor = Color3.fromRGB(255, 255, 255), -- Level label text color
 			updateRate = 0.1 -- Update frequency in seconds
 		},
@@ -215,12 +159,10 @@ ServerConfigs.Hitbox = {
 -- DEVELOPER TOOLING CONFIGURATION
 -- ========================================
 
-ServerConfigs.ControlUI = {
+ServerConfigs.DevUI = {
 	displayStats = {
-		enabled = true -- Toggle the developer stats overlay
-	},
-	masterControls = {
-		enabled = true -- Toggle the developer master control panel (XP/class/friendly fire tools)
+		enabled = false, -- Toggle the developer stats overlay
+		showControls = true -- Toggle the control buttons at the bottom of the overlay
 	}
 }
 
@@ -239,11 +181,11 @@ ServerConfigs.Hitboxes = {
 		Archer = {
 			offset = CFrame.new(0, 0, -2),
 			size = Vector3.new(6, 6, 6),
-			damage = 1.0,                -- 100% of MaxAttack (base hit)
-			skill1Damage = 1.5,          -- 150% of MaxAttack - PiercingShot
-			skill2Damage = 2.0,          -- 200% of MaxAttack - PowerShot
+			damage = 0.2,                -- 20% of MaxAttack (base: 100 ATK = 20 damage)
+			skill1Damage = 0.35,         -- 35% of MaxAttack (base: 100 ATK = 35 damage) - PiercingShot
+			skill2Damage = 0.4,          -- 40% of MaxAttack (base: 100 ATK = 40 damage) - PowerShot
 			skill2TickTime = 1,        -- PowerShot DOT tick time
-			ultDamage = 4.0,             -- 400% of MaxAttack - Starfall
+			ultDamage = 0.1,             -- 10% of MaxAttack (base: 100 ATK = 10 damage) - Starfall
 			ultTickTime = 0.5,           -- Starfall DOT tick time
 			-- Arrow projectile configuration
 			arrowDelay = 0,              -- Delay before arrow hitbox becomes active (seconds)
@@ -266,13 +208,13 @@ ServerConfigs.Hitboxes = {
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills
+				slow = 3,       -- Fixed speed during skills -- NO TOUCH
 				blocking = 0    -- Fixed speed while blocking -- NO TOUCH
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills
+				slow = 3,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
@@ -302,10 +244,10 @@ ServerConfigs.Hitboxes = {
 		Samurai = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 1.0,                -- 100% of MaxAttack
-			skill1Damage = 1.5,           -- 150% of MaxAttack - Wakizashi
-			skill2Damage = 2.0,           -- 200% of MaxAttack - Kozuki
-			ultDamage = 4.0,              -- 400% of MaxAttack - Zantetsuken
+			damage = 0.24,                -- 24% of MaxAttack (base: 50 ATK = 12 damage)
+			skill1Damage = 0.5,           -- 50% of MaxAttack (base: 50 ATK = 25 damage) - Wakizashi
+			skill2Damage = 0.6,           -- 60% of MaxAttack (base: 50 ATK = 30 damage) - Kozuki
+			ultDamage = 1.0,              -- 100% of MaxAttack (base: 50 ATK = 50 damage) - Zantetsuken
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, combo3, moveAttack, jumpAttack, kozuki, wakizashi, banzai, bushido, zantetsuken)
 			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
@@ -313,13 +255,13 @@ ServerConfigs.Hitboxes = {
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills (wakizashi/kozuki)
+				slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills (wakizashi/kozuki)
+				slow = 3,       -- Fixed speed during skills (wakizashi/kozuki)
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
@@ -368,10 +310,10 @@ ServerConfigs.Hitboxes = {
 		Brawler = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 1.0,              -- 100% of MaxAttack
-			skill1Damage = 1.5,        -- 150% of MaxAttack - BrawlersRoar
-			skill2Damage = 2.0,        -- 200% of MaxAttack - FeralLeap
-			ultDamage = 4.0,           -- 400% of MaxAttack - MeteorDive
+			damage = 0.133,              -- 13.3% of MaxAttack (base: 90 ATK = 12 damage)
+			skill1Damage = 0.222,        -- 22.2% of MaxAttack (base: 90 ATK = 20 damage) - BrawlersRoar
+			skill2Damage = 0.389,        -- 38.9% of MaxAttack (base: 90 ATK = 35 damage) - FeralLeap
+			ultDamage = 0.089,           -- 8.9% of MaxAttack (base: 90 ATK = 8 damage) - MeteorDive
 			ultTickTime = 0.5,           -- MeteorDive DOT tick time
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, moveAttack, jumpAttack, feralleap, brawlersroar, bloodthirst, lastchance, meteordive)
@@ -380,13 +322,13 @@ ServerConfigs.Hitboxes = {
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills
+				slow = 3,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills
+				slow = 3,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
@@ -443,11 +385,11 @@ ServerConfigs.Hitboxes = {
 		Knight = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 1.0,               -- 100% of MaxAttack
-			skill1Damage = 1.5,        -- 150% of MaxAttack - SwordDance
-			skill2Damage = 2.0,        -- 200% of MaxAttack - CycloneSlash
+			damage = 0.2,               -- 17.1% of MaxAttack (base: 70 ATK = 12 damage)
+			skill1Damage = 0.429,        -- 42.9% of MaxAttack (base: 70 ATK = 30 damage) - SwordDance
+			skill2Damage = 0.357,        -- 35.7% of MaxAttack (base: 70 ATK = 25 damage) - CycloneSlash
 			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
-			ultDamage = 4.0,           -- 400% of MaxAttack - MightyBlade
+			ultDamage = 0.143,           -- 14.3% of MaxAttack (base: 70 ATK = 10 damage) - MightyBlade
 			ultTickTime = 0.5,           -- MightyBlade DOT tick time
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, combo3, moveAttack, jumpAttack, sworddance, cyclone_slash, warcry, warriormight, mightyblade)
@@ -456,13 +398,13 @@ ServerConfigs.Hitboxes = {
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills (sworddance/cyclone_slash)
+				slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills (sworddance/cyclone_slash)
+				slow = 3,       -- Fixed speed during skills (sworddance/cyclone_slash)
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
@@ -514,10 +456,10 @@ ServerConfigs.Hitboxes = {
 		Gladiator = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
-			damage = 1.0,                -- 100% of MaxAttack
-			skill1Damage = 1.5,        -- 150% of MaxAttack - ShieldBash
-			skill2Damage = 2.0,          -- 200% of MaxAttack - DragoonJump
-			ultDamage = 4.0,           -- 400% of MaxAttack - DemonicVorpalDance
+			damage = 0.4,                -- 40% of MaxAttack (base: 30 ATK = 12 damage)
+			skill1Damage = 0.833,        -- 83.3% of MaxAttack (base: 30 ATK = 25 damage) - ShieldBash
+			skill2Damage = 0.5,          -- 50% of MaxAttack (base: 30 ATK = 15 damage) - DragoonJump
+			ultDamage = 0.167,           -- 16.7% of MaxAttack (base: 30 ATK = 5 damage) - DemonicVorpalDance
 			ultTickTime = 0.5,           -- DemonicVorpalDance DOT tick time
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, moveAttack, jumpAttack, shieldbash, dragoonjump, championsblood, championscheer, demonicvorpaldance)
@@ -526,13 +468,13 @@ ServerConfigs.Hitboxes = {
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills
+				slow = 3,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
 				normal = 18,    -- Fixed normal walking speed
-				slow = 1,       -- Fixed speed during skills
+				slow = 3,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
@@ -1578,27 +1520,27 @@ ServerConfigs.StatCaps = {
 	},
 	Slavkorian = {
 		AttackSpeed = { max = 5 },
-		MovementSpeed = { max = 3 },
+		MovementSpeed = { max = 5 },
 	},
 	Archer = {
 		AttackSpeed = { max = 5 },
-		MovementSpeed = { max = 3 },
+		MovementSpeed = { max = 5 },
 	},
 	Samurai = {
 		AttackSpeed = { max = 5 },
-		MovementSpeed = { max = 3 },
+		MovementSpeed = { max = 5 },
 	},
 	Brawler = {
 		AttackSpeed = { max = 5 },
-		MovementSpeed = { max = 3 },
+		MovementSpeed = { max = 5 },
 	},
 	Knight = {
 		AttackSpeed = { max = 5 },
-		MovementSpeed = { max = 3 },
+		MovementSpeed = { max = 5 },
 	},
 	Gladiator = {
 		AttackSpeed = { max = 5 },
-		MovementSpeed = { max = 3 },
+		MovementSpeed = { max = 5 },
 	},
 }
 

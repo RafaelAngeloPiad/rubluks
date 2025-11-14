@@ -9,6 +9,13 @@ local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 local CollectionService = game:GetService("CollectionService")
 
+local FloatingNumberEvent = ReplicatedStorage:FindFirstChild("FloatingNumberEvent")
+if not FloatingNumberEvent then
+	FloatingNumberEvent = Instance.new("RemoteEvent")
+	FloatingNumberEvent.Name = "FloatingNumberEvent"
+	FloatingNumberEvent.Parent = ReplicatedStorage
+end
+
 -- ========================================
 -- CONFIGURATION
 -- ========================================
@@ -562,119 +569,40 @@ local function createDamageFlash(model, duration)
     end)
 end
 
--- Shared helper to create floating number popups (damage, XP, etc.)
-local function createFloatingNumber(model, text, visualConfig)
-	if not model or not model.Parent or not visualConfig then
-		return
+local function resolveCharacterAndPlayer(target)
+	if typeof(target) ~= "Instance" then
+		return nil, nil
 	end
 
-	local head = model:FindFirstChild("Head")
-	local humanoidRootPart = model:FindFirstChild("HumanoidRootPart")
-	local attachPreference = visualConfig.attachTo
-	local attachPart
+	if target:IsA("Player") then
+		return target.Character, target
+	end
 
-	if attachPreference == "Root" then
-		attachPart = humanoidRootPart or head
-	elseif attachPreference == "Head" then
-		attachPart = head or humanoidRootPart
+	local character = nil
+	if target:IsA("Model") then
+		character = target
 	else
-		attachPart = head or humanoidRootPart
+		character = target:FindFirstAncestorOfClass("Model")
 	end
-	if not attachPart then
+
+	if not character then
+		return nil, nil
+	end
+
+	local player = Players:GetPlayerFromCharacter(character)
+	return character, player
+end
+
+local function fireFloatingNumberEvent(recipient, payload)
+	if not FloatingNumberEvent then
 		return
 	end
 
-	local popupNamePrefix = visualConfig.namePrefix or "FloatingNumber"
-	local billboardGui = Instance.new("BillboardGui")
-	billboardGui.Name = popupNamePrefix .. "_" .. tostring(tick() * 1000)
-	billboardGui.Size = UDim2.new(0, visualConfig.width or 200, 0, visualConfig.height or 100)
-
-	local baseOffsetX = visualConfig.offsetX or 0
-	local randomOffsetRange = visualConfig.randomOffsetX or 0
-	local offsetX = baseOffsetX
-	if randomOffsetRange ~= 0 then
-		offsetX = offsetX + ((math.random() - 0.5) * 2 * randomOffsetRange)
+	if recipient == "all" then
+		FloatingNumberEvent:FireAllClients(payload)
+	elseif typeof(recipient) == "Instance" then
+		FloatingNumberEvent:FireClient(recipient, payload)
 	end
-	local offsetY = visualConfig.offsetY or 2
-	local offsetZ = visualConfig.offsetZ or 0
-	billboardGui.StudsOffset = Vector3.new(offsetX, offsetY, offsetZ)
-	billboardGui.AlwaysOnTop = true
-	billboardGui.LightInfluence = 0
-	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-	billboardGui.Parent = attachPart
-
-	local duration = visualConfig.duration or 1
-	Debris:AddItem(billboardGui, duration + 0.2)
-
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Size = UDim2.new(1, 0, 1, 0)
-	textLabel.BackgroundTransparency = visualConfig.backgroundTransparency ~= nil and visualConfig.backgroundTransparency or 1
-	if visualConfig.backgroundColor then
-		textLabel.BackgroundColor3 = visualConfig.backgroundColor
-	end
-	textLabel.Text = text
-	textLabel.TextColor3 = visualConfig.textColor or Color3.new(1, 1, 1)
-	textLabel.TextSize = visualConfig.textSize or 28
-	textLabel.Font = visualConfig.font or Enum.Font.GothamBold
-
-	local baseStrokeTransparency = visualConfig.strokeTransparency
-	if baseStrokeTransparency == nil then
-		baseStrokeTransparency = visualConfig.textStrokeTransparency
-	end
-	if baseStrokeTransparency == nil then
-		baseStrokeTransparency = 0
-	end
-
-	local strokeColor = visualConfig.strokeColor or visualConfig.textStrokeColor or Color3.new(0, 0, 0)
-	textLabel.TextStrokeColor3 = strokeColor
-	textLabel.TextStrokeTransparency = baseStrokeTransparency
-
-	textLabel.TextXAlignment = Enum.TextXAlignment.Center
-	textLabel.TextYAlignment = Enum.TextYAlignment.Center
-	textLabel.Parent = billboardGui
-
-	local startTime = tick()
-	local initialOffset = billboardGui.StudsOffset
-	local riseHeight = visualConfig.riseHeight or 3
-	local fadeStart = visualConfig.fadeStart or (duration * 0.5)
-
-	local connection
-	connection = RunService.Heartbeat:Connect(function()
-		if not billboardGui or not billboardGui.Parent or not model or not model.Parent or not attachPart or not attachPart.Parent then
-			if connection then
-				connection:Disconnect()
-			end
-			return
-		end
-
-		local elapsed = tick() - startTime
-		if elapsed >= duration then
-			if connection then
-				connection:Disconnect()
-			end
-			return
-		end
-
-		local progress = elapsed / duration
-		billboardGui.StudsOffset = Vector3.new(
-			initialOffset.X,
-			initialOffset.Y + (riseHeight * progress),
-			initialOffset.Z
-		)
-
-		if elapsed >= fadeStart then
-			local fadeDuration = math.max(duration - fadeStart, 0.0001)
-			local fadeProgress = math.min((elapsed - fadeStart) / fadeDuration, 1)
-			textLabel.TextTransparency = fadeProgress
-			textLabel.TextStrokeTransparency = math.min(baseStrokeTransparency + fadeProgress, 1)
-		end
-	end)
-
-	task.delay(duration + 0.2, function()
-		if connection then
-			connection:Disconnect()
-		end
-	end)
 end
 
 -- Function to create damage number display above character head
@@ -689,12 +617,16 @@ function _G.createDamageNumber(model, damage)
 		return
 	end
 
-	local clone = cloneConfig(damageNumbersConfig)
-	clone.namePrefix = "DamageNumber"
+	local damageValue = math.floor(damage or 0)
+	if damageValue <= 0 then
+		return
+	end
 
-	local damageValue = damage or 0
-	local displayText = "-" .. tostring(math.floor(damageValue))
-	createFloatingNumber(model, displayText, clone)
+	fireFloatingNumberEvent("all", {
+		type = "damage",
+		model = model,
+		amount = damageValue,
+	})
 end
 
 -- Function to create XP gain popup above the player's character
@@ -705,75 +637,46 @@ function _G.createXpGainNumber(target, xpAmount)
 		return
 	end
 
-	if not xpAmount or xpAmount <= 0 then
+	local amount = math.floor(xpAmount or 0)
+	if amount <= 0 then
 		return
 	end
 
-	local character = nil
-	if typeof(target) == "Instance" then
-		if target:IsA("Player") then
-			character = target.Character
-		elseif target:IsA("Model") then
-			character = target
-		else
-			character = target:FindFirstAncestorOfClass("Model")
-		end
-	end
-
-	if not character or not character.Parent then
+	local character, player = resolveCharacterAndPlayer(target)
+	if not character or not character.Parent or not player then
 		return
 	end
 
-	local clone = cloneConfig(xpConfig)
-	clone.namePrefix = "XpGain"
-
-	local prefix = clone.prefix or "+"
-	local suffix = clone.suffix or " XP"
-	local xpText = prefix .. tostring(math.floor(xpAmount)) .. suffix
-
-	createFloatingNumber(character, xpText, clone)
+	fireFloatingNumberEvent(player, {
+		type = "xp",
+		model = character,
+		amount = amount,
+	})
 end
 
 -- Function to create Slavkoin gain popup above the player's character
 -- Mirrors XP popup behavior but allows separate configuration
 function _G.createSlavkoinGainNumber(target, amount)
-	if not amount or amount <= 0 then
-		return
-	end
-
 	local baseConfig = ServerConfigs.Hitbox.slavkoinNumbers or ServerConfigs.Hitbox.xpNumbers
 	if not baseConfig or not baseConfig.enabled then
 		return
 	end
 
-	local character = nil
-	if typeof(target) == "Instance" then
-		if target:IsA("Player") then
-			character = target.Character
-		elseif target:IsA("Model") then
-			character = target
-		else
-			character = target:FindFirstAncestorOfClass("Model")
-		end
-	end
-
-	if not character or not character.Parent then
+	local normalizedAmount = math.floor(amount or 0)
+	if normalizedAmount <= 0 then
 		return
 	end
 
-	local clone = cloneConfig(baseConfig)
-	clone.namePrefix = "SlavkoinGain"
-	clone.prefix = clone.prefix or "+"
-	clone.suffix = clone.suffix or " Slavkoins"
-	if clone.suffix == " XP" then
-		clone.suffix = " Slavkoins"
+	local character, player = resolveCharacterAndPlayer(target)
+	if not character or not character.Parent or not player then
+		return
 	end
-	clone.textColor = clone.textColor or Color3.fromRGB(255, 215, 0)
-	clone.strokeColor = clone.strokeColor or Color3.fromRGB(120, 80, 10)
-	clone.offsetY = clone.offsetY or 2.5
 
-	local displayText = clone.prefix .. tostring(math.floor(amount)) .. clone.suffix
-	createFloatingNumber(character, displayText, clone)
+	fireFloatingNumberEvent(player, {
+		type = "slavkoin",
+		model = character,
+		amount = normalizedAmount,
+	})
 end
 
 -- Function to apply status ailments from hitbox config

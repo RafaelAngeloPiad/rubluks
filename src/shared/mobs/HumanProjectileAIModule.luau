@@ -327,6 +327,7 @@ local function initializeHumanProjectile(character, variantName)
 		local damage = getProjectileDamage(stats)
 		local direction = computeProjectileDirection()
 		local arrowConfig = getArrowHitboxConfig()
+		local lifesteal = stats and stats.Lifesteal or nil
 
 		_G.createProjectileHitbox({
 			visualPart = arrowMain,
@@ -343,6 +344,7 @@ local function initializeHumanProjectile(character, variantName)
 			visualColor = HITBOX_VISUAL_COLOR,
 			preventPhysicsPush = arrowConfig.preventPhysicsPush,
 			statusAilment = stats and stats.StatusAilment or nil,
+			lifesteal = lifesteal,
 		})
 
 		Debris:AddItem(arrowInstance, 3)

@@ -206,15 +206,15 @@ scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 scrollFrame.Parent = mainFrame
 
 local scrollPadding = Instance.new("UIPadding")
-scrollPadding.PaddingBottom = UDim.new(0, 24)
-scrollPadding.PaddingTop = UDim.new(0, 0)
-scrollPadding.PaddingLeft = UDim.new(0, 0)
-scrollPadding.PaddingRight = UDim.new(0, 0)
+scrollPadding.PaddingBottom = UDim.new(0, 28)
+scrollPadding.PaddingTop = UDim.new(0, 8)
+scrollPadding.PaddingLeft = UDim.new(0, 8)
+scrollPadding.PaddingRight = UDim.new(0, 8)
 scrollPadding.Parent = scrollFrame
 
 -- UI List Layout
 local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 5)
+listLayout.Padding = UDim.new(0, 12)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrollFrame
 
@@ -297,10 +297,17 @@ local function createStatRow(statName, value, color, layoutOrder, parent)
 	parent = parent or scrollFrame
 	local statFrame = Instance.new("Frame")
 	statFrame.Name = HttpService:GenerateGUID(false)
-	statFrame.Size = UDim2.new(1, -10, 0, 0) -- Height will be set automatically based on content
+	statFrame.Size = UDim2.new(1, 0, 0, 0) -- Height will be set automatically based on content
 	statFrame.BackgroundTransparency = 1
 	statFrame.LayoutOrder = layoutOrder or 0
 	statFrame.Parent = parent
+	
+	local framePadding = Instance.new("UIPadding")
+	framePadding.PaddingLeft = UDim.new(0, 6)
+	framePadding.PaddingRight = UDim.new(0, 6)
+	framePadding.PaddingTop = UDim.new(0, 4)
+	framePadding.PaddingBottom = UDim.new(0, 4)
+	framePadding.Parent = statFrame
 	
 	-- Use automatic sizing
 	local statFrameLayout = Instance.new("UIListLayout")
@@ -311,7 +318,7 @@ local function createStatRow(statName, value, color, layoutOrder, parent)
 	
 	local statNameLabel = Instance.new("TextLabel")
 	statNameLabel.Name = "Name"
-	statNameLabel.Size = UDim2.new(1, -10, 0, 0) -- Auto size height
+	statNameLabel.Size = UDim2.new(1, 0, 0, 0) -- Auto size height
 	statNameLabel.Position = UDim2.new(0, 5, 0, 0)
 	statNameLabel.BackgroundTransparency = 1
 	statNameLabel.Text = statName .. ":"
@@ -321,6 +328,7 @@ local function createStatRow(statName, value, color, layoutOrder, parent)
 	statNameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	statNameLabel.TextYAlignment = Enum.TextYAlignment.Top
 	statNameLabel.TextWrapped = true -- Allow text wrapping
+	statNameLabel.LineHeight = 1.1
 	statNameLabel.TextScaled = false
 	statNameLabel.AutomaticSize = Enum.AutomaticSize.Y -- Auto size to fit content
 	statNameLabel.LayoutOrder = 1
@@ -328,7 +336,7 @@ local function createStatRow(statName, value, color, layoutOrder, parent)
 	
 	local statValueLabel = Instance.new("TextLabel")
 	statValueLabel.Name = "Value"
-	statValueLabel.Size = UDim2.new(1, -10, 0, 0) -- Auto size height
+	statValueLabel.Size = UDim2.new(1, 0, 0, 0) -- Auto size height
 	statValueLabel.Position = UDim2.new(0, 5, 0, 0)
 	statValueLabel.BackgroundTransparency = 1
 	statValueLabel.Text = tostring(value)
@@ -338,6 +346,7 @@ local function createStatRow(statName, value, color, layoutOrder, parent)
 	statValueLabel.TextXAlignment = Enum.TextXAlignment.Left
 	statValueLabel.TextYAlignment = Enum.TextYAlignment.Top
 	statValueLabel.TextWrapped = true -- Allow text wrapping
+	statValueLabel.LineHeight = 1.1
 	statValueLabel.TextScaled = false
 	statValueLabel.AutomaticSize = Enum.AutomaticSize.Y -- Auto size to fit content
 	statValueLabel.LayoutOrder = 2
@@ -345,7 +354,7 @@ local function createStatRow(statName, value, color, layoutOrder, parent)
 	
 	-- Update frame size to fit content
 	statFrameLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		statFrame.Size = UDim2.new(1, -10, 0, statFrameLayout.AbsoluteContentSize.Y)
+		statFrame.Size = UDim2.new(1, 0, 0, statFrameLayout.AbsoluteContentSize.Y)
 	end)
 	
 	return statValueLabel
@@ -354,17 +363,24 @@ end
 local function createStatPairRow(entries, layoutOrder)
 	local rowFrame = Instance.new("Frame")
 	rowFrame.Name = "StatPairRow_" .. tostring(layoutOrder or 0)
-	rowFrame.Size = UDim2.new(1, -10, 0, 0)
+	rowFrame.Size = UDim2.new(1, 0, 0, 0)
 	rowFrame.BackgroundTransparency = 1
 	rowFrame.LayoutOrder = layoutOrder or 0
 	rowFrame.AutomaticSize = Enum.AutomaticSize.Y
 	rowFrame.Parent = scrollFrame
 
+	local rowPadding = Instance.new("UIPadding")
+	rowPadding.PaddingLeft = UDim.new(0, 6)
+	rowPadding.PaddingRight = UDim.new(0, 6)
+	rowPadding.PaddingTop = UDim.new(0, 6)
+	rowPadding.PaddingBottom = UDim.new(0, 6)
+	rowPadding.Parent = rowFrame
+
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	layout.VerticalAlignment = Enum.VerticalAlignment.Top
-	layout.Padding = UDim.new(0, 5)
+	layout.Padding = UDim.new(0, 8)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = rowFrame
 
@@ -375,7 +391,7 @@ local function createStatPairRow(entries, layoutOrder)
 		local widthScale = 1 / math.max(1, count)
 		local columnFrame = Instance.new("Frame")
 		columnFrame.Name = (entry.key or ("Column" .. index)) .. "_Column"
-		columnFrame.Size = UDim2.new(widthScale, count == 1 and 0 or -5, 0, 0)
+		columnFrame.Size = UDim2.new(widthScale, count == 1 and 0 or -8, 0, 0)
 		columnFrame.BackgroundTransparency = 1
 		columnFrame.AutomaticSize = Enum.AutomaticSize.Y
 		columnFrame.Parent = rowFrame
@@ -383,12 +399,12 @@ local function createStatPairRow(entries, layoutOrder)
 		local columnLayout = Instance.new("UIListLayout")
 		columnLayout.FillDirection = Enum.FillDirection.Vertical
 		columnLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		columnLayout.Padding = UDim.new(0, 2)
+		columnLayout.Padding = UDim.new(0, 4)
 		columnLayout.Parent = columnFrame
 
 		local statNameLabel = Instance.new("TextLabel")
 		statNameLabel.Name = (entry.key or ("Column" .. index)) .. "_Name"
-		statNameLabel.Size = UDim2.new(1, -10, 0, 0)
+		statNameLabel.Size = UDim2.new(1, 0, 0, 0)
 		statNameLabel.Position = UDim2.new(0, 5, 0, 0)
 		statNameLabel.BackgroundTransparency = 1
 		local labelText = entry.label
@@ -406,6 +422,7 @@ local function createStatPairRow(entries, layoutOrder)
 		statNameLabel.TextXAlignment = Enum.TextXAlignment.Left
 		statNameLabel.TextYAlignment = Enum.TextYAlignment.Top
 		statNameLabel.TextWrapped = true
+		statNameLabel.LineHeight = 1.1
 		statNameLabel.TextScaled = false
 		statNameLabel.AutomaticSize = Enum.AutomaticSize.Y
 		statNameLabel.LayoutOrder = 1
@@ -413,7 +430,7 @@ local function createStatPairRow(entries, layoutOrder)
 
 		local statValueLabel = Instance.new("TextLabel")
 		statValueLabel.Name = (entry.key or ("Column" .. index)) .. "_Value"
-		statValueLabel.Size = UDim2.new(1, -10, 0, 0)
+		statValueLabel.Size = UDim2.new(1, 0, 0, 0)
 		statValueLabel.Position = UDim2.new(0, 5, 0, 0)
 		statValueLabel.BackgroundTransparency = 1
 		statValueLabel.Text = entry.value ~= nil and tostring(entry.value) or "—"
@@ -423,6 +440,7 @@ local function createStatPairRow(entries, layoutOrder)
 		statValueLabel.TextXAlignment = Enum.TextXAlignment.Left
 		statValueLabel.TextYAlignment = Enum.TextYAlignment.Top
 		statValueLabel.TextWrapped = true
+		statValueLabel.LineHeight = 1.1
 		statValueLabel.TextScaled = false
 		statValueLabel.AutomaticSize = Enum.AutomaticSize.Y
 		statValueLabel.LayoutOrder = 2
@@ -480,10 +498,17 @@ end
 local function createConsumableRow(valueObj, payload, layoutOrder)
 	local frame = Instance.new("Frame")
 	frame.Name = "Consumable_" .. (payload.displayName or payload.name or valueObj.Name)
-	frame.Size = UDim2.new(1, -10, 0, 0)
+	frame.Size = UDim2.new(1, 0, 0, 0)
 	frame.BackgroundTransparency = 1
 	frame.LayoutOrder = layoutOrder
 	frame.Parent = scrollFrame
+
+	local framePadding = Instance.new("UIPadding")
+	framePadding.PaddingLeft = UDim.new(0, 6)
+	framePadding.PaddingRight = UDim.new(0, 6)
+	framePadding.PaddingTop = UDim.new(0, 6)
+	framePadding.PaddingBottom = UDim.new(0, 6)
+	framePadding.Parent = frame
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Vertical
@@ -492,7 +517,7 @@ local function createConsumableRow(valueObj, payload, layoutOrder)
 	layout.Parent = frame
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -10, 0, 0)
+	nameLabel.Size = UDim2.new(1, 0, 0, 0)
 	nameLabel.Position = UDim2.new(0, 5, 0, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Text = payload.displayName or payload.name or "Consumable"
@@ -516,7 +541,7 @@ local function createConsumableRow(valueObj, payload, layoutOrder)
 	table.sort(bonusLines)
 
 	local bonusLabel = Instance.new("TextLabel")
-	bonusLabel.Size = UDim2.new(1, -10, 0, 0)
+	bonusLabel.Size = UDim2.new(1, 0, 0, 0)
 	bonusLabel.Position = UDim2.new(0, 5, 0, 0)
 	bonusLabel.BackgroundTransparency = 1
 	bonusLabel.Text = (#bonusLines > 0) and table.concat(bonusLines, ", ") or "No stat bonuses"
@@ -526,12 +551,13 @@ local function createConsumableRow(valueObj, payload, layoutOrder)
 	bonusLabel.TextXAlignment = Enum.TextXAlignment.Left
 	bonusLabel.TextYAlignment = Enum.TextYAlignment.Top
 	bonusLabel.TextWrapped = true
+	bonusLabel.LineHeight = 1.1
 	bonusLabel.AutomaticSize = Enum.AutomaticSize.Y
 	bonusLabel.LayoutOrder = 2
 	bonusLabel.Parent = frame
 
 	local timerLabel = Instance.new("TextLabel")
-	timerLabel.Size = UDim2.new(1, -10, 0, 0)
+	timerLabel.Size = UDim2.new(1, 0, 0, 0)
 	timerLabel.Position = UDim2.new(0, 5, 0, 0)
 	timerLabel.BackgroundTransparency = 1
 	timerLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
@@ -540,6 +566,7 @@ local function createConsumableRow(valueObj, payload, layoutOrder)
 	timerLabel.TextXAlignment = Enum.TextXAlignment.Left
 	timerLabel.TextYAlignment = Enum.TextYAlignment.Top
 	timerLabel.TextWrapped = true
+	timerLabel.LineHeight = 1.1
 	timerLabel.AutomaticSize = Enum.AutomaticSize.Y
 	timerLabel.LayoutOrder = 3
 	timerLabel.Parent = frame
@@ -552,7 +579,7 @@ local function createConsumableRow(valueObj, payload, layoutOrder)
 	end
 
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		frame.Size = UDim2.new(1, -10, 0, layout.AbsoluteContentSize.Y)
+		frame.Size = UDim2.new(1, 0, 0, layout.AbsoluteContentSize.Y)
 	end)
 
 	activeConsumableTimers[valueObj] = {
@@ -595,11 +622,20 @@ local function updateStatsDisplay()
 	activeConsumableTimers = {}
 	
 	local layoutOrder = 1
+	local function addSectionSpacer(height)
+		local spacer = Instance.new("Frame")
+		spacer.Name = "SectionSpacer_" .. tostring(layoutOrder)
+		spacer.Size = UDim2.new(1, 0, 0, height or 10)
+		spacer.BackgroundTransparency = 1
+		spacer.LayoutOrder = layoutOrder
+		spacer.Parent = scrollFrame
+		layoutOrder = layoutOrder + 1
+	end
 	
 	-- Display live stats first
 	local liveHeader = Instance.new("TextLabel")
 	liveHeader.Name = "LiveHeader"
-	liveHeader.Size = UDim2.new(1, -10, 0, 25)
+	liveHeader.Size = UDim2.new(1, 0, 0, 25)
 	liveHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	liveHeader.BorderSizePixel = 0
 	liveHeader.Text = "LIVE STATS"
@@ -767,8 +803,9 @@ local function updateStatsDisplay()
 	layoutOrder = layoutOrder + 1
 	
 	-- Add divider
+	addSectionSpacer(6)
 	local divider = Instance.new("Frame")
-	divider.Size = UDim2.new(1, -10, 0, 2)
+	divider.Size = UDim2.new(1, 0, 0, 2)
 	divider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	divider.BorderSizePixel = 0
 	divider.LayoutOrder = layoutOrder
@@ -776,9 +813,10 @@ local function updateStatsDisplay()
 	layoutOrder = layoutOrder + 1
 
 	-- Equipment bonuses header
+	addSectionSpacer(10)
 	local equipmentHeader = Instance.new("TextLabel")
 	equipmentHeader.Name = "EquipmentHeader"
-	equipmentHeader.Size = UDim2.new(1, -10, 0, 25)
+	equipmentHeader.Size = UDim2.new(1, 0, 0, 25)
 	equipmentHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	equipmentHeader.BorderSizePixel = 0
 	equipmentHeader.Text = "WEAPON & ACCESSORY BONUSES"
@@ -817,7 +855,7 @@ local function updateStatsDisplay()
 	if not hasEquipmentBonuses then
 		local noEquipmentLabel = Instance.new("TextLabel")
 		noEquipmentLabel.Name = "NoEquipmentBonuses"
-		noEquipmentLabel.Size = UDim2.new(1, -10, 0, 20)
+		noEquipmentLabel.Size = UDim2.new(1, 0, 0, 20)
 		noEquipmentLabel.BackgroundTransparency = 1
 		noEquipmentLabel.Text = "No weapon/accessory bonuses"
 		noEquipmentLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -829,9 +867,10 @@ local function updateStatsDisplay()
 	end
 
 	-- Consumable bonuses header
+	addSectionSpacer(10)
 	local consumableHeader = Instance.new("TextLabel")
 	consumableHeader.Name = "ConsumableHeader"
-	consumableHeader.Size = UDim2.new(1, -10, 0, 25)
+	consumableHeader.Size = UDim2.new(1, 0, 0, 25)
 	consumableHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	consumableHeader.BorderSizePixel = 0
 	consumableHeader.Text = "CONSUMABLE BONUSES"
@@ -870,7 +909,7 @@ local function updateStatsDisplay()
 	if not hasConsumableBonuses then
 		local noConsumableLabel = Instance.new("TextLabel")
 		noConsumableLabel.Name = "NoConsumableBonuses"
-		noConsumableLabel.Size = UDim2.new(1, -10, 0, 20)
+		noConsumableLabel.Size = UDim2.new(1, 0, 0, 20)
 		noConsumableLabel.BackgroundTransparency = 1
 		noConsumableLabel.Text = "No consumable bonuses"
 		noConsumableLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -882,9 +921,10 @@ local function updateStatsDisplay()
 	end
 
 	-- Active consumables header
+	addSectionSpacer(10)
 	local activeConsumablesHeader = Instance.new("TextLabel")
 	activeConsumablesHeader.Name = "ActiveConsumablesHeader"
-	activeConsumablesHeader.Size = UDim2.new(1, -10, 0, 25)
+	activeConsumablesHeader.Size = UDim2.new(1, 0, 0, 25)
 	activeConsumablesHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	activeConsumablesHeader.BorderSizePixel = 0
 	activeConsumablesHeader.Text = "ACTIVE CONSUMABLES"
@@ -935,7 +975,7 @@ local function updateStatsDisplay()
 	else
 		local noActiveConsumablesLabel = Instance.new("TextLabel")
 		noActiveConsumablesLabel.Name = "NoActiveConsumables"
-		noActiveConsumablesLabel.Size = UDim2.new(1, -10, 0, 20)
+		noActiveConsumablesLabel.Size = UDim2.new(1, 0, 0, 20)
 		noActiveConsumablesLabel.BackgroundTransparency = 1
 		noActiveConsumablesLabel.Text = "No active consumables"
 		noActiveConsumablesLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -947,8 +987,9 @@ local function updateStatsDisplay()
 	end
 
 	-- Divider before buffs/passives section
+	addSectionSpacer(6)
 	local equipmentDivider = Instance.new("Frame")
-	equipmentDivider.Size = UDim2.new(1, -10, 0, 2)
+	equipmentDivider.Size = UDim2.new(1, 0, 0, 2)
 	equipmentDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	equipmentDivider.BorderSizePixel = 0
 	equipmentDivider.LayoutOrder = layoutOrder
@@ -956,9 +997,10 @@ local function updateStatsDisplay()
 	layoutOrder = layoutOrder + 1
 	
 	-- Buffs and Passives header
+	addSectionSpacer(10)
 	local buffsPassivesHeader = Instance.new("TextLabel")
 	buffsPassivesHeader.Name = "BuffsPassivesHeader"
-	buffsPassivesHeader.Size = UDim2.new(1, -10, 0, 25)
+	buffsPassivesHeader.Size = UDim2.new(1, 0, 0, 25)
 	buffsPassivesHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	buffsPassivesHeader.BorderSizePixel = 0
 	buffsPassivesHeader.Text = "BUFFS AND PASSIVES"
@@ -1976,7 +2018,7 @@ local function updateStatsDisplay()
 		-- No active buffs or passives
 		local noBuffsPassivesLabel = Instance.new("TextLabel")
 		noBuffsPassivesLabel.Name = "NoBuffsPassivesLabel"
-		noBuffsPassivesLabel.Size = UDim2.new(1, -10, 0, 20)
+		noBuffsPassivesLabel.Size = UDim2.new(1, 0, 0, 20)
 		noBuffsPassivesLabel.BackgroundTransparency = 1
 		noBuffsPassivesLabel.Text = "No active buffs or passives"
 		noBuffsPassivesLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -1988,8 +2030,9 @@ local function updateStatsDisplay()
 	end
 
 	-- Base stats section
+	addSectionSpacer(6)
 	local baseDivider = Instance.new("Frame")
-	baseDivider.Size = UDim2.new(1, -10, 0, 2)
+	baseDivider.Size = UDim2.new(1, 0, 0, 2)
 	baseDivider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	baseDivider.BorderSizePixel = 0
 	baseDivider.LayoutOrder = layoutOrder
@@ -1998,7 +2041,7 @@ local function updateStatsDisplay()
 
 	local baseHeader = Instance.new("TextLabel")
 	baseHeader.Name = "BaseStatsHeader"
-	baseHeader.Size = UDim2.new(1, -10, 0, 25)
+	baseHeader.Size = UDim2.new(1, 0, 0, 25)
 	baseHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	baseHeader.BorderSizePixel = 0
 	baseHeader.Text = "BASE STATS"
@@ -2071,7 +2114,7 @@ local function updateStatsDisplay()
 
 	-- Add divider
 	local divider2 = Instance.new("Frame")
-	divider2.Size = UDim2.new(1, -10, 0, 2)
+	divider2.Size = UDim2.new(1, 0, 0, 2)
 	divider2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	divider2.BorderSizePixel = 0
 	divider2.LayoutOrder = layoutOrder
