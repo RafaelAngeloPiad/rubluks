@@ -766,7 +766,7 @@ local function setupUnifiedButton(button, tag)
 			
 			local shouldShow = false
 			if isGlobalAction then
-				if tag == "stats_panel_toggle" or tag == "master_panel_toggle" then
+				if tag == "master_panel_toggle" then
 					shouldShow = panelsUnlocked
 				else
 					shouldShow = true
@@ -796,8 +796,8 @@ local function setupUnifiedButton(button, tag)
 					textLabel.TextTransparency = 0
 				end
 			else
-				-- For password-protected panels, always hide when not unlocked
-				local isPasswordProtected = (tag == "stats_panel_toggle" or tag == "master_panel_toggle")
+				-- For password-protected panels, always hide when not unlocked (only master panel is protected)
+				local isPasswordProtected = (tag == "master_panel_toggle")
 				if isPasswordProtected then
 					button.Visible = false
 					button.Active = false

@@ -710,15 +710,6 @@ local function updateStatsDisplay()
 	end
 	layoutOrder = layoutOrder + 1
 
-	local dpRegenLabels = createStatPairRow({
-		{key = "DefensePenetration", label = "Defense Pen", value = dpText, color = getStatColor("DefensePenetration")},
-		{key = "HealthRegen", label = "Health Regen", value = healthRegenText, color = getStatColor("HealthRegen")}
-	}, layoutOrder)
-	for key, label in pairs(dpRegenLabels) do
-		statLabels[key] = label
-	end
-	layoutOrder = layoutOrder + 1
-
 	local damageTexts = {
 		normal = "Select a class to see damage",
 		skill1 = "Select a class to see damage",
@@ -784,6 +775,15 @@ local function updateStatsDisplay()
 		damageTexts.ult = "Select a class to see damage"
 	end
 
+	local normalUltDamageLabels = createStatPairRow({
+		{key = "DamageNormal", label = "Normal Attack", value = damageTexts.normal, color = Color3.fromRGB(255, 200, 100)},
+		{key = "DamageUlt", label = "Ultimate", value = damageTexts.ult, color = Color3.fromRGB(255, 100, 100)}
+	}, layoutOrder)
+	for key, label in pairs(normalUltDamageLabels) do
+		statLabels[key] = label
+	end
+	layoutOrder = layoutOrder + 1
+
 	local skillDamageLabels = createStatPairRow({
 		{key = "DamageSkill1", label = "Skill 1", value = damageTexts.skill1, color = Color3.fromRGB(200, 150, 255)},
 		{key = "DamageSkill2", label = "Skill 2", value = damageTexts.skill2, color = Color3.fromRGB(200, 150, 255)}
@@ -793,11 +793,11 @@ local function updateStatsDisplay()
 	end
 	layoutOrder = layoutOrder + 1
 
-	local normalUltDamageLabels = createStatPairRow({
-		{key = "DamageNormal", label = "Normal Attack", value = damageTexts.normal, color = Color3.fromRGB(255, 200, 100)},
-		{key = "DamageUlt", label = "Ultimate", value = damageTexts.ult, color = Color3.fromRGB(255, 100, 100)}
+	local dpRegenLabels = createStatPairRow({
+		{key = "DefensePenetration", label = "Defense Pen", value = dpText, color = getStatColor("DefensePenetration")},
+		{key = "HealthRegen", label = "Health Regen", value = healthRegenText, color = getStatColor("HealthRegen")}
 	}, layoutOrder)
-	for key, label in pairs(normalUltDamageLabels) do
+	for key, label in pairs(dpRegenLabels) do
 		statLabels[key] = label
 	end
 	layoutOrder = layoutOrder + 1

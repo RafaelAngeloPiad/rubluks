@@ -5,6 +5,9 @@ local CollectionService = game:GetService("CollectionService")
 
 local COMMAND_PREFIX = "/transform"
 
+-- Require access control module
+local ChatAccessControl = require(ReplicatedStorage:WaitForChild("ChatAccessControl"))
+
 -- Try to require R15AIModule
 local R15AIModule = nil
 local successR15, moduleR15 = pcall(function()
@@ -170,6 +173,11 @@ local function transformPlayer(player: Player, modelPath: string)
 end
 
 local function onPlayerChatted(player: Player, message: string)
+	-- Check if player has unlocked access
+	if not ChatAccessControl.hasAccess(player) then
+		return
+	end
+	
 	local modelName = extractModelName(message)
 	if not modelName then
 		return

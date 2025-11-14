@@ -5,6 +5,9 @@ local RunService = game:GetService("RunService")
 local COMMAND_PREFIX = "/spawn"
 local MAX_SPAWN_COUNT = 100
 
+-- Require access control module
+local ChatAccessControl = require(ReplicatedStorage:WaitForChild("ChatAccessControl"))
+
 local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
 local mobsFolder = ReplicatedStorage:FindFirstChild("Mobs")
 
@@ -183,6 +186,11 @@ local function spawnTemplates(player: Player, path: string, amount: number)
 end
 
 local function onPlayerChatted(player: Player, message: string)
+	-- Check if player has unlocked access
+	if not ChatAccessControl.hasAccess(player) then
+		return
+	end
+	
 	local path, amount = parseCommand(message)
 	if not path then
 		return

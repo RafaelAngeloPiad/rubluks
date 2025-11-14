@@ -1,20 +1,24 @@
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PLACE_ID = 113520176475008
 local COMMAND_PREFIX = "/secretRoom"
 local RESTART_COMMAND = "/restartplace"
 
-local function getTodayKeyword()
-	local dateString = os.date("!*t")
-	return string.format("%s%04d%02d", COMMAND_PREFIX, dateString.year, dateString.month)
-end
+-- Require access control module
+local ChatAccessControl = require(ReplicatedStorage:WaitForChild("ChatAccessControl"))
 
 local function matchesTeleportKeyword(message)
-	return string.lower(message) == string.lower(getTodayKeyword())
+	return string.lower(message) == string.lower(COMMAND_PREFIX)
 end
 
 local function onPlayerChatted(player, message)
+	-- Check if player has unlocked access
+	if not ChatAccessControl.hasAccess(player) then
+		return
+	end
+	
 	local normalized = string.lower(message)
 
 	if normalized == RESTART_COMMAND then
