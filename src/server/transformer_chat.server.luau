@@ -5,6 +5,32 @@ local CollectionService = game:GetService("CollectionService")
 
 local COMMAND_PREFIX = "/transform"
 
+-- Try to require R15AIModule
+local R15AIModule = nil
+local successR15, moduleR15 = pcall(function()
+	local mobsFolder = ReplicatedStorage:FindFirstChild("mobs") or ReplicatedStorage:FindFirstChild("Mobs")
+	if mobsFolder then
+		return require(mobsFolder:WaitForChild("R15AIModule"))
+	end
+	return nil
+end)
+if successR15 and moduleR15 then
+	R15AIModule = moduleR15
+end
+
+-- Try to require R6AIModule
+local R6AIModule = nil
+local successR6, moduleR6 = pcall(function()
+	local mobsFolder = ReplicatedStorage:FindFirstChild("mobs") or ReplicatedStorage:FindFirstChild("Mobs")
+	if mobsFolder then
+		return require(mobsFolder:WaitForChild("R6AIModule"))
+	end
+	return nil
+end)
+if successR6 and moduleR6 then
+	R6AIModule = moduleR6
+end
+
 local mobsFolder = ReplicatedStorage:FindFirstChild("Mobs")
 if not mobsFolder then
 	warn("[TransformerChat] ReplicatedStorage.Mobs folder not found. Chat transform command disabled.")
@@ -73,8 +99,24 @@ local function transformPlayer(player: Player, modelPath: string)
 	CollectionService:AddTag(cloned, "player_transformed")
 	cloned:SetAttribute("ControlledByPlayer", player.UserId)
 
+	-- Check if template or cloned model has r15_entity or r6_entity tag
+	local hasR15Tag = CollectionService:HasTag(template, "r15_entity") or CollectionService:HasTag(cloned, "r15_entity")
+	local hasR6Tag = CollectionService:HasTag(template, "r6_entity") or CollectionService:HasTag(cloned, "r6_entity")
+	
+	-- If template has the tag, add it to cloned as well
+	if CollectionService:HasTag(template, "r15_entity") then
+		CollectionService:AddTag(cloned, "r15_entity")
+	end
+	if CollectionService:HasTag(template, "r6_entity") then
+		CollectionService:AddTag(cloned, "r6_entity")
+	end
+
 	if not cloned.PrimaryPart then
+		-- Try HumanoidRootPart first (R15), then Torso (R6)
 		local humanoidRoot = cloned:FindFirstChild("HumanoidRootPart")
+		if not humanoidRoot then
+			humanoidRoot = cloned:FindFirstChild("Torso")
+		end
 		if humanoidRoot and humanoidRoot:IsA("BasePart") then
 			cloned.PrimaryPart = humanoidRoot
 		end
@@ -101,6 +143,17 @@ local function transformPlayer(player: Player, modelPath: string)
 			cloned.PrimaryPart:SetNetworkOwner(player)
 		end)
 		newHumanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+	end
+	
+	-- Initialize R15 or R6 AI module if model has the corresponding tag
+	if hasR15Tag and R15AIModule then
+		-- Wait a frame to ensure character is fully set up
+		task.wait(0.1)
+		R15AIModule.initializeR15(cloned, cloned:GetAttribute("MobVariant") or "R15_Default")
+	elseif hasR6Tag and R6AIModule then
+		-- Wait a frame to ensure character is fully set up
+		task.wait(0.1)
+		R6AIModule.initializeR6(cloned, cloned:GetAttribute("MobVariant") or "R6_Default")
 	end
 end
 
