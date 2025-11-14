@@ -1269,7 +1269,8 @@ function MobStatsConfig.applyStats(model, variantName)
 		end
 		humanoid.DisplayName = stats.DisplayName or variantName
 		humanoid.NameDisplayDistance = stats.NameDisplayDistance or 100
-		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	end
 	
 	-- Set attributes for all stats (used by damage system)
