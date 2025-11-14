@@ -8,157 +8,6 @@ local RunService = game:GetService("RunService")
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 
-local IS_CLIENT = RunService:IsClient()
-local trackedDisplays = {}
-local visibilityUpdateConnection = nil
-
-local function getFocusPart(model)
-	if not model then
-		return nil
-	end
-
-	if model.PrimaryPart then
-		return model.PrimaryPart
-	end
-
-	return model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head")
-end
-
-local function computeScale(distance, config)
-	local referenceDistance = config.scaleReferenceDistance or 45
-	local minScale = config.minScale or 0.6
-	local maxScale = config.maxScale or 1.1
-	local falloff = config.scaleFalloff or 1
-
-	distance = math.max(distance, 1)
-	local scale = referenceDistance / (distance ^ falloff)
-	return math.clamp(scale, minScale, maxScale)
-end
-
-local function applyScale(displayInfo, scale)
-	local billboard = displayInfo.billboard
-	if not billboard or not billboard.Parent then
-		return
-	end
-
-	local baseSize = displayInfo.baseSize
-	if baseSize then
-		billboard.Size = UDim2.new(0, math.floor(baseSize.X * scale), 0, math.floor(baseSize.Y * scale))
-	end
-
-	for _, entry in ipairs(displayInfo.textElements) do
-		local label = entry.label
-		if label and label.Parent then
-			label.TextSize = math.max(8, math.floor(entry.baseSize * scale))
-		end
-	end
-end
-
-local function cleanupTracking(billboard)
-	trackedDisplays[billboard] = nil
-	if visibilityUpdateConnection and next(trackedDisplays) == nil then
-		visibilityUpdateConnection:Disconnect()
-		visibilityUpdateConnection = nil
-	end
-end
-
-local function updateClientDisplayVisibility()
-	if not IS_CLIENT then
-		return
-	end
-
-	local camera = workspace.CurrentCamera
-	if not camera then
-		return
-	end
-
-	local statsConfig = ServerConfigs.Hitbox.mobStatsDisplay
-	if not statsConfig then
-		return
-	end
-
-	local visibilityRadius = statsConfig.visibilityRadius or statsConfig.maxDistance or 120
-	local distanceScalingEnabled = statsConfig.distanceScaling ~= false
-
-	local toRemove = {}
-
-	for billboard, info in pairs(trackedDisplays) do
-		if billboard and billboard.Parent and info.model and info.model.Parent then
-			local focusPart = info.focusPart
-			if not focusPart or not focusPart.Parent then
-				focusPart = getFocusPart(info.model)
-				info.focusPart = focusPart
-			end
-
-			if focusPart then
-				local distance = (camera.CFrame.Position - focusPart.Position).Magnitude
-				info.distance = distance
-				
-				-- Show if within visibility radius
-				local visible = distance <= visibilityRadius
-				billboard.Enabled = visible
-				
-				if visible then
-					if distanceScalingEnabled then
-						local scale = computeScale(distance, statsConfig)
-						applyScale(info, scale)
-					else
-						applyScale(info, 1)
-					end
-				end
-			else
-				table.insert(toRemove, billboard)
-			end
-		else
-			table.insert(toRemove, billboard)
-		end
-	end
-
-	for _, billboard in ipairs(toRemove) do
-		local info = trackedDisplays[billboard]
-		if billboard then
-			billboard.Enabled = false
-		end
-		cleanupTracking(billboard)
-		if info then
-			info.distance = nil
-		end
-	end
-end
-
-local function registerClientDisplay(billboardGui, model, focusPart, textElements)
-	if not IS_CLIENT then
-		return
-	end
-
-	local statsConfig = ServerConfigs.Hitbox.mobStatsDisplay
-	if not statsConfig then
-		return
-	end
-
-	local baseSize = statsConfig.size or Vector2.new(170, 120)
-
-	trackedDisplays[billboardGui] = {
-		billboard = billboardGui,
-		model = model,
-		focusPart = focusPart,
-		textElements = textElements,
-		baseSize = baseSize,
-	}
-
-	if not visibilityUpdateConnection then
-		visibilityUpdateConnection = RunService.RenderStepped:Connect(updateClientDisplayVisibility)
-	end
-
-	updateClientDisplayVisibility()
-
-	billboardGui.AncestryChanged:Connect(function(_, parent)
-		if not parent then
-			cleanupTracking(billboardGui)
-		end
-	end)
-end
-
 -- ========================================
 -- MOB STATS DISPLAY CREATION
 -- ========================================
@@ -207,21 +56,11 @@ local function createMobStatsDisplay(model)
 	billboardGui.StudsOffset = Vector3.new(0, offsetY, 0)
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 1
-	billboardGui.MaxDistance = statsConfig.visibilityRadius or 110 -- Use visibility radius for MaxDistance
+	billboardGui.MaxDistance = 50 -- Hide beyond this distance
 	billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-	billboardGui.Enabled = true -- Enable by default (client-side system will manage visibility)
+	billboardGui.Enabled = true
 	billboardGui.Parent = head
 	
-	local textElements = {}
-	local function addTextElement(label, baseSize)
-		if label then
-			table.insert(textElements, {
-				label = label,
-				baseSize = baseSize or statsConfig.textSize
-			})
-		end
-	end
-
 	-- Create main frame with rounded corners
 	local mainFrame = Instance.new("Frame")
 	mainFrame.Name = "MainFrame"
@@ -258,7 +97,6 @@ local function createMobStatsDisplay(model)
 	local textStrokeColor = statsConfig.textStrokeColor or Color3.new(0, 0, 0)
 	local textStrokeTransparency = statsConfig.textStrokeTransparency or 0
 	local textStrokeThickness = statsConfig.textStrokeThickness or 0
-	local defenseBarBackground, defenseBarFill, defenseBarLabel
 
 	local function applyStrokeToLabel(label, strokeTransparency)
 		local effectiveTransparency
@@ -298,12 +136,10 @@ local function createMobStatsDisplay(model)
 	headerLabel.TextColor3 = statsConfig.headerColor or statsConfig.textColor
 	headerLabel.TextSize = statsConfig.headerSize
 	headerLabel.Font = statsConfig.font
-	headerLabel.TextXAlignment = Enum.TextXAlignment.Center
-	headerLabel.TextYAlignment = Enum.TextYAlignment.Center
+	headerLabel.TextXAlignment = Enum.TextXAlignment.Left
 	headerLabel.LayoutOrder = 1
 	headerLabel.Parent = mainFrame
 	applyStrokeToLabel(headerLabel, statsConfig.headerStrokeTransparency or textStrokeTransparency)
-	addTextElement(headerLabel, statsConfig.headerSize)
 
 	local healthBarHeight = statsConfig.healthBarHeight or 12
 	local healthBarBackground = Instance.new("Frame")
@@ -348,62 +184,15 @@ local function createMobStatsDisplay(model)
 	healthBarLabel.TextXAlignment = Enum.TextXAlignment.Center
 	healthBarLabel.TextYAlignment = Enum.TextYAlignment.Center
 	healthBarLabel.Parent = healthBarBackground
-	addTextElement(healthBarLabel, statsConfig.textSize)
 
-	local defenseBarHeight = statsConfig.defenseBarHeight or math.max((statsConfig.healthBarHeight or 10) - 1, 6)
-	defenseBarBackground = Instance.new("Frame")
-	defenseBarBackground.Name = "DefenseBar"
-	defenseBarBackground.Size = UDim2.new(1, 0, 0, defenseBarHeight)
-	defenseBarBackground.BackgroundColor3 = statsConfig.defenseBarBackgroundColor or Color3.fromRGB(40, 40, 40)
-	defenseBarBackground.BackgroundTransparency = 0
-	defenseBarBackground.BorderSizePixel = 0
-	defenseBarBackground.LayoutOrder = 3
-	defenseBarBackground.Parent = mainFrame
-
-	local defenseBarStroke = Instance.new("UIStroke")
-	defenseBarStroke.Name = "DefenseBarStroke"
-	defenseBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	defenseBarStroke.Thickness = 1
-	defenseBarStroke.Color = statsConfig.defenseBarBorderColor or Color3.fromRGB(15, 15, 15)
-	defenseBarStroke.Parent = defenseBarBackground
-
-	local defenseBarCorner = Instance.new("UICorner")
-	defenseBarCorner.CornerRadius = UDim.new(0, statsConfig.defenseBarCornerRadius or statsConfig.healthBarCornerRadius or 4)
-	defenseBarCorner.Parent = defenseBarBackground
-
-	defenseBarFill = Instance.new("Frame")
-	defenseBarFill.Name = "Fill"
-	defenseBarFill.Size = UDim2.new(0, 0, 1, 0)
-	defenseBarFill.BackgroundColor3 = statsConfig.defenseBarDefaultColor or Color3.fromRGB(120, 170, 220)
-	defenseBarFill.BorderSizePixel = 0
-	defenseBarFill.Parent = defenseBarBackground
-
-	local defenseBarFillCorner = Instance.new("UICorner")
-	defenseBarFillCorner.CornerRadius = UDim.new(0, statsConfig.defenseBarCornerRadius or statsConfig.healthBarCornerRadius or 4)
-	defenseBarFillCorner.Parent = defenseBarFill
-
-	defenseBarLabel = Instance.new("TextLabel")
-	defenseBarLabel.Name = "DefenseText"
-	defenseBarLabel.Size = UDim2.new(1, 0, 1, 0)
-	defenseBarLabel.BackgroundTransparency = 1
-	defenseBarLabel.Text = "Defense: --/--"
-	defenseBarLabel.TextColor3 = statsConfig.defenseBarTextColor or statsConfig.textColor or Color3.new(1, 1, 1)
-	defenseBarLabel.TextSize = statsConfig.textSize
-	defenseBarLabel.Font = statsConfig.font
-	defenseBarLabel.TextXAlignment = Enum.TextXAlignment.Center
-	defenseBarLabel.TextYAlignment = Enum.TextYAlignment.Center
-	defenseBarLabel.Parent = defenseBarBackground
-	addTextElement(defenseBarLabel, statsConfig.textSize)
-
-	local statsContainerOffset = statsConfig.headerSize + healthBarHeight + defenseBarHeight + 12
 	local levelLabel, defenseLabel, critRateLabel, critMultLabel, dmgLabel, defensePenLabel, xpLabel
 	if showStatDetails then
 		-- Create stat labels container
 		local statsContainer = Instance.new("Frame")
 		statsContainer.Name = "StatsContainer"
-		statsContainer.Size = UDim2.new(1, 0, 1, -statsContainerOffset)
+		statsContainer.Size = UDim2.new(1, 0, 1, -statsConfig.headerSize - healthBarHeight - 10)
 		statsContainer.BackgroundTransparency = 1
-		statsContainer.LayoutOrder = 4
+		statsContainer.LayoutOrder = 3
 		statsContainer.Parent = mainFrame
 
 		local statsLayout = Instance.new("UIListLayout")
@@ -434,7 +223,6 @@ local function createMobStatsDisplay(model)
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Parent = row
 			applyStrokeToLabel(label)
-			addTextElement(label, statsConfig.textSize)
 			
 			return label
 		end
@@ -454,7 +242,6 @@ local function createMobStatsDisplay(model)
 		-- Check if model still exists
 		if not model.Parent or not humanoid.Parent then
 			billboardGui:Destroy()
-			cleanupTracking(billboardGui)
 			return
 		end
 		
@@ -487,34 +274,11 @@ local function createMobStatsDisplay(model)
 			healthBarFill.BackgroundColor3 = statsConfig.healthBarDefaultColor or Color3.fromRGB(120, 220, 120)
 		end
 		
-		local currentDefenseAttr = model:GetAttribute("CurrentDefense")
-		local maxDefenseAttr = model:GetAttribute("MaxDefense")
-		local currentDefense = (typeof(currentDefenseAttr) == "number" and currentDefenseAttr) or 0
-		local maxDefense = (typeof(maxDefenseAttr) == "number" and maxDefenseAttr) or 0
-
-		if defenseBarFill and defenseBarLabel and defenseBarBackground then
-			if maxDefense > 0 then
-				local defensePercent = math.clamp(currentDefense / maxDefense, 0, 1)
-				defenseBarFill.Size = UDim2.new(defensePercent, 0, 1, 0)
-				local defenseBarColor = model:GetAttribute("MobDefenseBarColor")
-				if typeof(defenseBarColor) == "Color3" then
-					defenseBarFill.BackgroundColor3 = defenseBarColor
-				else
-					defenseBarFill.BackgroundColor3 = statsConfig.defenseBarDefaultColor or Color3.fromRGB(120, 170, 220)
-				end
-				defenseBarLabel.Text = string.format("Defense: %.0f/%.0f", currentDefense, maxDefense)
-				defenseBarLabel.TextColor3 = statsConfig.defenseBarTextColor or statsConfig.textColor or Color3.new(1, 1, 1)
-			else
-				defenseBarFill.Size = UDim2.new(0, 0, 1, 0)
-				defenseBarFill.BackgroundColor3 = statsConfig.defenseBarDefaultColor or Color3.fromRGB(120, 170, 220)
-				defenseBarLabel.Text = "Defense: None"
-				defenseBarLabel.TextColor3 = Color3.new(0.6, 0.6, 0.6)
-			end
-			defenseBarBackground.Visible = true
-		end
-
 		-- Get defense stats from attributes (these are updated by DynamicHitboxV3 when defense is damaged)
 		if showStatDetails then
+			local currentDefense = model:GetAttribute("CurrentDefense") or 0
+			local maxDefense = model:GetAttribute("MaxDefense") or 0
+			
 			if defenseLabel then
 				if maxDefense > 0 then
 					defenseLabel.Text = string.format("Defense: %.0f/%.0f", currentDefense, maxDefense)
@@ -579,13 +343,12 @@ local function createMobStatsDisplay(model)
 			"MobVariant",
 			"MobDisplayName",
 			"MobHealthBarColor",
-			"MobDefenseBarColor",
 			"MobLevel",
-			"XPGain",
-			"CurrentDefense",
-			"MaxDefense"
+			"XPGain"
 		}
 		if showStatDetails then
+			table.insert(attributesToWatch, "CurrentDefense")
+			table.insert(attributesToWatch, "MaxDefense")
 			table.insert(attributesToWatch, "Damage")
 			table.insert(attributesToWatch, "DefensePenetration")
 			table.insert(attributesToWatch, "CritRate")
@@ -603,7 +366,6 @@ local function createMobStatsDisplay(model)
 	-- Cleanup on model removal
 	model.AncestryChanged:Connect(function()
 		if not model.Parent then
-			cleanupTracking(billboardGui)
 			if connection then
 				connection:Disconnect()
 			end
@@ -616,9 +378,6 @@ local function createMobStatsDisplay(model)
 			billboardGui:Destroy()
 		end
 	end)
-
-	local focusPart = getFocusPart(model) or head
-	registerClientDisplay(billboardGui, model, focusPart, textElements)
 end
 
 -- ========================================
