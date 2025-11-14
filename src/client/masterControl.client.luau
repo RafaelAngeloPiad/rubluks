@@ -304,6 +304,7 @@ local xpButtons = {
 	{label = "+500 XP", color = Color3.fromRGB(100, 200, 100), amount = 500},
 	{label = "+5000 XP", color = Color3.fromRGB(120, 220, 120), amount = 5000},
 	{label = "+100000 XP", color = Color3.fromRGB(90, 200, 90), amount = 100000},
+	{label = "+9999999999 XP", color = Color3.fromRGB(150, 255, 150), amount = 9999999999},
 }
 
 for _, entry in ipairs(xpButtons) do
