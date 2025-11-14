@@ -28,6 +28,9 @@ local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 -- Import the action module for shared logic
 local ArcherActions = require(script.Parent.ArcherActionModule)
 
+-- Import sound configuration
+local ArcherSoundConfig = require(ReplicatedStorage:WaitForChild("ArcherSoundConfig"))
+
 -- Helper function to check if equipped weapon matches player's class (client-side)
 local function isWeaponClassMatch()
 	local playerClass = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Class")
@@ -755,6 +758,36 @@ local function onWeaponFound(weaponTool)
 	-- Set initial aim lock state based on mode
 	updateAimLockState()
 	
+	-- ========================================
+	-- SOUND SYSTEM
+	-- Handles playing attack sounds
+	-- ========================================
+	
+	local function playAttackSound(soundId)
+		local character = player.Character
+		if not character then return end
+		
+		-- Find a suitable part to attach the sound to (prefer Head, fallback to HumanoidRootPart)
+		local soundPart = character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+		if not soundPart then return end
+		
+		-- Create and play sound
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Parent = soundPart
+		sound:Play()
+		
+		-- Clean up sound when finished
+		sound.Ended:Connect(function()
+			sound:Destroy()
+		end)
+	end
+	
+	-- Play unsheathe sound when weapon is equipped
+	local unsheatheSoundId = ArcherSoundConfig.getSound("unsheathe")
+	playAttackSound(unsheatheSoundId)
+	
 	-- Listen for messages from server
 	remote.OnClientEvent:Connect(function(message, data, extraData, thirdParam)
 		if message == "lock_input" then
@@ -805,6 +838,11 @@ local function onWeaponFound(weaponTool)
 			-- data = {r, g, b} color values
 			local colorRGB = data
 			setArrowTrailColor(colorRGB)
+		elseif message == "play_sound" then
+			-- data = sound ID string
+			if data then
+				playAttackSound(data)
+			end
 		end
 	end)
 	

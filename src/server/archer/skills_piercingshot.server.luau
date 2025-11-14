@@ -50,6 +50,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local ArcherSoundConfig = require(ReplicatedStorage:WaitForChild("ArcherSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = ArcherSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- preload animation (from original PiercingShot.lua)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://108417542929570"
@@ -254,6 +268,9 @@ remote.OnServerEvent:Connect(function(player, skillType, ...)
 			-- Use orange/gold color to indicate Headshot triggered
 			visualColor = Color3.new(1, 0.8, 0)
 		end
+		
+		-- Play attack sound
+		playAttackSound(player, "piercingshot")
 		
 		-- Use projectile hitbox system for piercing arrow
 		_G.createTravelingHitbox({

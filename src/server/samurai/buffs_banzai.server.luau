@@ -48,6 +48,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local SamuraiSoundConfig = require(ReplicatedStorage:WaitForChild("SamuraiSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = SamuraiSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- preload animation
 local auraAnim = Instance.new("Animation")
 auraAnim.AnimationId = "rbxassetid://115710510666189"
@@ -144,6 +158,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			if buffConfig and buffConfig.damageMultiplier then
 				-- Calculate damage based on player's MaxAttack
 				local actualDamage, isCrit = calculateDamageForHitbox(player, buffConfig.damageMultiplier)
+				
+				-- Play attack sound
+				playAttackSound(player, "banzai")
 				
 				-- Create static hitbox around player (small AoE damage)
 				_G.createStaticHitbox({

@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 local MobStatsDisplay = nil
 pcall(function()
@@ -228,6 +229,30 @@ local function initializeHumanWizard(character, variantName)
 
 	local currentTargetModel = nil
 	local currentTargetRoot = nil
+	local movementSound = nil
+	
+	-- Sound helper function
+	local function playSound(soundId, shouldLoop)
+		if not root or not root.Parent then return nil end
+		
+		local soundPart = character:FindFirstChild("Head") or root
+		if not soundPart then return nil end
+		
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Looped = shouldLoop or false
+		sound.Parent = soundPart
+		sound:Play()
+		
+		if not shouldLoop then
+			sound.Ended:Connect(function()
+				sound:Destroy()
+			end)
+		end
+		
+		return sound
+	end
 
 	local function setMovementTrack(track, fade)
 		if movementLocked then
@@ -246,13 +271,33 @@ local function initializeHumanWizard(character, variantName)
 
 		if currentMovementTrack then
 			playTrack(currentMovementTrack, fade or 0.15)
+			
+			-- Play movement sound based on animation
+			if movementSound then
+				movementSound:Stop()
+				movementSound:Destroy()
+				movementSound = nil
+			end
+			
+			-- Play movement sound (same for walk and run)
+			if track == animations.walk or track == animations.run then
+				local moveSoundId = MobSoundConfig.getSound("humanWizardMove")
+				movementSound = playSound(moveSoundId, true)
+			end
 		end
 	end
-
+	
 	local function stopMovement()
 		if currentMovementTrack then
 			stopTrack(currentMovementTrack, 0.1)
 			currentMovementTrack = nil
+		end
+		
+		-- Stop movement sound
+		if movementSound then
+			movementSound:Stop()
+			movementSound:Destroy()
+			movementSound = nil
 		end
 	end
 
@@ -473,6 +518,10 @@ local function initializeHumanWizard(character, variantName)
 
 		stopMovement()
 		faceCurrentTarget()
+		
+		-- Play attack sound
+		local attackSoundId = MobSoundConfig.getSound("humanWizardAttack")
+		playSound(attackSoundId, false)
 
 		local connection
 		if attackTrack then
@@ -596,6 +645,54 @@ local function initializeHumanWizard(character, variantName)
 		elseif newState == Enum.HumanoidStateType.Dead then
 			movementLocked = true
 			stopMovement()
+		end
+	end)
+	
+	-- Function to break Motor6Ds so the rig collapses
+	local function breakJoints(model)
+		for _, obj in ipairs(model:GetDescendants()) do
+			if obj:IsA("Motor6D") then
+				obj:Destroy()
+			end
+		end
+	end
+	
+	-- Death handler - integrated from MobDeathHandler
+	humanoid.Died:Connect(function()
+		-- Stop movement sounds if playing
+		if movementSound then
+			movementSound:Stop()
+			movementSound:Destroy()
+			movementSound = nil
+		end
+		
+		-- Play death sound
+		local deathSoundId = MobSoundConfig.getSound("humanWizardDeath")
+		playSound(deathSoundId, false)
+		
+		-- Disable movement/AI scripts
+		for _, child in ipairs(character:GetChildren()) do
+			if child:IsA("Script") or child:IsA("LocalScript") then
+				child.Disabled = true
+			end
+		end
+		
+		-- Make all parts fall naturally and be collidable
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = true -- ensure collision so it doesn't fall through map
+			end
+		end
+		
+		-- Detach limbs
+		breakJoints(character)
+		
+		-- Wait a few seconds then completely remove from map
+		task.wait(3) -- Wait 3 seconds
+		
+		if character and character.Parent then
+			character:Destroy() -- Completely removes the mob from the game
 		end
 	end)
 

@@ -54,6 +54,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local playerAttackData = {}
 
 -- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local SamuraiSoundConfig = require(ReplicatedStorage:WaitForChild("SamuraiSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = SamuraiSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
+-- ========================================
 -- UNIFIED ANIMATION SPEED CONFIGURATION
 -- ========================================
 
@@ -584,6 +598,9 @@ local function handleNormalAttack(player)
 		-- Enable trails for jump attack
 		_G.enableSamuraiTrails(player, "jumpAttack")
 		
+		-- Play attack sound
+		playAttackSound(player, "jumpAttack")
+		
 		-- Jump attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Samurai")
 		local damageMultiplier = hitboxConfig.damage
@@ -641,6 +658,9 @@ local function handleNormalAttack(player)
 		
 		-- Enable trails for move attack
 		_G.enableSamuraiTrails(player, "moveAttack")
+		
+		-- Play attack sound
+		playAttackSound(player, "moveAttack")
 		
 		-- Move attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Samurai")
@@ -703,6 +723,9 @@ local function handleNormalAttack(player)
 			-- Enable trails for combo 1
 			_G.enableSamuraiTrails(player, "combo1")
 			
+			-- Play attack sound
+			playAttackSound(player, "combo1")
+			
 			-- Combo 1 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Samurai")
 			local damageMultiplier = hitboxConfig.damage
@@ -754,6 +777,9 @@ local function handleNormalAttack(player)
 			
 			-- Enable trails for combo 2
 			_G.enableSamuraiTrails(player, "combo2")
+			
+			-- Play attack sound
+			playAttackSound(player, "combo2")
 			
 			-- Combo 2 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo2", "Samurai")
@@ -833,6 +859,9 @@ local function handleNormalAttack(player)
 				-- Enable trails for combo 1 fallback
 				_G.enableSamuraiTrails(player, "combo1Fallback")
 				
+				-- Play attack sound
+				playAttackSound(player, "combo1")
+				
 			-- Combo 1 hitbox (fallback from combo 3 cooldown)
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Samurai")
 			local damageMultiplier = hitboxConfig.damage
@@ -884,6 +913,9 @@ local function handleNormalAttack(player)
 				
 				-- Enable trails for combo 3 (longer duration for the powerful attack)
 				_G.enableSamuraiTrails(player, "combo3")
+				
+				-- Play attack sound
+				playAttackSound(player, "combo3")
 				
 			-- Combo 3 hitbox (most powerful) - FORCED CRIT
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Samurai")

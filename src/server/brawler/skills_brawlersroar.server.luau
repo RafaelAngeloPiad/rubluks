@@ -17,6 +17,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local BrawlerSoundConfig = require(ReplicatedStorage:WaitForChild("BrawlerSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = BrawlerSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- Helper function to get player's MaxAttack stat
 local function getPlayerMaxAttack(player)
 	if not player then return 0 end
@@ -140,6 +154,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		game:GetService("Debris"):AddItem(vfx, 2.5)
 		
 		-- Hitbox for roar
+		-- Play attack sound
+		playAttackSound(player, "brawlersroar")
+		
 		-- Calculate actual damage from multiplier (damage is now a multiplier)
 		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.skill1Damage or ServerConfigs.BrawlerSkills.BrawlersRoar.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Brawler", damageMultiplier)

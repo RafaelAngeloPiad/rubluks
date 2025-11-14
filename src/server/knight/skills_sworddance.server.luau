@@ -49,6 +49,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local KnightSoundConfig = require(ReplicatedStorage:WaitForChild("KnightSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = KnightSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://96753545500324"
@@ -169,6 +183,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			end
 		end
 		
+		-- Play attack sound
+		playAttackSound(player, "sworddance")
+		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
 		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
@@ -209,6 +226,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				part.CanCollide = false
 			end
 		end
+		
+		-- Play attack sound
+		playAttackSound(player, "sworddance")
 		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
 		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
@@ -251,6 +271,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			end
 		end
 		
+		-- Play attack sound
+		playAttackSound(player, "sworddance")
+		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
 		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
@@ -291,6 +314,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 				part.CanCollide = false
 			end
 		end
+		
+		-- Play attack sound
+		playAttackSound(player, "sworddance")
 		
 		-- TRAVELING HITBOX - Attached to sword, very tall vertically
 		local damageMultiplier = SWORDDANCE_CONFIG.swordHitboxDamage

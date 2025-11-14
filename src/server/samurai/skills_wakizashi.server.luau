@@ -48,6 +48,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local SamuraiSoundConfig = require(ReplicatedStorage:WaitForChild("SamuraiSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = SamuraiSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://121133581854383"
@@ -191,6 +205,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		bodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
 		bodyVelocity.Parent = bladePart
 
+		-- Play attack sound
+		playAttackSound(player, "wakizashi")
+		
 		-- HITBOX V3: Attach traveling hitbox to blade
 		-- Note: delay now automatically scales with animation speed multiplier
 		local damageMultiplier = WAKIZASHI_CONFIG.hitboxDamage

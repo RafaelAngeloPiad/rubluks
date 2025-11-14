@@ -6,6 +6,7 @@ local CollectionService = game:GetService("CollectionService")
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 -- Try to require MobStatsDisplay module
 local MobStatsDisplay = nil
@@ -157,14 +158,46 @@ local function initializeZombie(zombie, variantName)
 		attackTrack = resultAttack
 	end
 
+	local runSound = nil
+	
+	-- Sound helper function
+	local function playSound(soundId, shouldLoop)
+		if not root or not root.Parent then return nil end
+		
+		local soundPart = zombie:FindFirstChild("Head") or root
+		if not soundPart then return nil end
+		
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Looped = shouldLoop or false
+		sound.Parent = soundPart
+		sound:Play()
+		
+		if not shouldLoop then
+			sound.Ended:Connect(function()
+				sound:Destroy()
+			end)
+		end
+		
+		return sound
+	end
+	
 	local function stopRun()
 		if runTrack and runTrack.IsPlaying then
 			pcall(function()
 				runTrack:Stop(0.2)
 			end)
 		end
+		
+		-- Stop running sound
+		if runSound then
+			runSound:Stop()
+			runSound:Destroy()
+			runSound = nil
+		end
 	end
-
+	
 	local function stopAllIdle()
 		for _, track in ipairs(idleTracks) do
 			if track.IsPlaying then
@@ -175,7 +208,7 @@ local function initializeZombie(zombie, variantName)
 		end
 		currentIdleTrack = nil
 	end
-
+	
 	local function playRun()
 		if attacking or not runTrack then
 			return
@@ -185,6 +218,12 @@ local function initializeZombie(zombie, variantName)
 			pcall(function()
 				runTrack:Play(0.1)
 			end)
+			
+			-- Play running sound
+			if not runSound or not runSound.IsPlaying then
+				local runSoundId = MobSoundConfig.getSound("zombieMove")
+				runSound = playSound(runSoundId, true)
+			end
 		end
 	end
 
@@ -235,6 +274,10 @@ local function initializeZombie(zombie, variantName)
 			pcall(function()
 				attackTrack:Play(0.1)
 			end)
+			
+			-- Play attack sound
+			local attackSoundId = MobSoundConfig.getSound("zombieAttack")
+			playSound(attackSoundId, false)
 		else
 			task.delay(0.4, onAttackFinished)
 		end
@@ -289,6 +332,54 @@ local function initializeZombie(zombie, variantName)
 		if newState == Enum.HumanoidStateType.Physics or newState == Enum.HumanoidStateType.Ragdoll then
 			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 			humanoid.PlatformStand = false
+		end
+	end)
+	
+	-- Function to break Motor6Ds so the rig collapses
+	local function breakJoints(model)
+		for _, obj in ipairs(model:GetDescendants()) do
+			if obj:IsA("Motor6D") then
+				obj:Destroy()
+			end
+		end
+	end
+	
+	-- Death handler - integrated from MobDeathHandler
+	humanoid.Died:Connect(function()
+		-- Stop movement sounds if playing
+		if runSound then
+			runSound:Stop()
+			runSound:Destroy()
+			runSound = nil
+		end
+		
+		-- Play death sound
+		local deathSoundId = MobSoundConfig.getSound("zombieDeath")
+		playSound(deathSoundId, false)
+		
+		-- Disable movement/AI scripts
+		for _, child in ipairs(zombie:GetChildren()) do
+			if child:IsA("Script") or child:IsA("LocalScript") then
+				child.Disabled = true
+			end
+		end
+		
+		-- Make all parts fall naturally and be collidable
+		for _, part in ipairs(zombie:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = true -- ensure collision so it doesn't fall through map
+			end
+		end
+		
+		-- Detach limbs
+		breakJoints(zombie)
+		
+		-- Wait a few seconds then completely remove from map
+		task.wait(3) -- Wait 3 seconds
+		
+		if zombie and zombie.Parent then
+			zombie:Destroy() -- Completely removes the mob from the game
 		end
 	end)
 	

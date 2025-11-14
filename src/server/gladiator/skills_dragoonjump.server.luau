@@ -49,6 +49,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local GladiatorSoundConfig = require(ReplicatedStorage:WaitForChild("GladiatorSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = GladiatorSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://102537581819156"
@@ -145,6 +159,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Hitbox for explosion 1
 		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		-- Play attack sound
+		playAttackSound(player, "dragoonjump")
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -20),
@@ -194,6 +211,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Hitbox for explosion 2
 		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		-- Play attack sound
+		playAttackSound(player, "dragoonjump")
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -40),
@@ -243,6 +263,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Hitbox for explosion 3
 		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		-- Play attack sound
+		playAttackSound(player, "dragoonjump")
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -60),
@@ -292,6 +315,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Hitbox for explosion 4
 		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		-- Play attack sound
+		playAttackSound(player, "dragoonjump")
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -80),
@@ -341,6 +367,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Hitbox for explosion 5
 		local damageMultiplier = DRAGOONJUMP_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		-- Play attack sound
+		playAttackSound(player, "dragoonjump")
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, -3, -100),

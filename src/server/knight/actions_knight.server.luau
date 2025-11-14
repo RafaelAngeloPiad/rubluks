@@ -54,6 +54,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local playerAttackData = {}
 
 -- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local KnightSoundConfig = require(ReplicatedStorage:WaitForChild("KnightSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = KnightSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
+-- ========================================
 -- UNIFIED ANIMATION SPEED CONFIGURATION
 -- ========================================
 
@@ -734,6 +748,9 @@ local function handleNormalAttack(player)
 		_G.enableKnightTrails(player, "jumpAttack")
 		
 		-- Jump attack hitbox
+		-- Play attack sound
+		playAttackSound(player, "jumpAttack")
+		
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Knight")
 		local damageMultiplier = hitboxConfig.damage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
@@ -772,6 +789,9 @@ local function handleNormalAttack(player)
 		_G.enableKnightTrails(player, "moveAttack")
 		
 		-- Move attack hitbox
+		-- Play attack sound
+		playAttackSound(player, "moveAttack")
+		
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Knight")
 		local damageMultiplier = hitboxConfig.damage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
@@ -813,6 +833,9 @@ local function handleNormalAttack(player)
 			_G.enableKnightTrails(player, "combo1")
 			
 			-- Combo 1 hitbox
+			-- Play attack sound
+			playAttackSound(player, "combo1")
+			
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Knight")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
@@ -872,6 +895,9 @@ local function handleNormalAttack(player)
 				visualColor = Color3.new(1, 0.8, 0)
 			end
 			
+			-- Play attack sound
+			playAttackSound(player, "combo2")
+			
 			-- Create ONE hitbox with final damage (doubled if Knights Blade triggered)
 			_G.createStaticHitbox({
 				attachTo = root,
@@ -906,6 +932,9 @@ local function handleNormalAttack(player)
 				_G.enableKnightTrails(player, "combo1Fallback")
 				
 			-- Combo 1 hitbox (fallback from combo 3 cooldown)
+			-- Play attack sound
+			playAttackSound(player, "combo1")
+			
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Knight")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier)
@@ -938,6 +967,9 @@ local function handleNormalAttack(player)
 				_G.enableKnightTrails(player, "combo3")
 				
 			-- Combo 3 hitbox (most powerful) - FORCED CRIT
+			-- Play attack sound
+			playAttackSound(player, "combo3")
+			
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo3", "Knight")
 			local damageMultiplier = hitboxConfig.damage
 			local actualDamage, isCrit = calculateDamageForHitbox(player, "Knight", damageMultiplier, true) -- Force crit for combo3

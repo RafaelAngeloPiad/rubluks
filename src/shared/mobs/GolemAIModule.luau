@@ -6,6 +6,7 @@ local CollectionService = game:GetService("CollectionService")
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 -- Try to require MobStatsDisplay module
 local MobStatsDisplay = nil
@@ -139,12 +140,42 @@ local function initializeGolem(monster, variantName)
 	local attacking = false
 	local isWalking = false
 	local lastAttackTime = 0
+	local walkSound = nil
+	
+	-- Sound helper function
+	local function playSound(soundId, shouldLoop)
+		if not root or not root.Parent then return nil end
+		
+		local soundPart = monster:FindFirstChild("Head") or root
+		if not soundPart then return nil end
+		
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Looped = shouldLoop or false
+		sound.Parent = soundPart
+		sound:Play()
+		
+		if not shouldLoop then
+			sound.Ended:Connect(function()
+				sound:Destroy()
+			end)
+		end
+		
+		return sound
+	end
 	
 	-- Animation functions for this golem
 	local function playWalk()
 		if not isWalking then
 			isWalking = true
 			pcall(function() walkTrack:Play(0.15) end)
+			
+			-- Play walking sound
+			if not walkSound or not walkSound.IsPlaying then
+				local walkSoundId = MobSoundConfig.getSound("golemMove")
+				walkSound = playSound(walkSoundId, true)
+			end
 		end
 	end
 	
@@ -165,6 +196,13 @@ local function initializeGolem(monster, variantName)
 		if isWalking then
 			isWalking = false
 			pcall(function() walkTrack:Stop(0.15) end)
+			
+			-- Stop walking sound
+			if walkSound then
+				walkSound:Stop()
+				walkSound:Destroy()
+				walkSound = nil
+			end
 		end
 	end
 	
@@ -187,6 +225,10 @@ local function initializeGolem(monster, variantName)
 			coroutine.wrap(function()
 				pcall(function()
 					attackTrack:Play(0.1)
+					
+					-- Play attack sound
+					local attackSoundId = MobSoundConfig.getSound("golemAttack")
+					playSound(attackSoundId, false)
 					
 					-- Create static hitbox when attack animation plays
 					if _G.createStaticHitbox then
@@ -260,6 +302,54 @@ local function initializeGolem(monster, variantName)
 	end
 
 	local playerControlled = bindPlayerControl(monster, humanoid, playAttack)
+	
+	-- Function to break Motor6Ds so the rig collapses
+	local function breakJoints(model)
+		for _, obj in ipairs(model:GetDescendants()) do
+			if obj:IsA("Motor6D") then
+				obj:Destroy()
+			end
+		end
+	end
+	
+	-- Death handler - integrated from MobDeathHandler
+	humanoid.Died:Connect(function()
+		-- Stop movement sounds if playing
+		if walkSound then
+			walkSound:Stop()
+			walkSound:Destroy()
+			walkSound = nil
+		end
+		
+		-- Play death sound
+		local deathSoundId = MobSoundConfig.getSound("golemDeath")
+		playSound(deathSoundId, false)
+		
+		-- Disable movement/AI scripts
+		for _, child in ipairs(monster:GetChildren()) do
+			if child:IsA("Script") or child:IsA("LocalScript") then
+				child.Disabled = true
+			end
+		end
+		
+		-- Make all parts fall naturally and be collidable
+		for _, part in ipairs(monster:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = true -- ensure collision so it doesn't fall through map
+			end
+		end
+		
+		-- Detach limbs
+		breakJoints(monster)
+		
+		-- Wait a few seconds then completely remove from map
+		task.wait(3) -- Wait 3 seconds
+		
+		if monster and monster.Parent then
+			monster:Destroy() -- Completely removes the mob from the game
+		end
+	end)
 
 	if playerControlled then
 		humanoid.Running:Connect(function(speed)

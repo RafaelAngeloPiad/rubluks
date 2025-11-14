@@ -7,6 +7,7 @@ local CollectionService = game:GetService("CollectionService")
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 -- Try to require MobStatsDisplay module
 local MobStatsDisplay = nil
@@ -127,6 +128,29 @@ local function initializeWraith(wraith, variantName)
 	local currentTarget = nil
 	local currentTargetModel = nil
 	
+	-- Sound helper function
+	local function playSound(soundId, shouldLoop)
+		if not root or not root.Parent then return nil end
+		
+		local soundPart = wraith:FindFirstChild("Head") or root
+		if not soundPart then return nil end
+		
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Looped = shouldLoop or false
+		sound.Parent = soundPart
+		sound:Play()
+		
+		if not shouldLoop then
+			sound.Ended:Connect(function()
+				sound:Destroy()
+			end)
+		end
+		
+		return sound
+	end
+	
 	-- Function to shoot homing projectile
 	local function shootHomingProjectile(target, launchDirection)
 		local resolvedTarget = target
@@ -148,6 +172,10 @@ local function initializeWraith(wraith, variantName)
 		end
 
 		direction = direction.Unit
+		
+		-- Play attack sound
+		local attackSoundId = MobSoundConfig.getSound("wraithAttack")
+		playSound(attackSoundId, false)
 
 		-- Create missile part
 		local missile = Instance.new("Part")
@@ -275,8 +303,46 @@ local function initializeWraith(wraith, variantName)
 			end
 		end)
 
+		-- Function to break Motor6Ds so the rig collapses
+		local function breakJoints(model)
+			for _, obj in ipairs(model:GetDescendants()) do
+				if obj:IsA("Motor6D") then
+					obj:Destroy()
+				end
+			end
+		end
+		
 		humanoid.Died:Connect(function()
 			setFloating(false)
+			
+			-- Play death sound
+			local deathSoundId = MobSoundConfig.getSound("wraithDeath")
+			playSound(deathSoundId, false)
+			
+			-- Disable movement/AI scripts
+			for _, child in ipairs(wraith:GetChildren()) do
+				if child:IsA("Script") or child:IsA("LocalScript") then
+					child.Disabled = true
+				end
+			end
+			
+			-- Make all parts fall naturally and be collidable
+			for _, part in ipairs(wraith:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					part.CanCollide = true -- ensure collision so it doesn't fall through map
+				end
+			end
+			
+			-- Detach limbs
+			breakJoints(wraith)
+			
+			-- Wait a few seconds then completely remove from map
+			task.wait(3) -- Wait 3 seconds
+			
+			if wraith and wraith.Parent then
+				wraith:Destroy() -- Completely removes the mob from the game
+			end
 		end)
 
 		performPlayerAttack = function()
@@ -287,6 +353,48 @@ local function initializeWraith(wraith, variantName)
 		return
 	else
 		performPlayerAttack = manualAttackCore
+		
+		-- Function to break Motor6Ds so the rig collapses
+		local function breakJoints(model)
+			for _, obj in ipairs(model:GetDescendants()) do
+				if obj:IsA("Motor6D") then
+					obj:Destroy()
+				end
+			end
+		end
+		
+		-- Death handler - integrated from MobDeathHandler
+		humanoid.Died:Connect(function()
+			-- Play death sound
+			local deathSoundId = MobSoundConfig.getSound("wraithDeath")
+			playSound(deathSoundId, false)
+			
+			-- Disable movement/AI scripts
+			for _, child in ipairs(wraith:GetChildren()) do
+				if child:IsA("Script") or child:IsA("LocalScript") then
+					child.Disabled = true
+				end
+			end
+			
+			-- Make all parts fall naturally and be collidable
+			for _, part in ipairs(wraith:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					part.CanCollide = true -- ensure collision so it doesn't fall through map
+				end
+			end
+			
+			-- Detach limbs
+			breakJoints(wraith)
+			
+			-- Wait a few seconds then completely remove from map
+			task.wait(3) -- Wait 3 seconds
+			
+			if wraith and wraith.Parent then
+				wraith:Destroy() -- Completely removes the mob from the game
+			end
+		end)
+		
 		-- Rotation and attack loop - always face nearest player
 		task.spawn(function()
 			while task.wait(0.1) do

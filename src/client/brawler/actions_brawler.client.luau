@@ -27,6 +27,9 @@ local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 -- Import the action module for shared logic
 local BrawlerActions = require(script.Parent.BrawlerActionModule)
 
+-- Import sound configuration
+local BrawlerSoundConfig = require(ReplicatedStorage:WaitForChild("BrawlerSoundConfig"))
+
 -- Helper function to check if equipped weapon matches player's class (client-side)
 local function isWeaponClassMatch()
 	local playerClass = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Class")
@@ -702,6 +705,36 @@ local function onWeaponFound(weaponTool)
 	-- Mark as not initialized initially
 	isInitialized = false
 	
+	-- ========================================
+	-- SOUND SYSTEM
+	-- Handles playing attack sounds
+	-- ========================================
+	
+	local function playAttackSound(soundId)
+		local character = player.Character
+		if not character then return end
+		
+		-- Find a suitable part to attach the sound to (prefer Head, fallback to HumanoidRootPart)
+		local soundPart = character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+		if not soundPart then return end
+		
+		-- Create and play sound
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Parent = soundPart
+		sound:Play()
+		
+		-- Clean up sound when finished
+		sound.Ended:Connect(function()
+			sound:Destroy()
+		end)
+	end
+	
+	-- Play unsheathe sound when weapon is equipped
+	local unsheatheSoundId = BrawlerSoundConfig.getSound("unsheathe")
+	playAttackSound(unsheatheSoundId)
+	
 	-- Listen for messages from server
 	remote.OnClientEvent:Connect(function(message, data, extraData, thirdParam)
 		if message == "lock_input" then
@@ -768,6 +801,11 @@ local function onWeaponFound(weaponTool)
 			-- data = complete trail configuration from server
 			-- Store for future use (no immediate action needed)
 			-- The config will be used when trails are enabled
+		elseif message == "play_sound" then
+			-- data = sound ID string
+			if data then
+				playAttackSound(data)
+			end
 		end
 	end)
 	

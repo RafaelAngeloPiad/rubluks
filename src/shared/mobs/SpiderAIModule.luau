@@ -5,6 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 local MobStatsDisplay = nil
 pcall(function()
@@ -58,7 +59,7 @@ local function initializeSpider(enemy, variantName)
 	if MobStatsDisplay and MobStatsDisplay.createMobStatsDisplay then
 		MobStatsDisplay.createMobStatsDisplay(enemy)
 	end
-
+	
 	local spawnPosition = (enemy:GetPivot() and enemy:GetPivot().Position) or root.Position
 	local spottingRadius = 40
 	local attackRange = 8
@@ -83,16 +84,53 @@ local function initializeSpider(enemy, variantName)
 	local lastAttackTime = 0
 	local movementEnabled = true
 	local lastRunningSpeed = 0
-
+	local moveSound = nil
+	
+	-- Sound helper function
+	local function playSound(soundId, shouldLoop)
+		if not root or not root.Parent then return nil end
+		
+		local soundPart = enemy:FindFirstChild("Head") or root
+		if not soundPart then return nil end
+		
+		local sound = Instance.new("Sound")
+		sound.SoundId = soundId
+		sound.Volume = 0.5
+		sound.Looped = shouldLoop or false
+		sound.Parent = soundPart
+		sound:Play()
+		
+		if not shouldLoop then
+			sound.Ended:Connect(function()
+				sound:Destroy()
+			end)
+		end
+		
+		return sound
+	end
+	
 	local function playMovement()
 		if movementEnabled and not moveTrack.IsPlaying then
 			moveTrack:Play(0.1)
+			
+			-- Play walking sound
+			if not moveSound or not moveSound.IsPlaying then
+				local walkSoundId = MobSoundConfig.getSound("spiderMove")
+				moveSound = playSound(walkSoundId, true)
+			end
 		end
 	end
-
+	
 	local function stopMovement()
 		if moveTrack.IsPlaying then
 			moveTrack:Stop(0.15)
+		end
+		
+		-- Stop walking sound
+		if moveSound then
+			moveSound:Stop()
+			moveSound:Destroy()
+			moveSound = nil
 		end
 	end
 
@@ -137,6 +175,10 @@ local function initializeSpider(enemy, variantName)
 
 			local success, err = pcall(function()
 				attackTrack:Play(0.1)
+				
+				-- Play attack sound
+				local attackSoundId = MobSoundConfig.getSound("spiderAttack")
+				playSound(attackSoundId, false)
 
 				if _G.createStaticHitbox then
 					local damage = enemy:GetAttribute("Damage") or 50
@@ -205,6 +247,54 @@ local function initializeSpider(enemy, variantName)
 	end
 
 	local playerControlled = bindPlayerControl(enemy, hum, playAttack)
+	
+	-- Function to break Motor6Ds so the rig collapses
+	local function breakJoints(model)
+		for _, obj in ipairs(model:GetDescendants()) do
+			if obj:IsA("Motor6D") then
+				obj:Destroy()
+			end
+		end
+	end
+	
+	-- Death handler - integrated from MobDeathHandler
+	hum.Died:Connect(function()
+		-- Stop movement sounds if playing
+		if moveSound then
+			moveSound:Stop()
+			moveSound:Destroy()
+			moveSound = nil
+		end
+		
+		-- Play death sound
+		local deathSoundId = MobSoundConfig.getSound("spiderDeath")
+		playSound(deathSoundId, false)
+		
+		-- Disable movement/AI scripts
+		for _, child in ipairs(enemy:GetChildren()) do
+			if child:IsA("Script") or child:IsA("LocalScript") then
+				child.Disabled = true
+			end
+		end
+		
+		-- Make all parts fall naturally and be collidable
+		for _, part in ipairs(enemy:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = true -- ensure collision so it doesn't fall through map
+			end
+		end
+		
+		-- Detach limbs
+		breakJoints(enemy)
+		
+		-- Wait a few seconds then completely remove from map
+		task.wait(3) -- Wait 3 seconds
+		
+		if enemy and enemy.Parent then
+			enemy:Destroy() -- Completely removes the mob from the game
+		end
+	end)
 
 	local function findClosestPlayer(position)
 		local nearest

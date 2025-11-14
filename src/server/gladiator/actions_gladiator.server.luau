@@ -51,6 +51,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local playerAttackData = {}
 
 -- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local GladiatorSoundConfig = require(ReplicatedStorage:WaitForChild("GladiatorSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = GladiatorSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
+-- ========================================
 -- UNIFIED ANIMATION SPEED CONFIGURATION
 -- ========================================
 
@@ -700,6 +714,9 @@ local function handleNormalAttack(player)
 		-- Enable trails for jump attack
 		_G.enableGladiatorTrails(player, "jumpAttack")
 		
+		-- Play attack sound
+		playAttackSound(player, "jumpAttack")
+		
 		-- Jump attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("jumpAttack", "Gladiator")
 		local damageMultiplier = hitboxConfig.damage
@@ -737,6 +754,9 @@ local function handleNormalAttack(player)
 		
 		-- Enable trails for move attack
 		_G.enableGladiatorTrails(player, "moveAttack")
+		
+		-- Play attack sound
+		playAttackSound(player, "moveAttack")
 		
 		-- Move attack hitbox
 		local hitboxConfig = ServerConfigs.getHitboxConfig("moveAttack", "Gladiator")
@@ -778,6 +798,9 @@ local function handleNormalAttack(player)
 			
 			-- Enable trails for combo 1
 			_G.enableGladiatorTrails(player, "combo1")
+			
+			-- Play attack sound
+			playAttackSound(player, "combo1")
 			
 			-- Combo 1 hitbox
 			local hitboxConfig = ServerConfigs.getHitboxConfig("combo1", "Gladiator")
@@ -838,6 +861,9 @@ local function handleNormalAttack(player)
 				-- Use orange/gold color to indicate Champion's Rebuke triggered
 				visualColor = Color3.new(1, 0.8, 0)
 			end
+			
+			-- Play attack sound
+			playAttackSound(player, "combo2")
 			
 			-- Create ONE hitbox with final damage (doubled if Champion's Rebuke triggered)
 			_G.createStaticHitbox({

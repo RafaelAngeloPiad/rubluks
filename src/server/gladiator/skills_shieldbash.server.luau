@@ -49,6 +49,20 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 
 -- Cooldown system now centralized in actions.server.luau
 
+-- ========================================
+-- SOUND SYSTEM
+-- Helper function to play attack sounds on client
+-- ========================================
+
+-- Import sound configuration
+local GladiatorSoundConfig = require(ReplicatedStorage:WaitForChild("GladiatorSoundConfig"))
+
+local function playAttackSound(player, attackType)
+	if not player then return end
+	local soundId = GladiatorSoundConfig.getSound(attackType)
+	remote:FireClient(player, "play_sound", soundId)
+end
+
 -- preload anim (server handles)
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://124154885589921"
@@ -145,6 +159,9 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		-- Hitbox for Shield Bash
 		local damageMultiplier = SHIELDBASH_CONFIG.hitboxDamage
 		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+		-- Play attack sound
+		playAttackSound(player, "shieldbash")
+		
 		_G.createStaticHitbox({
 			attachTo = root,
 			offset = CFrame.new(0, 0, -10),
