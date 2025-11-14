@@ -22,6 +22,19 @@ local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 local ConsumableEntries = ConsumableConfig.Entries or {}
 local detectCurrentClass
 
+-- ========================================
+-- PASSWORD PROTECTION FOR PANELS
+-- ========================================
+local panelsUnlocked = false
+
+-- Listen for server-side unlock event
+local PanelUnlockEvent = ReplicatedStorage:WaitForChild("PanelUnlockEvent")
+PanelUnlockEvent.OnClientEvent:Connect(function(unlocked)
+	if unlocked then
+		panelsUnlocked = true
+	end
+end)
+
 -- Require all action modules
 local SamuraiActions = require(player.PlayerScripts.samurai.SamuraiActionModule)
 local ArcherActions = require(player.PlayerScripts.archer.ArcherActionModule)
@@ -482,6 +495,27 @@ local function getEquippedWeaponClass()
 end
 
 local function resolveClassForTag(tag)
+	local character = player.Character
+	local isTransformed = character and CollectionService:HasTag(character, "player_transformed")
+	
+	-- For skill/buff/ultimate buttons, use base class even when transformed
+	local skillTags = {"skill1_trigger", "skill2_trigger", "buff1_trigger", "buff2_trigger", "ultimate_trigger"}
+	local isSkillTag = false
+	for _, skillTag in ipairs(skillTags) do
+		if tag == skillTag then
+			isSkillTag = true
+			break
+		end
+	end
+	
+	-- If transformed and it's a skill/buff/ultimate, use base class instead of "mob"
+	if isTransformed and isSkillTag then
+		local baseClass = getPlayerBaseClass()
+		if baseClass then
+			return baseClass
+		end
+	end
+	
 	local class = detectCurrentClass()
 	if class then
 		return class
@@ -718,12 +752,33 @@ local function setupUnifiedButton(button, tag)
 			local classConfig = class and tagConfig[class] or nil
 
 			-- Show button if: (weapon equipped AND has class config) OR (is global action)
+			-- Special check for password-protected panels
+			local character = player.Character
+			local isTransformed = character and CollectionService:HasTag(character, "player_transformed")
+			local skillTags = {"skill1_trigger", "skill2_trigger", "buff1_trigger", "buff2_trigger", "ultimate_trigger"}
+			local isSkillTag = false
+			for _, skillTag in ipairs(skillTags) do
+				if tag == skillTag then
+					isSkillTag = true
+					break
+				end
+			end
+			
 			local shouldShow = false
 			if isGlobalAction then
-				shouldShow = true
+				if tag == "stats_panel_toggle" or tag == "master_panel_toggle" then
+					shouldShow = panelsUnlocked
+				else
+					shouldShow = true
+				end
 			elseif classConfig then
 				if tag == "attack_trigger" then
 					shouldShow = isWeaponEquipped()
+				elseif isTransformed and isSkillTag then
+					-- When transformed, still require matching weapon for skill/buff/ultimate buttons
+					local baseClass = getPlayerBaseClass()
+					local weaponClass = getEquippedWeaponClass()
+					shouldShow = baseClass == weaponClass and isWeaponEquipped()
 				else
 					shouldShow = hasMatchingWeaponEquipped() and isWeaponEquipped()
 				end
@@ -741,15 +796,22 @@ local function setupUnifiedButton(button, tag)
 					textLabel.TextTransparency = 0
 				end
 			else
-				button.Visible = isGlobalAction
+				-- For password-protected panels, always hide when not unlocked
+				local isPasswordProtected = (tag == "stats_panel_toggle" or tag == "master_panel_toggle")
+				if isPasswordProtected then
+					button.Visible = false
+					button.Active = false
+				else
+					button.Visible = isGlobalAction
+					button.Active = isGlobalAction
+				end
 				--button.TextTransparency = 1
 				button.BackgroundTransparency = 1
 				button.ImageTransparency = 1
-				button.Active = isGlobalAction
 				-- Update TextLabel child transparency if it exists
 				local textLabel = button:FindFirstChildOfClass("TextLabel")
 				if textLabel then
-					textLabel.TextTransparency = isGlobalAction and 0 or 1
+					textLabel.TextTransparency = isPasswordProtected and 1 or (isGlobalAction and 0 or 1)
 				end
 			end
 			task.wait(0.5)
@@ -903,9 +965,22 @@ local function setupUnifiedHoldButton(button, tag)
 		while button and button.Parent do
 			local class = resolveClassForTag(tag)
 			local classConfig = tagConfig[class]
+			
+			local character = player.Character
+			local isTransformed = character and CollectionService:HasTag(character, "player_transformed")
 
-			-- Only show button if weapon is equipped AND class has config for this button
-			local shouldShow = classConfig ~= nil and hasMatchingWeaponEquipped() and isWeaponEquipped()
+			-- Show button if: weapon equipped AND class matches equipped weapon class
+			local shouldShow = false
+			if classConfig then
+				if isTransformed then
+					-- When transformed, still require matching weapon
+					local baseClass = getPlayerBaseClass()
+					local weaponClass = getEquippedWeaponClass()
+					shouldShow = baseClass == weaponClass and isWeaponEquipped()
+				else
+					shouldShow = hasMatchingWeaponEquipped() and isWeaponEquipped()
+				end
+			end
 
 			if shouldShow then
 				button.Visible = true

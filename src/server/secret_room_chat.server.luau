@@ -7,7 +7,7 @@ local RESTART_COMMAND = "/restartplace"
 
 local function getTodayKeyword()
 	local dateString = os.date("!*t")
-	return string.format("%s%04d%02d", COMMAND_PREFIX, dateString.year, dateString.day)
+	return string.format("%s%04d%02d", COMMAND_PREFIX, dateString.year, dateString.month)
 end
 
 local function matchesTeleportKeyword(message)

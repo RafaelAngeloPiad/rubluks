@@ -74,6 +74,18 @@ local function extractModelName(message: string): string?
 end
 
 local function transformPlayer(player: Player, modelPath: string)
+	-- Check if player wants to transform back to themselves
+	local lowerPath = string.lower(modelPath)
+	if lowerPath == "myself" or lowerPath == "self" or lowerPath == "original" then
+		-- Respawn player to restore original character
+		local currentCharacter = player.Character
+		if currentCharacter then
+			currentCharacter:Destroy()
+		end
+		player:LoadCharacter()
+		return
+	end
+
 	local template = resolveTemplate(modelPath)
 	if not template then
 		warn(("[TransformerChat] No mob template found for path '%s'"):format(modelPath))
