@@ -1027,7 +1027,7 @@ MobStatsConfig.Zombie_Poison = applyTheme({
 	Lifesteal = {
 		percentage = 1.0
 	}
-}, "Toxic")
+}, "Poison")
 
 MobStatsConfig.Zombie_Dark = applyTheme({
 	Family = "Zombie",
@@ -1095,7 +1095,7 @@ MobStatsConfig.Wraith_Ice = applyTheme({
 		tickInterval = 1.0,
 		skipDefense = true
 	}
-}, "Poison")
+}, "Ice")
 
 MobStatsConfig.Wraith_Lava = applyTheme({
 	Family = "Wraith",
@@ -1118,7 +1118,7 @@ MobStatsConfig.Wraith_Lava = applyTheme({
 		tickInterval = 1.0,
 		skipDefense = true
 	}
-}, "Fire")
+}, "Lava")
 
 MobStatsConfig.Wraith_Woodland = applyTheme({
 	Family = "Wraith",
@@ -1141,7 +1141,7 @@ MobStatsConfig.Wraith_Woodland = applyTheme({
 		tickInterval = 1.0,
 		skipDefense = true
 	}
-}, "Crystal")
+}, "Woodland")
 
 MobStatsConfig.Wraith_Lightning = applyTheme({
 	Family = "Wraith",
@@ -1164,7 +1164,7 @@ MobStatsConfig.Wraith_Lightning = applyTheme({
 		tickInterval = 1.0,
 		skipDefense = true
 	}
-}, "Light")
+}, "Lightning")
 
 MobStatsConfig.Wraith_Crystal = applyTheme({
 	Family = "Wraith",
@@ -1187,7 +1187,7 @@ MobStatsConfig.Wraith_Crystal = applyTheme({
 		tickInterval = 1.0,
 		skipDefense = true
 	}
-}, "Ice")
+}, "Crystal")
 
 MobStatsConfig.Wraith_Poison = applyTheme({
 	Family = "Wraith",
@@ -1210,7 +1210,7 @@ MobStatsConfig.Wraith_Poison = applyTheme({
 		tickInterval = 1.0,
 		skipDefense = true
 	}
-}, "Tornado")
+}, "Poison")
 
 MobStatsConfig.Wraith_Dark = applyTheme({
 	Family = "Wraith",
