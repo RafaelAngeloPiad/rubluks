@@ -460,11 +460,17 @@ local function createMobStatsDisplay(model)
 		
 		-- Get mob display name / colors
 		local displayName = model:GetAttribute("MobDisplayName") or model:GetAttribute("MobVariant") or "Unknown"
-		headerLabel.Text = displayName
+		local levelValue = model:GetAttribute("MobLevel")
+		
+		-- Append level to display name
+		if typeof(levelValue) == "number" and levelValue > 0 then
+			headerLabel.Text = displayName .. " " .. levelValue
+		else
+			headerLabel.Text = displayName
+		end
 		headerLabel.TextColor3 = statsConfig.headerColor or statsConfig.textColor
 
 		if showStatDetails and levelLabel then
-			local levelValue = model:GetAttribute("MobLevel")
 			if typeof(levelValue) == "number" and levelValue > 0 then
 				levelLabel.Text = string.format("Level: %d", levelValue)
 				levelLabel.TextColor3 = statsConfig.levelLabelColor or statsConfig.textColor
