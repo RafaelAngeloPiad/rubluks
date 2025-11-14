@@ -77,11 +77,9 @@ local function updateClientDisplayVisibility()
 		return
 	end
 
-	local maxVisible = math.max(0, statsConfig.maxVisible or 10)
 	local visibilityRadius = statsConfig.visibilityRadius or statsConfig.maxDistance or 120
 	local distanceScalingEnabled = statsConfig.distanceScaling ~= false
 
-	local entries = {}
 	local toRemove = {}
 
 	for billboard, info in pairs(trackedDisplays) do
@@ -95,7 +93,19 @@ local function updateClientDisplayVisibility()
 			if focusPart then
 				local distance = (camera.CFrame.Position - focusPart.Position).Magnitude
 				info.distance = distance
-				table.insert(entries, info)
+				
+				-- Show if within visibility radius
+				local visible = distance <= visibilityRadius
+				info.billboard.Enabled = visible
+				
+				if visible then
+					if distanceScalingEnabled then
+						local scale = computeScale(distance, statsConfig)
+						applyScale(info, scale)
+					else
+						applyScale(info, 1)
+					end
+				end
 			else
 				table.insert(toRemove, billboard)
 			end
@@ -112,36 +122,6 @@ local function updateClientDisplayVisibility()
 		cleanupTracking(billboard)
 		if info then
 			info.distance = nil
-		end
-	end
-
-	table.sort(entries, function(a, b)
-		return (a.distance or math.huge) < (b.distance or math.huge)
-	end)
-
-	for index, info in ipairs(entries) do
-		local visible = false
-		if info.distance then
-			if info.distance <= visibilityRadius and index <= maxVisible then
-				visible = true
-			end
-		end
-
-		info.billboard.Enabled = visible
-		if visible then
-			if distanceScalingEnabled then
-				local scale = computeScale(info.distance, statsConfig)
-				applyScale(info, scale)
-			else
-				applyScale(info, 1)
-			end
-		end
-	end
-
-	for i = maxVisible + 1, #entries do
-		local info = entries[i]
-		if info and info.billboard then
-			info.billboard.Enabled = false
 		end
 	end
 end

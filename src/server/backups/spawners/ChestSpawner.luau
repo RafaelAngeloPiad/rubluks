@@ -10,8 +10,8 @@ end
 
 local DEFAULTS = {
 	ChestModelPath = "chests/Random Weapon Chest",
-	ChestRespawnDelay = 30,
-	CheckInterval = 1,
+	ChestRespawnDelay = 300,
+	CheckInterval = 120,
 	ChestHeightOffset = 0,
 	SpawnFolderName = "ChestSpawns",
 }

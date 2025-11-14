@@ -115,7 +115,6 @@ ServerConfigs.Hitbox = {
 			offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
 			offsetYNoStat = 1.9, -- Vertical offset when stat details are hidden
 			size = Vector2.new(170, 120), -- GUI size in pixels
-			maxVisible = 10, -- Maximum number of mob stat displays shown at once
 			visibilityRadius = 110, -- Only show stats for mobs within this radius
 			distanceScaling = true, -- Scale UI based on distance
 			scaleReferenceDistance = 45, -- Distance at which scale is 1.0
