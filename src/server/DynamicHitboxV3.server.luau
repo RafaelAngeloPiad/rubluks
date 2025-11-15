@@ -415,12 +415,13 @@ local MOB_COMBAT_MODES = {
 	EXCLUDED = "excluded",
 	VERSUS = "versus",
 	FRENZY = "frenzy",
+	PEACEFUL = "peaceful",
 }
 
 local mobCombatMode = MOB_COMBAT_MODES.EXCLUDED
 
 local function normalizeMobCombatMode(mode)
-	if mode == MOB_COMBAT_MODES.VERSUS or mode == MOB_COMBAT_MODES.FRENZY then
+	if mode == MOB_COMBAT_MODES.VERSUS or mode == MOB_COMBAT_MODES.FRENZY or mode == MOB_COMBAT_MODES.PEACEFUL then
 		return mode
 	end
 	return MOB_COMBAT_MODES.EXCLUDED
@@ -460,6 +461,11 @@ end
 local function shouldApplyDamage(attacker, target)
     -- Don't damage self
     if attacker == target then
+        return false
+    end
+    
+    -- Peaceful mode: no damage allowed at all
+    if mobCombatMode == MOB_COMBAT_MODES.PEACEFUL then
         return false
     end
     
@@ -999,6 +1005,7 @@ function _G.cycleMobCombatMode()
 		MOB_COMBAT_MODES.EXCLUDED,
 		MOB_COMBAT_MODES.VERSUS,
 		MOB_COMBAT_MODES.FRENZY,
+		MOB_COMBAT_MODES.PEACEFUL,
 	}
 	local currentIndex = table.find(order, mobCombatMode) or 1
 	local nextIndex = currentIndex + 1

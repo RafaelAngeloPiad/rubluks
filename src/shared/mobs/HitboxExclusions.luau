@@ -18,7 +18,9 @@ HitboxExclusions.EXCLUDE_TAGS = {
 	"human_projectile_entity",
 	"human_wizard_entity",
 	"object_entity",
-	"mob_entity"
+	"mob_entity",
+	"r15_entity",
+	"r6_entity"
 }
 
 -- Function to check if a model has any excluded tags
@@ -81,10 +83,11 @@ local MOB_COMBAT_MODES = {
 	EXCLUDED = "excluded",
 	VERSUS = "versus",
 	FRENZY = "frenzy",
+	PEACEFUL = "peaceful",
 }
 
 local function normalizeMode(mode)
-	if mode == MOB_COMBAT_MODES.VERSUS or mode == MOB_COMBAT_MODES.FRENZY then
+	if mode == MOB_COMBAT_MODES.VERSUS or mode == MOB_COMBAT_MODES.FRENZY or mode == MOB_COMBAT_MODES.PEACEFUL then
 		return mode
 	end
 	return MOB_COMBAT_MODES.EXCLUDED
@@ -168,7 +171,10 @@ local function isMob(model)
 end
 
 local function shouldAllowMobVsMob(attacker, target)
-	if currentMobCombatMode == MOB_COMBAT_MODES.FRENZY then
+	-- Peaceful mode: no attacks allowed
+	if currentMobCombatMode == MOB_COMBAT_MODES.PEACEFUL then
+		return false
+	elseif currentMobCombatMode == MOB_COMBAT_MODES.FRENZY then
 		return true
 	elseif currentMobCombatMode == MOB_COMBAT_MODES.VERSUS then
 		local attackerTag = getPrimaryMobTag(attacker)
@@ -202,6 +208,11 @@ function HitboxExclusions.shouldAttack(attacker, target)
 		return false
 	end
 	if attacker == target then
+		return false
+	end
+
+	-- Peaceful mode: no attacks allowed at all
+	if currentMobCombatMode == MOB_COMBAT_MODES.PEACEFUL then
 		return false
 	end
 

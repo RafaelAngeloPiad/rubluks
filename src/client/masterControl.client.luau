@@ -367,7 +367,7 @@ local mobFriendlyButton = createButton("Mob FF: OFF", Color3.fromRGB(60, 60, 60)
 end)
 layoutOrder += 1
 
-local MobCombatModeOrder = {"excluded", "versus", "frenzy"}
+local MobCombatModeOrder = {"excluded", "versus", "frenzy", "peaceful"}
 local MobCombatModeMetadata = {
 	excluded = {
 		label = "Mob Mode: Excluded",
@@ -380,6 +380,10 @@ local MobCombatModeMetadata = {
 	frenzy = {
 		label = "Mob Mode: Frenzy",
 		color = Color3.fromRGB(180, 60, 60),
+	},
+	peaceful = {
+		label = "Mob Mode: Peaceful",
+		color = Color3.fromRGB(60, 180, 60),
 	},
 }
 
