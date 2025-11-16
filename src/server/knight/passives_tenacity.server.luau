@@ -176,7 +176,8 @@ local function checkTenacityPassive(player)
 	local class = leaderstats:FindFirstChild("Class")
 	local level = leaderstats:FindFirstChild("Level")
 	
-	if not class or class.Value ~= "Knight" or not level then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Knight" or not level then
 		-- Not a Knight or no level, remove passive if active
 		if playerTenacityStates[player] and playerTenacityStates[player].isActive then
 			removeTenacityDefense(player)

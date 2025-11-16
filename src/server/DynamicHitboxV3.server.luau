@@ -303,13 +303,17 @@ local function calculateDamageWithDefense(rawDamage, attacker, target)
 		if _G.getPlayerBlockingState then
 			local isBlocking = _G.getPlayerBlockingState(targetPlayer)
 			if isBlocking then
-				-- Determine player class to get block damage reduction
+				-- Determine player class to get block damage reduction (respect SLAVKO acting class)
 				local playerClass = nil
 				local leaderstats = targetPlayer:FindFirstChild("leaderstats")
 				if leaderstats then
 					local classStat = leaderstats:FindFirstChild("Class")
 					if classStat then
-						playerClass = classStat.Value
+						if ServerConfigs and ServerConfigs.getActingClass then
+							playerClass = ServerConfigs.getActingClass(targetPlayer)
+						else
+							playerClass = classStat.Value
+						end
 					end
 				end
 				

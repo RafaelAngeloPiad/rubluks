@@ -21,6 +21,21 @@ local function onPlayerChatted(player, message)
 	
 	local normalized = string.lower(message)
 
+	-- Allow switching to SLAVKO class
+	if normalized == "/become slavko" then
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			local class = leaderstats:FindFirstChild("Class")
+			if not class then
+				class = Instance.new("StringValue")
+				class.Name = "Class"
+				class.Parent = leaderstats
+			end
+			class.Value = "SLAVKO"
+		end
+		return
+	end
+	
 	if normalized == RESTART_COMMAND then
 		local players = Players:GetPlayers()
 		if #players > 0 then

@@ -178,7 +178,9 @@ local function checkBrawlerPassives(player)
 	local class = leaderstats:FindFirstChild("Class")
 	local level = leaderstats:FindFirstChild("Level")
 	
-	if not class or class.Value ~= "Brawler" or not level then
+	-- Respect SLAVKO by using acting class (equipped weapon class when SLAVKO)
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Brawler" or not level then
 		-- Not a Brawler or no level, remove passives if active
 		if playerBrawlerPassiveStates[player] then
 			if playerBrawlerPassiveStates[player].rageActive then

@@ -38,9 +38,10 @@ function _G.checkChampionsRebukePassive(player)
 		return false
 	end
 	
-	-- Check if player is Gladiator class
+	-- Check if player is Gladiator class (respect SLAVKO acting class)
 	local class = leaderstats:FindFirstChild("Class")
-	if not class or class.Value ~= "Gladiator" then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Gladiator" then
 		return false
 	end
 
@@ -251,8 +252,9 @@ local function setupPlayerOneLastChance(player)
 				local class = leaderstats:FindFirstChild("Class")
 				local level = leaderstats:FindFirstChild("Level")
 				
-				-- Only check if player is Gladiator class
-				if class and class.Value == "Gladiator" and level then
+				-- Only check if acting class is Gladiator
+				local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+				if actingClass == "Gladiator" and level then
 					-- Get passive config
 					local passiveConfig = ServerConfigs.getGladiatorPassiveConfig("OneLastChance", level.Value)
 					if passiveConfig then
@@ -286,8 +288,9 @@ local function setupPlayerOneLastChance(player)
 				local class = leaderstats:FindFirstChild("Class")
 				local level = leaderstats:FindFirstChild("Level")
 				
-				-- Only check if player is Gladiator class
-				if class and class.Value == "Gladiator" and level then
+				-- Only check if acting class is Gladiator
+				local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+				if actingClass == "Gladiator" and level then
 					-- Get passive config
 					local passiveConfig = ServerConfigs.getGladiatorPassiveConfig("OneLastChance", level.Value)
 					if passiveConfig then

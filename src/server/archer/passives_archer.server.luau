@@ -37,9 +37,10 @@ function _G.checkHeadshotPassive(player)
 		return false
 	end
 	
-	-- Check if player is Archer class
+	-- Check if player is Archer class (respect SLAVKO acting class)
 	local class = leaderstats:FindFirstChild("Class")
-	if not class or class.Value ~= "Archer" then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Archer" then
 		return false
 	end
 
@@ -88,9 +89,10 @@ function _G.getArcherImmobilizeStunChance(player)
 		return nil
 	end
 	
-	-- Check if player is Archer class
+	-- Check if player is Archer class (respect SLAVKO acting class)
 	local class = leaderstats:FindFirstChild("Class")
-	if not class or class.Value ~= "Archer" then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Archer" then
 		return nil
 	end
 
@@ -122,7 +124,8 @@ local function checkImmobilizePassive(player)
 	local class = leaderstats:FindFirstChild("Class")
 	local level = leaderstats:FindFirstChild("Level")
 	
-	if not class or class.Value ~= "Archer" or not level then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Archer" or not level then
 		-- Not an Archer or no level, deactivate Immobilize
 		if playerArcherPassiveStates[player] then
 			playerArcherPassiveStates[player].immobilizeActive = false

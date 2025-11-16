@@ -40,9 +40,10 @@ function _G.checkSamuraiBurstPassive(player)
 		return false
 	end
 	
-	-- Check if player is Samurai class
+	-- Check if player is Samurai class (respect SLAVKO acting class)
 	local class = leaderstats:FindFirstChild("Class")
-	if not class or class.Value ~= "Samurai" then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Samurai" then
 		return false
 	end
 	
@@ -121,9 +122,10 @@ function _G.checkSamuraiBladeDancePassive(player)
 		return nil
 	end
 	
-	-- Check if player is Samurai class
+	-- Check if player is Samurai class (respect SLAVKO acting class)
 	local class = leaderstats:FindFirstChild("Class")
-	if not class or class.Value ~= "Samurai" then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Samurai" then
 		return nil
 	end
 	

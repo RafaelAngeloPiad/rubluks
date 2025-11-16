@@ -1253,6 +1253,28 @@ function ServerConfigs.getPlayerClass(player)
 	return class.Value or nil
 end
 
+-- Secret class helper: is SLAVKO
+function ServerConfigs.isSlavkoClass(player)
+	local className = ServerConfigs.getPlayerClass(player)
+	if not className or className == "" then
+		return false
+	end
+	local lower = string.lower(className)
+	return lower == "slavko"
+end
+
+-- Acting class resolver: if SLAVKO, act as the equipped weapon's class; otherwise, the player's class
+function ServerConfigs.getActingClass(player)
+	if not player then
+		return nil
+	end
+	local className = ServerConfigs.getPlayerClass(player)
+	if className == "SLAVKO" then
+		return ServerConfigs.getEquippedWeaponClass(player)
+	end
+	return className
+end
+
 -- Function to detect which weapon class is equipped by checking weapon tags
 -- @param player: Player instance
 -- @return: Weapon class name (e.g., "archer", "samurai") or nil if no weapon found
@@ -1283,6 +1305,10 @@ end
 -- @param player: Player instance
 -- @return: true if weapon matches class, false otherwise
 function ServerConfigs.isWeaponClassMatch(player)
+	-- SLAVKO can use any weapon without penalty
+	if ServerConfigs.isSlavkoClass(player) then
+		return true
+	end
 	local playerClass = ServerConfigs.getPlayerClass(player)
 	local weaponClass = ServerConfigs.getEquippedWeaponClass(player)
 	
@@ -1302,6 +1328,11 @@ end
 function ServerConfigs.applyMismatchedWeaponPenalty(player, baseDamageMultiplier)
 	if not player or not baseDamageMultiplier then
 		return 0
+	end
+	
+	-- SLAVKO: never penalize
+	if ServerConfigs.isSlavkoClass(player) then
+		return baseDamageMultiplier
 	end
 	
 	-- Check if weapon matches class

@@ -40,12 +40,8 @@ local COLOR_THEMES = {
 		health = Color3.fromRGB(190, 170, 255)
 	},
 	Poison = {
-		name = Color3.fromRGB(120, 255, 180),
-		health = Color3.fromRGB(150, 255, 210)
-	},
-	Toxic = {
-		name = Color3.fromRGB(90, 230, 90),
-		health = Color3.fromRGB(130, 255, 140)
+		name = Color3.fromRGB(117, 36, 111),
+		health = Color3.fromRGB(165, 60, 150)
 	},
 	Light = {
 		name = Color3.fromRGB(255, 250, 200),
@@ -54,10 +50,6 @@ local COLOR_THEMES = {
 	Dark = {
 		name = Color3.fromRGB(170, 80, 255),
 		health = Color3.fromRGB(210, 140, 255)
-	},
-	Tornado = {
-		name = Color3.fromRGB(160, 230, 255),
-		health = Color3.fromRGB(200, 245, 255)
 	},
 Default = {
 	name = Color3.fromRGB(255, 255, 255),
@@ -158,12 +150,10 @@ MobStatsConfig.Spider_Sand = applyTheme({
 	XPGain = 8,
 	SlavkoinGain = 8,
 	StatusAilment = {
-		type = "poison",
-		chance = 30,
-		duration = 3.6,
-		dps = 3,
-		tickInterval = 1.0,
-		skipDefense = true
+		type = "slow",
+		chance = 45,
+		duration = 2.5,
+		slowMultiplier = 0.6
 	}
 }, "Sand")
 
@@ -181,12 +171,13 @@ MobStatsConfig.Spider_Ice = applyTheme({
 	XPGain = 11,
 	SlavkoinGain = 11,
 	StatusAilment = {
-		type = "poison",
-		chance = 34,
-		duration = 3.9,
-		dps = 4,
+		type = "ice",
+		chance = 50,
+		duration = 4.0,
+		dps = 5,
 		tickInterval = 1.0,
-		skipDefense = true
+		skipDefense = true,
+		slowMultiplier = 0.3
 	}
 }, "Ice")
 
@@ -204,10 +195,10 @@ MobStatsConfig.Spider_Fire = applyTheme({
 	XPGain = 14,
 	SlavkoinGain = 14,
 	StatusAilment = {
-		type = "poison",
-		chance = 39,
-		duration = 4.1,
-		dps = 6,
+		type = "burn",
+		chance = 50,
+		duration = 4.5,
+		dps = 8,
 		tickInterval = 1.0,
 		skipDefense = true
 	}
@@ -227,12 +218,10 @@ MobStatsConfig.Spider_Woodland = applyTheme({
 	XPGain = 17,
 	SlavkoinGain = 17,
 	StatusAilment = {
-		type = "poison",
-		chance = 44,
-		duration = 4.4,
-		dps = 7,
-		tickInterval = 1.0,
-		skipDefense = true
+		type = "slow",
+		chance = 45,
+		duration = 2.8,
+		slowMultiplier = 0.6
 	}
 }, "Woodland")
 
@@ -250,12 +239,9 @@ MobStatsConfig.Spider_Lightning = applyTheme({
 	XPGain = 19,
 	SlavkoinGain = 19,
 	StatusAilment = {
-		type = "poison",
-		chance = 49,
-		duration = 4.7,
-		dps = 8,
-		tickInterval = 1.0,
-		skipDefense = true
+		type = "stun",
+		chance = 50,
+		duration = 2.0
 	}
 }, "Lightning")
 
@@ -273,10 +259,10 @@ MobStatsConfig.Spider_Crystal = applyTheme({
 	XPGain = 22,
 	SlavkoinGain = 22,
 	StatusAilment = {
-		type = "poison",
-		chance = 54,
-		duration = 4.9,
-		dps = 10,
+		type = "burn",
+		chance = 50,
+		duration = 4.2,
+		dps = 7,
 		tickInterval = 1.0,
 		skipDefense = true
 	}
@@ -297,9 +283,9 @@ MobStatsConfig.Spider_Poison = applyTheme({
 	SlavkoinGain = 25,
 	StatusAilment = {
 		type = "poison",
-		chance = 58,
-		duration = 5.2,
-		dps = 11,
+		chance = 55,
+		duration = 4.8,
+		dps = 10,
 		tickInterval = 1.0,
 		skipDefense = true
 	}
@@ -320,9 +306,9 @@ MobStatsConfig.Spider_Dark = applyTheme({
 	SlavkoinGain = 27,
 	StatusAilment = {
 		type = "poison",
-		chance = 63,
-		duration = 5.5,
-		dps = 12,
+		chance = 50,
+		duration = 4.8,
+		dps = 10,
 		tickInterval = 1.0,
 		skipDefense = true
 	}
@@ -346,9 +332,10 @@ MobStatsConfig.Golem_Sand = applyTheme({
 	XPGain = 22,
 	SlavkoinGain = 22,
 	StatusAilment = {
-		type = "stun",
+		type = "slow",
 		chance = 35,
-		duration = 1.5
+		duration = 2.5,
+		slowMultiplier = 0.6
 	}
 }, "Sand")
 
@@ -366,9 +353,13 @@ MobStatsConfig.Golem_Ice = applyTheme({
 	XPGain = 28,
 	SlavkoinGain = 28,
 	StatusAilment = {
-		type = "stun",
+		type = "ice",
 		chance = 38,
-		duration = 1.7
+		duration = 4.0,
+		dps = 5,
+		tickInterval = 1.0,
+		skipDefense = true,
+		slowMultiplier = 0.3
 	}
 }, "Ice")
 
@@ -386,9 +377,12 @@ MobStatsConfig.Golem_Lava = applyTheme({
 	XPGain = 33,
 	SlavkoinGain = 33,
 	StatusAilment = {
-		type = "stun",
+		type = "burn",
 		chance = 42,
-		duration = 1.9
+		duration = 4.5,
+		dps = 8,
+		tickInterval = 1.0,
+		skipDefense = true
 	}
 }, "Lava")
 
@@ -406,9 +400,10 @@ MobStatsConfig.Golem_Woodland = applyTheme({
 	XPGain = 38,
 	SlavkoinGain = 38,
 	StatusAilment = {
-		type = "stun",
-		chance = 46,
-		duration = 2.0
+		type = "slow",
+		chance = 50,
+		duration = 2.5,
+		slowMultiplier = 0.6
 	}
 }, "Woodland")
 
@@ -446,9 +441,12 @@ MobStatsConfig.Golem_Crystal = applyTheme({
 	XPGain = 49,
 	SlavkoinGain = 49,
 	StatusAilment = {
-		type = "stun",
+		type = "poison",
 		chance = 53,
-		duration = 2.4
+		duration = 4.5,
+		dps = 9,
+		tickInterval = 1.0,
+		skipDefense = true
 	}
 }, "Crystal")
 
@@ -466,9 +464,12 @@ MobStatsConfig.Golem_Poison = applyTheme({
 	XPGain = 55,
 	SlavkoinGain = 55,
 	StatusAilment = {
-		type = "stun",
+		type = "poison",
 		chance = 57,
-		duration = 2.6
+		duration = 5.0,
+		dps = 11,
+		tickInterval = 1.0,
+		skipDefense = true
 	}
 }, "Poison")
 
@@ -557,7 +558,16 @@ MobStatsConfig.Pirate_Ice = applyTheme({
 	Damage = 36,
 	WalkSpeed = 18,
 	XPGain = 20,
-	SlavkoinGain = 20
+	SlavkoinGain = 20,
+	StatusAilment = {
+		type = "ice",
+		chance = 50,
+		duration = 4.0,
+		dps = 5,
+		tickInterval = 1.0,
+		skipDefense = true,
+		slowMultiplier = 0.3
+	}
 }, "Ice")
 
 MobStatsConfig.GunPirate_Ice = applyTheme({
@@ -572,7 +582,16 @@ MobStatsConfig.GunPirate_Ice = applyTheme({
 	Damage = 39,
 	WalkSpeed = 18,
 	XPGain = 22,
-	SlavkoinGain = 22
+	SlavkoinGain = 22,
+	StatusAilment = {
+		type = "ice",
+		chance = 50,
+		duration = 4.0,
+		dps = 5,
+		tickInterval = 1.0,
+		skipDefense = true,
+		slowMultiplier = 0.3
+	}
 }, "Ice")
 
 MobStatsConfig.Jakalapati_Ice = applyTheme({
@@ -587,7 +606,16 @@ MobStatsConfig.Jakalapati_Ice = applyTheme({
 	Damage = 42,
 	WalkSpeed = 19,
 	XPGain = 24,
-	SlavkoinGain = 24
+	SlavkoinGain = 24,
+	StatusAilment = {
+		type = "ice",
+		chance = 50,
+		duration = 4.0,
+		dps = 6,
+		tickInterval = 1.0,
+		skipDefense = true,
+		slowMultiplier = 0.3
+	}
 }, "Ice")
 
 -- ========================================
@@ -606,7 +634,15 @@ MobStatsConfig.BurningDemon_Lava = applyTheme({
 	Damage = 48,
 	WalkSpeed = 19,
 	XPGain = 30,
-	SlavkoinGain = 30
+	SlavkoinGain = 30,
+	StatusAilment = {
+		type = "burn",
+		chance = 50,
+		duration = 4.5,
+		dps = 8,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Lava")
 
 MobStatsConfig.FlamingDemon_Lava = applyTheme({
@@ -621,7 +657,15 @@ MobStatsConfig.FlamingDemon_Lava = applyTheme({
 	Damage = 50,
 	WalkSpeed = 19,
 	XPGain = 32,
-	SlavkoinGain = 32
+	SlavkoinGain = 32,
+	StatusAilment = {
+		type = "burn",
+		chance = 50,
+		duration = 4.5,
+		dps = 9,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Lava")
 
 MobStatsConfig.HotDemon_Lava = applyTheme({
@@ -636,7 +680,15 @@ MobStatsConfig.HotDemon_Lava = applyTheme({
 	Damage = 52,
 	WalkSpeed = 19,
 	XPGain = 34,
-	SlavkoinGain = 34
+	SlavkoinGain = 34,
+	StatusAilment = {
+		type = "burn",
+		chance = 50,
+		duration = 4.5,
+		dps = 10,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Lava")
 
 -- ========================================
@@ -655,7 +707,15 @@ MobStatsConfig.EvilElf_Woodland = applyTheme({
 	Damage = 55,
 	WalkSpeed = 19,
 	XPGain = 36,
-	SlavkoinGain = 36
+	SlavkoinGain = 36,
+	StatusAilment = {
+		type = "poison",
+		chance = 50,
+		duration = 4.5,
+		dps = 7,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Woodland")
 
 MobStatsConfig.EvilerElf_Woodland = applyTheme({
@@ -670,7 +730,13 @@ MobStatsConfig.EvilerElf_Woodland = applyTheme({
 	Damage = 58,
 	WalkSpeed = 19,
 	XPGain = 38,
-	SlavkoinGain = 38
+	SlavkoinGain = 38,
+	StatusAilment = {
+		type = "slow",
+		chance = 50,
+		duration = 2.8,
+		slowMultiplier = 0.6
+	}
 }, "Woodland")
 
 MobStatsConfig.EvilistElf_Woodland = applyTheme({
@@ -685,7 +751,15 @@ MobStatsConfig.EvilistElf_Woodland = applyTheme({
 	Damage = 60,
 	WalkSpeed = 20,
 	XPGain = 40,
-	SlavkoinGain = 40
+	SlavkoinGain = 40,
+	StatusAilment = {
+		type = "burn",
+		chance = 45,
+		duration = 4.2,
+		dps = 7,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Woodland")
 
 -- ========================================
@@ -704,7 +778,12 @@ MobStatsConfig.LightningRaider_Lightning = applyTheme({
 	Damage = 62,
 	WalkSpeed = 20,
 	XPGain = 42,
-	SlavkoinGain = 42
+	SlavkoinGain = 42,
+	StatusAilment = {
+		type = "stun",
+		chance = 50,
+		duration = 2.0
+	}
 }, "Lightning")
 
 MobStatsConfig.EvilMonk_Lightning = applyTheme({
@@ -719,7 +798,12 @@ MobStatsConfig.EvilMonk_Lightning = applyTheme({
 	Damage = 64,
 	WalkSpeed = 20,
 	XPGain = 44,
-	SlavkoinGain = 44
+	SlavkoinGain = 44,
+	StatusAilment = {
+		type = "stun",
+		chance = 50,
+		duration = 2.0
+	}
 }, "Lightning")
 
 MobStatsConfig.EvilerMonk_Lightning = applyTheme({
@@ -734,7 +818,12 @@ MobStatsConfig.EvilerMonk_Lightning = applyTheme({
 	Damage = 66,
 	WalkSpeed = 21,
 	XPGain = 46,
-	SlavkoinGain = 46
+	SlavkoinGain = 46,
+	StatusAilment = {
+		type = "stun",
+		chance = 50,
+		duration = 2.0
+	}
 }, "Lightning")
 
 MobStatsConfig.EvilistMonk_Lightning = applyTheme({
@@ -749,7 +838,12 @@ MobStatsConfig.EvilistMonk_Lightning = applyTheme({
 	Damage = 68,
 	WalkSpeed = 21,
 	XPGain = 48,
-	SlavkoinGain = 48
+	SlavkoinGain = 48,
+	StatusAilment = {
+		type = "stun",
+		chance = 50,
+		duration = 2.0
+	}
 }, "Lightning")
 
 -- ========================================
@@ -768,7 +862,15 @@ MobStatsConfig.DwarvenMiner_Crystal = applyTheme({
 	Damage = 72,
 	WalkSpeed = 18,
 	XPGain = 52,
-	SlavkoinGain = 52
+	SlavkoinGain = 52,
+	StatusAilment = {
+		type = "burn",
+		chance = 45,
+		duration = 4.2,
+		dps = 7,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Crystal")
 
 MobStatsConfig.DwarvenSniper_Crystal = applyTheme({
@@ -783,7 +885,15 @@ MobStatsConfig.DwarvenSniper_Crystal = applyTheme({
 	Damage = 75,
 	WalkSpeed = 19,
 	XPGain = 54,
-	SlavkoinGain = 54
+	SlavkoinGain = 54,
+	StatusAilment = {
+		type = "poison",
+		chance = 50,
+		duration = 4.5,
+		dps = 8,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Crystal")
 
 MobStatsConfig.Cardelist_Crystal = applyTheme({
@@ -798,7 +908,13 @@ MobStatsConfig.Cardelist_Crystal = applyTheme({
 	Damage = 78,
 	WalkSpeed = 19,
 	XPGain = 56,
-	SlavkoinGain = 56
+	SlavkoinGain = 56,
+	StatusAilment = {
+		type = "slow",
+		chance = 50,
+		duration = 2.8,
+		slowMultiplier = 0.6
+	}
 }, "Crystal")
 
 -- ========================================
@@ -817,7 +933,15 @@ MobStatsConfig.BoyLason_Poison = applyTheme({
 	Damage = 82,
 	WalkSpeed = 19,
 	XPGain = 60,
-	SlavkoinGain = 60
+	SlavkoinGain = 60,
+	StatusAilment = {
+		type = "poison",
+		chance = 50,
+		duration = 4.5,
+		dps = 9,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Poison")
 
 MobStatsConfig.BoyDura_Poison = applyTheme({
@@ -832,7 +956,15 @@ MobStatsConfig.BoyDura_Poison = applyTheme({
 	Damage = 84,
 	WalkSpeed = 19,
 	XPGain = 62,
-	SlavkoinGain = 62
+	SlavkoinGain = 62,
+	StatusAilment = {
+		type = "poison",
+		chance = 50,
+		duration = 4.5,
+		dps = 9,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Poison")
 
 MobStatsConfig.PlemaBoy_Poison = applyTheme({
@@ -847,7 +979,15 @@ MobStatsConfig.PlemaBoy_Poison = applyTheme({
 	Damage = 86,
 	WalkSpeed = 20,
 	XPGain = 64,
-	SlavkoinGain = 64
+	SlavkoinGain = 64,
+	StatusAilment = {
+		type = "poison",
+		chance = 50,
+		duration = 4.5,
+		dps = 10,
+		tickInterval = 1.0,
+		skipDefense = true
+	}
 }, "Poison")
 
 -- ========================================
@@ -1065,12 +1205,10 @@ MobStatsConfig.Wraith_Sand = applyTheme({
 	XPGain = 82,
 	SlavkoinGain = 82,
 	StatusAilment = {
-		type = "burn",
-		chance = 58,
-		duration = 5.3,
-		dps = 15,
-		tickInterval = 1.0,
-		skipDefense = true
+		type = "slow",
+		chance = 55,
+		duration = 2.8,
+		slowMultiplier = 0.6
 	}
 }, "Sand")
 
@@ -1088,12 +1226,13 @@ MobStatsConfig.Wraith_Ice = applyTheme({
 	XPGain = 84,
 	SlavkoinGain = 84,
 	StatusAilment = {
-		type = "burn",
-		chance = 59,
-		duration = 5.4,
-		dps = 15,
+		type = "ice",
+		chance = 55,
+		duration = 4.2,
+		dps = 6,
 		tickInterval = 1.0,
-		skipDefense = true
+		skipDefense = true,
+		slowMultiplier = 0.3
 	}
 }, "Ice")
 
@@ -1112,9 +1251,9 @@ MobStatsConfig.Wraith_Lava = applyTheme({
 	SlavkoinGain = 85,
 	StatusAilment = {
 		type = "burn",
-		chance = 60,
-		duration = 5.4,
-		dps = 15,
+		chance = 55,
+		duration = 4.8,
+		dps = 12,
 		tickInterval = 1.0,
 		skipDefense = true
 	}
@@ -1134,12 +1273,10 @@ MobStatsConfig.Wraith_Woodland = applyTheme({
 	XPGain = 86,
 	SlavkoinGain = 86,
 	StatusAilment = {
-		type = "burn",
-		chance = 60,
-		duration = 5.4,
-		dps = 15,
-		tickInterval = 1.0,
-		skipDefense = true
+		type = "slow",
+		chance = 55,
+		duration = 2.8,
+		slowMultiplier = 0.6
 	}
 }, "Woodland")
 
@@ -1157,12 +1294,9 @@ MobStatsConfig.Wraith_Lightning = applyTheme({
 	XPGain = 88,
 	SlavkoinGain = 88,
 	StatusAilment = {
-		type = "burn",
-		chance = 61,
-		duration = 5.4,
-		dps = 16,
-		tickInterval = 1.0,
-		skipDefense = true
+		type = "stun",
+		chance = 55,
+		duration = 2.2
 	}
 }, "Lightning")
 
@@ -1180,10 +1314,10 @@ MobStatsConfig.Wraith_Crystal = applyTheme({
 	XPGain = 89,
 	SlavkoinGain = 89,
 	StatusAilment = {
-		type = "burn",
-		chance = 62,
-		duration = 5.5,
-		dps = 16,
+		type = "poison",
+		chance = 55,
+		duration = 4.8,
+		dps = 10,
 		tickInterval = 1.0,
 		skipDefense = true
 	}
@@ -1203,10 +1337,10 @@ MobStatsConfig.Wraith_Poison = applyTheme({
 	XPGain = 90,
 	SlavkoinGain = 90,
 	StatusAilment = {
-		type = "burn",
-		chance = 62,
-		duration = 5.5,
-		dps = 16,
+		type = "poison",
+		chance = 55,
+		duration = 4.8,
+		dps = 10,
 		tickInterval = 1.0,
 		skipDefense = true
 	}

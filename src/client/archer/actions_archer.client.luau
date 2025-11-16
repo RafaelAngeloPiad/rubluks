@@ -56,8 +56,12 @@ local function isWeaponClassMatch()
 				if CollectionService:HasTag(item, weaponTag) then
 					-- Capitalize first letter to match class names (e.g., "archer" -> "Archer")
 					local weaponClassName = className:sub(1, 1):upper() .. className:sub(2)
+					-- SLAVKO can use any weapon; otherwise compare classes
+					if string.lower(playerClassName) == "slavko" then
+						return true
+					end
 					-- Compare classes (case-insensitive)
-					return playerClassName:lower() == weaponClassName:lower()
+					return string.lower(playerClassName) == string.lower(weaponClassName)
 				end
 			end
 		end

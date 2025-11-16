@@ -497,7 +497,9 @@ end
 local function resolveClassForTag(tag)
 	local character = player.Character
 	local isTransformed = character and CollectionService:HasTag(character, "player_transformed")
-	
+	-- If SLAVKO, always act as current equipped weapon class (for all tags)
+	local isSlavko = (ServerConfigs.isSlavkoClass and ServerConfigs.isSlavkoClass(player)) or false
+
 	-- For skill/buff/ultimate buttons, use base class even when transformed
 	local skillTags = {"skill1_trigger", "skill2_trigger", "buff1_trigger", "buff2_trigger", "ultimate_trigger"}
 	local isSkillTag = false
@@ -507,15 +509,21 @@ local function resolveClassForTag(tag)
 			break
 		end
 	end
-	
+
 	-- If transformed and it's a skill/buff/ultimate, use base class instead of "mob"
 	if isTransformed and isSkillTag then
-		local baseClass = getPlayerBaseClass()
+		local baseClass = isSlavko and getEquippedWeaponClass() or getPlayerBaseClass()
 		if baseClass then
 			return baseClass
 		end
 	end
-	
+
+	-- SLAVKO: prefer equipped weapon class
+	if isSlavko then
+		local w = getEquippedWeaponClass()
+		if w then return w end
+	end
+
 	local class = detectCurrentClass()
 	if class then
 		return class
@@ -554,6 +562,10 @@ local function hasMatchingWeaponEquipped()
 	if character and CollectionService:HasTag(character, "player_transformed") then
 		return true
 	end
+	-- SLAVKO can use any weapon
+	if ServerConfigs.isSlavkoClass and ServerConfigs.isSlavkoClass(player) then
+		return true
+	end
 
 	local baseClass = getPlayerBaseClass()
 	local weaponClass = getEquippedWeaponClass()
@@ -575,6 +587,11 @@ detectCurrentClass = function()
 
 	if CollectionService:HasTag(character, "player_transformed") then
 		return "mob"
+	end
+
+	-- SLAVKO: behave as equipped class
+	if ServerConfigs.isSlavkoClass and ServerConfigs.isSlavkoClass(player) then
+		return getEquippedWeaponClass()
 	end
 
 	if not hasMatchingWeaponEquipped() then

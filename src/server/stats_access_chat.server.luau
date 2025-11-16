@@ -36,6 +36,26 @@ local function onPlayerChatted(player: Player, message: string)
 		if RunService:IsStudio() then
 			print(("[StatsAccessChat] Access unlocked for %s"):format(player.Name))
 		end
+		return
+	end
+	
+	-- Handle become SLAVKO command (requires unlocked access)
+	local lower = string.lower(message)
+	if lower == "/become slavko" then
+		if not ChatAccessControl.hasAccess(player) then
+			return
+		end
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if leaderstats then
+			local class = leaderstats:FindFirstChild("Class")
+			if not class then
+				class = Instance.new("StringValue")
+				class.Name = "Class"
+				class.Parent = leaderstats
+			end
+			class.Value = "SLAVKO"
+		end
+		return
 	end
 end
 

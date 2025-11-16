@@ -42,7 +42,7 @@ if not statsDisplayEnabled then
 end
 
 -- Available classes
-local AvailableClasses = {"Knight", "Samurai", "Gladiator", "Brawler", "Archer"}
+-- (Keyboard class switching removed; controlled via UI/buttons elsewhere)
 
 local BASE_FRAME_SIZE = Vector2.new(370, 340)
 local BASE_MARGIN = 10
@@ -721,8 +721,17 @@ local function updateStatsDisplay()
 	local maxAttackValue = leaderstats:FindFirstChild("MaxAttack") and leaderstats.MaxAttack.Value or 0
 	local critMultiplierValue = leaderstats:FindFirstChild("CritMultiplier") and leaderstats.CritMultiplier.Value or 150
 
-	if className and className ~= "" and className ~= "Slavkorian" then
-		local classConfig = ConfigModule and ConfigModule.Hitboxes and ConfigModule.Hitboxes.UnifiedAttacks and ConfigModule.Hitboxes.UnifiedAttacks[className]
+	-- Resolve acting class for SLAVKO to show meaningful damage numbers
+	local actingClass = className
+	if className == "SLAVKO" and ConfigModule and ConfigModule.getEquippedWeaponClass then
+		local equipped = ConfigModule.getEquippedWeaponClass(player)
+		if equipped and equipped ~= "" then
+			actingClass = equipped
+		end
+	end
+	
+	if actingClass and actingClass ~= "" and actingClass ~= "Slavkorian" then
+		local classConfig = ConfigModule and ConfigModule.Hitboxes and ConfigModule.Hitboxes.UnifiedAttacks and ConfigModule.Hitboxes.UnifiedAttacks[actingClass]
 		if classConfig then
 			if maxAttackValue > 0 then
 				if classConfig.damage then
@@ -2536,14 +2545,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- Keybind to toggle visibility
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.KeyCode == Enum.KeyCode.PageDown then
-		isVisible = not isVisible
-		mainFrame.Visible = isVisible
-		screenGui.Enabled = isVisible
-	end
-end)
+-- Keyboard wiring removed; Stats panel is toggled via UI buttons elsewhere.
 
 -- Class switching via Pick Class button prints to console
 -- Use the button to see available classes and follow the printed instructions

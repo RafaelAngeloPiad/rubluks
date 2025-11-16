@@ -35,9 +35,10 @@ function _G.checkKnightsBladePassive(player)
 		return false
 	end
 	
-	-- Check if player is Knight class
+	-- Check if player is Knight class (respect SLAVKO acting class)
 	local class = leaderstats:FindFirstChild("Class")
-	if not class or class.Value ~= "Knight" then
+	local actingClass = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or (class and class.Value)
+	if not actingClass or actingClass ~= "Knight" then
 		return false
 	end
 

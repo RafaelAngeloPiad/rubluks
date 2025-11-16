@@ -1471,6 +1471,23 @@ local BaseStats = {
 	}
 }
 
+-- Secret omni-class: SLAVKO (balanced defaults; acts as equipped weapon on client/server logic)
+BaseStats.SLAVKO = {
+	-- Offense Stats
+	ATK = 25,
+	DP = 25,
+	CR = 1,
+	CM = 3,
+	
+	-- Defense Stats
+	HP = 550,
+	D = 25,
+	HR = 25,
+	Mspd = 18,
+	Aspd = 1.0,
+	-- SkillAspd uses default fallback from baselines
+}
+
 -- Export BaseStats to ServerConfigs so other modules can access it
 ServerConfigs.BaseStats = BaseStats
 
@@ -1907,7 +1924,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			
 			-- Update unified movement animation speed in ServerConfigs
 			local movementAnimSpeedMultiplier = movementSpeed.Value
-			local classType = ServerConfigs.getPlayerClass(player)
+			local classType = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or ServerConfigs.getPlayerClass(player)
 			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 				ServerConfigs.Hitboxes.UnifiedAttacks[classType].movementSpeed = movementAnimSpeedMultiplier
 			end
@@ -1957,7 +1974,7 @@ function _G.applyBuff(player, buffName, buffConfig)
 			
 			-- Update unified attack animation speed in ServerConfigs
 			local attackAnimSpeedMultiplier = attackSpeed.Value
-			local classType = ServerConfigs.getPlayerClass(player)
+			local classType = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or ServerConfigs.getPlayerClass(player)
 			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 				ServerConfigs.Hitboxes.UnifiedAttacks[classType].attackSpeed = attackAnimSpeedMultiplier
 			end
@@ -2720,7 +2737,7 @@ function _G.removeBuff(player, buffName)
 			
 			-- Update unified movement animation speed in ServerConfigs
 			local movementAnimSpeedMultiplier = movementSpeed.Value
-			local classType = ServerConfigs.getPlayerClass(player)
+			local classType = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or ServerConfigs.getPlayerClass(player)
 			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 				ServerConfigs.Hitboxes.UnifiedAttacks[classType].movementSpeed = movementAnimSpeedMultiplier
 			end
@@ -2768,7 +2785,7 @@ function _G.removeBuff(player, buffName)
 			
 			-- Update unified attack animation speed in ServerConfigs
 			local attackAnimSpeedMultiplier = attackSpeed.Value
-			local classType = ServerConfigs.getPlayerClass(player)
+			local classType = (ServerConfigs.getActingClass and ServerConfigs.getActingClass(player)) or ServerConfigs.getPlayerClass(player)
 			if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 				ServerConfigs.Hitboxes.UnifiedAttacks[classType].attackSpeed = attackAnimSpeedMultiplier
 			end
