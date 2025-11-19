@@ -33,9 +33,6 @@ local function onPlayerChatted(player: Player, message: string)
 		ChatAccessControl.unlockAccess(player)
 		PanelUnlockEvent:FireClient(player, true)
 		
-		if RunService:IsStudio() then
-			print(("[StatsAccessChat] Access unlocked for %s"):format(player.Name))
-		end
 		return
 	end
 	
@@ -69,10 +66,5 @@ Players.PlayerAdded:Connect(connectPlayer)
 
 for _, player in ipairs(Players:GetPlayers()) do
 	connectPlayer(player)
-end
-
-if RunService:IsStudio() then
-	local currentPassword = getCurrentPassword()
-	print(("[StatsAccessChat] Stats access chat listener ready. Use %s to unlock panels."):format(currentPassword))
 end
 

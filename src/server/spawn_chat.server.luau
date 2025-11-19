@@ -210,8 +210,3 @@ Players.PlayerAdded:Connect(connectPlayer)
 for _, player in ipairs(Players:GetPlayers()) do
 	connectPlayer(player)
 end
-
-if RunService:IsStudio() then
-	print("[SpawnChat] Spawn chat command ready. Use /spawn <NameOrPath> [count]")
-end
-

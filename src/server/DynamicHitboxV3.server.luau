@@ -652,14 +652,38 @@ function _G.createXpGainNumber(target, xpAmount)
 		return
 	end
 
+	-- Resolve character and player
 	local character, player = resolveCharacterAndPlayer(target)
-	if not character or not character.Parent or not player then
-		return
+	
+	-- If target is a Player and character doesn't exist, wait briefly and retry
+	if not character or not character.Parent then
+		if typeof(target) == "Instance" and target:IsA("Player") then
+			player = target
+			-- Wait up to 0.5 seconds for character to load
+			for i = 1, 10 do
+				task.wait(0.05)
+				character = target.Character
+				if character and character.Parent then
+					break
+				end
+			end
+		end
+		
+		if not character or not character.Parent or not player then
+			return
+		end
 	end
 
-	fireFloatingNumberEvent(player, {
+	-- Verify character has required parts
+	if not character:FindFirstChild("Head") and not character:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	
+	-- Pass player UserId instead of model to avoid replication issues
+	fireFloatingNumberEvent("all", {
 		type = "xp",
-		model = character,
+		playerId = player.UserId, -- Pass player ID instead of model
+		model = character, -- Keep model for backward compatibility
 		amount = amount,
 	})
 end
@@ -677,14 +701,38 @@ function _G.createSlavkoinGainNumber(target, amount)
 		return
 	end
 
+	-- Resolve character and player
 	local character, player = resolveCharacterAndPlayer(target)
-	if not character or not character.Parent or not player then
-		return
+	
+	-- If target is a Player and character doesn't exist, wait briefly and retry
+	if not character or not character.Parent then
+		if typeof(target) == "Instance" and target:IsA("Player") then
+			player = target
+			-- Wait up to 0.5 seconds for character to load
+			for i = 1, 10 do
+				task.wait(0.05)
+				character = target.Character
+				if character and character.Parent then
+					break
+				end
+			end
+		end
+		
+		if not character or not character.Parent or not player then
+			return
+		end
 	end
 
-	fireFloatingNumberEvent(player, {
+	-- Verify character has required parts
+	if not character:FindFirstChild("Head") and not character:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	
+	-- Pass player UserId instead of model to avoid replication issues
+	fireFloatingNumberEvent("all", {
 		type = "slavkoin",
-		model = character,
+		playerId = player.UserId, -- Pass player ID instead of model
+		model = character, -- Keep model for backward compatibility
 		amount = normalizedAmount,
 	})
 end

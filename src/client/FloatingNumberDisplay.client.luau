@@ -24,8 +24,28 @@ local function getAttachPart(model, attachPreference)
 		return nil
 	end
 
-	local head = model:FindFirstChild("Head")
+	-- Find Head - skip Accessories (hats) and get the actual Head BasePart
+	local head = nil
+	for _, child in ipairs(model:GetChildren()) do
+		if child.Name == "Head" and child:IsA("BasePart") then
+			head = child
+			break
+		end
+	end
+	
+	-- Find HumanoidRootPart
 	local root = model:FindFirstChild("HumanoidRootPart")
+	if root and not root:IsA("BasePart") then
+		root = nil
+	end
+
+	-- Ensure we have actual BaseParts
+	if head and not head:IsA("BasePart") then
+		head = nil
+	end
+	if root and not root:IsA("BasePart") then
+		root = nil
+	end
 
 	if attachPreference == "Root" then
 		return root or head
@@ -86,7 +106,7 @@ local function createFloatingNumber(eventType, model, amount)
 	end
 
 	local attachPart = getAttachPart(model, config.attachTo)
-	if not attachPart then
+	if not attachPart or not attachPart:IsA("BasePart") then
 		return
 	end
 
@@ -164,7 +184,7 @@ local function createFloatingNumber(eventType, model, amount)
 		)
 
 		local camera = workspace.CurrentCamera
-		if camera and camera.CFrame then
+		if camera and camera.CFrame and attachPart and attachPart:IsA("BasePart") then
 			local cameraPosition = camera.CFrame.Position
 			local distance = (cameraPosition - attachPart.Position).Magnitude
 			local scale = computeScale(distance, config)
@@ -190,11 +210,56 @@ FloatingNumberEvent.OnClientEvent:Connect(function(payload)
 	end
 
 	local eventType = payload.type
-	local model = payload.model
 	local amount = payload.amount
 
-	if not eventType or typeof(model) ~= "Instance" or typeof(amount) ~= "number" then
+	if not eventType or typeof(amount) ~= "number" then
 		return
+	end
+
+	-- For XP and Slavkoin, resolve character from playerId or model
+	local model = payload.model
+	if eventType == "xp" or eventType == "slavkoin" then
+		-- Check if playerId is provided (preferred method)
+		if payload.playerId then
+			local targetPlayer = Players:GetPlayerByUserId(payload.playerId)
+			if targetPlayer and targetPlayer == LocalPlayer then
+				-- Only show for LocalPlayer
+				model = targetPlayer.Character
+				-- Wait briefly for character if it doesn't exist yet
+				if not model or not model.Parent then
+					-- Try waiting up to 0.5 seconds for character to load
+					for i = 1, 10 do
+						task.wait(0.05)
+						model = targetPlayer.Character
+						if model and model.Parent then
+							break
+						end
+					end
+				end
+				if not model or not model.Parent then
+					return
+				end
+			else
+				-- Not for LocalPlayer, ignore
+				return
+			end
+		elseif model then
+			-- Fallback to model-based check
+			local modelPlayer = Players:GetPlayerFromCharacter(model)
+			if modelPlayer ~= LocalPlayer then
+				return
+			end
+		else
+			-- No model or playerId provided
+			return
+		end
+	end
+
+	-- For damage numbers, model is required
+	if not model or typeof(model) ~= "Instance" then
+		if eventType ~= "xp" and eventType ~= "slavkoin" then
+			return
+		end
 	end
 
 	createFloatingNumber(eventType, model, amount)

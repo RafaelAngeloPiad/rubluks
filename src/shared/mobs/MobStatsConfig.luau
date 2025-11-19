@@ -84,49 +84,127 @@ local function bindRewardHandler(model)
 
 	model:SetAttribute("RewardHandlerBound", true)
 
-	humanoid.Died:Connect(function()
-		if model:GetAttribute("RewardsGranted") then
-			return
-		end
+	-- Store connection to prevent garbage collection
+	local deathConnection = nil
+	
+	-- Function to handle death
+		local function onDeath()
+		local success, err = pcall(function()
+			-- Get fresh humanoid reference in case it was replaced
+			local currentHumanoid = model:FindFirstChildOfClass("Humanoid")
+			
+			if not model or not model.Parent then
+				return
+			end
+			
+			if model:GetAttribute("RewardsGranted") then
+				return
+			end
 
-		model:SetAttribute("RewardsGranted", true)
+			model:SetAttribute("RewardsGranted", true)
 
-		local killerUserId = model:GetAttribute("LastDamagePlayerId")
-		if not killerUserId then
-			return
-		end
+			local killerUserId = model:GetAttribute("LastDamagePlayerId")
+			if not killerUserId then
+				return
+			end
 
-		local player = Players:GetPlayerByUserId(killerUserId)
-		if not player then
-			return
-		end
+			local player = Players:GetPlayerByUserId(killerUserId)
+			if not player then
+				return
+			end
 
-		local leaderstats = player:FindFirstChild("leaderstats")
-		if not leaderstats then
-			return
-		end
+			local leaderstats = player:FindFirstChild("leaderstats")
+			if not leaderstats then
+				return
+			end
 
-		local xpGain = model:GetAttribute("XPGain")
-		if xpGain and xpGain > 0 then
-			local currentXP = leaderstats:FindFirstChild("CurrentXP")
-			if currentXP then
-				currentXP.Value = currentXP.Value + xpGain
+			local xpGain = model:GetAttribute("XPGain")
+			if xpGain and xpGain > 0 then
+				local currentXP = leaderstats:FindFirstChild("CurrentXP")
+				if currentXP then
+					currentXP.Value = currentXP.Value + xpGain
 
-				if _G.createXpGainNumber then
-					_G.createXpGainNumber(player, xpGain)
+					-- Call immediately - functions should already be loaded
+					task.spawn(function()
+						local success, err = pcall(function()
+							if _G.createXpGainNumber then
+								_G.createXpGainNumber(player, xpGain)
+							end
+						end)
+						if not success then
+							warn("[MobStatsConfig] Error in XP task.spawn:", err)
+						end
+					end)
 				end
 			end
-		end
 
-		local coinGain = model:GetAttribute("SlavkoinGain")
-		if coinGain and coinGain > 0 then
-			local slavkoins = leaderstats:FindFirstChild("Slavkoins")
-			if slavkoins then
-				slavkoins.Value = slavkoins.Value + coinGain
+			local coinGain = model:GetAttribute("SlavkoinGain")
+			if coinGain and coinGain > 0 then
+				local slavkoins = leaderstats:FindFirstChild("Slavkoins")
+				if slavkoins then
+					slavkoins.Value = slavkoins.Value + coinGain
 
-				if _G.createSlavkoinGainNumber then
-					_G.createSlavkoinGainNumber(player, coinGain)
+					-- Call immediately - functions should already be loaded
+					task.spawn(function()
+						local success, err = pcall(function()
+							if _G.createSlavkoinGainNumber then
+								_G.createSlavkoinGainNumber(player, coinGain)
+							end
+						end)
+						if not success then
+							warn("[MobStatsConfig] Error in Slavkoin task.spawn:", err)
+						end
+					end)
 				end
+			end
+		end)
+		if not success then
+			warn("[MobStatsConfig] ERROR in death handler:", err)
+		end
+	end
+	
+	-- Connect to the humanoid's Died event
+	deathConnection = humanoid.Died:Connect(onDeath)
+	
+	-- Also connect to HealthChanged as backup (in case Died event doesn't fire)
+	local healthConnection = nil
+	local function onHealthChanged(health)
+		if health <= 0 and model:GetAttribute("RewardsGranted") ~= true then
+			onDeath()
+		end
+	end
+	healthConnection = humanoid.HealthChanged:Connect(onHealthChanged)
+	
+	-- Also monitor for humanoid replacement (in case AI modules replace it)
+	local humanoidReplacementConnection = nil
+	humanoidReplacementConnection = model.ChildAdded:Connect(function(child)
+		if child:IsA("Humanoid") and child ~= humanoid then
+			warn("[MobStatsConfig] Humanoid replaced for model:", model.Name)
+			-- Disconnect old handlers
+			if deathConnection then
+				deathConnection:Disconnect()
+			end
+			if healthConnection then
+				healthConnection:Disconnect()
+			end
+			-- Connect to new humanoid
+			humanoid = child
+			deathConnection = humanoid.Died:Connect(onDeath)
+			healthConnection = humanoid.HealthChanged:Connect(onHealthChanged)
+		end
+	end)
+	
+	-- Clean up when model is destroyed
+	model.AncestryChanged:Connect(function()
+		if not model.Parent then
+			if deathConnection then
+				deathConnection:Disconnect()
+			end
+			if healthConnection then
+				healthConnection:Disconnect()
+			end
+			if humanoidReplacementConnection then
+				humanoidReplacementConnection:Disconnect()
 			end
 		end
 	end)

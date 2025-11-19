@@ -198,8 +198,5 @@ for _, player in ipairs(Players:GetPlayers()) do
 	connectPlayer(player)
 end
 
-if RunService:IsStudio() then
-	print("[TransformerChat] Transformer chat command ready. Use /transform <MobName>")
-end
 
 
