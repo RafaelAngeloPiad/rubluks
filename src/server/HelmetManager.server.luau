@@ -170,7 +170,8 @@ local function dropHelmetNearPlayer(player: Player, canonicalName: string)
 	if character then
 		local root = character:FindFirstChild("HumanoidRootPart")
 		if root then
-			pivotCFrame = root.CFrame * CFrame.new(0, 2, -6)
+			-- Drop farther in front of the player so it doesn't immediately auto-re-equip
+			pivotCFrame = root.CFrame * CFrame.new(0, 2, -12)
 		end
 	end
 	if pivotCFrame then
