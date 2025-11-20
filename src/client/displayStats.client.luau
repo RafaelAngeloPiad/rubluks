@@ -7,6 +7,30 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
+-- Load EquipmentBonusConfig
+local EquipmentBonusConfig = nil
+local EquipmentBonusEntries = {}
+local EquipmentBonusAssetLookup = {}
+local EquipmentBonusCanonicalLookup = {}
+
+local success, config = pcall(function()
+	local configModule = ReplicatedStorage:FindFirstChild("EquipmentBonusConfig")
+	if not configModule then
+		configModule = ReplicatedStorage:WaitForChild("EquipmentBonusConfig", 5)
+	end
+	if configModule then
+		return require(configModule)
+	end
+	return nil
+end)
+
+if success and config then
+	EquipmentBonusConfig = config
+	EquipmentBonusEntries = config.Entries or {}
+	EquipmentBonusAssetLookup = config.AssetLookup or {}
+	EquipmentBonusCanonicalLookup = config.CanonicalLookup or {}
+end
+
 -- RemoteEvent for dev stat changes
 local DevStatEvent = ReplicatedStorage:WaitForChild("DevStatEvent", 10)
 
@@ -858,6 +882,99 @@ local function updateStatsDisplay()
 				statLabels[labelKey] = createStatRow(entry.label, bonusText, Color3.fromRGB(180, 255, 180), layoutOrder)
 				layoutOrder = layoutOrder + 1
 			end
+		end
+	end
+
+	-- Display status ailments from equipped items
+	local equippedStatusAilments = {}
+	if player.Character and EquipmentBonusConfig then
+		for _, child in ipairs(player.Character:GetChildren()) do
+			if child:IsA("Tool") or child:IsA("Accessory") then
+				-- Try to get config entry by name
+				local configEntry = EquipmentBonusAssetLookup[child.Name]
+				if not configEntry then
+					-- Try canonical name lookup
+					local canonicalName = EquipmentBonusCanonicalLookup[child.Name]
+					if canonicalName then
+						configEntry = EquipmentBonusEntries[canonicalName]
+					end
+				end
+				
+				-- Also check if there's a canonicalName attribute
+				if not configEntry then
+					local canonicalNameAttr = child:GetAttribute("canonicalName")
+					if canonicalNameAttr and typeof(canonicalNameAttr) == "string" then
+						configEntry = EquipmentBonusEntries[canonicalNameAttr]
+						if not configEntry then
+							configEntry = EquipmentBonusAssetLookup[canonicalNameAttr]
+						end
+					end
+				end
+				
+				if configEntry and configEntry.statusAilment then
+					local ailment = configEntry.statusAilment
+					local itemName = child.Name
+					
+					-- Format status ailment text
+					local ailmentParts = {}
+					if ailment.type then
+						local ailmentType = ailment.type:sub(1, 1):upper() .. ailment.type:sub(2) -- Capitalize first letter
+						table.insert(ailmentParts, ailmentType)
+					end
+					
+					-- Add chance if not 100%
+					if ailment.chance then
+						if ailment.chance < 100 then
+							table.insert(ailmentParts, string.format("%d%% chance", ailment.chance))
+						end
+					end
+					
+					-- Add duration
+					if ailment.duration then
+						local duration = ailment.duration
+						if duration >= 60 then
+							local minutes = math.floor(duration / 60)
+							local seconds = math.floor(duration % 60)
+							if seconds > 0 then
+								table.insert(ailmentParts, string.format("%dm %ds", minutes, seconds))
+							else
+								table.insert(ailmentParts, string.format("%dm", minutes))
+							end
+						else
+							table.insert(ailmentParts, string.format("%.1fs", duration))
+						end
+					end
+					
+					-- Add DPS if applicable
+					if ailment.dps and ailment.dps > 0 then
+						table.insert(ailmentParts, string.format("%d DPS", ailment.dps))
+					end
+					
+					-- Add slow multiplier if applicable
+					if ailment.slowMultiplier and ailment.slowMultiplier < 1 then
+						local slowPercent = math.floor((1 - ailment.slowMultiplier) * 100)
+						table.insert(ailmentParts, string.format("%d%% slow", slowPercent))
+					end
+					
+					if #ailmentParts > 0 then
+						local ailmentText = table.concat(ailmentParts, ", ")
+						table.insert(equippedStatusAilments, {
+							itemName = itemName,
+							ailmentText = ailmentText
+						})
+					end
+				end
+			end
+		end
+	end
+	
+	-- Display status ailments
+	if #equippedStatusAilments > 0 then
+		hasEquipmentBonuses = true
+		for _, data in ipairs(equippedStatusAilments) do
+			local labelKey = "Equipment_StatusAilment_" .. data.itemName
+			statLabels[labelKey] = createStatRow(data.itemName .. " Status", data.ailmentText, Color3.fromRGB(255, 200, 100), layoutOrder)
+			layoutOrder = layoutOrder + 1
 		end
 	end
 
@@ -2502,12 +2619,49 @@ local function setupStatConnections()
 	end
 end
 
+-- Listen for character equipment changes to update status ailments
+local function setupCharacterEquipmentListener()
+	if player.Character then
+		-- Clear old connections
+		if statConnections["CharacterChildAdded"] then
+			statConnections["CharacterChildAdded"]:Disconnect()
+		end
+		if statConnections["CharacterChildRemoved"] then
+			statConnections["CharacterChildRemoved"]:Disconnect()
+		end
+		
+		-- Listen for tool/accessory changes
+		local function onChildAdded(child)
+			if (child:IsA("Tool") or child:IsA("Accessory")) and EquipmentBonusConfig then
+				task.wait(0.1) -- Small delay to let equipment fully load
+				updateStatsDisplay()
+			end
+		end
+		
+		local function onChildRemoved(child)
+			if (child:IsA("Tool") or child:IsA("Accessory")) and EquipmentBonusConfig then
+				task.wait(0.1)
+				updateStatsDisplay()
+			end
+		end
+		
+		statConnections["CharacterChildAdded"] = player.Character.ChildAdded:Connect(onChildAdded)
+		statConnections["CharacterChildRemoved"] = player.Character.ChildRemoved:Connect(onChildRemoved)
+	end
+end
+
 -- Reconnect when player respawns
 player.CharacterAdded:Connect(function()
 	task.wait(1)
 	updateStatsDisplay()
 	setupStatConnections() -- Reconnect stat change listeners on respawn
+	setupCharacterEquipmentListener() -- Setup equipment listener on respawn
 end)
+
+-- Setup equipment listener initially if character already exists
+if player.Character then
+	setupCharacterEquipmentListener()
+end
 
 -- Initial setup
 setupStatConnections()

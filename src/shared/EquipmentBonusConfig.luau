@@ -38,7 +38,7 @@
 
 local Entries = {
 	-- Example configuration entries (replace with your own values)
-	["Samurai Weapon Trailed"] = {
+	["Flame Sword"] = {
 		AttackPlus = 5,
 		statusAilment = {
 			type = "burn",
@@ -48,10 +48,18 @@ local Entries = {
 			tickInterval = 1.0,
 		},
 	},
-	["Archer Weapon"] = {
-		assetName = "Archer Weapon Bonus",
+	["Prominent Bow"] = {
 		AttackPlus = 40,
 		CritRatePlus = 5,
+	},
+	["Giant Dragon Gauntlet"] = {
+		AttackPlus = 100,
+		DefensePlus = 100,
+		statusAilment = {
+			type = "stun",
+			chance = 30,
+			duration = 1.0
+		},
 	},
 }
 
