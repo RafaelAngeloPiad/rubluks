@@ -160,13 +160,6 @@ local function dropHelmetNearPlayer(player: Player, canonicalName: string)
 	end
 
 	local tool = asset:Clone()
-	-- Dropped helmets are just world items; strip the helmet tag so they aren't auto-recollected into the slot
-	pcall(function()
-		if CollectionService:HasTag(tool, HELMET_TAG) then
-			CollectionService:RemoveTag(tool, HELMET_TAG)
-		end
-	end)
-
 	tool.Parent = workspace
 	-- Dropped helmets should behave like normal physical tools in the world
 	makeInstancePhysical(tool)
