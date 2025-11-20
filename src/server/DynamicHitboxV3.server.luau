@@ -945,48 +945,63 @@ local function applyKnockback(attacker, target)
 		return
 	end
 	
-	-- Get target's facing direction (reverse it for knockback)
-	local targetFacing = targetRoot.CFrame.LookVector
-	local knockbackDirection = -targetFacing -- Reverse the facing direction
-	local horizontalDirection = Vector3.new(knockbackDirection.X, 0, knockbackDirection.Z)
-	local magnitude = horizontalDirection.Magnitude
-	
-	if magnitude > 0.1 then
-		-- Normalize horizontal direction
-		horizontalDirection = horizontalDirection / magnitude
-		
-		-- Calculate knockback velocity (horizontal only)
-		local knockbackVel = horizontalDirection * knockbackConfig.force
-		
-		-- Get humanoid
-		local humanoid = target:FindFirstChildOfClass("Humanoid")
-		if not humanoid then
-			return
-		end
-		
-		-- Temporarily disable AI movement
-		local originalPlatformStand = humanoid.PlatformStand
-		humanoid.PlatformStand = true
-		
-		-- Make sure part is not anchored
-		if targetRoot.Anchored then
-			targetRoot.Anchored = false
-		end
-		
-		-- Simply apply horizontal velocity (no collision floors, no position corrections)
-		local currentVel = targetRoot.AssemblyLinearVelocity
-		local horizontalVel = Vector3.new(knockbackVel.X, 0, knockbackVel.Z)
-		
-		-- Apply velocity - keep Y unchanged, only push horizontally
-		targetRoot.AssemblyLinearVelocity = Vector3.new(currentVel.X + horizontalVel.X, currentVel.Y, currentVel.Z + horizontalVel.Z)
-		
-		-- Restore AI movement after short delay
-		task.delay(0.3, function()
-			if humanoid and humanoid.Parent and targetRoot and targetRoot.Parent then
-				humanoid.PlatformStand = originalPlatformStand
-			end
-		end)
+	-- Compute pure horizontal knockback direction (never vertical)
+	-- Prefer direction away from attacker → target so it always moves directly away from the hit source
+	local attackerRoot = attacker:FindFirstChild("HumanoidRootPart")
+	local horizontalDirection
+	if attackerRoot then
+		local rawDir = (targetRoot.Position - attackerRoot.Position)
+		horizontalDirection = Vector3.new(rawDir.X, 0, rawDir.Z)
+	else
+		-- Fallback: use target's facing direction so it gets pushed backwards
+		local targetFacing = targetRoot.CFrame.LookVector
+		local knockbackDirection = -targetFacing
+		horizontalDirection = Vector3.new(knockbackDirection.X, 0, knockbackDirection.Z)
 	end
+
+	local magnitude = horizontalDirection.Magnitude
+	if magnitude <= 0.1 then
+		return
+	end
+	horizontalDirection = horizontalDirection / magnitude
+	
+	-- Distance in studs is taken directly from config.force
+	local distance = knockbackConfig.force or 20
+	if distance <= 0 then
+		return
+	end
+	
+	local startPos = targetRoot.Position
+	local desiredEnd = startPos + (horizontalDirection * distance)
+	
+	-- Optional: raycast horizontally to avoid clipping into walls/meshes
+	local rayOrigin = Vector3.new(startPos.X, startPos.Y, startPos.Z)
+	local rayDirection = Vector3.new(desiredEnd.X - startPos.X, 0, desiredEnd.Z - startPos.Z)
+	
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { target, attacker }
+	
+	local rayResult = workspace:Raycast(rayOrigin, rayDirection, rayParams)
+	if rayResult then
+		-- Stop just before the hit point to avoid embedding
+		local hitPos = rayResult.Position
+		desiredEnd = Vector3.new(hitPos.X, startPos.Y, hitPos.Z)
+	end
+	
+	-- Preserve current facing (look vector) while moving root horizontally only
+	local lookAtPos = startPos + targetRoot.CFrame.LookVector
+	local endCFrame = CFrame.new(desiredEnd, desiredEnd + (lookAtPos - startPos))
+	
+	-- Ensure server has authoritative control over this assembly before teleporting
+	pcall(function()
+		targetRoot.AssemblyLinearVelocity = Vector3.new(0, targetRoot.AssemblyLinearVelocity.Y, 0)
+		targetRoot:SetNetworkOwner(nil)
+	end)
+	
+	-- Directly set HumanoidRootPart CFrame; other parts follow via joints.
+	-- No vertical movement is introduced by this change.
+	targetRoot.CFrame = endCFrame
 end
 
 -- ========================================
