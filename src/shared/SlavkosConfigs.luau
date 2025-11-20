@@ -106,7 +106,7 @@ ServerConfigs.Hitbox = {
 		-- Knockback Configuration
 		knockback = {
 			enabled = true, -- Enable/disable knockback
-			force = 5 -- Knockback force (velocity applied to mob)
+			force = 2 -- Knockback force (velocity applied to mob)
 		},
 		
 		-- Mob Stats Display Configuration
