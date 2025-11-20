@@ -17,6 +17,7 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local ConsumableEvent = ReplicatedStorage:WaitForChild("ConsumableEvent")
+local HelmetEvent = ReplicatedStorage:WaitForChild("HelmetEvent")
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local ServerConfigs = require(ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 local ConsumableEntries = ConsumableConfig.Entries or {}
@@ -411,6 +412,8 @@ local CONSUMABLE_SLOT_TAGS = {
 
 local CONSUMABLE_SLOT_COUNT = #CONSUMABLE_SLOT_TAGS
 
+local HELMET_SLOT_TAG = "helmet_slot"
+
 local function hideTooltip()
 end
 
@@ -616,6 +619,9 @@ for index = 1, CONSUMABLE_SLOT_COUNT do
 	consumableButtons[index] = {}
 end
 
+local helmetSlot = nil
+local helmetButtons = {}
+
 local function getConsumableTooltipText(slotIndex)
 	local slotData = consumableSlots[slotIndex]
 	if not slotData then
@@ -689,6 +695,38 @@ local function updateConsumableButtonsForSlot(slotIndex)
 	end
 end
 
+local function updateHelmetButtonVisual(button)
+	local hasHelmet = helmetSlot ~= nil
+	local displayName = helmetSlot and (helmetSlot.displayName or helmetSlot.canonicalName) or "---"
+
+	if button:IsA("ImageButton") then
+		button.ImageTransparency = hasHelmet and 0 or 0.7
+		local textLabel = button:FindFirstChildOfClass("TextLabel")
+		if textLabel then
+			textLabel.Text = displayName
+			textLabel.TextTransparency = hasHelmet and 0 or 0.4
+		end
+	else
+		button.Text = displayName
+		if button:IsA("TextButton") then
+			button.TextTransparency = hasHelmet and 0 or 0.4
+		end
+	end
+
+	if button:IsA("GuiButton") then
+		button.AutoButtonColor = hasHelmet
+		button.Active = true
+	end
+end
+
+local function updateAllHelmetButtons()
+	for _, button in ipairs(helmetButtons) do
+		if button.Parent then
+			updateHelmetButtonVisual(button)
+		end
+	end
+end
+
 local function registerConsumableButton(slotIndex, button)
 	table.insert(consumableButtons[slotIndex], button)
 	button.Destroying:Connect(function()
@@ -700,6 +738,19 @@ local function registerConsumableButton(slotIndex, button)
 		end
 	end)
 	updateConsumableButtonVisual(button, slotIndex)
+end
+
+local function registerHelmetButton(button)
+	table.insert(helmetButtons, button)
+	button.Destroying:Connect(function()
+		for i = #helmetButtons, 1, -1 do
+			if helmetButtons[i] == button then
+				table.remove(helmetButtons, i)
+				break
+			end
+		end
+	end)
+	updateHelmetButtonVisual(button)
 end
 
 local function setupConsumableButton(button, slotIndex)
@@ -716,6 +767,32 @@ local function setupConsumableButton(button, slotIndex)
 		end
 		hideTooltip()
 		cancelTooltip()
+	end)
+
+	button.MouseEnter:Connect(scheduleTooltip)
+	button.MouseLeave:Connect(cancelTooltip)
+	button.Destroying:Connect(cancelTooltip)
+end
+
+local function setupHelmetButton(button)
+	registerHelmetButton(button)
+
+	local tooltipResolver = function()
+		if not helmetSlot then
+			return "Empty Helmet Slot"
+		end
+		return helmetSlot.displayName or helmetSlot.canonicalName or "Helmet"
+	end
+	local scheduleTooltip, cancelTooltip = createConsumableTooltipHandlers(button, tooltipResolver)
+
+	button.MouseButton1Click:Connect(function()
+		-- Clicking the helmet slot immediately unequips and drops the current helmet (if any).
+		hideTooltip()
+		cancelTooltip()
+
+		if helmetSlot then
+			HelmetEvent:FireServer("use")
+		end
 	end)
 
 	button.MouseEnter:Connect(scheduleTooltip)
@@ -1150,6 +1227,20 @@ local function initializeButtons()
 			end
 		end)
 	end
+
+	-- Helmet slot buttons (single slot)
+	local taggedHelmetButtons = CollectionService:GetTagged(HELMET_SLOT_TAG)
+	for _, button in ipairs(taggedHelmetButtons) do
+		if button:IsA("GuiButton") then
+			setupHelmetButton(button)
+		end
+	end
+
+	CollectionService:GetInstanceAddedSignal(HELMET_SLOT_TAG):Connect(function(button)
+		if button:IsA("GuiButton") then
+			setupHelmetButton(button)
+		end
+	end)
 end
 
 -- ========================================
@@ -1166,6 +1257,13 @@ ConsumableEvent.OnClientEvent:Connect(function(action, payload)
 			end
 			updateConsumableButtonsForSlot(index)
 		end
+	end
+end)
+
+HelmetEvent.OnClientEvent:Connect(function(action, payload)
+	if action == "updateHelmet" then
+		helmetSlot = payload
+		updateAllHelmetButtons()
 	end
 end)
 

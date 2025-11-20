@@ -29,6 +29,7 @@ end
 
 local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local HelmetConfig = require(ReplicatedStorage:WaitForChild("HelmetConfig"))
 
 -- ========================================
 -- EQUIPMENT BONUS CONFIGURATION
@@ -47,6 +48,10 @@ end
 local EquipmentBonusEntries = EquipmentBonusConfig.Entries or EquipmentBonusConfig
 local EquipmentBonusAssetLookup = shallowCopy(EquipmentBonusConfig.AssetLookup)
 local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.CanonicalLookup)
+
+local HelmetEntries = HelmetConfig.Entries or {}
+local HelmetAssetLookup = HelmetConfig.AssetLookup or {}
+local HelmetCanonicalLookup = HelmetConfig.CanonicalLookup or {}
 
 local ConsumableEntries = ConsumableConfig.Entries or {}
 local ConsumableAssetLookup = ConsumableConfig.AssetLookup or {}
@@ -108,6 +113,51 @@ local function formatBonus(amount)
 		return string.format("%+d", amount)
 	end
 	return string.format("%+.2f", amount)
+end
+
+local function computeHelmetBonuses(player)
+	local aggregated = {}
+	local details = {}
+
+	if typeof(_G.getPlayerHelmet) ~= "function" then
+		return aggregated, details
+	end
+
+	local canonicalName = _G.getPlayerHelmet(player)
+	if not canonicalName then
+		return aggregated, details
+	end
+
+	local entry = HelmetEntries[canonicalName]
+	if not entry then
+		local byAlias = HelmetAssetLookup[canonicalName]
+		if byAlias and byAlias.canonicalName then
+			entry = HelmetEntries[byAlias.canonicalName]
+			canonicalName = byAlias.canonicalName
+		end
+	end
+	if not entry then
+		return aggregated, details
+	end
+
+	local itemTotals = {}
+	for key, value in pairs(entry) do
+		if key ~= "assetName" and key ~= "canonicalName" and key ~= "displayName" and key ~= "description" then
+			local mapping = EquipmentStatMappings[key]
+			if mapping and typeof(value) == "number" and value ~= 0 then
+				local statName = mapping.leaderstat
+				aggregated[statName] = (aggregated[statName] or 0) + value
+				itemTotals[statName] = (itemTotals[statName] or 0) + value
+			end
+		end
+	end
+
+	for statName, amount in pairs(itemTotals) do
+		details[statName] = details[statName] or {}
+		table.insert(details[statName], string.format("%s %s", canonicalName, formatBonus(amount)))
+	end
+
+	return aggregated, details
 end
 
 local function applyEquipmentBonusesToLeaderstats(leaderstats, bonuses, multiplier)
@@ -886,6 +936,18 @@ local function refreshEquipmentBonuses(player)
 	end
 
 	local aggregated, details = computeEquipmentBonuses(player)
+
+	-- Helmets behave like permanent one-slot equipment with their own config.
+	local helmetAggregated, helmetDetails = computeHelmetBonuses(player)
+	for statName, amount in pairs(helmetAggregated) do
+		aggregated[statName] = (aggregated[statName] or 0) + amount
+	end
+	for statName, lines in pairs(helmetDetails) do
+		details[statName] = details[statName] or {}
+		for _, line in ipairs(lines) do
+			table.insert(details[statName], line)
+		end
+	end
 	playerEquipmentBonuses[player] = aggregated
 	playerEquipmentBonusDetails[player] = details
 

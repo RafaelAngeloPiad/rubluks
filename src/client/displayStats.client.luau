@@ -7,6 +7,21 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
+local HelmetEvent = ReplicatedStorage:FindFirstChild("HelmetEvent")
+local HelmetConfigModule = ReplicatedStorage:FindFirstChild("HelmetConfig")
+local HelmetEntries = {}
+
+if HelmetConfigModule then
+	local ok, cfg = pcall(function()
+		return require(HelmetConfigModule)
+	end)
+	if ok and cfg and cfg.Entries then
+		HelmetEntries = cfg.Entries
+	end
+end
+
+local currentHelmet = nil
+
 -- Load EquipmentBonusConfig
 local EquipmentBonusConfig = nil
 local EquipmentBonusEntries = {}
@@ -513,6 +528,15 @@ for _, entry in ipairs(EquipmentStatDisplayOrder) do
 	StatLabelLookup[entry.stat] = entry.label
 end
 
+local HelmetStatMappings = {
+	HPPlus = {label = "HP"},
+	AttackPlus = {label = "Attack"},
+	DefensePlus = {label = "Defense"},
+	DefensePenPlus = {label = "Defense Penetration"},
+	CritRatePlus = {label = "Crit Rate"},
+	CritMultiplierPlus = {label = "Crit Multiplier"},
+}
+
 local activeConsumableTimers = {}
 local function isGodModeEnabled()
 	return godModeValue and godModeValue.Value == true
@@ -989,6 +1013,58 @@ local function updateStatsDisplay()
 		noEquipmentLabel.Font = Enum.Font.Gotham
 		noEquipmentLabel.LayoutOrder = layoutOrder
 		noEquipmentLabel.Parent = scrollFrame
+		layoutOrder = layoutOrder + 1
+	end
+
+	-- Helmet section (uses HelmetConfig + currentHelmet from HelmetEvent)
+	addSectionSpacer(6)
+	local helmetHeader = Instance.new("TextLabel")
+	helmetHeader.Name = "HelmetHeader"
+	helmetHeader.Size = UDim2.new(1, 0, 0, 25)
+	helmetHeader.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	helmetHeader.BorderSizePixel = 0
+	helmetHeader.Text = "HELMET"
+	helmetHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+	helmetHeader.TextSize = 11
+	helmetHeader.Font = Enum.Font.GothamBold
+	helmetHeader.LayoutOrder = layoutOrder
+	helmetHeader.Parent = scrollFrame
+	layoutOrder = layoutOrder + 1
+
+	if currentHelmet and currentHelmet.canonicalName then
+		local entry = HelmetEntries[currentHelmet.canonicalName]
+		local helmetName = currentHelmet.displayName or currentHelmet.canonicalName
+
+		-- Row: helmet name
+		statLabels["Helmet_Name"] = createStatRow("Equipped Helmet", helmetName, Color3.fromRGB(255, 255, 255), layoutOrder)
+		layoutOrder = layoutOrder + 1
+
+		-- Row: helmet stat bonuses
+		if entry then
+			local bonusLines = {}
+			for statKey, mapping in pairs(HelmetStatMappings) do
+				local amount = entry[statKey]
+				if typeof(amount) == "number" and amount ~= 0 then
+					table.insert(bonusLines, string.format("%s %s", mapping.label, formatBonus(amount)))
+				end
+			end
+			table.sort(bonusLines)
+
+			local bonusText = (#bonusLines > 0) and table.concat(bonusLines, ", ") or "No stat bonuses"
+			statLabels["Helmet_Bonuses"] = createStatRow("Helmet Bonuses", bonusText, Color3.fromRGB(180, 255, 180), layoutOrder)
+			layoutOrder = layoutOrder + 1
+		end
+	else
+		local noHelmetLabel = Instance.new("TextLabel")
+		noHelmetLabel.Name = "NoHelmetEquipped"
+		noHelmetLabel.Size = UDim2.new(1, 0, 0, 20)
+		noHelmetLabel.BackgroundTransparency = 1
+		noHelmetLabel.Text = "No helmet equipped"
+		noHelmetLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		noHelmetLabel.TextSize = 11
+		noHelmetLabel.Font = Enum.Font.Gotham
+		noHelmetLabel.LayoutOrder = layoutOrder
+		noHelmetLabel.Parent = scrollFrame
 		layoutOrder = layoutOrder + 1
 	end
 
@@ -2697,6 +2773,16 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 end)
+
+-- Listen for helmet slot updates so we can refresh the helmet section
+if HelmetEvent then
+	HelmetEvent.OnClientEvent:Connect(function(action, payload)
+		if action == "updateHelmet" then
+			currentHelmet = payload
+			task.defer(updateStatsDisplay)
+		end
+	end)
+end
 
 -- Keybind to toggle visibility
 -- Keyboard wiring removed; Stats panel is toggled via UI buttons elsewhere.

@@ -266,10 +266,16 @@ local function SavePlayerInventory(player)
 		consumables = consumables or {}
 		consumables = mergeConsumableLists(consumables)
 
+		local helmet = nil
+		if typeof(_G.getPlayerHelmet) == "function" then
+			helmet = _G.getPlayerHelmet(player)
+		end
+
 		MainDataStore.SaveInventory(player.UserId, {
 			inventory = inventory,
 			equipped = equipped,
 			consumables = consumables,
+			helmet = helmet,
 		})
 		inventorySaveDebounce[userId].lastSave = os.clock()
 		inventorySaveDebounce[userId].pending = false
@@ -317,6 +323,7 @@ local function LoadPlayerInventory(player)
 	local inventoryData = MainDataStore.LoadInventory(userId) or {}
 	local originalInventory = inventoryData.inventory or {}
 	local originalEquipped = inventoryData.equipped or {}
+	local storedHelmet = inventoryData.helmet
 	local storedConsumablesRaw = inventoryData.consumables or {}
 
 	local originalInventoryCanonical = normaliseEquipmentList(originalInventory)
@@ -341,6 +348,11 @@ local function LoadPlayerInventory(player)
 
 	local mergedConsumables = mergeConsumableLists(storedConsumablesCanonical, inventoryConsumables, equippedConsumables)
 
+	-- Restore helmet from DataStore into the runtime helmet system (if available)
+	if storedHelmet and typeof(_G.setPlayerHelmetFromData) == "function" then
+		_G.setPlayerHelmetFromData(player, storedHelmet)
+	end
+
 	if typeof(_G.setPlayerConsumablesFromData) == "function" then
 		_G.setPlayerConsumablesFromData(player, mergedConsumables)
 	end
@@ -350,10 +362,16 @@ local function LoadPlayerInventory(player)
 		or arraysDifferent(mergedConsumables, storedConsumablesCanonical)
 
 	if shouldResaveInventory then
+		local helmet = storedHelmet
+		if typeof(_G.getPlayerHelmet) == "function" then
+			helmet = _G.getPlayerHelmet(player) or storedHelmet
+		end
+
 		MainDataStore.SaveInventory(userId, {
 			inventory = inventory,
 			equipped = equipped,
 			consumables = mergedConsumables,
+			helmet = helmet,
 		})
 
 		inventorySaveDebounce[userId] = inventorySaveDebounce[userId] or {lastSave = 0, pending = false}

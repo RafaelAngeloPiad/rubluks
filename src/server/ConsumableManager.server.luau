@@ -117,10 +117,16 @@ local function saveInventory(player: Player)
 	end
 	local inventory, equipped = buildInventorySnapshot(player)
 
+	local helmet = nil
+	if typeof(_G.getPlayerHelmet) == "function" then
+		helmet = _G.getPlayerHelmet(player)
+	end
+
 	MainDataStore.SaveInventory(player.UserId, {
 		inventory = inventory,
 		equipped = equipped,
 		consumables = storedConsumables,
+		helmet = helmet,
 	})
 end
 
