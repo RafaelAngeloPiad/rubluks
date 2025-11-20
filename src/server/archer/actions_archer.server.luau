@@ -353,11 +353,14 @@ local function setupAttackAnimations(player, tool)
 	local character = player.Character
 	if not character then return end
 
-	-- Make archer weapon non-collidable when held
+	-- Make archer weapon non-physical when held (server-side so it replicates)
+	-- Ensures ALL BaseParts / MeshParts inside the tool are non-collidable and massless,
+	-- regardless of how the model was originally configured.
 	if tool then
 		for _, part in ipairs(tool:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.CanCollide = false
+				part.Massless = true
 			end
 		end
 	end

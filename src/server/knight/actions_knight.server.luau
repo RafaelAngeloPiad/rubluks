@@ -399,14 +399,21 @@ local function attachSwordAndShield(character, tool)
 	local sword = tool:FindFirstChild("Handle")
 	local shield = tool:FindFirstChild("Shield")
 
-	-- Make sure sword and shield are visible and non-collidable when held
+	-- Make sure sword and shield (and any child parts) are visible and non-physical when held.
+	-- This will walk ALL descendants so nested Parts / MeshParts are also updated.
+	if tool then
+		for _, part in ipairs(tool:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+				part.Massless = true
+			end
+		end
+	end
 	if sword then 
 		sword.Transparency = 0
-		sword.CanCollide = false
 	end
 	if shield then 
 		shield.Transparency = 0
-		shield.CanCollide = false
 	end
 
 	local offsets = getHandOffsets(humanoid.RigType)
