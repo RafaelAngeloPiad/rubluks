@@ -438,12 +438,6 @@ local function attachSwordAndShield(character, tool)
 			end
 		end
 	end
-	if sword then 
-		sword.Transparency = 0
-	end
-	if shield then 
-		shield.Transparency = 0
-	end
 
 	local offsets = getHandOffsets(humanoid.RigType)
 
@@ -499,8 +493,8 @@ local function removeSwordAndShield(character, tool)
 		end
 	end
 
-	if sword then sword.Transparency = 1 end
-	if shield then shield.Transparency = 1 end
+	-- Do not force sword/shield transparency on unequip;
+	-- keep whatever transparency is configured for the weapon itself.
 end
 
 -- ========================================
