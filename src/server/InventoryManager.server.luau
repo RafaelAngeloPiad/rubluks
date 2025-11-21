@@ -300,6 +300,22 @@ local playerDying = {}
 local function SavePlayerInventory(player)
 	local userId = player.UserId
 	local now = os.clock()
+
+	-- If the character is currently dead (or in the process of dying),
+	-- avoid saving. Roblox unequips tools on death by moving them back
+	-- to the Backpack; if we save during that transition we will
+	-- accidentally overwrite the "equipped" list in DataStore with an
+	-- empty one. We only want to persist the last *living* state.
+	local characterForHealthCheck = player.Character
+	if characterForHealthCheck then
+		local humanoidForHealthCheck = characterForHealthCheck:FindFirstChild("Humanoid")
+		if humanoidForHealthCheck and humanoidForHealthCheck.Health <= 0 then
+			-- Skip this save; LoadPlayerInventory will restore from the
+			-- last good DataStore snapshot after respawn.
+			return
+		end
+	end
+
 	if inventorySaveDebounce[userId] and (now - inventorySaveDebounce[userId].lastSave < DEBOUNCE_TIME) then
 		print("[InventoryManager] SavePlayerInventory debounced for", player.Name)
 		inventorySaveDebounce[userId].pending = true
@@ -369,9 +385,17 @@ local function SavePlayerInventory(player)
 		consumables = consumables or {}
 		consumables = mergeConsumableLists(consumables)
 
+		-- Helmet: prefer live runtime slot, but NEVER overwrite an existing
+		-- helmet in DataStore with nil from here. This prevents random saves
+		-- (e.g. before HelmetManager initialises, or during transitions) from
+		-- clearing the helmet field.
 		local helmet = nil
+		local existingForHelmet = MainDataStore.LoadInventory(player.UserId) or {}
 		if typeof(_G.getPlayerHelmet) == "function" then
 			helmet = _G.getPlayerHelmet(player)
+		end
+		if helmet == nil then
+			helmet = existingForHelmet.helmet
 		end
 
 		print(
@@ -500,6 +524,37 @@ local function LoadPlayerInventory(player)
 
 	if typeof(_G.setPlayerConsumablesFromData) == "function" then
 		_G.setPlayerConsumablesFromData(player, mergedConsumables)
+	end
+
+	-- If DataStore reports no equipped tools but we have tools in inventory, try to
+	-- "recover" a sensible equipped state. This handles cases where a late save
+	-- (e.g. unequip before leaving / teleport) cleared the equipped array even
+	-- though the player effectively has a primary weapon.
+	if #equipped == 0 and #inventory > 0 then
+		-- Prefer something that was historically equipped (if present in inventory).
+		local recovered = nil
+		if #originalEquippedCanonical > 0 then
+			for _, historicalName in ipairs(originalEquippedCanonical) do
+				for _, invName in ipairs(inventory) do
+					if invName == historicalName then
+						recovered = historicalName
+						break
+					end
+				end
+				if recovered then
+					break
+				end
+			end
+		end
+
+		-- Fallback: just use the first non-consumable tool from inventory.
+		if not recovered then
+			recovered = inventory[1]
+		end
+
+		if recovered then
+			equipped = {recovered}
+		end
 	end
 
 	local shouldResaveInventory = arraysDifferent(inventory, originalInventoryCanonical)
@@ -641,7 +696,7 @@ local function OnCharacterAdded(character, player)
 				task.wait(0.1)
 				
 				-- Get the current state from DataStore to preserve everything
-				local existingData = MainDataStore.LoadInventory(player.UserId)
+				local existingData = MainDataStore.LoadInventory(player.UserId) or {}
 				local inventory = existingData.inventory or {}
 				local equipped = existingData.equipped or {}
 				
@@ -689,10 +744,22 @@ local function OnCharacterAdded(character, player)
 				end
 				consumables = mergeConsumableLists(consumables or {})
 
+				-- Preserve helmet slot across death. Prefer the live runtime helmet
+				-- value; if that is nil, fall back to whatever is already in DataStore
+				-- so we never accidentally overwrite a stored helmet with nil.
+				local helmet = nil
+				if typeof(_G.getPlayerHelmet) == "function" then
+					helmet = _G.getPlayerHelmet(player)
+				end
+				if helmet == nil then
+					helmet = existingData.helmet
+				end
+
 				MainDataStore.SaveInventory(player.UserId, {
 					inventory = inventory,
 					equipped = equipped,
 					consumables = consumables,
+					helmet = helmet,
 				})
 				
 				-- Reset dying flag after a delay

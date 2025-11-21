@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local MainDataStore = require(ReplicatedStorage:WaitForChild("MainDataStore"))
+
 local HelmetConfig = require(ReplicatedStorage:WaitForChild("HelmetConfig"))
 
 local HELMET_TAG = "helmet_entity"
