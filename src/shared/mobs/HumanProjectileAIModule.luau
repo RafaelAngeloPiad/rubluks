@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 local ArcherArrowFolder = ReplicatedStorage:WaitForChild("ArcherArrow")
@@ -215,7 +215,7 @@ local function initializeHumanProjectile(character, variantName)
 		return
 	end
 
-	local statsApplied = MobStatsConfig.applyStats(character, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(character, variantName)
 	if not statsApplied then
 		warn("[HumanProjectile] Failed to apply stats for variant:", variantName)
 	end
@@ -368,7 +368,7 @@ local function initializeHumanProjectile(character, variantName)
 		end
 
 		local arrowMain = arrowInstance:FindFirstChildWhichIsA("BasePart") or arrowInstance
-		local stats = MobStatsConfig.getStats(variantName)
+		local stats = MobStatsConfigz.getStats(variantName)
 		local damage = getProjectileDamage(stats)
 		local direction = computeProjectileDirection()
 		local arrowConfig = getArrowHitboxConfig()

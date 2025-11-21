@@ -6,7 +6,7 @@ local CollectionService = game:GetService("CollectionService")
 
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 -- Try to require MobStatsDisplay module
@@ -61,7 +61,7 @@ local function initializeWraith(wraith, variantName)
 	variantName = variantName or "Wraith_Sand"
 	
 	-- Apply stats to the wraith
-	local statsApplied = MobStatsConfig.applyStats(wraith, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(wraith, variantName)
 	if not statsApplied then
 		warn("Wraith: Failed to apply stats for variant:", variantName)
 	end
@@ -109,10 +109,10 @@ local function initializeWraith(wraith, variantName)
 	end
 	
 	-- Get stats for damage and status ailment
-	local stats = MobStatsConfig[variantName] or MobStatsConfig.Wraith_Sand
+	local stats = MobStatsConfigz[variantName] or MobStatsConfigz.Wraith_Sand
 	if not stats then
 		warn("Wraith: Invalid variant name, using default:", variantName)
-		stats = MobStatsConfig.Wraith_Sand
+		stats = MobStatsConfigz.Wraith_Sand
 	end
 	local damage = stats.Damage or 25
 	local statusAilment = stats.StatusAilment

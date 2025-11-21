@@ -5,7 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 -- Try to require MobStatsDisplay module
@@ -99,7 +99,7 @@ local function initializeGolem(monster, variantName)
 	
 	-- Apply stats to the golem (sets attributes for DynamicHitboxV3 defense system)
 	-- NOTE: Stats are applied BEFORE anything else so defense/health work correctly
-	local statsApplied = MobStatsConfig.applyStats(monster, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(monster, variantName)
 	if not statsApplied then
 		warn("Golem: Failed to apply stats for variant:", variantName)
 	end
@@ -235,8 +235,8 @@ local function initializeGolem(monster, variantName)
 						-- Get damage from mob's attribute
 						local damage = monster:GetAttribute("Damage") or 25
 						
-						-- Get status ailment config from MobStatsConfig
-						local stats = MobStatsConfig.getStats(variantName)
+						-- Get status ailment config from MobStatsConfigz
+						local stats = MobStatsConfigz.getStats(variantName)
 						local statusAilment = stats and stats.StatusAilment or nil
 						local lifesteal = stats and stats.Lifesteal or nil
 						

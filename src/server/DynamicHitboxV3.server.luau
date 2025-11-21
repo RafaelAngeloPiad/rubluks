@@ -213,7 +213,7 @@ local StatusAilmentHandler = require(game.ReplicatedStorage:WaitForChild("Status
 -- 
 -- FOR PLAYERS: Reads from leaderstats (CurrentDefense, MaxDefense IntValues)
 -- FOR MOBS: Reads from model attributes (CurrentDefense, MaxDefense attributes)
---            Mob attributes are set by MobStatsConfig.applyStats() based on variant
+--            Mob attributes are set by MobStatsConfigz.applyStats() based on variant
 local function getDefenseStats(model)
 	if not model then
 		return 0, 0 -- currentDefense, maxDefense
@@ -240,7 +240,7 @@ local function getDefenseStats(model)
 		return currentDefense, maxDefense
 	end
 	
-	-- Check if it's a mob (using attributes set by MobStatsConfig)
+	-- Check if it's a mob (using attributes set by MobStatsConfigz)
 	if model:IsA("Model") then
 		local currentDefense = model:GetAttribute("CurrentDefense") or 0
 		local maxDefense = model:GetAttribute("MaxDefense") or 0

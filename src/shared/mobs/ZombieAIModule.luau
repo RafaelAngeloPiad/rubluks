@@ -5,7 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 
 -- Import global exclusions
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 -- Try to require MobStatsDisplay module
@@ -86,7 +86,7 @@ local function initializeZombie(zombie, variantName)
     zombie:SetAttribute("Variant", variantName)
 	
 	-- Apply stats to the zombie
-	local statsApplied = MobStatsConfig.applyStats(zombie, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(zombie, variantName)
 	if not statsApplied then
 		warn("Zombie: Failed to apply stats for variant:", variantName)
 	end
@@ -283,7 +283,7 @@ local function initializeZombie(zombie, variantName)
 		end
 		if _G.createStaticHitbox and root then
 			local damage = zombie:GetAttribute("Damage") or 15
-			local stats = MobStatsConfig.getStats(variantName)
+			local stats = MobStatsConfigz.getStats(variantName)
 			local statusAilment = stats and stats.StatusAilment or nil
 			local lifesteal = stats and stats.Lifesteal or nil
 			task.delay(0.2, function()

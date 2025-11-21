@@ -4,7 +4,7 @@
 local CollectionService = game:GetService("CollectionService")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 local MobStatsDisplay = nil
@@ -46,7 +46,7 @@ end
 local function initializeSpider(enemy, variantName)
 	variantName = variantName or "Spider_Sand"
 
-	local statsApplied = MobStatsConfig.applyStats(enemy, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(enemy, variantName)
 	if not statsApplied then
 		warn("Spider: Failed to apply stats for variant:", variantName)
 	end
@@ -182,7 +182,7 @@ local function initializeSpider(enemy, variantName)
 
 				if _G.createStaticHitbox then
 					local damage = enemy:GetAttribute("Damage") or 50
-					local stats = MobStatsConfig.getStats(variantName)
+					local stats = MobStatsConfigz.getStats(variantName)
 					local statusAilment = stats and stats.StatusAilment or nil
 					local lifesteal = stats and stats.Lifesteal or nil
 

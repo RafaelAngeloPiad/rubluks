@@ -8,7 +8,7 @@ local Debris = game:GetService("Debris")
 local RunService = game:GetService("RunService")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 local MobStatsDisplay = nil
@@ -201,7 +201,7 @@ local function initializeHumanWizard(character, variantName)
 		return
 	end
 
-	local statsApplied = MobStatsConfig.applyStats(character, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(character, variantName)
 	if not statsApplied then
 		warn("[HumanWizard] Failed to apply stats for variant:", variantName)
 	end
@@ -397,7 +397,7 @@ local function initializeHumanWizard(character, variantName)
 
 		orbInstance.CFrame = spawnCFrame
 
-		local stats = MobStatsConfig.getStats(variantName)
+		local stats = MobStatsConfigz.getStats(variantName)
 		local lifesteal = stats and stats.Lifesteal or nil
 		local damage = getProjectileDamage(stats)
 

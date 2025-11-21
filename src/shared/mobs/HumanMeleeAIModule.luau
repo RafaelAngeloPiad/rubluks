@@ -5,7 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
-local MobStatsConfig = require(script.Parent.MobStatsConfig)
+local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
 local MobSoundConfig = require(script.Parent.Parent.MobSoundConfig)
 
 local MobStatsDisplay = nil
@@ -181,7 +181,7 @@ local function initializeHumanMelee(character, variantName)
 		return
 	end
 
-	local statsApplied = MobStatsConfig.applyStats(character, variantName)
+	local statsApplied = MobStatsConfigz.applyStats(character, variantName)
 	if not statsApplied then
 		warn("[HumanMelee] Failed to apply stats for variant:", variantName)
 	end
@@ -291,7 +291,7 @@ local function initializeHumanMelee(character, variantName)
 		end
 
 		local damage = character:GetAttribute("Damage") or 25
-		local stats = MobStatsConfig.getStats(variantName)
+		local stats = MobStatsConfigz.getStats(variantName)
 		local hitboxName = string.format("HumanMelee_%s", markerName or "Attack")
 
 		local hitboxConfig = {
