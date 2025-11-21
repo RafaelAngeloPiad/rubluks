@@ -345,6 +345,38 @@ end
 
 local swordMotorName = "SwordRightHandMotor"
 local shieldMotorName = "ShieldLeftHandMotor"
+local handleShieldSpawnWeldName = "SpawnWeld" -- Name for the temporary weld between Handle and Shield (set this in Studio)
+
+-- Removes the temporary weld that keeps Handle + Shield together in Workspace/ServerStorage.
+-- Put a WeldConstraint under either Handle or Shield, set its Name to handleShieldSpawnWeldName above,
+-- and this function will destroy it when the weapon is equipped so the parts can move independently.
+local function removeHandleShieldSpawnWeld(tool)
+	if not tool then
+		return
+	end
+
+	local sword = tool:FindFirstChild("Handle")
+	local shield = tool:FindFirstChild("Shield")
+
+	if not sword and not shield then
+		return
+	end
+
+	local function cleanPart(part)
+		if not part then
+			return
+		end
+
+		for _, child in ipairs(part:GetChildren()) do
+			if child:IsA("WeldConstraint") and child.Name == handleShieldSpawnWeldName then
+				child:Destroy()
+			end
+		end
+	end
+
+	cleanPart(sword)
+	cleanPart(shield)
+end
 
 local function getHandOffsets(rigType)
 	-- Shield rotation: 100 degrees around Y, and move forward on Z axis
@@ -395,6 +427,10 @@ local function attachSwordAndShield(character, tool)
 
 	local sword = tool:FindFirstChild("Handle")
 	local shield = tool:FindFirstChild("Shield")
+
+	-- Remove the temporary weld that kept Handle + Shield together in the world.
+	-- This expects a WeldConstraint named handleShieldSpawnWeldName under either Handle or Shield.
+	removeHandleShieldSpawnWeld(tool)
 
 	-- Make sure sword and shield (and any child parts) are visible and non-physical when held.
 	-- This will walk ALL descendants so nested Parts / MeshParts are also updated.

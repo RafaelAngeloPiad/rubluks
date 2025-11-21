@@ -35,6 +35,20 @@ local Entries = {
 		AttackPlus = 40,
 		DefensePlus = 40,
 	},
+
+	["Cursed Skull Helmet"] = {
+		assetName = "Cursed Skull Helmet",
+		displayName = "Cursed Skull Helmet",
+		description = "A cursed skull that grants its wearer a small boost to their attack.",
+		AttackPlus = 40,
+		statusAilment = {
+			type = "burn",           -- Status ailment type
+			chance = 50,             -- 50% chance to burn on hit
+			duration = 5.0,          -- Burn duration in seconds
+			dps = 5,                 -- Damage per second
+			tickInterval = 1.0       -- Seconds between damage ticks
+		},
+	},
 }
 
 local AssetLookup = {}

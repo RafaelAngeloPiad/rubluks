@@ -23,7 +23,9 @@ end
 -- Import centralized configuration
 local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfigs"))
 local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
+local HelmetConfig = require(ReplicatedStorage:WaitForChild("HelmetConfig"))
 local EquipmentAssetLookup = EquipmentBonusConfig.AssetLookup or {}
+local HelmetEntries = HelmetConfig.Entries or {}
 
 local HITBOX_CONFIG = {
 	transparency = ServerConfigs.Hitbox.transparency, -- Global transparency for all hitbox visuals
@@ -101,6 +103,17 @@ local function getEquippedWeaponStatusAilment(character)
 
 			if entry and entry.statusAilment then
 				return cloneStatusAilmentConfig(entry.statusAilment)
+			end
+		end
+	end
+
+	-- No weapon-based ailment found; fallback to helmet status ailment if available
+	if typeof(_G.getPlayerHelmet) == "function" then
+		local helmetCanonical = _G.getPlayerHelmet(player)
+		if helmetCanonical then
+			local helmetEntry = HelmetEntries[helmetCanonical]
+			if helmetEntry and helmetEntry.statusAilment then
+				return cloneStatusAilmentConfig(helmetEntry.statusAilment)
 			end
 		end
 	end

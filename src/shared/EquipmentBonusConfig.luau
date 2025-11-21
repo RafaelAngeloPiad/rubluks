@@ -61,6 +61,27 @@ local Entries = {
 			duration = 1.0
 		},
 	},
+	["Giant Demonic Dragon Gauntlet"] = {
+		AttackPlus = 100,
+		DefensePlus = 100,
+		statusAilment = {
+			type = "burn",
+			chance = 30,
+			duration = 1.0,
+			dps = 10,
+			tickInterval = 1.0,
+		},
+	},
+	["Giant Golden Bull Gauntlet"] = {
+		AttackPlus = 100,
+		DefensePlus = 100,
+		statusAilment = {
+			type = "slow",           -- Status ailment type
+			chance = 50,             -- 50% chance to slow on hit
+			duration = 3.0,          -- Slow duration in seconds
+			slowMultiplier = 0.5     -- 50% movement speed
+		},
+	},
 }
 
 local AssetLookup = {}

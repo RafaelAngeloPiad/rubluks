@@ -909,7 +909,7 @@ local function updateStatsDisplay()
 		end
 	end
 
-	-- Display status ailments from equipped items
+	-- Display status ailments from equipped items (weapons/accessories) and helmet
 	local equippedStatusAilments = {}
 	if player.Character and EquipmentBonusConfig then
 		for _, child in ipairs(player.Character:GetChildren()) do
@@ -988,6 +988,59 @@ local function updateStatsDisplay()
 						})
 					end
 				end
+			end
+		end
+	end
+
+	-- Helmet status ailment (if any)
+	if currentHelmet and currentHelmet.canonicalName then
+		local helmetEntry = HelmetEntries[currentHelmet.canonicalName]
+		if helmetEntry and helmetEntry.statusAilment then
+			local ailment = helmetEntry.statusAilment
+			local itemName = helmetEntry.displayName or currentHelmet.canonicalName
+
+			local ailmentParts = {}
+			if ailment.type then
+				local ailmentType = ailment.type:sub(1, 1):upper() .. ailment.type:sub(2)
+				table.insert(ailmentParts, ailmentType)
+			end
+
+			if ailment.chance then
+				if ailment.chance < 100 then
+					table.insert(ailmentParts, string.format("%d%% chance", ailment.chance))
+				end
+			end
+
+			if ailment.duration then
+				local duration = ailment.duration
+				if duration >= 60 then
+					local minutes = math.floor(duration / 60)
+					local seconds = math.floor(duration % 60)
+					if seconds > 0 then
+						table.insert(ailmentParts, string.format("%dm %ds", minutes, seconds))
+					else
+						table.insert(ailmentParts, string.format("%dm", minutes))
+					end
+				else
+					table.insert(ailmentParts, string.format("%.1fs", duration))
+				end
+			end
+
+			if ailment.dps and ailment.dps > 0 then
+				table.insert(ailmentParts, string.format("%d DPS", ailment.dps))
+			end
+
+			if ailment.slowMultiplier and ailment.slowMultiplier < 1 then
+				local slowPercent = math.floor((1 - ailment.slowMultiplier) * 100)
+				table.insert(ailmentParts, string.format("%d%% slow", slowPercent))
+			end
+
+			if #ailmentParts > 0 then
+				local ailmentText = table.concat(ailmentParts, ", ")
+				table.insert(equippedStatusAilments, {
+					itemName = itemName,
+					ailmentText = ailmentText
+				})
 			end
 		end
 	end
