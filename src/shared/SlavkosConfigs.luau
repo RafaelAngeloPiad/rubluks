@@ -128,8 +128,8 @@ ServerConfigs.Hitbox = {
 			cornerRadius = 5, -- Corner roundness for optional background
 			textColor = Color3.new(1, 1, 1), -- Default text color (white)
 			textStrokeColor = Color3.new(0, 0, 0), -- Outline color (black)
-			textStrokeTransparency = 0, -- Outline opacity
-			textStrokeThickness = 0, -- Outline thickness
+			textStrokeTransparency = 0.2, -- Outline opacity (0 = solid, 1 = none)
+			textStrokeThickness = 1, -- Outline thickness (thin black outline)
 			textSize = 12, -- Font size
 			font = Enum.Font.Gotham, -- Font style
 			headerColor = Color3.new(1, 1, 1), -- Header text color (white)

@@ -301,8 +301,12 @@ local function createMobStatsDisplay(model)
 	headerLabel.TextXAlignment = Enum.TextXAlignment.Center
 	headerLabel.TextYAlignment = Enum.TextYAlignment.Center
 	headerLabel.LayoutOrder = 1
+	-- Ensure a thin black outline on the header text itself so it's always readable.
+	headerLabel.TextStrokeColor3 = statsConfig.textStrokeColor or Color3.new(0, 0, 0)
+	headerLabel.TextStrokeTransparency = statsConfig.headerStrokeTransparency ~= nil
+		and statsConfig.headerStrokeTransparency
+		or 0 -- solid by default for the header
 	headerLabel.Parent = mainFrame
-	applyStrokeToLabel(headerLabel, statsConfig.headerStrokeTransparency or textStrokeTransparency)
 	addTextElement(headerLabel, statsConfig.headerSize)
 
 	local healthBarHeight = statsConfig.healthBarHeight or 12
