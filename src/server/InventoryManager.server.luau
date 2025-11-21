@@ -445,10 +445,6 @@ end
 -- Load inventory (tool names) and give corresponding tools from Workspace
 local function LoadPlayerInventory(player)
 	print("[InventoryManager] LoadPlayerInventory starting for", player.Name)
-	-- Lock input on client while we are restoring inventory from DataStore.
-	-- Use a dedicated global message so class action scripts can still use
-	-- their own "lock_input"/"unlock_input" semantics.
-	ActionEvent:FireClient(player, "global_lock_input")
 	-- Wait for character and backpack to be fully loaded
 	local character = player.Character
 	if not character then
@@ -464,9 +460,9 @@ local function LoadPlayerInventory(player)
 		backpack = player:WaitForChild("Backpack")
 	end
 
-	-- Additional wait to ensure everything is properly loaded
-	-- Increased to give more time for character/other systems to initialise
-	task.wait(1.5)
+	-- Additional wait to ensure everything is properly loaded.
+	-- Increased further to give even more time for character/other systems to initialise.
+	task.wait(3)
 
 	local userId = player.UserId
 	local inventoryData = MainDataStore.LoadInventory(userId) or {}
@@ -623,9 +619,6 @@ local function LoadPlayerInventory(player)
 		_G.refreshEquipmentBonuses(player)
 	end
 
-	-- At this point Backpack, equipped tools, consumables and helmet have been
-	-- restored to match the InventoryStore payload. It is now safe to unlock input.
-	ActionEvent:FireClient(player, "global_unlock_input")
 end
 
 -- Bind events to save inventory ONLY when tools are added/removed from Backpack or Character
@@ -674,6 +667,9 @@ end
 -- Remove MoveEquippedToBackpack function - we don't want to modify DataStore on death
 
 local function OnCharacterAdded(character, player)
+	-- Immediately lock input on first character spawn/respawn so the player
+	-- can't move while we are still restoring DataStore-backed inventory.
+	ActionEvent:FireClient(player, "global_lock_input")
 	-- Wait for Backpack to exist before loading inventory
 	local backpack = player:WaitForChild("Backpack")
 
@@ -768,6 +764,11 @@ local function OnCharacterAdded(character, player)
 				end)
 			end
 		end)
+
+		-- At this point Backpack, equipped tools, consumables and helmet have been
+		-- restored to match the InventoryStore payload and death handling is wired.
+		-- It is now safe to unlock input.
+		ActionEvent:FireClient(player, "global_unlock_input")
 end
 
 local function OnPlayerAdded(player)
