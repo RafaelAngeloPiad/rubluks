@@ -82,14 +82,32 @@ local function attachHelmetVisual(player: Player, canonicalName: string, sourceT
 	local accessory: Instance? = nil
 
 	-- Preferred path: explicit accessory asset defined in HelmetConfig (and present in assets)
-	if assetsFolder and entry and entry.accessoryAssetName then
-		local asset = assetsFolder:FindFirstChild(entry.accessoryAssetName)
+	if assetsFolder and entry then
+		local assetName = entry.accessoryAssetName or entry.assetName or canonicalName
+		local asset = assetsFolder:FindFirstChild(assetName) or assetsFolder:FindFirstChild(canonicalName)
 		if asset and (asset:IsA("Accessory") or asset:IsA("Hat")) then
+			-- Direct Accessory / Hat asset
 			accessory = asset:Clone()
+		elseif asset and asset:IsA("Tool") then
+			-- Asset is a Tool: synthesise an Accessory from its Handle (used on load/respawn)
+			local handle = asset:FindFirstChild("Handle", true)
+			if handle and handle:IsA("BasePart") then
+				local acc = Instance.new("Accessory")
+				acc.Name = canonicalName .. "_Helmet"
+
+				local handleClone = handle:Clone()
+				handleClone.Name = "Handle"
+				handleClone.Parent = acc
+
+				-- Small upward offset similar to old Hat.AttachmentPos example
+				acc.AttachmentPoint = CFrame.new(0, 0.1, 0)
+
+				accessory = acc
+			end
 		end
 	end
 
-	-- Fallback: try to convert the source tool's handle into a simple Accessory
+	-- Fallback at runtime: try to convert the live source tool's handle into a simple Accessory
 	if not accessory and sourceTool then
 		local handle = sourceTool:FindFirstChild("Handle", true)
 		if handle and handle:IsA("BasePart") then
@@ -100,7 +118,6 @@ local function attachHelmetVisual(player: Player, canonicalName: string, sourceT
 			handleClone.Name = "Handle"
 			handleClone.Parent = acc
 
-			-- Small upward offset similar to old Hat.AttachmentPos example
 			acc.AttachmentPoint = CFrame.new(0, 0.1, 0)
 
 			accessory = acc
@@ -223,6 +240,11 @@ local function collectHelmet(player: Player, tool: Tool)
 
 	sendHelmetUpdate(player)
 
+	-- Ask InventoryManager to persist the updated helmet/inventory state
+	if typeof(_G.requestInventorySave) == "function" then
+		_G.requestInventorySave(player)
+	end
+
 	if typeof(_G.refreshEquipmentBonuses) == "function" then
 		_G.refreshEquipmentBonuses(player)
 	end
@@ -266,6 +288,26 @@ end
 
 local function initialisePlayer(player: Player)
 	ensurePlayerTable(player)
+
+	-- On join, restore helmet slot and visual directly from InventoryStore,
+	-- independent of the InventoryManager flow.
+	local ok, result = pcall(function()
+		return MainDataStore.LoadInventory(player.UserId)
+	end)
+
+	if ok and type(result) == "table" then
+		local storedHelmet = result.helmet
+		if storedHelmet and HelmetEntries[storedHelmet] then
+			playerHelmet[player] = storedHelmet
+
+			-- If the player already has a character, attach the visual now.
+			if player.Character then
+				attachHelmetVisual(player, storedHelmet, nil)
+			end
+		end
+	end
+
+	-- Notify any client UI about current helmet state
 	sendHelmetUpdate(player)
 
 	player.CharacterAdded:Connect(function(character)
@@ -295,6 +337,11 @@ HelmetEvent.OnServerEvent:Connect(function(player, action)
 			clearHelmetVisual(player)
 			dropHelmetNearPlayer(player, current)
 			sendHelmetUpdate(player)
+
+			-- Ask InventoryManager to persist the updated helmet/inventory state
+			if typeof(_G.requestInventorySave) == "function" then
+				_G.requestInventorySave(player)
+			end
 			if typeof(_G.refreshEquipmentBonuses) == "function" then
 				_G.refreshEquipmentBonuses(player)
 			end

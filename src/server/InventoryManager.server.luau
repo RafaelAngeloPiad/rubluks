@@ -3,8 +3,10 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MainDataStore = require(ReplicatedStorage:FindFirstChild("MainDataStore"))
+local ActionEvent = ReplicatedStorage:WaitForChild("ActionEvent")
 local EquipmentBonusConfig = require(ReplicatedStorage:WaitForChild("EquipmentBonusConfig"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local HelmetConfig = require(ReplicatedStorage:WaitForChild("HelmetConfig"))
 
 local function listToString(list)
 	if not list or #list == 0 then
@@ -34,6 +36,10 @@ local EquipmentBonusCanonicalLookup = shallowCopy(EquipmentBonusConfig.Canonical
 local ConsumableEntries = ConsumableConfig.Entries or {}
 local ConsumableAssetLookup = ConsumableConfig.AssetLookup or {}
 local ConsumableCanonicalLookup = ConsumableConfig.CanonicalLookup or {}
+
+local HelmetEntries = HelmetConfig.Entries or {}
+local HelmetAssetLookup = HelmetConfig.AssetLookup or {}
+local HelmetCanonicalLookup = HelmetConfig.CanonicalLookup or {}
 
 local CONSUMABLE_TAG = "consumable_entity"
 local MAX_CONSUMABLE_SLOTS = 5
@@ -83,6 +89,31 @@ local function getConsumableCanonicalName(name)
 	local assetEntry = ConsumableAssetLookup and ConsumableAssetLookup[name]
 	if assetEntry and assetEntry.canonicalName then
 		return assetEntry.canonicalName
+	end
+
+	return nil
+end
+
+local function getHelmetCanonicalName(name: string?)
+	if not name then
+		return nil
+	end
+
+	-- Explicit asset lookup
+	local explicitEntry = HelmetAssetLookup[name]
+	if explicitEntry and explicitEntry.canonicalName then
+		return explicitEntry.canonicalName
+	end
+
+	-- Direct entry
+	if HelmetEntries[name] then
+		return name
+	end
+
+	-- Canonical alias
+	local canonical = HelmetCanonicalLookup[name]
+	if canonical and HelmetEntries[canonical] then
+		return canonical
 	end
 
 	return nil
@@ -144,6 +175,67 @@ local function mergeConsumableLists(...)
 	end
 
 	return result
+end
+
+-- Remove helmet items from inventory/equipped lists and determine canonical helmet name.
+-- This keeps the DataStore schema as:
+--   inventory = { non-helmet tools }
+--   equipped  = { non-helmet tools }
+--   helmet    = "Some Helmet" (single slot)
+local function stripHelmetFromLists(
+	inventory: {string},
+	equipped: {string},
+	storedHelmet: string?
+): ({string}, {string}, string?)
+	local detectedHelmet = storedHelmet
+
+	-- If DataStore didn't already provide a helmet field, try to detect it
+	-- from equipped first (preferred) then inventory.
+	if not detectedHelmet then
+		for _, name in ipairs(equipped) do
+			local canonical = getHelmetCanonicalName(name)
+			if canonical then
+				detectedHelmet = canonical
+				break
+			end
+		end
+	end
+
+	if not detectedHelmet then
+		for _, name in ipairs(inventory) do
+			local canonical = getHelmetCanonicalName(name)
+			if canonical then
+				detectedHelmet = canonical
+				break
+			end
+		end
+	end
+
+	-- If we still don't have a helmet, nothing to strip.
+	if not detectedHelmet then
+		return inventory, equipped, storedHelmet
+	end
+
+	local function isThisHelmet(name: string): boolean
+		local canonical = getHelmetCanonicalName(name)
+		return canonical == detectedHelmet
+	end
+
+	local cleanedInventory = {}
+	for _, name in ipairs(inventory) do
+		if not isThisHelmet(name) then
+			table.insert(cleanedInventory, name)
+		end
+	end
+
+	local cleanedEquipped = {}
+	for _, name in ipairs(equipped) do
+		if not isThisHelmet(name) then
+			table.insert(cleanedEquipped, name)
+		end
+	end
+
+	return cleanedInventory, cleanedEquipped, detectedHelmet
 end
 
 local function arraysDifferent(a, b)
@@ -247,8 +339,18 @@ local function SavePlayerInventory(player)
 		if #inventory == 0 and #equipped == 0 then
 			local existingData = MainDataStore.LoadInventory(player.UserId)
 			if existingData and (existingData.inventory and #existingData.inventory > 0 or existingData.equipped and #existingData.equipped > 0) then
-				inventory = normaliseEquipmentList(existingData.inventory or {})
-				equipped = normaliseEquipmentList(existingData.equipped or {})
+				-- Normalise and strip any helmet entries that may have been stored
+				-- in inventory/equipped from older versions.
+				local existingInventoryCanonical = normaliseEquipmentList(existingData.inventory or {})
+				local existingEquippedCanonical = normaliseEquipmentList(existingData.equipped or {})
+				local cleanedInventory, cleanedEquipped, _ = stripHelmetFromLists(
+					existingInventoryCanonical,
+					existingEquippedCanonical,
+					existingData.helmet
+				)
+
+				inventory = cleanedInventory
+				equipped = cleanedEquipped
 				consumables = existingData.consumables or consumables or {}
 			end
 		end
@@ -319,6 +421,10 @@ end
 -- Load inventory (tool names) and give corresponding tools from Workspace
 local function LoadPlayerInventory(player)
 	print("[InventoryManager] LoadPlayerInventory starting for", player.Name)
+	-- Lock input on client while we are restoring inventory from DataStore.
+	-- Use a dedicated global message so class action scripts can still use
+	-- their own "lock_input"/"unlock_input" semantics.
+	ActionEvent:FireClient(player, "global_lock_input")
 	-- Wait for character and backpack to be fully loaded
 	local character = player.Character
 	if not character then
@@ -335,7 +441,8 @@ local function LoadPlayerInventory(player)
 	end
 
 	-- Additional wait to ensure everything is properly loaded
-	task.wait(0.5)
+	-- Increased to give more time for character/other systems to initialise
+	task.wait(1.5)
 
 	local userId = player.UserId
 	local inventoryData = MainDataStore.LoadInventory(userId) or {}
@@ -359,8 +466,16 @@ local function LoadPlayerInventory(player)
 	local originalInventoryCanonical = normaliseEquipmentList(originalInventory)
 	local originalEquippedCanonical = normaliseEquipmentList(originalEquipped)
 
-	local inventory = cloneArray(originalInventoryCanonical)
-	local equipped = cloneArray(originalEquippedCanonical)
+	-- Strip helmet entries out of the inventory/equipped arrays and determine
+	-- the canonical helmet name (migration path for old saves).
+	local cleanedInventoryCanonical, cleanedEquippedCanonical, resolvedHelmet = stripHelmetFromLists(
+		originalInventoryCanonical,
+		originalEquippedCanonical,
+		storedHelmet
+	)
+
+	local inventory = cloneArray(cleanedInventoryCanonical)
+	local equipped = cloneArray(cleanedEquippedCanonical)
 
 	local inventoryFiltered, inventoryConsumables = partitionConsumables(inventory)
 	local equippedFiltered, equippedConsumables = partitionConsumables(equipped)
@@ -379,8 +494,8 @@ local function LoadPlayerInventory(player)
 	local mergedConsumables = mergeConsumableLists(storedConsumablesCanonical, inventoryConsumables, equippedConsumables)
 
 	-- Restore helmet from DataStore into the runtime helmet system (if available)
-	if storedHelmet and typeof(_G.setPlayerHelmetFromData) == "function" then
-		_G.setPlayerHelmetFromData(player, storedHelmet)
+	if resolvedHelmet and typeof(_G.setPlayerHelmetFromData) == "function" then
+		_G.setPlayerHelmetFromData(player, resolvedHelmet)
 	end
 
 	if typeof(_G.setPlayerConsumablesFromData) == "function" then
@@ -392,9 +507,9 @@ local function LoadPlayerInventory(player)
 		or arraysDifferent(mergedConsumables, storedConsumablesCanonical)
 
 	if shouldResaveInventory then
-		local helmet = storedHelmet
+		local helmet = resolvedHelmet
 		if typeof(_G.getPlayerHelmet) == "function" then
-			helmet = _G.getPlayerHelmet(player) or storedHelmet
+			helmet = _G.getPlayerHelmet(player) or resolvedHelmet
 		end
 
 		MainDataStore.SaveInventory(userId, {
@@ -452,6 +567,10 @@ local function LoadPlayerInventory(player)
 	if _G.refreshEquipmentBonuses then
 		_G.refreshEquipmentBonuses(player)
 	end
+
+	-- At this point Backpack, equipped tools, consumables and helmet have been
+	-- restored to match the InventoryStore payload. It is now safe to unlock input.
+	ActionEvent:FireClient(player, "global_unlock_input")
 end
 
 -- Bind events to save inventory ONLY when tools are added/removed from Backpack or Character
@@ -504,7 +623,9 @@ local function OnCharacterAdded(character, player)
 	local backpack = player:WaitForChild("Backpack")
 
 	-- Add delay after respawn to prevent inventory loss (like rejoining server)
-	task.wait(3)
+	-- Increased slightly to make sure everything (character, remotes, configs)
+	-- has time to initialise before we touch the DataStore-backed inventory.
+	task.wait(4)
 
 	LoadPlayerInventory(player)
 	BindInventoryEvents(player)
@@ -594,4 +715,13 @@ end
 Players.PlayerAdded:Connect(OnPlayerAdded)
 for i, player in Players:GetPlayers() do
 	OnPlayerAdded(player)
+end
+
+-- Expose a global helper so other systems (ConsumableManager, HelmetManager, etc.)
+-- can request a coherent inventory save without writing to DataStore themselves.
+_G.requestInventorySave = function(player: Player)
+	if not player or not player:IsA("Player") then
+		return
+	end
+	SavePlayerInventory(player)
 end

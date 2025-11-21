@@ -81,6 +81,61 @@ end
 local function searchTool()
 	inventoryHandler:searchTool()
 end
+
+-- Remove a tool from the custom hotbar/UI when it leaves Backpack/Character
+local function removeToolFromHotbar(tool)
+	if not tool or not tool:IsA("Tool") then
+		return
+	end
+
+	-- If the tool is still in the player's Backpack or Character, this is just a
+	-- reparent (e.g. equip/unequip), not a true removal. In that case, keep it
+	-- in the custom inventory; a corresponding ChildAdded will keep the UI in sync.
+	local character = player.Character
+	if tool.Parent == backpack or (character and tool.Parent == character) then
+		return
+	end
+
+	-- Try to find the slot this tool is occupying.
+	local slotIndex
+	if typeof(inventoryHandler.getToolPosition) == "function" then
+		slotIndex = inventoryHandler:getToolPosition(tool)
+	end
+
+	-- Fallback: search by instance or name in OBJECTS.HotBar
+	if not slotIndex or slotIndex == 0 then
+		for index, toolObject in pairs(inventoryHandler.OBJECTS.HotBar) do
+			if toolObject
+				and (toolObject.Tool == tool
+					or (toolObject.Tool and toolObject.Tool.Name == tool.Name))
+			then
+				slotIndex = index
+				break
+			end
+		end
+	end
+
+	if not slotIndex then
+		return
+	end
+
+	local toolObject = inventoryHandler.OBJECTS.HotBar[slotIndex]
+	if toolObject
+		and (toolObject.Tool == tool
+			or (toolObject.Tool and toolObject.Tool.Name == tool.Name))
+	then
+		if typeof(toolObject.DisconnectAll) == "function" then
+			toolObject:DisconnectAll()
+		end
+		inventoryHandler.OBJECTS.HotBar[slotIndex] = nil
+	end
+
+	local frame = hotBar:FindFirstChild(tostring(slotIndex))
+	if frame then
+		frame:Destroy()
+	end
+end
+
 local function newTool(tool)
 	if tool:IsA("Tool") then
 		inventoryHandler:newTool(tool)
@@ -91,44 +146,11 @@ local function reloadInventory(character)
 	inventoryHandler.currentlyEquipped = nil
 	backpack = player:WaitForChild("Backpack")
 
-	-- Helper to remove a tool from the custom hotbar/UI when it leaves Backpack/Character
-	local function removeToolFromHotbar(tool)
-		if not tool or not tool:IsA("Tool") then
-			return
-		end
-
-		-- Find which slot this tool is occupying (if any)
-		local slotIndex = inventoryHandler:getToolPosition(tool)
-		if not slotIndex or slotIndex == 0 then
-			return
-		end
-
-		local toolObject = inventoryHandler.OBJECTS.HotBar[slotIndex]
-		if toolObject and toolObject.Tool == tool then
-			-- Disconnect any events on the toolObject if the API is available
-			if typeof(toolObject.DisconnectAll) == "function" then
-				toolObject:DisconnectAll()
-			end
-
-			-- Clear the hotbar entry
-			inventoryHandler.OBJECTS.HotBar[slotIndex] = nil
-		end
-
-		-- Destroy the visual button in the hotbar
-		local frame = hotBar:FindFirstChild(tostring(slotIndex))
-		if frame then
-			frame:Destroy()
-		end
-	end
-
-	-- Initial load of existing tools
 	for _, tool in pairs(backpack:GetChildren()) do
 		if tool:IsA("Tool") then
 			newTool(tool)
 		end
 	end
-
-	-- Keep inventory in sync with Backpack and Character
 	backpack.ChildAdded:Connect(newTool)
 	backpack.ChildRemoved:Connect(removeToolFromHotbar)
 

@@ -104,30 +104,11 @@ local function buildInventorySnapshot(player: Player)
 end
 
 local function saveInventory(player: Player)
-	local consumableList = playerConsumables[player]
-	if not consumableList then
-		return
+	-- Delegate actual DataStore writes to InventoryManager so that inventory,
+	-- equipped tools, consumables and helmet are saved in one coherent snapshot.
+	if typeof(_G.requestInventorySave) == "function" then
+		_G.requestInventorySave(player)
 	end
-	local storedConsumables = {}
-	for index = 1, MAX_CONSUMABLE_SLOTS do
-		local canonicalName = consumableList[index]
-		if canonicalName then
-			table.insert(storedConsumables, canonicalName)
-		end
-	end
-	local inventory, equipped = buildInventorySnapshot(player)
-
-	local helmet = nil
-	if typeof(_G.getPlayerHelmet) == "function" then
-		helmet = _G.getPlayerHelmet(player)
-	end
-
-	MainDataStore.SaveInventory(player.UserId, {
-		inventory = inventory,
-		equipped = equipped,
-		consumables = storedConsumables,
-		helmet = helmet,
-	})
 end
 
 local function queueInventorySave(player: Player)
