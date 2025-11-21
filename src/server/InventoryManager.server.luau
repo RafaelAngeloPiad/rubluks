@@ -209,6 +209,7 @@ local function SavePlayerInventory(player)
 	local userId = player.UserId
 	local now = os.clock()
 	if inventorySaveDebounce[userId] and (now - inventorySaveDebounce[userId].lastSave < DEBOUNCE_TIME) then
+		print("[InventoryManager] SavePlayerInventory debounced for", player.Name)
 		inventorySaveDebounce[userId].pending = true
 		return
 	end
@@ -248,7 +249,7 @@ local function SavePlayerInventory(player)
 			if existingData and (existingData.inventory and #existingData.inventory > 0 or existingData.equipped and #existingData.equipped > 0) then
 				inventory = normaliseEquipmentList(existingData.inventory or {})
 				equipped = normaliseEquipmentList(existingData.equipped or {})
-				consumables = existingData.consumables or {}
+				consumables = existingData.consumables or consumables or {}
 			end
 		end
 
@@ -271,12 +272,28 @@ local function SavePlayerInventory(player)
 			helmet = _G.getPlayerHelmet(player)
 		end
 
-		MainDataStore.SaveInventory(player.UserId, {
+		print(
+			"[InventoryManager] Saving inventory for",
+			player.Name,
+			"| inventory =",
+			listToString(inventory),
+			"equipped =",
+			listToString(equipped),
+			"consumables =",
+			listToString(consumables),
+			"helmet =",
+			helmet
+		)
+
+		local success, err = MainDataStore.SaveInventory(player.UserId, {
 			inventory = inventory,
 			equipped = equipped,
 			consumables = consumables,
 			helmet = helmet,
 		})
+		if not success then
+			warn("[InventoryManager] SavePlayerInventory failed for", player.Name, ":", err)
+		end
 		inventorySaveDebounce[userId].lastSave = os.clock()
 		inventorySaveDebounce[userId].pending = false
 	end
@@ -301,6 +318,7 @@ end
 
 -- Load inventory (tool names) and give corresponding tools from Workspace
 local function LoadPlayerInventory(player)
+	print("[InventoryManager] LoadPlayerInventory starting for", player.Name)
 	-- Wait for character and backpack to be fully loaded
 	local character = player.Character
 	if not character then
@@ -321,6 +339,18 @@ local function LoadPlayerInventory(player)
 
 	local userId = player.UserId
 	local inventoryData = MainDataStore.LoadInventory(userId) or {}
+	print(
+		"[InventoryManager] LoadPlayerInventory raw data for",
+		player.Name,
+		"| inventory =",
+		listToString(inventoryData.inventory or {}),
+		"equipped =",
+		listToString(inventoryData.equipped or {}),
+		"consumables =",
+		listToString(inventoryData.consumables or {}),
+		"helmet =",
+		inventoryData.helmet
+	)
 	local originalInventory = inventoryData.inventory or {}
 	local originalEquipped = inventoryData.equipped or {}
 	local storedHelmet = inventoryData.helmet

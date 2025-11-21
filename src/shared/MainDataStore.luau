@@ -38,33 +38,98 @@ function MainDataStore.SavePlayerData(userId, data)
 	return success, err
 end
 
--- InventoryStore now stores a table: {inventory = {...}, equipped = {...}}
 function MainDataStore.LoadInventory(userId)
 	local key = "Player_" .. userId
-	local success, data = pcall(function()
-		return InventoryStore:GetAsync(key)
-	end)
-	if success then
-		if typeof(data) == "table" then
-			-- Ensure both inventory and equipped arrays exist
-			data.inventory = data.inventory or {}
-			data.equipped = data.equipped or {}
-			return data
-		elseif data == nil then
-			return {inventory = {}, equipped = {}}
-		else
-			return {inventory = {}, equipped = {}}
+	local attempts = 0
+	local success, data
+
+	repeat
+		attempts += 1
+		success, data = pcall(function()
+			return InventoryStore:GetAsync(key)
+		end)
+
+		if not success then
+			warn("[InventoryStore] LoadInventory failed (attempt " .. attempts .. ") for userId", userId, ":", data)
+			if attempts < 3 then
+				task.wait(0.5)
+			end
 		end
-	else
-		return {inventory = {}, equipped = {}}
+	until success or attempts >= 3
+
+	if not success then
+		warn("[InventoryStore] LoadInventory giving up for userId", userId, "- returning empty state")
+		return {
+			inventory = {},
+			equipped = {},
+			consumables = {},
+			helmet = nil,
+		}
 	end
+
+	if data == nil then
+		print("[InventoryStore] LoadInventory: no data for userId", userId, "- returning new empty state")
+		return {
+			inventory = {},
+			equipped = {},
+			consumables = {},
+			helmet = nil,
+		}
+	end
+
+	if typeof(data) ~= "table" then
+		warn("[InventoryStore] LoadInventory: unexpected data type for userId", userId, ":", typeof(data))
+		return {
+			inventory = {},
+			equipped = {},
+			consumables = {},
+			helmet = nil,
+		}
+	end
+
+	-- Backwards compatibility: older format may have been a plain array of strings
+	if data.inventory == nil and data.equipped == nil then
+		-- Treat the root table as the inventory list
+		local legacyInventory = {}
+		for index, value in ipairs(data) do
+			if typeof(value) == "string" then
+				table.insert(legacyInventory, value)
+			end
+		end
+		data = {
+			inventory = legacyInventory,
+			equipped = {},
+			consumables = {},
+			helmet = nil,
+		}
+	end
+
+	-- Normalise expected fields
+	data.inventory = data.inventory or {}
+	data.equipped = data.equipped or {}
+	data.consumables = data.consumables or {}
+	data.helmet = data.helmet
+
+	print(
+		"[InventoryStore] LoadInventory OK for userId",
+		userId,
+		"| inventory =", #data.inventory,
+		"equipped =", #data.equipped,
+		"consumables =", #data.consumables,
+		"helmet =", data.helmet
+	)
+
+	return data
 end
 
 function MainDataStore.SaveInventory(userId, inventoryTable)
 	local key = "Player_" .. userId
-	-- Ensure inventoryTable is a table with inventory and equipped arrays
+	-- Ensure inventoryTable is a table with inventory/equipped arrays (and optional consumables/helmet)
 	local filteredInventory = {}
 	local filteredEquipped = {}
+	local filteredConsumables = {}
+	local helmet: string? = nil
+
 	if typeof(inventoryTable) == "table" then
 		if typeof(inventoryTable.inventory) == "table" then
 			for i, v in inventoryTable.inventory do
@@ -80,14 +145,38 @@ function MainDataStore.SaveInventory(userId, inventoryTable)
 				end
 			end
 		end
+		if typeof(inventoryTable.consumables) == "table" then
+			for i, v in inventoryTable.consumables do
+				if typeof(v) == "string" then
+					table.insert(filteredConsumables, v)
+				end
+			end
+		end
+		if typeof(inventoryTable.helmet) == "string" then
+			helmet = inventoryTable.helmet
+		end
 	end
 	local saveData = {
 		inventory = filteredInventory,
-		equipped = filteredEquipped
+		equipped = filteredEquipped,
+		consumables = filteredConsumables,
+		helmet = helmet,
 	}
 	local success, err = pcall(function()
 		InventoryStore:SetAsync(key, saveData)
 	end)
+	if success then
+		print(
+			"[InventoryStore] SaveInventory OK for userId",
+			userId,
+			"| inventory =", #filteredInventory,
+			"equipped =", #filteredEquipped,
+			"consumables =", #filteredConsumables,
+			"helmet =", helmet
+		)
+	else
+		warn("[InventoryStore] SaveInventory failed for userId", userId, ":", err)
+	end
 	return success, err
 end
 
