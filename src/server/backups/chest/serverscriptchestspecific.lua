@@ -8,7 +8,20 @@ script.ChestLocalScript.Chest.Value = chest -- setting a value
 
 local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
 
-local rewardTemplates = {}
+local DEFAULT_REWARD_ASSET_PATH = "Samurai Weapon"
+local rewardAssetPath = DEFAULT_REWARD_ASSET_PATH
+
+local rewardAssetPathValue = chest:FindFirstChild("RewardAssetPath")
+if not rewardAssetPathValue and chest:FindFirstChild("Configurations") then
+	rewardAssetPathValue = chest.Configurations:FindFirstChild("RewardAssetPath")
+end
+
+if rewardAssetPathValue and rewardAssetPathValue:IsA("StringValue") then
+	local trimmed = string.gsub(rewardAssetPathValue.Value or "", "^%s*(.-)%s*$", "%1")
+	if trimmed ~= "" then
+		rewardAssetPath = trimmed
+	end
+end
 
 local reward
 if chest:FindFirstChild("Reward") then
@@ -34,31 +47,21 @@ end
 
 local chestAnchored = false
 
-local VALID_TEMPLATE_CLASSES = {
-	Model = true,
-	Tool = true,
-	BasePart = true,
-	Accessory = true,
-}
-
-local function populateRewardTemplates()
-	rewardTemplates = {}
-
-	if not assetsFolder then
-		return
+local function resolveFromFolder(root, path)
+	if not root or not path or path == "" then
+		return nil
 	end
 
-	for _, descendant in ipairs(assetsFolder:GetDescendants()) do
-		if VALID_TEMPLATE_CLASSES[descendant.ClassName] then
-			local parent = descendant.Parent
-			if parent and not parent:IsA("Model") and not parent:IsA("Tool") then
-				table.insert(rewardTemplates, descendant)
-			end
+	local current = root
+	for segment in string.gmatch(path, "[^/]+") do
+		if not current then
+			return nil
 		end
+		current = current:FindFirstChild(segment)
 	end
-end
 
-populateRewardTemplates()
+	return current
+end
 
 local function anchorChestParts()
 	if chestAnchored then
@@ -125,22 +128,19 @@ local function spawnTemplateAtPosition(template, position, forward)
 	return clone
 end
 
-local function spawnRandomReward(player)
+local function spawnConfiguredReward(player)
+	if not rewardAssetPath or rewardAssetPath == "" then
+		return
+	end
+
 	if not assetsFolder then
 		warn("[ChestReward] No assets folder found in ReplicatedStorage.")
 		return
 	end
 
-	populateRewardTemplates()
-
-	if #rewardTemplates == 0 then
-		warn("[ChestReward] No reward templates were found in ReplicatedStorage.assets.")
-		return
-	end
-
-	local selectedTemplate = rewardTemplates[math.random(1, #rewardTemplates)]
-	if not selectedTemplate or not selectedTemplate.Parent then
-		warn("[ChestReward] Selected reward template is no longer available.")
+	local template = resolveFromFolder(assetsFolder, rewardAssetPath)
+	if not template then
+		warn(("[ChestReward] Asset '%s' was not found in ReplicatedStorage.assets."):format(rewardAssetPath))
 		return
 	end
 
@@ -161,10 +161,10 @@ local function spawnRandomReward(player)
 	local spawnOffset = Vector3.new(0, chestHalfHeight + 2, 0)
 	local spawnPosition = primaryPart.Position + spawnOffset
 
-	local spawned = spawnTemplateAtPosition(selectedTemplate, spawnPosition, forwardUnit)
+	local spawned = spawnTemplateAtPosition(template, spawnPosition, forwardUnit)
 
 	if spawned and RunService:IsStudio() then
-		print(("[ChestReward] Spawned '%s' for %s"):format(selectedTemplate.Name, player.Name))
+		print(("[ChestReward] Spawned '%s' for %s"):format(template.Name, player.Name))
 	end
 end
 
@@ -215,7 +215,7 @@ OnLidToggle = function(player)
 		hinge.BodyGyro.cframe = hinge.BodyGyro.cframe * CFrame.Angles(0, 0, math.rad(-170))
 		lidOpen = true
 		task.delay(2, function()
-			spawnRandomReward(player)
+			spawnConfiguredReward(player)
 		end)
 		task.delay(3, anchorChestParts)
 	end
