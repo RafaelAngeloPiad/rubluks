@@ -6,11 +6,9 @@ local RunService = game:GetService("RunService")
 local chest = script.Parent
 script.ChestLocalScript.Chest.Value = chest -- setting a value
 
-local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
-local mobsFolder = ReplicatedStorage:FindFirstChild("Mobs")
+local chestSpawnFolder = ReplicatedStorage:FindFirstChild("chestSpawn")
 
 local rewardTemplates = {}
-local mobTemplates = {}
 
 local reward
 if chest:FindFirstChild("Reward") then
@@ -43,18 +41,14 @@ local VALID_TEMPLATE_CLASSES = {
 	Accessory = true,
 }
 
-local VALID_MOB_CLASSES = {
-	Model = true,
-}
-
 local function populateRewardTemplates()
 	rewardTemplates = {}
 
-	if not assetsFolder then
+	if not chestSpawnFolder then
 		return
 	end
 
-	for _, descendant in ipairs(assetsFolder:GetDescendants()) do
+	for _, descendant in ipairs(chestSpawnFolder:GetDescendants()) do
 		if VALID_TEMPLATE_CLASSES[descendant.ClassName] then
 			local parent = descendant.Parent
 			if parent and not parent:IsA("Model") and not parent:IsA("Tool") then
@@ -64,25 +58,7 @@ local function populateRewardTemplates()
 	end
 end
 
-local function populateMobTemplates()
-	mobTemplates = {}
-
-	if not mobsFolder then
-		return
-	end
-
-	for _, descendant in ipairs(mobsFolder:GetDescendants()) do
-		if VALID_MOB_CLASSES[descendant.ClassName] then
-			local parent = descendant.Parent
-			if parent and not parent:IsA("Model") then
-				table.insert(mobTemplates, descendant)
-			end
-		end
-	end
-end
-
 populateRewardTemplates()
-populateMobTemplates()
 
 local function anchorChestParts()
 	if chestAnchored then
@@ -150,15 +126,15 @@ local function spawnTemplateAtPosition(template, position, forward)
 end
 
 local function spawnRandomReward(player)
-	if not assetsFolder then
-		warn("[ChestReward] No assets folder found in ReplicatedStorage.")
+	if not chestSpawnFolder then
+		warn("[ChestReward] No chestSpawn folder found in ReplicatedStorage.")
 		return
 	end
 
 	populateRewardTemplates()
 
 	if #rewardTemplates == 0 then
-		warn("[ChestReward] No reward templates were found in ReplicatedStorage.assets.")
+		warn("[ChestReward] No templates were found in ReplicatedStorage.chestSpawn.")
 		return
 	end
 
@@ -193,19 +169,19 @@ local function spawnRandomReward(player)
 end
 
 local function spawnRandomMob(player)
-	if not mobsFolder then
-		warn("[ChestReward] No Mobs folder found in ReplicatedStorage.")
+	if not chestSpawnFolder then
+		warn("[ChestReward] No chestSpawn folder found in ReplicatedStorage.")
 		return
 	end
 
-	populateMobTemplates()
+	populateRewardTemplates()
 
-	if #mobTemplates == 0 then
-		warn("[ChestReward] No mob templates were found in ReplicatedStorage.Mobs.")
+	if #rewardTemplates == 0 then
+		warn("[ChestReward] No templates were found in ReplicatedStorage.chestSpawn.")
 		return
 	end
 
-	local selectedTemplate = mobTemplates[math.random(1, #mobTemplates)]
+	local selectedTemplate = rewardTemplates[math.random(1, #rewardTemplates)]
 	if not selectedTemplate or not selectedTemplate.Parent then
 		warn("[ChestReward] Selected mob template is no longer available.")
 		return

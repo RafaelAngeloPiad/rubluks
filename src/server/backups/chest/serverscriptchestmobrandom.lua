@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local chest = script.Parent
 script.ChestLocalScript.Chest.Value = chest -- setting a value
 
-local mobsFolder = ReplicatedStorage:FindFirstChild("Mobs")
+local chestSpawnFolder = ReplicatedStorage:FindFirstChild("chestSpawn")
 
 local mobTemplates = {}
 
@@ -19,11 +19,11 @@ local VALID_MOB_CLASSES = {
 local function populateMobTemplates()
 	mobTemplates = {}
 
-	if not mobsFolder then
+	if not chestSpawnFolder then
 		return
 	end
 
-	for _, descendant in ipairs(mobsFolder:GetDescendants()) do
+	for _, descendant in ipairs(chestSpawnFolder:GetDescendants()) do
 		if VALID_MOB_CLASSES[descendant.ClassName] then
 			local parent = descendant.Parent
 			if parent and not parent:IsA("Model") then
@@ -74,14 +74,8 @@ local function spawnTemplateAtPosition(template, position, forward)
 	local clone = template:Clone()
 	clone.Name = template.Name
 
-	if clone:IsA("Tool") then
-		clone.Parent = Workspace
-		local handle = clone:FindFirstChild("Handle")
-		if handle and handle:IsA("BasePart") then
-			local forwardUnit = forward.Magnitude > 0 and forward.Unit or Vector3.new(0, 0, -1)
-			handle.CFrame = CFrame.new(position, position + forwardUnit)
-		end
-	elseif clone:IsA("Model") then
+	-- Only spawn Models for mobs
+	if clone:IsA("Model") then
 		clone.Parent = Workspace
 		local primary = ensurePrimaryPart(clone)
 		local forwardUnit = forward.Magnitude > 0 and forward.Unit or Vector3.new(0, 0, -1)
@@ -90,26 +84,24 @@ local function spawnTemplateAtPosition(template, position, forward)
 		else
 			clone:MoveTo(position)
 		end
-	elseif clone:IsA("BasePart") then
-		clone.CFrame = CFrame.new(position)
-		clone.Parent = Workspace
 	else
-		clone.Parent = Workspace
+		warn("[ChestMobReward] Template is not a Model, skipping spawn.")
+		return nil
 	end
 
 	return clone
 end
 
 local function spawnRandomMob(player)
-	if not mobsFolder then
-		warn("[ChestMobReward] No Mobs folder found in ReplicatedStorage.")
+	if not chestSpawnFolder then
+		warn("[ChestMobReward] No chestSpawn folder found in ReplicatedStorage.")
 		return
 	end
 
 	populateMobTemplates()
 
 	if #mobTemplates == 0 then
-		warn("[ChestMobReward] No mob templates were found in ReplicatedStorage.Mobs.")
+		warn("[ChestMobReward] No templates were found in ReplicatedStorage.chestSpawn.")
 		return
 	end
 

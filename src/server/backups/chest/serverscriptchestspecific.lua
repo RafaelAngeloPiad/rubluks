@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local chest = script.Parent
 script.ChestLocalScript.Chest.Value = chest -- setting a value
 
-local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+local chestSpawnFolder = ReplicatedStorage:FindFirstChild("chestSpawn")
 
 local DEFAULT_REWARD_ASSET_PATH = "Samurai Weapon"
 local rewardAssetPath = DEFAULT_REWARD_ASSET_PATH
@@ -133,14 +133,14 @@ local function spawnConfiguredReward(player)
 		return
 	end
 
-	if not assetsFolder then
-		warn("[ChestReward] No assets folder found in ReplicatedStorage.")
+	if not chestSpawnFolder then
+		warn("[ChestReward] No chestSpawn folder found in ReplicatedStorage.")
 		return
 	end
 
-	local template = resolveFromFolder(assetsFolder, rewardAssetPath)
+	local template = resolveFromFolder(chestSpawnFolder, rewardAssetPath)
 	if not template then
-		warn(("[ChestReward] Asset '%s' was not found in ReplicatedStorage.assets."):format(rewardAssetPath))
+		warn(("[ChestReward] Asset '%s' was not found in ReplicatedStorage.chestSpawn."):format(rewardAssetPath))
 		return
 	end
 
