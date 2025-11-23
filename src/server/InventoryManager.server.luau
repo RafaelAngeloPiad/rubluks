@@ -384,17 +384,36 @@ local function SavePlayerInventory(player)
 		consumables = consumables or {}
 		consumables = mergeConsumableLists(consumables)
 
-		-- Helmet: prefer live runtime slot, but NEVER overwrite an existing
-		-- helmet in DataStore with nil from here. This prevents random saves
-		-- (e.g. before HelmetManager initialises, or during transitions) from
-		-- clearing the helmet field.
+		-- Helmet: prefer live runtime slot. Only preserve existing helmet from
+		-- DataStore if we're in a transition state (no character or dead).
+		-- If player has a living character and runtime helmet is nil, trust that
+		-- nil (it's an intentional drop) and save it.
 		local helmet = nil
 		local existingForHelmet = MainDataStore.LoadInventory(player.UserId) or {}
 		if typeof(_G.getPlayerHelmet) == "function" then
 			helmet = _G.getPlayerHelmet(player)
 		end
+		
+		-- Only preserve existing helmet if we're in a transition state
+		-- (no character, or character is dead). Otherwise, trust the runtime value.
 		if helmet == nil then
-			helmet = existingForHelmet.helmet
+			local isInTransition = false
+			if not character then
+				isInTransition = true
+			else
+				local humanoid = character:FindFirstChild("Humanoid")
+				if humanoid and humanoid.Health <= 0 then
+					isInTransition = true
+				end
+			end
+			
+			if isInTransition then
+				-- Preserve existing helmet during transitions
+				helmet = existingForHelmet.helmet
+			else
+				-- Player has a living character and no helmet - this is intentional, save nil
+				helmet = nil
+			end
 		end
 
 		local success, err = MainDataStore.SaveInventory(player.UserId, {
