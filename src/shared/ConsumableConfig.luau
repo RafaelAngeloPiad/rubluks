@@ -31,14 +31,6 @@
 --]]
 
 local Entries = {
-	["Health Potion"] = {
-		assetName = "HealthPotion",
-		displayName = "Health Potion",
-		duration = 20,
-		effects = {
-			HPPlus = 250,
-		},
-	},
 
 	-- Health Potions (Small / Medium / Large)
 	["Small Health Potion"] = {
@@ -65,15 +57,6 @@ local Entries = {
 		duration = 25,
 		effects = {
 			HPPlus = 350,
-		},
-	},
-
-	["Iron Skin Elixir"] = {
-		assetName = "IronSkinElixir",
-		displayName = "Iron Skin Elixir",
-		duration = 30,
-		effects = {
-			DefensePlus = 40,
 		},
 	},
 
