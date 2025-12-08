@@ -30,9 +30,30 @@ BrawlerSoundConfig.Sounds = {
 	unsheathe = "rbxasset://sounds//unsheath.wav",
 }
 
+-- Sound Timing Configuration
+-- PlayDelay: Wait X seconds before playing (server-side delay)
+-- TimePosition: Start playing X seconds into the audio (skip intro)
+BrawlerSoundConfig.SoundTiming = {
+	combo1 = { PlayDelay = 0, TimePosition = 0 },
+	combo2 = { PlayDelay = 0, TimePosition = 0 },
+	moveAttack = { PlayDelay = 0, TimePosition = 0 },
+	jumpAttack = { PlayDelay = 0, TimePosition = 0 },
+	feralleap = { PlayDelay = 0, TimePosition = 0 },
+	brawlersroar = { PlayDelay = 0, TimePosition = 0 },
+	meteordive = { PlayDelay = 0, TimePosition = 0 },
+	bloodthirst = { PlayDelay = 0, TimePosition = 0 },
+	lastchance = { PlayDelay = 0, TimePosition = 0 },
+	unsheathe = { PlayDelay = 0, TimePosition = 0 },
+}
+
 -- Helper function to get sound ID for an attack type
 function BrawlerSoundConfig.getSound(attackType)
 	return BrawlerSoundConfig.Sounds[attackType] or "rbxasset://sounds//swordslash.wav"
+end
+
+-- Helper function to get sound timing for an attack type
+function BrawlerSoundConfig.getTiming(attackType)
+	return BrawlerSoundConfig.SoundTiming[attackType] or { PlayDelay = 0, TimePosition = 0 }
 end
 
 return BrawlerSoundConfig

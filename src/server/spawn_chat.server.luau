@@ -104,9 +104,12 @@ local function ensurePrimaryPart(model: Model): BasePart?
 	return nil
 end
 
-local function spawnInstanceAtPosition(template: Instance, templateType: string?, position: Vector3, lookVector: Vector3)
+local function spawnInstanceAtPosition(template: Instance, templateType: string?, position: Vector3, lookVector: Vector3, player: Player)
 	local clone = template:Clone()
 	clone.Name = template.Name
+	
+	-- Tag the spawned instance as a generic spawned object
+	clone:SetAttribute("SpawnedObject", true)
 
 	if clone:IsA("Tool") then
 		clone.Parent = workspace
@@ -181,7 +184,7 @@ local function spawnTemplates(player: Player, path: string, amount: number)
 
 	for index = 1, amount do
 		local spawnPosition = computeSpawnPosition(origin, forward, right, baseDistance, index, amount)
-		spawnInstanceAtPosition(template, templateType, spawnPosition, forward)
+		spawnInstanceAtPosition(template, templateType, spawnPosition, forward, player)
 	end
 end
 

@@ -161,7 +161,7 @@ local function sendConsumableUpdate(player: Player)
 				displayName = entry and (entry.displayName or canonicalName) or canonicalName,
 			}
 		else
-			payload[index] = nil
+			payload[index] = false
 		end
 	end
 	ConsumableEvent:FireClient(player, "updateSlots", payload)

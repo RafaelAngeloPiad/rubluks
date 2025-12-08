@@ -13,13 +13,13 @@ local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfig
 -- Helper function to get player's MaxAttack stat
 local function getPlayerMaxAttack(player)
 	if not player then return 0 end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then return 0 end
-	
+
 	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 	if not maxAttack then return 0 end
-	
+
 	return maxAttack.Value or 0
 end
 
@@ -51,6 +51,8 @@ local remote = ReplicatedStorage:WaitForChild("ActionEvent")
 local slashAnim = Instance.new("Animation")
 slashAnim.AnimationId = "rbxassetid://136486872917927"
 
+-- Create a temporary ANCHORED hitbox part at the player's position
+-- This part is NOT welded to the player - it stays in place and destroys itself
 local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root then
@@ -60,6 +62,7 @@ local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	offsetCFrame = offsetCFrame or CFrame.new()
 	lifetime = lifetime or 3
 
+	-- Create an ANCHORED part at the player's current position
 	local anchor = Instance.new("Part")
 	anchor.Name = "StarfallHitboxAnchor"
 	anchor.Size = Vector3.new(1, 1, 1)
@@ -68,15 +71,11 @@ local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	anchor.CanQuery = false
 	anchor.CanTouch = false
 	anchor.Massless = true
-	anchor.Anchored = false
+	anchor.Anchored = true -- ANCHORED = stays in place, doesn't follow player
 	anchor.CFrame = root.CFrame * offsetCFrame
-	anchor.Parent = character
+	anchor.Parent = workspace -- Parent to workspace, not character
 
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = anchor
-	weld.Parent = anchor
-
+	-- Debris will automatically destroy this part after lifetime
 	Debris:AddItem(anchor, lifetime)
 
 	return anchor
@@ -174,7 +173,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	if skillType ~= "starfall" then
 		return
 	end
-	
+
 	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
 	if not ServerConfigs.isWeaponClassMatch(player) then
 		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
@@ -182,24 +181,24 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			return
 		end
 	end
-	
+
 	-- Cooldown check (added system)
 	if _G.archerIsSkillOnCooldown(player, "starfall") then
 		local remainingTime = _G.archerGetRemainingCooldown(player, "starfall")
 		_G.archerSendCooldownStatus(player, "starfall", true, math.ceil(remainingTime))
 		return
 	end
-	
+
 	-- Set cooldown (added system)
 	_G.archerSetSkillCooldown(player, "starfall")
 	local cooldownTime = _G.ARCHER_COOLDOWNS["starfall"]
 	_G.archerSendCooldownStatus(player, "starfall", true, cooldownTime)
-	
+
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
 		_G.archerSendCooldownStatus(player, "starfall", false, 0)
 	end)
-	
+
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -208,28 +207,56 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
 	_G.applyArcherAnimationSpeed(animTrack, "starfall")
-	
+
 	-- Enable invincibility (freeze health during ultimate)
 	_G.enablePlayerInvincibility(player)
-	
+
 	-- Input lock (added system)
 	remote:FireClient(player, "lock_input")
 	_G.setArcherWalkingSpeed(player, "blocking")
-	
+
 	-- Camera sequence (added system)
 	remote:FireClient(player, "play_camera_sequence", "starfall")
-	
+
+	-- CREATE HITBOX ONCE - Independent of VFX markers
+	-- Calculate DOT damage based on player's MaxAttack stat (ultDamage is now a multiplier)
+	local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.ultDamage or 0.1
+	local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
+
+	-- Massive center DOT hitbox - spawns once at player's position
+	-- FIXED DURATION: Hitbox lasts for a fixed time, independent of tick time
+	local anchorLifetime = 8 -- Fixed 3 seconds - matches animation/VFX duration
+	local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(), anchorLifetime)
+
+	if hitboxAnchor then
+		_G.createStaticDOTHitbox({
+			attachTo = hitboxAnchor,
+			offset = CFrame.new(0, 0, 0),
+			size = ServerConfigs.ArcherSkills.Starfall.hitboxSize,
+			damage = actualDamage, -- Use calculated damage based on MaxAttack
+			damageTickTime = ServerConfigs.ArcherSkills.Starfall.damageTickTime or 0.5,
+			duration = anchorLifetime,
+			character = character,
+			name = "Starfall Center DOT",
+			showVisual = true,
+			visualColor = Color3.new(1, 0, 0),
+			delay = ServerConfigs.ArcherSkills.Starfall.hitboxDelay or 0.2,
+			actionType = "starfall",
+			classType = "Archer"
+		})
+	end
+
 	-- Unlock when done (added system)
 	animTrack.Stopped:Connect(function()
 		-- Disable invincibility (allow damage again)
 		_G.disablePlayerInvincibility(player)
-		
+
 		remote:FireClient(player, "unlock_input")
 		_G.setArcherWalkingSpeed(player, "normal")
 		-- Restore archer aiming system (will respect current aim lock state)
 		remote:FireClient(player, "setup_archer_aiming")
 	end)
-	
+
 	-- AuraStart marker (exact copy from original Starfall.lua)
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 		local vfx = ReplicatedStorage.Starfall:WaitForChild("StarfallAura"):Clone()
@@ -256,7 +283,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		game:GetService("Debris"):AddItem(vfx, 10)
 	end)
-	
+
 	-- Starfall marker (exact copy from original Starfall.lua)
 	animTrack:GetMarkerReachedSignal("Starfall"):Connect(function()
 		--local angles = {0, 45, 90, 135, 180, 225, 270, 315}
@@ -265,43 +292,19 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			createSlash(character, a)
 		end
 	end)
-	
+
 	-- StarExplosionNear marker (exact copy from original Starfall.lua)
 	animTrack:GetMarkerReachedSignal("StarExplosionNear"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			createExplosionNear(character, angle)
 		end
 	end)
-	
-	-- StarExplosionFar marker (exact copy from original Starfall.lua + hitbox)
+
+	-- StarExplosionFar marker (VFX only - hitbox already created above)
 	animTrack:GetMarkerReachedSignal("StarExplosionFar"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			createExplosionFar(character, angle)
 		end
-		
-		-- Calculate DOT damage based on player's MaxAttack stat (ultDamage is now a multiplier)
-		local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.ultDamage or 0.1
-		local actualDamage, isCrit = calculateDamageForHitbox(player, "Archer", damageMultiplier)
-		
-		-- Massive center DOT hitbox
-		local root = character:WaitForChild("HumanoidRootPart")
-		local anchorLifetime = math.max((ServerConfigs.ArcherSkills.Starfall.damageTickTime or 0.5) * 6, 2)
-		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(), anchorLifetime)
-		_G.createStaticDOTHitbox({
-			attachTo = hitboxAnchor or root,
-			offset = CFrame.new(0, 0, 0),
-			size = ServerConfigs.ArcherSkills.Starfall.hitboxSize,
-			damage = actualDamage, -- Use calculated damage based on MaxAttack
-			damageTickTime = ServerConfigs.ArcherSkills.Starfall.damageTickTime or 0.5,
-			duration = anchorLifetime,
-			character = character,
-			name = "Starfall Center DOT",
-			showVisual = false,
-			visualColor = Color3.new(1, 0, 0),
-			delay = ServerConfigs.ArcherSkills.Starfall.hitboxDelay or 0.2,
-			actionType = "starfall",
-			classType = "Archer"
-		})
 	end)
 
 end)

@@ -15,13 +15,13 @@ local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfig
 -- Helper function to get player's MaxAttack stat
 local function getPlayerMaxAttack(player)
 	if not player then return 0 end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then return 0 end
-	
+
 	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 	if not maxAttack then return 0 end
-	
+
 	return maxAttack.Value or 0
 end
 
@@ -57,6 +57,8 @@ slashAnim.AnimationId = "rbxassetid://117441445922611"
 -- DEMONIC VORPAL DANCE HITBOX CONFIG (using centralized config)
 local DEMONICVORPALDANCE_CONFIG = ServerConfigs.GladiatorSkills.DemonicVorpalDance
 
+-- Create a temporary ANCHORED hitbox part at the player's position
+-- This part is NOT welded to the player - it stays in place and destroys itself
 local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root then
@@ -66,6 +68,7 @@ local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	offsetCFrame = offsetCFrame or CFrame.new()
 	lifetime = lifetime or 3
 
+	-- Create an ANCHORED part at the player's current position
 	local anchor = Instance.new("Part")
 	anchor.Name = "DemonicVorpalDanceHitboxAnchor"
 	anchor.Size = Vector3.new(1, 1, 1)
@@ -74,15 +77,11 @@ local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	anchor.CanQuery = false
 	anchor.CanTouch = false
 	anchor.Massless = true
-	anchor.Anchored = false
+	anchor.Anchored = true -- ANCHORED = stays in place, doesn't follow player
 	anchor.CFrame = root.CFrame * offsetCFrame
-	anchor.Parent = character
+	anchor.Parent = workspace -- Parent to workspace, not character
 
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = anchor
-	weld.Parent = anchor
-
+	-- Debris will automatically destroy this part after lifetime
 	Debris:AddItem(anchor, lifetime)
 
 	return anchor
@@ -149,7 +148,7 @@ local function explosionNear(character, angle, tilt)
 	end
 
 	Debris:AddItem(vfx, 1)
-	
+
 end
 
 -- Helper function: Explosion Far
@@ -181,7 +180,7 @@ local function explosionFar(character, angle, tilt)
 	end
 
 	Debris:AddItem(vfx, 1)
-	
+
 end
 
 remote.OnServerEvent:Connect(function(player, skillType)
@@ -189,7 +188,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	if skillType ~= "demonicvorpaldance" then
 		return
 	end
-	
+
 	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
 	if not ServerConfigs.isWeaponClassMatch(player) then
 		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
@@ -197,24 +196,24 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			return
 		end
 	end
-	
+
 	-- Check cooldown using centralized system
 	if _G.gladiatorIsSkillOnCooldown(player, "demonicvorpaldance") then
 		local remainingTime = _G.gladiatorGetRemainingCooldown(player, "demonicvorpaldance")
 		_G.gladiatorSendCooldownStatus(player, "demonicvorpaldance", true, math.ceil(remainingTime))
 		return
 	end
-	
+
 	-- Set cooldown using centralized system
 	_G.gladiatorSetSkillCooldown(player, "demonicvorpaldance")
 	local cooldownTime = _G.GLADIATOR_COOLDOWNS["demonicvorpaldance"]
 	_G.gladiatorSendCooldownStatus(player, "demonicvorpaldance", true, cooldownTime)
-	
+
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
 		_G.gladiatorSendCooldownStatus(player, "demonicvorpaldance", false, 0)
 	end)
-	
+
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -223,21 +222,47 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
 	_G.applyGladiatorAnimationSpeed(animTrack, "demonicvorpaldance")
-	
+
 	-- Enable invincibility (freeze health during ultimate)
 	_G.enablePlayerInvincibility(player)
-	
+
 	-- Lock input for the ultimate
 	remote:FireClient(player, "lock_input")
-	
+
 	-- Tell client to play camera sequence
 	remote:FireClient(player, "play_camera_sequence", "demonicvorpaldance")
-	
+
+	-- CREATE HITBOX ONCE - Independent of VFX markers
+	-- MASSIVE CENTER DOT HITBOX for DemonicVorpalDance
+	local damageMultiplier = DEMONICVORPALDANCE_CONFIG.hitboxDamage
+	local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+	-- FIXED DURATION: Hitbox lasts for a fixed time, independent of tick time
+	local hitboxDuration = 12 -- Fixed 4 seconds - matches animation/VFX duration
+	local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, 0, 0), hitboxDuration)
+
+	if hitboxAnchor then
+		_G.createStaticDOTHitbox({
+			attachTo = hitboxAnchor,
+			offset = CFrame.new(0, 0, 0),
+			size = DEMONICVORPALDANCE_CONFIG.hitboxSize, -- Massive center hitbox
+			damage = actualDamage, -- Damage per tick (calculated with crit)
+			damageTickTime = DEMONICVORPALDANCE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
+			duration = hitboxDuration,
+			character = character,
+			name = "DemonicVorpalDance Center DOT",
+			showVisual = true,
+			visualColor = Color3.new(1, 0, 0.5), -- Pink/red color
+			delay = DEMONICVORPALDANCE_CONFIG.hitboxDelay,
+			actionType = "demonicvorpaldance",
+			classType = "Gladiator"
+		})
+	end
+
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		-- Disable invincibility (allow damage again)
 		_G.disablePlayerInvincibility(player)
-		
+
 		remote:FireClient(player, "unlock_input")
 	end)
 
@@ -277,34 +302,12 @@ remote.OnServerEvent:Connect(function(player, skillType)
 		end
 	end)
 
-	-- Explosion marker (creates explosions in 8 directions, both near and far)
+	-- Explosion marker (VFX only - hitbox already created above)
 	animTrack:GetMarkerReachedSignal("Explosion"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			explosionNear(character, angle,  math.rad(0))
 			explosionFar(character, angle,  math.rad(0))
 		end
-		
-		-- MASSIVE CENTER DOT HITBOX for DemonicVorpalDance
-		local root = character:WaitForChild("HumanoidRootPart")
-		local damageMultiplier = DEMONICVORPALDANCE_CONFIG.hitboxDamage
-		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
-		local hitboxDuration = math.max((DEMONICVORPALDANCE_CONFIG.damageTickTime or 0.5) * 6, 3)
-		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, 0, 0), hitboxDuration)
-		_G.createStaticDOTHitbox({
-			attachTo = hitboxAnchor or root,
-			offset = CFrame.new(0, 0, 0),
-			size = DEMONICVORPALDANCE_CONFIG.hitboxSize, -- Massive center hitbox
-			damage = actualDamage, -- Damage per tick (calculated with crit)
-			damageTickTime = DEMONICVORPALDANCE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
-			duration = hitboxDuration,
-			character = character,
-			name = "DemonicVorpalDance Center DOT",
-			showVisual = false,
-			visualColor = Color3.new(1, 0, 0.5), -- Pink/red color
-			delay = DEMONICVORPALDANCE_CONFIG.hitboxDelay,
-			actionType = "demonicvorpaldance",
-			classType = "Gladiator"
-		})
 	end)
 
 end)

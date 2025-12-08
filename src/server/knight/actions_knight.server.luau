@@ -445,12 +445,6 @@ local function attachSwordAndShield(character, tool)
 			end
 		end
 	end
-	if sword then 
-		sword.Transparency = 0
-	end
-	if shield then 
-		shield.Transparency = 0
-	end
 
 	local offsets = getHandOffsets(humanoid.RigType)
 

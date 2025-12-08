@@ -18,6 +18,7 @@
 	- effects        : Table whose keys line up with the stat bonus keys used by
 	                   PlayerManager (HPPlus, AttackPlus, DefensePlus,
 	                   DefensePenPlus, CritRatePlus, CritMultiplierPlus).
+	                   Values are percentages of base stat (e.g., 20 = 20% of base stat).
 
 	Example:
 	["Health Potion"] = {
@@ -25,7 +26,7 @@
 		displayName = "Health Potion",
 		duration = 15,
 		effects = {
-			HPPlus = 250,
+			HPPlus = 20,  -- Adds 20% of base HP
 		},
 	}
 --]]
@@ -33,30 +34,40 @@
 local Entries = {
 
 	-- Health Potions (Small / Medium / Large)
+	-- These are now instant-use and restore a percentage of the player's Max Health.
 	["Small Health Potion"] = {
 		assetName = "Small Health Potion",
 		displayName = "Small Health Potion",
-		duration = 15,
-		effects = {
-			HPPlus = 150,
+		specialEffects = {
+			{
+				type = "RestoreStat",
+				stat = "Health",
+				percentage = 25,
+			},
 		},
 	},
 
 	["Medium Health Potion"] = {
 		assetName = "Medium Health Potion",
 		displayName = "Medium Health Potion",
-		duration = 20,
-		effects = {
-			HPPlus = 250,
+		specialEffects = {
+			{
+				type = "RestoreStat",
+				stat = "Health",
+				percentage = 40,
+			},
 		},
 	},
 
 	["Large Health Potion"] = {
 		assetName = "Large Health Potion",
 		displayName = "Large Health Potion",
-		duration = 25,
-		effects = {
-			HPPlus = 350,
+		specialEffects = {
+			{
+				type = "RestoreStat",
+				stat = "Health",
+				percentage = 60,
+			},
 		},
 	},
 
@@ -89,30 +100,40 @@ local Entries = {
 	},
 
 	-- Defense Potions
+	-- These are now instant-use and restore a percentage of the player's Max Defense.
 	["Small Defense Potion"] = {
 		assetName = "Small Defense Potion",
 		displayName = "Small Defense Potion",
-		duration = 15,
-		effects = {
-			DefensePlus = 15,
+		specialEffects = {
+			{
+				type = "RestoreStat",
+				stat = "Defense",
+				percentage = 25,
+			},
 		},
 	},
 
 	["Medium Defense Potion"] = {
 		assetName = "Medium Defense Potion",
 		displayName = "Medium Defense Potion",
-		duration = 20,
-		effects = {
-			DefensePlus = 25,
+		specialEffects = {
+			{
+				type = "RestoreStat",
+				stat = "Defense",
+				percentage = 40,
+			},
 		},
 	},
 
 	["Large Defense Potion"] = {
 		assetName = "Large Defense Potion",
 		displayName = "Large Defense Potion",
-		duration = 25,
-		effects = {
-			DefensePlus = 40,
+		specialEffects = {
+			{
+				type = "RestoreStat",
+				stat = "Defense",
+				percentage = 60,
+			},
 		},
 	},
 
@@ -122,8 +143,8 @@ local Entries = {
 		displayName = "Small Critical Potion",
 		duration = 15,
 		effects = {
-			CritRatePlus = 3,
-			CritMultiplierPlus = 10,
+			CritRatePlus = 10,
+			CritMultiplierPlus = 5,
 		},
 	},
 
@@ -132,8 +153,8 @@ local Entries = {
 		displayName = "Medium Critical Potion",
 		duration = 20,
 		effects = {
-			CritRatePlus = 5,
-			CritMultiplierPlus = 20,
+			CritRatePlus = 15,
+			CritMultiplierPlus = 10,
 		},
 	},
 
@@ -142,8 +163,8 @@ local Entries = {
 		displayName = "Large Critical Potion",
 		duration = 25,
 		effects = {
-			CritRatePlus = 8,
-			CritMultiplierPlus = 30,
+			CritRatePlus = 20,
+			CritMultiplierPlus = 15,
 		},
 	},
 
@@ -155,7 +176,7 @@ local Entries = {
 		permanent = false,
         duration = 10,
 		effects = {
-			HPPlus = 150,
+			HPPlus = 15,
 			AttackPlus = 15,
 		},
 	},
@@ -189,7 +210,7 @@ local Entries = {
 			},
 		},
 		effects = {
-			HPPlus = 350,
+			HPPlus = 35,
 		},
 	},
 }

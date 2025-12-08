@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local PLACE_ID = 113520176475008
+local PLACE_ID = 124848096297381
 local COMMAND_PREFIX = "/secretRoom"
 local RESTART_COMMAND = "/restartplace"
 

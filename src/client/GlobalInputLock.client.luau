@@ -86,19 +86,32 @@ end
 
 local controls = getControls()
 local lockCount = 0
+local wasLocked = false
 
 local function applyLockState()
 	if not controls then
 		return
 	end
 
-	if lockCount > 0 then
+	local isLocked = lockCount > 0
+	
+	if isLocked then
 		showOverlay()
 		controls:Disable()
+		-- Notify server to enable invincibility (only if state changed)
+		if not wasLocked then
+			ActionEvent:FireServer("global_lock_input")
+		end
 	else
 		hideOverlay()
 		controls:Enable()
+		-- Notify server to disable invincibility (only if state changed)
+		if wasLocked then
+			ActionEvent:FireServer("global_unlock_input")
+		end
 	end
+	
+	wasLocked = isLocked
 end
 
 -- Global input lock for systems like InventoryManager.

@@ -68,7 +68,6 @@ function MainDataStore.LoadInventory(userId)
 	end
 
 	if data == nil then
-		print("[InventoryStore] LoadInventory: no data for userId", userId, "- returning new empty state")
 		return {
 			inventory = {},
 			equipped = {},
@@ -109,15 +108,6 @@ function MainDataStore.LoadInventory(userId)
 	data.equipped = data.equipped or {}
 	data.consumables = data.consumables or {}
 	data.helmet = data.helmet
-
-	print(
-		"[InventoryStore] LoadInventory OK for userId",
-		userId,
-		"| inventory =", #data.inventory,
-		"equipped =", #data.equipped,
-		"consumables =", #data.consumables,
-		"helmet =", data.helmet
-	)
 
 	return data
 end
@@ -166,14 +156,7 @@ function MainDataStore.SaveInventory(userId, inventoryTable)
 		InventoryStore:SetAsync(key, saveData)
 	end)
 	if success then
-		print(
-			"[InventoryStore] SaveInventory OK for userId",
-			userId,
-			"| inventory =", #filteredInventory,
-			"equipped =", #filteredEquipped,
-			"consumables =", #filteredConsumables,
-			"helmet =", helmet
-		)
+
 	else
 		warn("[InventoryStore] SaveInventory failed for userId", userId, ":", err)
 	end

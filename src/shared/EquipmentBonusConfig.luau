@@ -37,49 +37,401 @@
 -- tsaka armor kahit kanino
 
 local Entries = {
-	-- Example configuration entries (replace with your own values)
-	["Flame Sword"] = {
-		AttackPlus = 5,
+	-- ========================================
+	-- SWORD AND SHIELD WEAPONS
+	-- ========================================
+	
+	["Slavkoria Sword"] = {
+		AttackPlus = 12,
+		DefensePlus = 12,
+	},
+	
+	["Lohergin"] = {
+		AttackPlus = 15,
+		DefensePlus = 15,
+	},
+	
+	["Claymore"] = {
+		AttackPlus = 20,
+		DefensePlus = 20,
+	},
+	
+	["Hardege"] = {
+		AttackPlus = 25,
+		DefensePlus = 25,
+	},
+	
+	["Durandal"] = {
+		AttackPlus = 45,
+		DefensePlus = 45,
 		statusAilment = {
 			type = "burn",
-			chance = 100,
-			duration = 5.0,
+			chance = 15,
+			duration = 3.0,
 			dps = 5,
 			tickInterval = 1.0,
 		},
 	},
-	["Prominent Bow"] = {
-		AttackPlus = 40,
-		CritRatePlus = 5,
-	},
-	["Giant Dragon Gauntlet"] = {
-		AttackPlus = 100,
-		DefensePlus = 100,
+	
+	["Dragon Slayer"] = {
+		AttackPlus = 75,
+		DefensePlus = 75,
 		statusAilment = {
-			type = "stun",
-			chance = 30,
-			duration = 1.0
+			type = "burn",
+			chance = 20,
+			duration = 4.0,
+			dps = 8,
+			tickInterval = 1.0,
 		},
 	},
+	
+	["Joyeuse"] = {
+		AttackPlus = 160,
+		DefensePlus = 160,
+	},
+	
+	["Excalibur"] = {
+		AttackPlus = 300,
+		DefensePlus = 300,
+		statusAilment = {
+			type = "stun",
+			chance = 8,
+			duration = 1.5,
+		},
+	},
+	
+	["Save the Queen"] = {
+		AttackPlus = 750,
+		DefensePlus = 750,
+	},
+	
+	["End Bringer"] = {
+		AttackPlus = 1800,
+		DefensePlus = 1800,
+		statusAilment = {
+			type = "poison",
+			chance = 25,
+			duration = 5.0,
+			dps = 50,
+			tickInterval = 1.0,
+		},
+	},
+	
+	["Slav's Peacekeeper"] = {
+		AttackPlus = 4500,
+		DefensePlus = 4500,
+		statusAilment = {
+			type = "stun",
+			chance = 12,
+			duration = 2.0,
+		},
+	},
+	
+	-- ========================================
+	-- CLAWS WEAPONS
+	-- ========================================
+	
+	["Slavkorian Assassin's Claw"] = {
+		AttackPlus = 20,
+	},
+	
+	["Ice Golem's Claws"] = {
+		AttackPlus = 26,
+		statusAilment = {
+			type = "ice",
+			chance = 20,
+			duration = 2.0,
+			dps = 3,
+			tickInterval = 1.0,
+			slowMultiplier = 0.6,
+		},
+	},
+	
+	["King Crab Smashers"] = {
+		AttackPlus = 30,
+	},
+	
+	["Skeleton Gloves"] = {
+		AttackPlus = 45,
+	},
+	
+	["Steampunk Gloves"] = {
+		AttackPlus = 70,
+	},
+	
+	["Giant Golden Bull Gauntlet"] = {
+		AttackPlus = 120,
+		statusAilment = {
+			type = "slow",
+			chance = 25,
+			duration = 3.0,
+			slowMultiplier = 0.5,
+		},
+	},
+	
+	["Steampunk Claws"] = {
+		AttackPlus = 250,
+	},
+	
 	["Giant Demonic Dragon Gauntlet"] = {
-		AttackPlus = 100,
-		DefensePlus = 100,
+		AttackPlus = 480,
 		statusAilment = {
 			type = "burn",
 			chance = 30,
+			duration = 4.0,
+			dps = 15,
+			tickInterval = 1.0,
+		},
+	},
+	
+	["Mantis Blades"] = {
+		AttackPlus = 1200,
+		statusAilment = {
+			type = "poison",
+			chance = 20,
+			duration = 5.0,
+			dps = 30,
+			tickInterval = 1.0,
+		},
+	},
+	
+	["Nidavellir's Instruments"] = {
+		AttackPlus = 2900,
+	},
+	
+	["Blades of Chaos"] = {
+		AttackPlus = 7200,
+		statusAilment = {
+			type = "burn",
+			chance = 35,
+			duration = 6.0,
+			dps = 80,
+			tickInterval = 1.0,
+		},
+	},
+	
+	-- ========================================
+	-- KATANA WEAPONS
+	-- ========================================
+	
+	["The Chosen One"] = {
+		AttackPlus = 25,
+	},
+	
+	["Boar Tusk Katana"] = {
+		AttackPlus = 30,
+	},
+	
+	["Wind Blade"] = {
+		AttackPlus = 40,
+	},
+	
+	["Lightning Nichirin"] = {
+		AttackPlus = 50,
+		statusAilment = {
+			type = "stun",
+			chance = 10,
 			duration = 1.0,
+		},
+	},
+	
+	["Serpent's Venom"] = {
+		AttackPlus = 90,
+		statusAilment = {
+			type = "poison",
+			chance = 30,
+			duration = 4.0,
 			dps = 10,
 			tickInterval = 1.0,
 		},
 	},
-	["Giant Golden Bull Gauntlet"] = {
-		AttackPlus = 100,
-		DefensePlus = 100,
+	
+	["Tensa Zangetsu"] = {
+		AttackPlus = 150,
+	},
+	
+	["Flesh Nichirin"] = {
+		AttackPlus = 320,
+	},
+	
+	["Zabimaru"] = {
+		AttackPlus = 600,
+	},
+	
+	["Danto"] = {
+		AttackPlus = 1500,
+	},
+	
+	["Flashy Ninja's Slasher"] = {
+		AttackPlus = 3600,
 		statusAilment = {
-			type = "slow",           -- Status ailment type
-			chance = 50,             -- 50% chance to slow on hit
-			duration = 3.0,          -- Slow duration in seconds
-			slowMultiplier = 0.5     -- 50% movement speed
+			type = "slow",
+			chance = 30,
+			duration = 3.0,
+			slowMultiplier = 0.4,
+		},
+	},
+	
+	["Yoru"] = {
+		AttackPlus = 9000,
+		statusAilment = {
+			type = "stun",
+			chance = 15,
+			duration = 2.5,
+		},
+	},
+	
+	-- ========================================
+	-- SPEAR AND SHIELD WEAPONS
+	-- ========================================
+	
+	["Slavkorian Spear"] = {
+		AttackPlus = 10,
+		DefensePlus = 14,
+	},
+	
+	["Ancestor's Spear"] = {
+		AttackPlus = 13,
+		DefensePlus = 17,
+	},
+	
+	["Crood's Tooth"] = {
+		AttackPlus = 15,
+		DefensePlus = 25,
+	},
+	
+	["Primal Spear"] = {
+		AttackPlus = 20,
+		DefensePlus = 30,
+	},
+	
+	["Sun God's Impaler"] = {
+		AttackPlus = 35,
+		DefensePlus = 55,
+		statusAilment = {
+			type = "burn",
+			chance = 18,
+			duration = 3.0,
+			dps = 6,
+			tickInterval = 1.0,
+		},
+	},
+	
+	["Dragoon's Lance"] = {
+		AttackPlus = 60,
+		DefensePlus = 90,
+	},
+	
+	["Champion's Spear"] = {
+		AttackPlus = 120,
+		DefensePlus = 200,
+	},
+	
+	["Hell's Halberd"] = {
+		AttackPlus = 250,
+		DefensePlus = 350,
+		statusAilment = {
+			type = "burn",
+			chance = 25,
+			duration = 5.0,
+			dps = 20,
+			tickInterval = 1.0,
+		},
+	},
+	
+	["Partisan's Lance"] = {
+		AttackPlus = 600,
+		DefensePlus = 900,
+	},
+	
+	["Bason's Oversoul"] = {
+		AttackPlus = 1500,
+		DefensePlus = 2100,
+		statusAilment = {
+			type = "ice",
+			chance = 20,
+			duration = 4.0,
+			dps = 35,
+			tickInterval = 1.0,
+			slowMultiplier = 0.5,
+		},
+	},
+	
+	["Slav's Holy Lance"] = {
+		AttackPlus = 3500,
+		DefensePlus = 5500,
+		statusAilment = {
+			type = "stun",
+			chance = 10,
+			duration = 2.0,
+		},
+	},
+	
+	-- ========================================
+	-- BOW WEAPONS
+	-- ========================================
+	
+	["Woodland Assassin Bow"] = {
+		AttackPlus = 20,
+	},
+	
+	["Evil Elder Wood Bow"] = {
+		AttackPlus = 26,
+	},
+	
+	["Dragon Wing Bow"] = {
+		AttackPlus = 30,
+	},
+	
+	["Lapiz Lazuli's Bow"] = {
+		AttackPlus = 45,
+	},
+	
+	["Pharaoh's Ruby Bow"] = {
+		AttackPlus = 70,
+	},
+	
+	["Prehistoric Bow"] = {
+		AttackPlus = 120,
+	},
+	
+	["Icy Tundra Bow"] = {
+		AttackPlus = 250,
+		statusAilment = {
+			type = "ice",
+			chance = 25,
+			duration = 3.0,
+			dps = 12,
+			tickInterval = 1.0,
+			slowMultiplier = 0.6,
+		},
+	},
+	
+	["Crystalis Bow"] = {
+		AttackPlus = 480,
+	},
+	
+	["Dark Spider Bow"] = {
+		AttackPlus = 1200,
+		statusAilment = {
+			type = "poison",
+			chance = 28,
+			duration = 5.0,
+			dps = 25,
+			tickInterval = 1.0,
+		},
+	},
+	
+	["Vampire Hunter's Crossbow"] = {
+		AttackPlus = 2900,
+	},
+	
+	["Slav's Golden Ornate Bow"] = {
+		AttackPlus = 7200,
+		statusAilment = {
+			type = "stun",
+			chance = 12,
+			duration = 1.8,
 		},
 	},
 }

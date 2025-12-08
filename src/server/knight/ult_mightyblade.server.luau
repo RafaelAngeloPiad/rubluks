@@ -14,13 +14,13 @@ local ServerConfigs = require(game.ReplicatedStorage:WaitForChild("SlavkosConfig
 -- Helper function to get player's MaxAttack stat
 local function getPlayerMaxAttack(player)
 	if not player then return 0 end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then return 0 end
-	
+
 	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 	if not maxAttack then return 0 end
-	
+
 	return maxAttack.Value or 0
 end
 
@@ -56,6 +56,8 @@ slashAnim.AnimationId = "rbxassetid://100472690161584"
 -- MIGHTY BLADE HITBOX CONFIG (using centralized config)
 local MIGHTYBLADE_CONFIG = ServerConfigs.KnightSkills.MightyBlade
 
+-- Create a temporary ANCHORED hitbox part at the player's position
+-- This part is NOT welded to the player - it stays in place and destroys itself
 local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root then
@@ -65,6 +67,7 @@ local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	offsetCFrame = offsetCFrame or CFrame.new()
 	lifetime = lifetime or 3
 
+	-- Create an ANCHORED part at the player's current position
 	local anchor = Instance.new("Part")
 	anchor.Name = "MightyBladeHitboxAnchor"
 	anchor.Size = Vector3.new(1, 1, 1)
@@ -73,15 +76,11 @@ local function createTemporaryHitboxAnchor(character, offsetCFrame, lifetime)
 	anchor.CanQuery = false
 	anchor.CanTouch = false
 	anchor.Massless = true
-	anchor.Anchored = false
+	anchor.Anchored = true -- ANCHORED = stays in place, doesn't follow player
 	anchor.CFrame = root.CFrame * offsetCFrame
-	anchor.Parent = character
+	anchor.Parent = workspace -- Parent to workspace, not character
 
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = anchor
-	weld.Parent = anchor
-
+	-- Debris will automatically destroy this part after lifetime
 	Debris:AddItem(anchor, lifetime)
 
 	return anchor
@@ -219,7 +218,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	if skillType ~= "mightyblade" then
 		return
 	end
-	
+
 	-- Check if weapon matches player class (prevent skill usage for mismatched weapons)
 	if not ServerConfigs.isWeaponClassMatch(player) then
 		if ServerConfigs.Client.MismatchedWeaponPenalty.allowSkills == false then
@@ -227,24 +226,24 @@ remote.OnServerEvent:Connect(function(player, skillType)
 			return
 		end
 	end
-	
+
 	-- Check cooldown using centralized system
 	if _G.knightIsSkillOnCooldown(player, "mightyblade") then
 		local remainingTime = _G.knightGetRemainingCooldown(player, "mightyblade")
 		_G.knightSendCooldownStatus(player, "mightyblade", true, math.ceil(remainingTime))
 		return
 	end
-	
+
 	-- Set cooldown using centralized system
 	_G.knightSetSkillCooldown(player, "mightyblade")
 	local cooldownTime = _G.KNIGHT_COOLDOWNS["mightyblade"]
 	_G.knightSendCooldownStatus(player, "mightyblade", true, cooldownTime)
-	
+
 	-- Clear cooldown status on client after cooldown expires
 	task.delay(cooldownTime, function()
 		_G.knightSendCooldownStatus(player, "mightyblade", false, 0)
 	end)
-	
+
 	local character = player.Character or player.CharacterAdded:Wait()
 	local humanoid = character:WaitForChild("Humanoid")
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -253,26 +252,52 @@ remote.OnServerEvent:Connect(function(player, skillType)
 	local animTrack = animator:LoadAnimation(slashAnim)
 	animTrack:Play()
 	_G.applyKnightAnimationSpeed(animTrack, "mightyblade")
-	
+
 	-- Enable invincibility (freeze health during ultimate)
 	_G.enablePlayerInvincibility(player)
-	
+
 	-- Lock input when ultimate starts
 	remote:FireClient(player, "lock_input")
 	_G.setKnightWalkingSpeed(player, "blocking") -- Stop movement during ultimate
-	
+
 	-- Camera sequence (added system)
 	remote:FireClient(player, "play_camera_sequence", "mightyblade")
-	
+
+	-- CREATE HITBOX ONCE - Independent of VFX markers
+	-- ONE MASSIVE CENTER DOT HITBOX for entire ultimate
+	local damageMultiplier = MIGHTYBLADE_CONFIG.hitboxDamage
+	local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
+	-- FIXED DURATION: Hitbox lasts for a fixed time, independent of tick time
+	local hitboxDuration = 8 -- Fixed 4 seconds - matches animation/VFX duration
+	local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, 0, 0), hitboxDuration)
+
+	if hitboxAnchor then
+		_G.createStaticDOTHitbox({
+			attachTo = hitboxAnchor,
+			offset = CFrame.new(0, 0, 0),
+			size = MIGHTYBLADE_CONFIG.hitboxSize, -- Massive center hitbox
+			damage = actualDamage, -- Damage per tick (calculated with crit)
+			damageTickTime = MIGHTYBLADE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
+			duration = hitboxDuration,
+			character = character,
+			name = "MightyBlade Center DOT",
+			showVisual = true,
+			visualColor = Color3.new(0.8, 0.8, 0), -- Yellow
+			delay = MIGHTYBLADE_CONFIG.hitboxDelay,
+			actionType = "mightyblade",
+			classType = "Knight"
+		})
+	end
+
 	-- Unlock input when animation ends
 	animTrack.Stopped:Connect(function()
 		-- Disable invincibility (allow damage again)
 		_G.disablePlayerInvincibility(player)
-		
+
 		remote:FireClient(player, "unlock_input")
 		_G.setKnightWalkingSpeed(player, "normal") -- Restore normal movement
 	end)
-	
+
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 
 		local vfx = ReplicatedStorage.MightyBlade:WaitForChild("Ground"):Clone()
@@ -301,7 +326,7 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 		game:GetService("Debris"):AddItem(vfx, 7.5)
 	end)
-	
+
 	animTrack:GetMarkerReachedSignal("AuraStart"):Connect(function()
 
 		local vfx = ReplicatedStorage.MightyBlade:WaitForChild("Aura"):Clone()
@@ -377,35 +402,13 @@ remote.OnServerEvent:Connect(function(player, skillType)
 
 	end)
 
-	-- ⚡ SONIC BLADE marker
+	-- ⚡ SONIC BLADE marker (VFX only - hitbox already created above)
 	-- From original MightyBlade.lua
 	animTrack:GetMarkerReachedSignal("SwordNear"):Connect(function()
 		for angle = 0, 315, 45 do -- 8 directions
 			swordsNear(character, angle,  math.rad(-70))
 			explosionNear(character, angle,  math.rad(-70))
 		end
-		
-		-- ONE MASSIVE CENTER DOT HITBOX for entire ultimate
-		local root = character:WaitForChild("HumanoidRootPart")
-		local damageMultiplier = MIGHTYBLADE_CONFIG.hitboxDamage
-		local actualDamage, isCrit = calculateDamageForHitbox(player, damageMultiplier)
-		local hitboxDuration = math.max((MIGHTYBLADE_CONFIG.damageTickTime or 0.5) * 6, 3)
-		local hitboxAnchor = createTemporaryHitboxAnchor(character, CFrame.new(0, 0, 0), hitboxDuration)
-		_G.createStaticDOTHitbox({
-			attachTo = hitboxAnchor or root,
-			offset = CFrame.new(0, 0, 0),
-			size = MIGHTYBLADE_CONFIG.hitboxSize, -- Massive center hitbox
-			damage = actualDamage, -- Damage per tick (calculated with crit)
-			damageTickTime = MIGHTYBLADE_CONFIG.damageTickTime, -- Damage every 0.5 seconds
-			duration = hitboxDuration,
-			character = character,
-			name = "MightyBlade Center DOT",
-			showVisual = false,
-			visualColor = Color3.new(0.8, 0.8, 0), -- Yellow
-			delay = MIGHTYBLADE_CONFIG.hitboxDelay,
-			actionType = "mightyblade",
-			classType = "Knight"
-		})
 	end)
 
 	animTrack:GetMarkerReachedSignal("Sword Far"):Connect(function()

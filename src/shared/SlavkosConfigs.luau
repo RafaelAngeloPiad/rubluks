@@ -11,203 +11,203 @@ local ServerConfigs = {}
 
 ServerConfigs.Hitbox = {
 	transparency = 0.9, -- Global transparency for all hitbox visuals
-	
-		-- Highlighting Configuration
-		highlighting = {
-			-- Damage flash effect settings (same for all hitbox types)
-			damageFlash = {
-				fillColor = Color3.new(1, 0, 0), -- Bright red
-				fillTransparency = 0.95, -- Slightly transparent
-				outlineColor = Color3.new(1, 0, 0), -- Red outline
-				outlineTransparency = 0, -- Solid outline
-				duration = 0.1 -- Flash duration in seconds
+
+	-- Highlighting Configuration
+	highlighting = {
+		-- Damage flash effect settings (same for all hitbox types)
+		damageFlash = {
+			fillColor = Color3.new(1, 0, 0), -- Bright red
+			fillTransparency = 0.95, -- Slightly transparent
+			outlineColor = Color3.new(1, 0, 0), -- Red outline
+			outlineTransparency = 0, -- Solid outline
+			duration = 0.1 -- Flash duration in seconds
+		}
+	},
+
+	-- Damage Numbers Configuration
+	damageNumbers = {
+		enabled = true, -- Enable/disable damage numbers
+		font = Enum.Font.GothamBold, -- Font style
+		textSize = 28, -- Text size (reduced from 36 to prevent overlap)
+		textColor = Color3.new(1, 0.8, 0), -- Orange/yellow color
+		backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
+		backgroundTransparency = 1, -- Fully transparent background
+		strokeColor = Color3.new(0, 0, 0), -- Black stroke
+		strokeTransparency = 0, -- Solid stroke
+		duration = 0.8, -- How long the number stays visible (seconds) (reduced from 1.5 to prevent overlap)
+		riseHeight = 3, -- How high the number rises (studs)
+		riseSpeed = 4, -- Speed at which number rises (studs per second) (increased from 2 to fly faster)
+		fadeStart = 0.3, -- When to start fading (after this many seconds) (reduced from 0.5 to fade earlier)
+		offsetY = 2, -- Vertical offset from character head (studs)
+		randomOffsetX = 1, -- Random horizontal offset range (studs)
+		width = 180,
+		height = 90,
+		maxDistance = 110,
+		scaleReferenceDistance = 28,
+		minScale = 0.55,
+		maxScale = 1.05,
+		scaleFalloff = 1,
+	},
+
+	-- XP Gain Numbers Configuration (floating "+12 XP" popups for players)
+	xpNumbers = {
+		enabled = true, -- Enable/disable XP popups
+		font = Enum.Font.GothamBold, -- Font style to match damage numbers
+		textSize = 20, -- Smaller for less intrusive display
+		textColor = Color3.fromRGB(120, 255, 120), -- Bright green
+		offsetX = -2.5, -- Shift to the left side of the character
+		offsetY = -2.5, -- Position near the feet instead of above the head
+		backgroundTransparency = 1, -- Fully transparent background
+		strokeColor = Color3.fromRGB(20, 120, 20), -- Dark green outline
+		strokeTransparency = 0.1, -- Slightly transparent outline for softness
+		duration = 2.0, -- How long the number stays visible (seconds)
+		riseHeight = 1.2, -- How high the text rises (studs)
+		fadeStart = 1.0, -- When to start fading (after this many seconds)
+		randomOffsetX = 0.2, -- Subtle horizontal variation
+		attachTo = "Root", -- Anchor to humanoid root for lower positioning
+		prefix = "+", -- Text prefix before XP amount
+		suffix = " XP", -- Text suffix after XP amount
+		width = 160,
+		height = 70,
+		maxDistance = 85,
+		scaleReferenceDistance = 25,
+		minScale = 0.45,
+		maxScale = 0.95,
+		scaleFalloff = 1.1,
+	},
+
+	-- Slavkoin Gain Numbers Configuration (floating "+5 Slavkoins" popups for players)
+	slavkoinNumbers = {
+		enabled = true, -- Enable/disable Slavkoin popups
+		font = Enum.Font.GothamBold, -- Font style to match XP numbers
+		textSize = 20, -- Keep consistent sizing with XP numbers
+		textColor = Color3.fromRGB(255, 223, 93), -- Gold color
+		offsetX = 2.5, -- Shift to the right side of the character
+		offsetY = -2.5, -- Position near the feet instead of above the head
+		backgroundTransparency = 1, -- Fully transparent background
+		strokeColor = Color3.fromRGB(140, 95, 20), -- Dark gold outline
+		strokeTransparency = 0.1, -- Slightly transparent outline
+		duration = 2.0, -- How long the number stays visible (seconds)
+		riseHeight = 1.2, -- How high the text rises (studs)
+		fadeStart = 1.0, -- When to start fading (after this many seconds)
+		randomOffsetX = 0.2, -- Subtle horizontal variation
+		attachTo = "Root", -- Anchor to humanoid root for lower positioning
+		prefix = "+", -- Text prefix before Slavkoin amount
+		suffix = " Slavkoins", -- Text suffix after Slavkoin amount
+		width = 160,
+		height = 70,
+		maxDistance = 85,
+		scaleReferenceDistance = 25,
+		minScale = 0.45,
+		maxScale = 0.95,
+		scaleFalloff = 1.1,
+	},
+
+	-- Knockback Configuration
+	knockback = {
+		enabled = true, -- Enable/disable knockback
+		force = 2 -- Knockback force (velocity applied to mob)
+	},
+
+	-- Mob Stats Display Configuration
+	mobStatsDisplay = {
+		enabled = true, -- Enable/disable floating mob stats GUI
+		offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
+		offsetYNoStat = 1.9, -- Vertical offset when stat details are hidden
+		size = Vector2.new(170, 120), -- GUI size in pixels
+		visibilityRadius = 80, -- Only show stats for mobs within this radius
+		distanceScaling = true, -- Scale UI based on distance
+		scaleReferenceDistance = 45, -- Distance at which scale is 1.0
+		minScale = 0.6, -- Minimum scale factor
+		maxScale = 1.1, -- Maximum scale factor
+		scaleFalloff = 1.0, -- How aggressively scale changes with distance
+		backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
+		backgroundTransparency = 1, -- Background transparency (1 = invisible overlay)
+		borderColor = Color3.new(0, 0, 0), -- Border color (unused when border size is 0)
+		borderSizePixel = 0, -- Border thickness (0 = none)
+		cornerRadius = 5, -- Corner roundness for optional background
+		textColor = Color3.new(1, 1, 1), -- Default text color (white)
+		textStrokeColor = Color3.new(0, 0, 0), -- Outline color (black)
+		textStrokeTransparency = 0.2, -- Outline opacity (0 = solid, 1 = none)
+		textStrokeThickness = 1, -- Outline thickness (thin black outline)
+		textSize = 12, -- Font size
+		font = Enum.Font.Gotham, -- Font style
+		headerColor = Color3.new(1, 1, 1), -- Header text color (white)
+		headerSize = 16, -- Header font size
+		headerStrokeTransparency = 1, -- Outline around header text (0 = solid, 1 = none)
+		showStatDetails = false, -- Toggle to show/hide extra stat rows beneath the name
+		healthBarHeight = 10, -- Pixel height of health bar
+		healthBarBackgroundColor = Color3.fromRGB(35, 35, 35), -- Color behind the health bar fill
+		healthBarBorderColor = Color3.fromRGB(10, 10, 10), -- Health bar outline color
+		healthBarCornerRadius = 4, -- Health bar roundness
+		healthBarDefaultColor = Color3.fromRGB(120, 220, 120), -- Default health bar fill if mob doesn't specify one
+		healthBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the health bar
+		defenseBarHeight = 9, -- Pixel height of defense bar
+		defenseBarBackgroundColor = Color3.fromRGB(40, 40, 40), -- Color behind the defense bar fill
+		defenseBarBorderColor = Color3.fromRGB(15, 15, 15), -- Defense bar outline color
+		defenseBarCornerRadius = 4, -- Defense bar roundness
+		defenseBarDefaultColor = Color3.fromRGB(120, 170, 220), -- Default defense bar fill
+		defenseBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the defense bar
+		levelLabelColor = Color3.fromRGB(255, 255, 255), -- Level label text color
+		updateRate = 0.1 -- Update frequency in seconds
+	},
+
+	-- Status Ailment Configuration
+	statusAilments = {
+		stun = {
+			defaultDuration = 2.0, -- Default duration in seconds
+			highlightColor = {
+				fillColor = Color3.new(0.5, 0.5, 0.5), -- Grey
+				fillTransparency = 0.7,
+				outlineColor = Color3.new(0.5, 0.5, 0.5), -- Grey
+				outlineTransparency = 0
 			}
 		},
-		
-		-- Damage Numbers Configuration
-		damageNumbers = {
-			enabled = true, -- Enable/disable damage numbers
-			font = Enum.Font.GothamBold, -- Font style
-			textSize = 28, -- Text size (reduced from 36 to prevent overlap)
-			textColor = Color3.new(1, 0.8, 0), -- Orange/yellow color
-			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
-			backgroundTransparency = 1, -- Fully transparent background
-			strokeColor = Color3.new(0, 0, 0), -- Black stroke
-			strokeTransparency = 0, -- Solid stroke
-			duration = 0.8, -- How long the number stays visible (seconds) (reduced from 1.5 to prevent overlap)
-			riseHeight = 3, -- How high the number rises (studs)
-			riseSpeed = 4, -- Speed at which number rises (studs per second) (increased from 2 to fly faster)
-			fadeStart = 0.3, -- When to start fading (after this many seconds) (reduced from 0.5 to fade earlier)
-			offsetY = 2, -- Vertical offset from character head (studs)
-			randomOffsetX = 1, -- Random horizontal offset range (studs)
-			width = 180,
-			height = 90,
-			maxDistance = 110,
-			scaleReferenceDistance = 28,
-			minScale = 0.55,
-			maxScale = 1.05,
-			scaleFalloff = 1,
+		poison = {
+			defaultDuration = 5.0, -- Default duration in seconds
+			defaultDPS = 5, -- Default damage per second
+			defaultTickInterval = 1.0, -- Default tick interval in seconds
+			highlightColor = {
+				fillColor = Color3.new(0.5, 0, 0.5), -- Purple
+				fillTransparency = 0.7,
+				outlineColor = Color3.new(0.5, 0, 0.5), -- Purple
+				outlineTransparency = 0
+			}
 		},
-
-		-- XP Gain Numbers Configuration (floating "+12 XP" popups for players)
-		xpNumbers = {
-			enabled = true, -- Enable/disable XP popups
-			font = Enum.Font.GothamBold, -- Font style to match damage numbers
-			textSize = 20, -- Smaller for less intrusive display
-			textColor = Color3.fromRGB(120, 255, 120), -- Bright green
-			offsetX = -2.5, -- Shift to the left side of the character
-			offsetY = -2.5, -- Position near the feet instead of above the head
-			backgroundTransparency = 1, -- Fully transparent background
-			strokeColor = Color3.fromRGB(20, 120, 20), -- Dark green outline
-			strokeTransparency = 0.1, -- Slightly transparent outline for softness
-			duration = 2.0, -- How long the number stays visible (seconds)
-			riseHeight = 1.2, -- How high the text rises (studs)
-			fadeStart = 1.0, -- When to start fading (after this many seconds)
-			randomOffsetX = 0.2, -- Subtle horizontal variation
-			attachTo = "Root", -- Anchor to humanoid root for lower positioning
-			prefix = "+", -- Text prefix before XP amount
-			suffix = " XP", -- Text suffix after XP amount
-			width = 160,
-			height = 70,
-			maxDistance = 85,
-			scaleReferenceDistance = 25,
-			minScale = 0.45,
-			maxScale = 0.95,
-			scaleFalloff = 1.1,
+		burn = {
+			defaultDuration = 5.0, -- Default duration in seconds
+			defaultDPS = 5, -- Default damage per second
+			defaultTickInterval = 1.0, -- Default tick interval in seconds
+			highlightColor = {
+				fillColor = Color3.new(1, 0.5, 0), -- Orange
+				fillTransparency = 0.7,
+				outlineColor = Color3.new(1, 0.5, 0), -- Orange
+				outlineTransparency = 0
+			}
 		},
-
-		-- Slavkoin Gain Numbers Configuration (floating "+5 Slavkoins" popups for players)
-		slavkoinNumbers = {
-			enabled = true, -- Enable/disable Slavkoin popups
-			font = Enum.Font.GothamBold, -- Font style to match XP numbers
-			textSize = 20, -- Keep consistent sizing with XP numbers
-			textColor = Color3.fromRGB(255, 223, 93), -- Gold color
-			offsetX = 2.5, -- Shift to the right side of the character
-			offsetY = -2.5, -- Position near the feet instead of above the head
-			backgroundTransparency = 1, -- Fully transparent background
-			strokeColor = Color3.fromRGB(140, 95, 20), -- Dark gold outline
-			strokeTransparency = 0.1, -- Slightly transparent outline
-			duration = 2.0, -- How long the number stays visible (seconds)
-			riseHeight = 1.2, -- How high the text rises (studs)
-			fadeStart = 1.0, -- When to start fading (after this many seconds)
-			randomOffsetX = 0.2, -- Subtle horizontal variation
-			attachTo = "Root", -- Anchor to humanoid root for lower positioning
-			prefix = "+", -- Text prefix before Slavkoin amount
-			suffix = " Slavkoins", -- Text suffix after Slavkoin amount
-			width = 160,
-			height = 70,
-			maxDistance = 85,
-			scaleReferenceDistance = 25,
-			minScale = 0.45,
-			maxScale = 0.95,
-			scaleFalloff = 1.1,
+		ice = {
+			defaultDuration = 3.0, -- Default duration in seconds
+			defaultDPS = 3, -- Default damage per second
+			defaultTickInterval = 1.0, -- Default tick interval in seconds
+			slowMultiplier = 0.3, -- 30% movement speed
+			highlightColor = {
+				fillColor = Color3.new(0, 0.5, 1), -- Blue
+				fillTransparency = 0.7,
+				outlineColor = Color3.new(0, 0.5, 1), -- Blue
+				outlineTransparency = 0
+			}
 		},
-		
-		-- Knockback Configuration
-		knockback = {
-			enabled = true, -- Enable/disable knockback
-			force = 2 -- Knockback force (velocity applied to mob)
-		},
-		
-		-- Mob Stats Display Configuration
-		mobStatsDisplay = {
-			enabled = true, -- Enable/disable floating mob stats GUI
-			offsetY = 6, -- Vertical offset from character head (studs) - above damage numbers
-			offsetYNoStat = 1.9, -- Vertical offset when stat details are hidden
-			size = Vector2.new(170, 120), -- GUI size in pixels
-			visibilityRadius = 80, -- Only show stats for mobs within this radius
-			distanceScaling = true, -- Scale UI based on distance
-			scaleReferenceDistance = 45, -- Distance at which scale is 1.0
-			minScale = 0.6, -- Minimum scale factor
-			maxScale = 1.1, -- Maximum scale factor
-			scaleFalloff = 1.0, -- How aggressively scale changes with distance
-			backgroundColor = Color3.new(0, 0, 0), -- Background color (unused when fully transparent)
-			backgroundTransparency = 1, -- Background transparency (1 = invisible overlay)
-			borderColor = Color3.new(0, 0, 0), -- Border color (unused when border size is 0)
-			borderSizePixel = 0, -- Border thickness (0 = none)
-			cornerRadius = 5, -- Corner roundness for optional background
-			textColor = Color3.new(1, 1, 1), -- Default text color (white)
-			textStrokeColor = Color3.new(0, 0, 0), -- Outline color (black)
-			textStrokeTransparency = 0.2, -- Outline opacity (0 = solid, 1 = none)
-			textStrokeThickness = 1, -- Outline thickness (thin black outline)
-			textSize = 12, -- Font size
-			font = Enum.Font.Gotham, -- Font style
-			headerColor = Color3.new(1, 1, 1), -- Header text color (white)
-			headerSize = 16, -- Header font size
-			headerStrokeTransparency = 1, -- Outline around header text (0 = solid, 1 = none)
-			showStatDetails = false, -- Toggle to show/hide extra stat rows beneath the name
-			healthBarHeight = 10, -- Pixel height of health bar
-			healthBarBackgroundColor = Color3.fromRGB(35, 35, 35), -- Color behind the health bar fill
-			healthBarBorderColor = Color3.fromRGB(10, 10, 10), -- Health bar outline color
-			healthBarCornerRadius = 4, -- Health bar roundness
-			healthBarDefaultColor = Color3.fromRGB(120, 220, 120), -- Default health bar fill if mob doesn't specify one
-			healthBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the health bar
-			defenseBarHeight = 9, -- Pixel height of defense bar
-			defenseBarBackgroundColor = Color3.fromRGB(40, 40, 40), -- Color behind the defense bar fill
-			defenseBarBorderColor = Color3.fromRGB(15, 15, 15), -- Defense bar outline color
-			defenseBarCornerRadius = 4, -- Defense bar roundness
-			defenseBarDefaultColor = Color3.fromRGB(120, 170, 220), -- Default defense bar fill
-			defenseBarTextColor = Color3.fromRGB(0, 0, 0), -- Text color inside the defense bar
-			levelLabelColor = Color3.fromRGB(255, 255, 255), -- Level label text color
-			updateRate = 0.1 -- Update frequency in seconds
-		},
-		
-		-- Status Ailment Configuration
-		statusAilments = {
-			stun = {
-				defaultDuration = 2.0, -- Default duration in seconds
-				highlightColor = {
-					fillColor = Color3.new(0.5, 0.5, 0.5), -- Grey
-					fillTransparency = 0.7,
-					outlineColor = Color3.new(0.5, 0.5, 0.5), -- Grey
-					outlineTransparency = 0
-				}
-			},
-			poison = {
-				defaultDuration = 5.0, -- Default duration in seconds
-				defaultDPS = 5, -- Default damage per second
-				defaultTickInterval = 1.0, -- Default tick interval in seconds
-				highlightColor = {
-					fillColor = Color3.new(0.5, 0, 0.5), -- Purple
-					fillTransparency = 0.7,
-					outlineColor = Color3.new(0.5, 0, 0.5), -- Purple
-					outlineTransparency = 0
-				}
-			},
-			burn = {
-				defaultDuration = 5.0, -- Default duration in seconds
-				defaultDPS = 5, -- Default damage per second
-				defaultTickInterval = 1.0, -- Default tick interval in seconds
-				highlightColor = {
-					fillColor = Color3.new(1, 0.5, 0), -- Orange
-					fillTransparency = 0.7,
-					outlineColor = Color3.new(1, 0.5, 0), -- Orange
-					outlineTransparency = 0
-				}
-			},
-			ice = {
-				defaultDuration = 3.0, -- Default duration in seconds
-				defaultDPS = 3, -- Default damage per second
-				defaultTickInterval = 1.0, -- Default tick interval in seconds
-				slowMultiplier = 0.3, -- 30% movement speed
-				highlightColor = {
-					fillColor = Color3.new(0, 0.5, 1), -- Blue
-					fillTransparency = 0.7,
-					outlineColor = Color3.new(0, 0.5, 1), -- Blue
-					outlineTransparency = 0
-				}
-			},
-			slow = {
-				defaultDuration = 3.0, -- Default duration in seconds
-				slowMultiplier = 0.5, -- 50% movement speed
-				highlightColor = {
-					fillColor = Color3.new(0.5, 0.5, 0.5), -- Gray
-					fillTransparency = 0.7,
-					outlineColor = Color3.new(0.5, 0.5, 0.5), -- Gray
-					outlineTransparency = 0
-				}
+		slow = {
+			defaultDuration = 3.0, -- Default duration in seconds
+			slowMultiplier = 0.5, -- 50% movement speed
+			highlightColor = {
+				fillColor = Color3.new(0.5, 0.5, 0.5), -- Gray
+				fillTransparency = 0.7,
+				outlineColor = Color3.new(0.5, 0.5, 0.5), -- Gray
+				outlineTransparency = 0
 			}
 		}
+	}
 }
 
 -- ========================================
@@ -230,20 +230,20 @@ ServerConfigs.ControlUI = {
 ServerConfigs.Hitboxes = {
 	-- DOT (Damage Over Time) Configuration
 	DOT = {
-		defaultTickTime = 0.5, -- Default damage tick time in seconds
+		defaultTickTime = 80, -- Default damage tick time in seconds
 	},
-	
+
 	-- Unified Non-Skill Attack Configurations (separate per class)
 	UnifiedAttacks = {
 		Archer = {
 			offset = CFrame.new(0, 0, -2),
 			size = Vector3.new(6, 6, 6),
 			damage = 1.0,                -- 100% of MaxAttack (base hit)
-			skill1Damage = 1.5,          -- 150% of MaxAttack - PiercingShot
-			skill2Damage = 2.0,          -- 200% of MaxAttack - PowerShot
-			skill2TickTime = 1,        -- PowerShot DOT tick time
+			skill1Damage = 2,          -- 150% of MaxAttack - PiercingShot
+			skill2Damage = 2.5,          -- 200% of MaxAttack - PowerShot
+			skill2TickTime = 10,        -- PowerShot DOT tick time
 			ultDamage = 4.0,             -- 400% of MaxAttack - Starfall
-			ultTickTime = 0.5,           -- Starfall DOT tick time
+			ultTickTime = 80,           -- Starfall DOT tick time
 			-- Arrow projectile configuration
 			arrowDelay = 0,              -- Delay before arrow hitbox becomes active (seconds)
 			arrowVisualSpeed = 100,      -- Visual arrow asset speed
@@ -264,23 +264,23 @@ ServerConfigs.Hitboxes = {
 			-- Note: block animations remain at 1.0 (not affected by these speeds)
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
-				normal = 18,    -- Fixed normal walking speed
+				normal = 19,    -- Fixed normal walking speed
 				slow = 1,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking -- NO TOUCH
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
-				normal = 18,    -- Fixed normal walking speed
+				normal = 19,    -- Fixed normal walking speed
 				slow = 1,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
 			cooldowns = {
-				piercingShot = 5,
-				powerShot = 5,
-				hunterInstinct = 5,
-				hunterMark = 5,
-				starfall = 5
+				piercingShot = 3,
+				powerShot = 3,
+				hunterInstinct = 10,
+				hunterMark = 10,
+				starfall = 30
 			},
 			-- Skill-specific hitbox configurations
 			skills = {
@@ -294,7 +294,7 @@ ServerConfigs.Hitboxes = {
 				},
 				starfall = {
 					hitboxSize = Vector3.new(250, 60, 250),
-					hitboxDelay = 0.2
+					hitboxDelay = 8
 				}
 			}
 		},
@@ -302,32 +302,32 @@ ServerConfigs.Hitboxes = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
 			damage = 1.0,                -- 100% of MaxAttack
-			skill1Damage = 1.5,           -- 150% of MaxAttack - Wakizashi
-			skill2Damage = 2.0,           -- 200% of MaxAttack - Kozuki
-			ultDamage = 4.0,              -- 400% of MaxAttack - Zantetsuken
+			skill1Damage = 3,           -- 150% of MaxAttack - Wakizashi
+			skill2Damage = 4,           -- 200% of MaxAttack - Kozuki
+			ultDamage = 6.0,              -- 400% of MaxAttack - Zantetsuken
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, combo3, moveAttack, jumpAttack, kozuki, wakizashi, banzai, bushido, zantetsuken)
 			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
 			-- Note: block animations remain at 1.0 (not affected by these speeds)
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
-				normal = 18,    -- Fixed normal walking speed
+				normal = 17,    -- Fixed normal walking speed
 				slow = 1,       -- Fixed speed during skills (wakizashi/kozuki)
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
-				normal = 18,    -- Fixed normal walking speed
+				normal = 17,    -- Fixed normal walking speed
 				slow = 1,       -- Fixed speed during skills (wakizashi/kozuki)
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
 			cooldowns = {
-				kozuki = 5,
-				wakizashi = 5,
-				banzai = 5,
-				bushido = 5,
-				zantetsuken = 5
+				kozuki = 6,
+				wakizashi = 6,
+				banzai = 10,
+				bushido = 10,
+				zantetsuken = 30
 			},
 			-- Combo configuration
 			comboTimeout = 1,        -- 1 second timeout for combo reset
@@ -368,10 +368,10 @@ ServerConfigs.Hitboxes = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
 			damage = 1.0,              -- 100% of MaxAttack
-			skill1Damage = 1.5,        -- 150% of MaxAttack - BrawlersRoar
-			skill2Damage = 2.0,        -- 200% of MaxAttack - FeralLeap
+			skill1Damage = 2,        -- 150% of MaxAttack - BrawlersRoar
+			skill2Damage = 2.5,        -- 200% of MaxAttack - FeralLeap
 			ultDamage = 4.0,           -- 400% of MaxAttack - MeteorDive
-			ultTickTime = 0.5,           -- MeteorDive DOT tick time
+			ultTickTime = 80,           -- MeteorDive DOT tick time
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, moveAttack, jumpAttack, feralleap, brawlersroar, bloodthirst, lastchance, meteordive)
 			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
@@ -390,11 +390,11 @@ ServerConfigs.Hitboxes = {
 			},
 			-- Cooldowns
 			cooldowns = {
-				feralleap = 5,
-				brawlersroar = 5,
+				feralleap = 6,
+				brawlersroar = 6,
 				bloodthirst = 30,  -- 30 seconds cooldown
 				lastchance = 30,   -- 30 seconds cooldown
-				meteordive = 5
+				meteordive = 30
 			},
 			-- Combo configuration
 			comboTimeout = 1,        -- 1 second timeout for combo reset (Brawler has only 2-hit combo)
@@ -443,11 +443,11 @@ ServerConfigs.Hitboxes = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
 			damage = 1.0,               -- 100% of MaxAttack
-			skill1Damage = 1.5,        -- 150% of MaxAttack - SwordDance
-			skill2Damage = 2.0,        -- 200% of MaxAttack - CycloneSlash
-			skill2TickTime = 0.4,        -- CycloneSlash hitbox tick time
-			ultDamage = 4.0,           -- 400% of MaxAttack - MightyBlade
-			ultTickTime = 0.5,           -- MightyBlade DOT tick time
+			skill1Damage = 3,        -- 150% of MaxAttack - SwordDance
+			skill2Damage = 3.5,        -- 200% of MaxAttack - CycloneSlash
+			skill2TickTime = 10,        -- CycloneSlash hitbox tick time
+			ultDamage = 5.0,           -- 400% of MaxAttack - MightyBlade
+			ultTickTime = 80,           -- MightyBlade DOT tick time
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, combo3, moveAttack, jumpAttack, sworddance, cyclone_slash, warcry, warriormight, mightyblade)
 			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
@@ -467,10 +467,10 @@ ServerConfigs.Hitboxes = {
 			-- Cooldowns
 			cooldowns = {
 				sworddance = 5,
-				cyclone_slash = 5,
-				warcry = 5,
-				warriormight = 5,
-				mightyblade = 5
+				cyclone_slash = 10,
+				warcry = 10,
+				warriormight = 10,
+				mightyblade = 30
 			},
 			-- Combo configuration
 			comboTimeout = 1,        -- 1 second timeout for combo reset
@@ -506,7 +506,7 @@ ServerConfigs.Hitboxes = {
 				},
 				mightyblade = {
 					hitboxSize = Vector3.new(250, 60, 250),
-					hitboxDelay = 0.2
+					hitboxDelay = 5
 				}
 			}
 		},
@@ -514,33 +514,33 @@ ServerConfigs.Hitboxes = {
 			offset = CFrame.new(0, 0, -5),
 			size = Vector3.new(15, 15, 12),
 			damage = 1.0,                -- 100% of MaxAttack
-			skill1Damage = 1.5,        -- 150% of MaxAttack - ShieldBash
-			skill2Damage = 2.0,          -- 200% of MaxAttack - DragoonJump
-			ultDamage = 4.0,           -- 400% of MaxAttack - DemonicVorpalDance
-			ultTickTime = 0.5,           -- DemonicVorpalDance DOT tick time
+			skill1Damage = 3,        -- 150% of MaxAttack - ShieldBash
+			skill2Damage = 3.5,          -- 200% of MaxAttack - DragoonJump
+			ultDamage = 8,           -- 400% of MaxAttack - DemonicVorpalDance
+			ultTickTime = 80,           -- DemonicVorpalDance DOT tick time
 			-- Unified animation speeds
 			attackSpeed = 1.0,     -- Unified speed for all attack animations (combo1, combo2, moveAttack, jumpAttack, shieldbash, dragoonjump, championsblood, championscheer, demonicvorpaldance)
 			movementSpeed = 1.0,   -- Unified speed for all movement animations (idle, run, jump)
 			-- Note: block animations remain at 1.0 (not affected by these speeds)
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walking = {
-				normal = 18,    -- Fixed normal walking speed
+				normal = 17,    -- Fixed normal walking speed
 				slow = 1,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Walking speeds (fixed values, not affected by animation speed)
 			walkingSpeed = {
-				normal = 18,    -- Fixed normal walking speed
+				normal = 17,    -- Fixed normal walking speed
 				slow = 1,       -- Fixed speed during skills
 				blocking = 0    -- Fixed speed while blocking
 			},
 			-- Cooldowns
 			cooldowns = {
-				shieldbash = 5,
-				dragoonjump = 5,
-				championsblood = 5,
-				championscheer = 5,
-				demonicvorpaldance = 5
+				shieldbash = 10,
+				dragoonjump = 3,
+				championsblood = 10,
+				championscheer = 10,
+				demonicvorpaldance = 30
 			},
 			-- Combo configuration
 			comboTimeout = 1,        -- 1 second timeout for combo reset (Gladiator has only 2-hit combo)
@@ -572,12 +572,12 @@ ServerConfigs.Hitboxes = {
 				},
 				demonicvorpaldance = {
 					hitboxSize = Vector3.new(250, 60, 250),
-					hitboxDelay = 0.2
+					hitboxDelay = 8
 				}
 			}
 		}
 	},
-	
+
 	-- Hitbox Defaults
 	Defaults = {
 		defaultSize = Vector3.new(8, 8, 8),
@@ -600,11 +600,11 @@ ServerConfigs.Archer = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.walkingSpeed,
-	
+
 	-- Block damage reduction (percentage of damage reduced when blocking)
 	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
 	blockDamageReduction = 0.5,
-	
+
 	-- Archer Arrow Configuration (references UnifiedAttacks.Archer)
 	-- Note: damage is now a multiplier - use getBaseDamage() or calculateDamage() to get actual damage
 	ArrowHitbox = {
@@ -616,10 +616,10 @@ ServerConfigs.Archer = {
 		anchorDelay = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowAnchorDelay,
 		preventPhysicsPush = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowPreventPhysicsPush
 	},
-	
+
 	-- Archer Arrow Spawn Offsets (references UnifiedAttacks.Archer)
 	ArrowSpawnOffsets = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowSpawnOffsets,
-	
+
 	-- Archer Trail Color Configuration (references UnifiedAttacks.Archer)
 	ArrowTrailColor = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowTrailColor
 }
@@ -630,11 +630,11 @@ ServerConfigs.Samurai = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.walkingSpeed,
-	
+
 	-- Block damage reduction (percentage of damage reduced when blocking)
 	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
 	blockDamageReduction = 0.5,
-	
+
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.comboTimeout,
 		combo3Cooldown = ServerConfigs.Hitboxes.UnifiedAttacks.Samurai.combo3Cooldown
@@ -652,11 +652,11 @@ ServerConfigs.Brawler = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.walkingSpeed,
-	
+
 	-- Block damage reduction (percentage of damage reduced when blocking)
 	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
 	blockDamageReduction = 0.5,
-	
+
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Brawler.comboTimeout
 	},
@@ -673,11 +673,11 @@ ServerConfigs.Knight = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.walkingSpeed,
-	
+
 	-- Block damage reduction (percentage of damage reduced when blocking)
 	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
 	blockDamageReduction = 0.5,
-	
+
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.comboTimeout,
 		combo3Cooldown = ServerConfigs.Hitboxes.UnifiedAttacks.Knight.combo3Cooldown
@@ -695,11 +695,11 @@ ServerConfigs.Gladiator = {
 	MovementSpeed = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.movementSpeed,
 	Cooldowns = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.cooldowns,
 	walking = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.walkingSpeed,
-	
+
 	-- Block damage reduction (percentage of damage reduced when blocking)
 	-- Example: 0.5 = 50% damage reduction (if enemy deals 100 damage, you take 50)
 	blockDamageReduction = 0.5,
-	
+
 	ComboConfig = {
 		comboTimeout = ServerConfigs.Hitboxes.UnifiedAttacks.Gladiator.comboTimeout
 	},
@@ -1001,43 +1001,43 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 	if not baseDelay or baseDelay == 0 then
 		return 0
 	end
-	
+
 	local animationSpeed = 1.0 -- Default speed
-	
+
 	-- Determine if this is an attack or movement action
 	local isAttack = false
 	local isMovement = false
-	
+
 	-- Attack actions (combo attacks, skills, etc.)
 	if actionType == "normalAttack" or actionType == "jumpAttack" or
-	   actionType == "combo1" or actionType == "combo2" or actionType == "combo3" or
-	   actionType == "moveAttack" or
-	   actionType == "piercingShot" or actionType == "powerShot" or actionType == "hunterInstinct" or actionType == "hunterMark" or actionType == "starfall" or
-	   actionType == "kozuki" or actionType == "wakizashi" or actionType == "banzai" or actionType == "bushido" or actionType == "zantetsuken" or
-	   actionType == "feralleap" or actionType == "brawlersroar" or actionType == "bloodthirst" or actionType == "lastchance" or actionType == "meteordive" or
-	   actionType == "sworddance" or actionType == "cyclone_slash" or actionType == "warcry" or actionType == "warriormight" or actionType == "mightyblade" or
-	   actionType == "shieldbash" or actionType == "dragoonjump" or actionType == "championsblood" or actionType == "championscheer" or actionType == "demonicvorpaldance" then
+		actionType == "combo1" or actionType == "combo2" or actionType == "combo3" or
+		actionType == "moveAttack" or
+		actionType == "piercingShot" or actionType == "powerShot" or actionType == "hunterInstinct" or actionType == "hunterMark" or actionType == "starfall" or
+		actionType == "kozuki" or actionType == "wakizashi" or actionType == "banzai" or actionType == "bushido" or actionType == "zantetsuken" or
+		actionType == "feralleap" or actionType == "brawlersroar" or actionType == "bloodthirst" or actionType == "lastchance" or actionType == "meteordive" or
+		actionType == "sworddance" or actionType == "cyclone_slash" or actionType == "warcry" or actionType == "warriormight" or actionType == "mightyblade" or
+		actionType == "shieldbash" or actionType == "dragoonjump" or actionType == "championsblood" or actionType == "championscheer" or actionType == "demonicvorpaldance" then
 		isAttack = true
-	-- Movement actions (run, jump) - NOTE: idle and block are NOT affected by movement speed (always 1.0)
+		-- Movement actions (run, jump) - NOTE: idle and block are NOT affected by movement speed (always 1.0)
 	elseif actionType == "run" or actionType == "jump" then
 		isMovement = true
 	end
-	
+
 	-- Block and idle animations always use 1.0 (not affected by animation speeds)
 	if actionType == "block" or actionType == "idle" then
 		return baseDelay / 1.0 -- Always 1.0 speed
 	end
-	
+
 	-- Get animation speed based on action type and class
 	if classType and ServerConfigs.Hitboxes and ServerConfigs.Hitboxes.UnifiedAttacks and 
-	   ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
+		ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 		local classConfig = ServerConfigs.Hitboxes.UnifiedAttacks[classType]
 		if isAttack then
 			animationSpeed = classConfig.attackSpeed or 1.0
 		elseif isMovement then
 			animationSpeed = classConfig.movementSpeed or 1.0
 		end
-	-- Fallback to reference lookup (for backward compatibility)
+		-- Fallback to reference lookup (for backward compatibility)
 	elseif classType and ServerConfigs[classType] then
 		if isAttack and ServerConfigs[classType].AttackSpeed then
 			animationSpeed = ServerConfigs[classType].AttackSpeed
@@ -1045,12 +1045,12 @@ function ServerConfigs.getScaledDelay(baseDelay, actionType, classType)
 			animationSpeed = ServerConfigs[classType].MovementSpeed
 		end
 	end
-	
+
 	-- Scale delay inversely with animation speed
 	-- If animation is 2x faster, delays should be 0.5x (half the time) - hitbox appears EARLIER
 	-- If animation is 0.5x slower, delays should be 2x (double the time) - hitbox appears LATER
 	local scaledDelay = baseDelay / animationSpeed
-	
+
 	return scaledDelay
 end
 
@@ -1065,17 +1065,17 @@ function ServerConfigs.getPlayerCritRate(player)
 	if not player then
 		return 0
 	end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
 		return 0
 	end
-	
+
 	local critRate = leaderstats:FindFirstChild("CritRate")
 	if not critRate then
 		return 0
 	end
-	
+
 	return critRate.Value or 0
 end
 
@@ -1086,17 +1086,17 @@ function ServerConfigs.getPlayerCritMultiplier(player)
 	if not player then
 		return 150
 	end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
 		return 150
 	end
-	
+
 	local critMultiplier = leaderstats:FindFirstChild("CritMultiplier")
 	if not critMultiplier then
 		return 150
 	end
-	
+
 	return critMultiplier.Value or 150
 end
 
@@ -1107,13 +1107,13 @@ function ServerConfigs.rollCrit(critRate)
 	if not critRate or critRate <= 0 then
 		return false
 	end
-	
+
 	-- Clamp crit rate to 0-100
 	critRate = math.max(0, math.min(100, critRate))
-	
+
 	-- Roll random number between 0-100
 	local roll = math.random() * 100
-	
+
 	-- Crit if roll is less than critRate
 	return roll < critRate
 end
@@ -1138,20 +1138,20 @@ function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player, forceCr
 	if not damageMultiplier or not player then
 		return 0, false
 	end
-	
+
 	forceCrit = forceCrit or false -- Default to false if not provided
-	
+
 	-- Apply mismatched weapon penalty before calculating damage
 	local adjustedMultiplier = ServerConfigs.applyMismatchedWeaponPenalty(player, damageMultiplier)
-	
+
 	-- Calculate base damage
 	local maxAttack = ServerConfigs.getPlayerMaxAttack(player)
 	local baseDamage = ServerConfigs.calculateDamage(adjustedMultiplier, maxAttack)
-	
+
 	-- Check for crit (only if weapon matches class - no crits for mismatched weapons)
 	local isWeaponMatch = ServerConfigs.isWeaponClassMatch(player)
 	local isCrit = false
-	
+
 	-- Force crit if requested (still requires weapon match)
 	if forceCrit and isWeaponMatch then
 		isCrit = true
@@ -1160,15 +1160,17 @@ function ServerConfigs.calculateDamageWithCrit(damageMultiplier, player, forceCr
 		local critRate = ServerConfigs.getPlayerCritRate(player)
 		isCrit = ServerConfigs.rollCrit(critRate)
 	end
-	
+
 	if isCrit then
 		-- Apply crit multiplier
 		local critMultiplier = ServerConfigs.getPlayerCritMultiplier(player)
+		print("DEBUG: Player:", player.Name, "baseDamage:", baseDamage, "critMultiplier from stats:", critMultiplier)
 		-- CritMultiplier is stored as percentage (150 = 1.5x), so divide by 100
 		local finalDamage = math.floor(baseDamage * (critMultiplier / 100))
+		print("DEBUG: finalDamage:", finalDamage)
 		return finalDamage, true
 	end
-	
+
 	-- No crit or mismatched weapon
 	return baseDamage, false
 end
@@ -1181,7 +1183,7 @@ function ServerConfigs.getBaseDamage(classType, playerMaxAttack)
 	if not classType or not ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 		return 0
 	end
-	
+
 	local damageMultiplier = ServerConfigs.Hitboxes.UnifiedAttacks[classType].damage or 0
 	return ServerConfigs.calculateDamage(damageMultiplier, playerMaxAttack)
 end
@@ -1195,10 +1197,10 @@ function ServerConfigs.getSkillDamage(classType, skillType, playerMaxAttack)
 	if not classType or not ServerConfigs.Hitboxes.UnifiedAttacks[classType] then
 		return 0
 	end
-	
+
 	local classConfig = ServerConfigs.Hitboxes.UnifiedAttacks[classType]
 	local damageMultiplier = 0
-	
+
 	if skillType == "skill1" then
 		damageMultiplier = classConfig.skill1Damage or 0
 	elseif skillType == "skill2" then
@@ -1206,7 +1208,7 @@ function ServerConfigs.getSkillDamage(classType, skillType, playerMaxAttack)
 	elseif skillType == "ult" then
 		damageMultiplier = classConfig.ultDamage or 0
 	end
-	
+
 	return ServerConfigs.calculateDamage(damageMultiplier, playerMaxAttack)
 end
 
@@ -1218,17 +1220,17 @@ function ServerConfigs.getPlayerMaxAttack(player)
 	if not player then
 		return 0
 	end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
 		return 0
 	end
-	
+
 	local maxAttack = leaderstats:FindFirstChild("MaxAttack")
 	if not maxAttack then
 		return 0
 	end
-	
+
 	return maxAttack.Value or 0
 end
 
@@ -1239,17 +1241,17 @@ function ServerConfigs.getPlayerClass(player)
 	if not player then
 		return nil
 	end
-	
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if not leaderstats then
 		return nil
 	end
-	
+
 	local class = leaderstats:FindFirstChild("Class")
 	if not class then
 		return nil
 	end
-	
+
 	return class.Value or nil
 end
 
@@ -1282,9 +1284,9 @@ function ServerConfigs.getEquippedWeaponClass(player)
 	if not player or not player.Character then
 		return nil
 	end
-	
+
 	local CollectionService = game:GetService("CollectionService")
-	
+
 	-- Check all tools in character
 	for _, item in ipairs(player.Character:GetChildren()) do
 		if item:IsA("Tool") then
@@ -1297,7 +1299,7 @@ function ServerConfigs.getEquippedWeaponClass(player)
 			end
 		end
 	end
-	
+
 	return nil
 end
 
@@ -1311,12 +1313,12 @@ function ServerConfigs.isWeaponClassMatch(player)
 	end
 	local playerClass = ServerConfigs.getPlayerClass(player)
 	local weaponClass = ServerConfigs.getEquippedWeaponClass(player)
-	
+
 	-- If no class or no weapon, return false
 	if not playerClass or not weaponClass then
 		return false
 	end
-	
+
 	-- Compare classes (case-insensitive)
 	return playerClass:lower() == weaponClass:lower()
 end
@@ -1329,15 +1331,15 @@ function ServerConfigs.applyMismatchedWeaponPenalty(player, baseDamageMultiplier
 	if not player or not baseDamageMultiplier then
 		return 0
 	end
-	
+
 	-- SLAVKO: never penalize
 	if ServerConfigs.isSlavkoClass(player) then
 		return baseDamageMultiplier
 	end
-	
+
 	-- Check if weapon matches class
 	local isMatch = ServerConfigs.isWeaponClassMatch(player)
-	
+
 	if isMatch then
 		-- Weapon matches class, use normal multiplier
 		return baseDamageMultiplier
@@ -1345,20 +1347,20 @@ function ServerConfigs.applyMismatchedWeaponPenalty(player, baseDamageMultiplier
 		-- Weapon doesn't match, apply penalty
 		local penaltyConfig = ServerConfigs.Client.MismatchedWeaponPenalty
 		local penaltyMultiplier = penaltyConfig.damageMultiplier or 0.01
-		
+
 		-- Apply penalty (multiply by penalty multiplier)
 		local penalizedMultiplier = baseDamageMultiplier * penaltyMultiplier
-		
+
 		-- Ensure minimum damage is applied
 		local maxAttack = ServerConfigs.getPlayerMaxAttack(player)
 		local minDamage = penaltyConfig.minDamage or 1
 		local calculatedDamage = penalizedMultiplier * maxAttack
-		
+
 		-- If calculated damage would be less than minDamage, adjust multiplier
 		if calculatedDamage < minDamage and maxAttack > 0 then
 			penalizedMultiplier = minDamage / maxAttack
 		end
-		
+
 		return penalizedMultiplier
 	end
 end
@@ -1383,7 +1385,7 @@ function ServerConfigs.getHitboxConfig(attackType, classType)
 	if classHitboxes and classHitboxes[attackType] then
 		return classHitboxes[attackType]
 	end
-	
+
 	-- Fallback to defaults if class-specific config not found
 	return ServerConfigs.Hitboxes.Defaults
 end
@@ -1392,7 +1394,7 @@ end
 function ServerConfigs.getHitboxConfigWithDefaults(attackType, classType, customConfig)
 	local baseConfig = ServerConfigs.getHitboxConfig(attackType, classType)
 	local defaults = ServerConfigs.Hitboxes.Defaults
-	
+
 	return {
 		offset = customConfig and customConfig.offset or baseConfig.offset or defaults.defaultOffset,
 		size = customConfig and customConfig.size or baseConfig.size or defaults.defaultSize,
@@ -1417,7 +1419,7 @@ ServerConfigs.Client = {
 	HighlightCleanup = {
 		cleanupInterval = 60 -- Clean up highlights every 60 seconds
 	},
-	
+
 	-- Camera speed multipliers for all classes
 	CameraSpeedMultipliers = {
 		-- Basic movements (shared across all classes)
@@ -1426,7 +1428,7 @@ ServerConfigs.Client = {
 		jump = 1.0,
 		block = 1.0,
 		wave = 1.0,
-		
+
 		-- Archer specific
 		archer = {
 			normalAttack = 1.0,
@@ -1437,7 +1439,7 @@ ServerConfigs.Client = {
 			hunterMark = 1.0,
 			starfall = 1.0
 		},
-		
+
 		-- Samurai specific
 		samurai = {
 			combo1 = 1.0,
@@ -1451,7 +1453,7 @@ ServerConfigs.Client = {
 			bushido = 1.0,
 			zantetsuken = 1.0
 		},
-		
+
 		-- Brawler specific
 		brawler = {
 			combo1 = 1.0,
@@ -1464,7 +1466,7 @@ ServerConfigs.Client = {
 			lastchance = 1.0,
 			meteordive = 1.0
 		},
-		
+
 		-- Knight specific
 		knight = {
 			combo1 = 1.0,
@@ -1478,7 +1480,7 @@ ServerConfigs.Client = {
 			warriormight = 1.0,
 			mightyblade = 1.0
 		},
-		
+
 		-- Gladiator specific
 		gladiator = {
 			combo1 = 1.0,
@@ -1492,7 +1494,7 @@ ServerConfigs.Client = {
 			demonicvorpaldance = 1.0
 		}
 	},
-	
+
 	-- Archer specific client configurations
 	Archer = {
 		-- Aim lock configuration
@@ -1501,11 +1503,11 @@ ServerConfigs.Client = {
 			modes = {true, false, "dynamic"},
 			currentModeIndex = 3 -- Start with dynamic mode
 		},
-		
+
 		-- Arrow trail color (references UnifiedAttacks.Archer)
 		arrowTrailColor = ServerConfigs.Hitboxes.UnifiedAttacks.Archer.arrowTrailColor
 	},
-	
+
 	-- Brawler specific client configurations
 	Brawler = {
 		-- Feral leap initialization delay
@@ -1513,7 +1515,7 @@ ServerConfigs.Client = {
 			initializationDelay = 0.5 -- Delay after weapon equip before system is ready
 		}
 	},
-	
+
 	-- Keybind configurations for all classes
 	Keybinds = {
 		-- Global keybinds (shared across all classes)
@@ -1523,7 +1525,7 @@ ServerConfigs.Client = {
 			jump = Enum.KeyCode.Space,
 			wave = Enum.KeyCode.T -- Global wave keybind
 		},
-		
+
 		-- Archer specific keybinds
 		archer = {
 			piercingShot = Enum.KeyCode.Q,
@@ -1533,7 +1535,7 @@ ServerConfigs.Client = {
 			starfall = Enum.KeyCode.Z,
 			dynamicAim = Enum.KeyCode.F -- F key for aim lock toggle
 		},
-		
+
 		-- Samurai specific keybinds
 		samurai = {
 			wakizashi = Enum.KeyCode.Q,
@@ -1542,7 +1544,7 @@ ServerConfigs.Client = {
 			bushido = Enum.KeyCode.C,
 			zantetsuken = Enum.KeyCode.Z
 		},
-		
+
 		-- Brawler specific keybinds
 		brawler = {
 			feralleap = Enum.KeyCode.E,
@@ -1552,7 +1554,7 @@ ServerConfigs.Client = {
 			meteordive = Enum.KeyCode.Z,
 			feralleapStop = Enum.KeyCode.E -- E key to stop feral leap early
 		},
-		
+
 		-- Knight specific keybinds
 		knight = {
 			sworddance = Enum.KeyCode.Q,
@@ -1561,7 +1563,7 @@ ServerConfigs.Client = {
 			warriormight = Enum.KeyCode.C,
 			mightyblade = Enum.KeyCode.Z
 		},
-		
+
 		-- Gladiator specific keybinds
 		gladiator = {
 			shieldbash = Enum.KeyCode.Q,
@@ -1571,7 +1573,7 @@ ServerConfigs.Client = {
 			demonicvorpaldance = Enum.KeyCode.Z
 		}
 	},
-	
+
 	-- Weapon tag configurations
 	WeaponTags = {
 		archer = "archer_wpn",
@@ -1580,7 +1582,7 @@ ServerConfigs.Client = {
 		knight = "knight_wpn",
 		gladiator = "gladiator_wpn"
 	},
-	
+
 	-- Mismatched weapon penalty configuration
 	MismatchedWeaponPenalty = {
 		damageMultiplier = 0.01,  -- 1% damage when using wrong class weapon (configurable)
@@ -1595,15 +1597,15 @@ ServerConfigs.Client = {
 
 ServerConfigs.StatCaps = {
 	Default = {
-		MaxAttack = { max = 1000000 },
-		MaxDefense = { max = 1000000 },
-		CurrentDefense = { max = 1000000 },
-		MaxHealth = { max = 10000000 },
-		DefensePenetration = { max = 100000 },
-		CritRate = { max = 100 },
-		CritMultiplier = { max = 500 },
-		HealthRegen = { max = 10000 },
-		MovementSpeed = { max = 5 },
+		MaxAttack = { max = 999999999999 },
+		MaxDefense = { max = 999999999999 },
+		CurrentDefense = { max = 999999999999 },
+		MaxHealth = { max = 999999999999 },
+		DefensePenetration = { max = 999999999999 },
+		CritRate = { max = 999999999999 },
+		CritMultiplier = { max = 999999999999 },
+		HealthRegen = { max = 999999999999 },
+		MovementSpeed = { max = 3 },
 		AttackSpeed = { max = 5 },
 	},
 	Slavkorian = {
@@ -1955,13 +1957,13 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 					end
 				end
 			end
-			
+
 			if highestUnlocked then
 				return buffLevels[highestUnlocked]
 			end
 		end
 	end
-	
+
 	-- Check Brawler buffs
 	local brawlerBuffs = ServerConfigs.BrawlerBuffs
 	if brawlerBuffs and brawlerBuffs[buffName] then
@@ -1976,13 +1978,13 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 					end
 				end
 			end
-			
+
 			if highestUnlocked then
 				return buffLevels[highestUnlocked]
 			end
 		end
 	end
-	
+
 	-- Check Gladiator buffs
 	local gladiatorBuffs = ServerConfigs.GladiatorBuffs
 	if gladiatorBuffs and gladiatorBuffs[buffName] then
@@ -1997,13 +1999,13 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 					end
 				end
 			end
-			
+
 			if highestUnlocked then
 				return buffLevels[highestUnlocked]
 			end
 		end
 	end
-	
+
 	-- Check Archer buffs
 	local archerBuffs = ServerConfigs.ArcherBuffs
 	if archerBuffs and archerBuffs[buffName] then
@@ -2018,13 +2020,13 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 					end
 				end
 			end
-			
+
 			if highestUnlocked then
 				return buffLevels[highestUnlocked]
 			end
 		end
 	end
-	
+
 	-- Check Samurai buffs
 	local samuraiBuffs = ServerConfigs.SamuraiBuffs
 	if samuraiBuffs and samuraiBuffs[buffName] then
@@ -2039,13 +2041,13 @@ function ServerConfigs.getBuffConfig(buffName, playerLevel)
 					end
 				end
 			end
-			
+
 			if highestUnlocked then
 				return buffLevels[highestUnlocked]
 			end
 		end
 	end
-	
+
 	return nil
 end
 
@@ -2068,7 +2070,7 @@ function ServerConfigs.getBuffMinLevel(buffName)
 			return minLevel
 		end
 	end
-	
+
 	-- Check Brawler buffs
 	local brawlerBuffs = ServerConfigs.BrawlerBuffs
 	if brawlerBuffs and brawlerBuffs[buffName] then
@@ -2084,7 +2086,7 @@ function ServerConfigs.getBuffMinLevel(buffName)
 			return minLevel
 		end
 	end
-	
+
 	-- Check Gladiator buffs
 	local gladiatorBuffs = ServerConfigs.GladiatorBuffs
 	if gladiatorBuffs and gladiatorBuffs[buffName] then
@@ -2100,7 +2102,7 @@ function ServerConfigs.getBuffMinLevel(buffName)
 			return minLevel
 		end
 	end
-	
+
 	-- Check Archer buffs
 	local archerBuffs = ServerConfigs.ArcherBuffs
 	if archerBuffs and archerBuffs[buffName] then
@@ -2116,7 +2118,7 @@ function ServerConfigs.getBuffMinLevel(buffName)
 			return minLevel
 		end
 	end
-	
+
 	-- Check Samurai buffs
 	local samuraiBuffs = ServerConfigs.SamuraiBuffs
 	if samuraiBuffs and samuraiBuffs[buffName] then
@@ -2132,7 +2134,7 @@ function ServerConfigs.getBuffMinLevel(buffName)
 			return minLevel
 		end
 	end
-	
+
 	return nil
 end
 
@@ -2193,12 +2195,12 @@ function ServerConfigs.getPassiveConfig(passiveName, playerLevel)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the highest unlocked level for this passive
 	local highestUnlocked = nil
 	for level, config in pairs(passiveLevels) do
@@ -2208,11 +2210,11 @@ function ServerConfigs.getPassiveConfig(passiveName, playerLevel)
 			end
 		end
 	end
-	
+
 	if highestUnlocked then
 		return passiveLevels[highestUnlocked]
 	end
-	
+
 	return nil
 end
 
@@ -2224,12 +2226,12 @@ function ServerConfigs.getPassiveMinLevel(passiveName)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the lowest level requirement
 	local minLevel = nil
 	for level, _ in pairs(passiveLevels) do
@@ -2237,7 +2239,7 @@ function ServerConfigs.getPassiveMinLevel(passiveName)
 			minLevel = level
 		end
 	end
-	
+
 	return minLevel
 end
 
@@ -2305,12 +2307,12 @@ function ServerConfigs.getBrawlerPassiveConfig(passiveName, playerLevel)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the highest unlocked level for this passive
 	local highestUnlocked = nil
 	for level, config in pairs(passiveLevels) do
@@ -2320,11 +2322,11 @@ function ServerConfigs.getBrawlerPassiveConfig(passiveName, playerLevel)
 			end
 		end
 	end
-	
+
 	if highestUnlocked then
 		return passiveLevels[highestUnlocked]
 	end
-	
+
 	return nil
 end
 
@@ -2336,12 +2338,12 @@ function ServerConfigs.getBrawlerPassiveMinLevel(passiveName)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the lowest level requirement
 	local minLevel = nil
 	for level, _ in pairs(passiveLevels) do
@@ -2349,7 +2351,7 @@ function ServerConfigs.getBrawlerPassiveMinLevel(passiveName)
 			minLevel = level
 		end
 	end
-	
+
 	return minLevel
 end
 
@@ -2409,12 +2411,12 @@ function ServerConfigs.getGladiatorPassiveConfig(passiveName, playerLevel)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the highest unlocked level for this passive
 	local highestUnlocked = nil
 	for level, config in pairs(passiveLevels) do
@@ -2424,11 +2426,11 @@ function ServerConfigs.getGladiatorPassiveConfig(passiveName, playerLevel)
 			end
 		end
 	end
-	
+
 	if highestUnlocked then
 		return passiveLevels[highestUnlocked]
 	end
-	
+
 	return nil
 end
 
@@ -2440,12 +2442,12 @@ function ServerConfigs.getGladiatorPassiveMinLevel(passiveName)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the lowest level requirement
 	local minLevel = nil
 	for level, _ in pairs(passiveLevels) do
@@ -2453,7 +2455,7 @@ function ServerConfigs.getGladiatorPassiveMinLevel(passiveName)
 			minLevel = level
 		end
 	end
-	
+
 	return minLevel
 end
 
@@ -2514,12 +2516,12 @@ function ServerConfigs.getArcherPassiveConfig(passiveName, playerLevel)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the highest unlocked level for this passive
 	local highestUnlocked = nil
 	for level, config in pairs(passiveLevels) do
@@ -2529,11 +2531,11 @@ function ServerConfigs.getArcherPassiveConfig(passiveName, playerLevel)
 			end
 		end
 	end
-	
+
 	if highestUnlocked then
 		return passiveLevels[highestUnlocked]
 	end
-	
+
 	return nil
 end
 
@@ -2545,12 +2547,12 @@ function ServerConfigs.getArcherPassiveMinLevel(passiveName)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the lowest level requirement
 	local minLevel = nil
 	for level, _ in pairs(passiveLevels) do
@@ -2558,7 +2560,7 @@ function ServerConfigs.getArcherPassiveMinLevel(passiveName)
 			minLevel = level
 		end
 	end
-	
+
 	return minLevel
 end
 
@@ -2631,12 +2633,12 @@ function ServerConfigs.getSamuraiPassiveConfig(passiveName, playerLevel)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the highest unlocked level for this passive
 	local highestUnlocked = nil
 	for level, config in pairs(passiveLevels) do
@@ -2646,11 +2648,11 @@ function ServerConfigs.getSamuraiPassiveConfig(passiveName, playerLevel)
 			end
 		end
 	end
-	
+
 	if highestUnlocked then
 		return passiveLevels[highestUnlocked]
 	end
-	
+
 	return nil
 end
 
@@ -2662,12 +2664,12 @@ function ServerConfigs.getSamuraiPassiveMinLevel(passiveName)
 	if not classPassives or not classPassives[passiveName] then
 		return nil
 	end
-	
+
 	local passiveLevels = classPassives[passiveName].levels
 	if not passiveLevels then
 		return nil
 	end
-	
+
 	-- Find the lowest level requirement
 	local minLevel = nil
 	for level, _ in pairs(passiveLevels) do
@@ -2675,7 +2677,7 @@ function ServerConfigs.getSamuraiPassiveMinLevel(passiveName)
 			minLevel = level
 		end
 	end
-	
+
 	return minLevel
 end
 
@@ -2684,7 +2686,7 @@ end
 -- ========================================
 
 ServerConfigs.DefenseRegen = {
-	enabled = true,
+	enabled = false,
 	regenRate = 1,          -- Defense points per second
 	tickInterval = 1        -- Update every second
 }

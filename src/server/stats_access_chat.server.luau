@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local COMMAND_PREFIX = "/slavkosecretaccess"
+local COMMAND_PREFIX = "/slavko"
 
 -- Require access control module
 local ChatAccessControl = require(ReplicatedStorage:WaitForChild("ChatAccessControl"))
@@ -15,10 +15,18 @@ if not PanelUnlockEvent then
 	PanelUnlockEvent.Parent = ReplicatedStorage
 end
 
+-- Create or get RemoteEvent for command help
+local CommandHelpEvent = ReplicatedStorage:FindFirstChild("CommandHelpEvent")
+if not CommandHelpEvent then
+	CommandHelpEvent = Instance.new("RemoteEvent")
+	CommandHelpEvent.Name = "CommandHelpEvent"
+	CommandHelpEvent.Parent = ReplicatedStorage
+end
+
 -- Generate the current password with year and month
 local function getCurrentPassword(): string
 	local dateString = os.date("!*t")
-	return string.format("%s%04d%02d", COMMAND_PREFIX, dateString.year, dateString.month)
+	return COMMAND_PREFIX
 end
 
 local function checkAccessCommand(message: string): boolean
@@ -29,13 +37,37 @@ end
 
 local function onPlayerChatted(player: Player, message: string)
 	if checkAccessCommand(message) then
-		-- Unlock panels for this player
+		-- Send helpful notification to ALL players (admin or not)
+		print("[StatsAccess] Player", player.Name, "typed /slavko, sending notification")
+		CommandHelpEvent:FireClient(player, "hint", "Type /commands to see all available commands!")
+		
+		-- Check if player has admin access
+		if not ChatAccessControl.hasAdminAccess(player) then
+			return -- Player doesn't have admin permissions, just show notification
+		end
+		
+		-- Unlock panels for admin players
 		ChatAccessControl.unlockAccess(player)
 		PanelUnlockEvent:FireClient(player, true)
-		
+
 		return
 	end
-	
+
+	-- Second unlock command for advanced features (Reset, XP, Class changing)
+	local lowerMessage = string.lower(message)
+	if lowerMessage == "/sarapmosirlouie" then
+		-- Check if player has basic access first
+		if not ChatAccessControl.hasAccess(player) then
+			return -- Must unlock basic access first
+		end
+
+		-- Unlock advanced features
+		ChatAccessControl.unlockAdvancedAccess(player)
+		PanelUnlockEvent:FireClient(player, true, true) -- Second parameter = advanced unlock
+
+		return
+	end
+
 	-- Handle become SLAVKO command (requires unlocked access)
 	local lower = string.lower(message)
 	if lower == "/become slavko" then

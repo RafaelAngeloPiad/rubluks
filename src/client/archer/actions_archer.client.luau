@@ -198,13 +198,25 @@ local function createCrosshair()
 	crosshairGui.ResetOnSpawn = false
 	crosshairGui.Parent = player.PlayerGui
 	
-	-- Create simple black dot crosshair
+	-- Create white dot crosshair with black outline
 	local crosshairFrame = Instance.new("Frame")
 	crosshairFrame.Name = "CrosshairFrame"
 	crosshairFrame.Size = UDim2.new(0, 8, 0, 8) -- Small 8x8 pixel dot
-	crosshairFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Black dot
+	crosshairFrame.BackgroundColor3 = Color3.new(1, 1, 1) -- White dot
 	crosshairFrame.BorderSizePixel = 0
 	crosshairFrame.Parent = crosshairGui
+	
+	-- Add black outline using UIStroke
+	local outline = Instance.new("UIStroke")
+	outline.Color = Color3.new(0, 0, 0) -- Black outline
+	outline.Thickness = 2
+	outline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	outline.Parent = crosshairFrame
+	
+	-- Make it circular
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0) -- Fully rounded (circle)
+	corner.Parent = crosshairFrame
 	
 	-- Position crosshair to match camera's center view exactly
 	local function updateCrosshairPosition()

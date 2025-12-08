@@ -21,7 +21,7 @@ end
 local WALK_ANIMATION_ID = "rbxassetid://107172094908325" -- walk
 local ATTACK_ANIMATION_ID = "rbxassetid://128682464782625" -- replace with your attack anim ID
 local ATTACK_RANGE = 8             -- distance at which attack animation starts
-local FOLLOW_RANGE = 100
+local FOLLOW_RANGE = 300
 local MAX_RADIUS = 40
 local RETURN_RADIUS = 60
 local UPDATE_RATE = 0.4

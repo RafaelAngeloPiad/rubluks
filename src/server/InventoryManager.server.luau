@@ -322,29 +322,60 @@ local function SavePlayerInventory(player)
 	end
 
 	local function doSave()
+		-- Double-check that player is not dying before proceeding
+		if playerDying[player.UserId] then
+			return
+		end
+		
 		local backpack = player:FindFirstChild("Backpack")
 		local character = player.Character
 		local inventory = {}
 		local equipped = {}
 		local consumables = {}
+		
+		-- Track equipped tool instances to prevent double-counting
+		-- If a tool is in Character, it might also temporarily be in Backpack (Roblox race condition)
+		-- We'll track equipped tools first, then exclude them from inventory count
+		local equippedToolInstances = {}
+		local equippedToolNames = {}
 
-		if backpack then
-			for i, item in backpack:GetChildren() do
-				if item:IsA("Tool") then
-					local isConsumable = isConsumableToolInstance(item)
-					if not isConsumable then
-						table.insert(inventory, getCanonicalToolName(item.Name))
+		if character then
+			-- Check if character is dead before reading equipped items
+			local humanoid = character:FindFirstChild("Humanoid")
+			if humanoid and humanoid.Health <= 0 then
+				-- Character is dead, don't save equipped state (it will be empty anyway)
+				-- Just use existing DataStore equipped state
+				local existingData = MainDataStore.LoadInventory(player.UserId) or {}
+				equipped = existingData.equipped or {}
+			else
+				-- Character is alive, read equipped items normally
+				-- Track both the instance and name to prevent double-counting
+				for i, item in character:GetChildren() do
+					if item:IsA("Tool") then
+						local isConsumable = isConsumableToolInstance(item)
+						if not isConsumable then
+							local canonicalName = getCanonicalToolName(item.Name)
+							table.insert(equipped, canonicalName)
+							equippedToolInstances[item] = true
+							equippedToolNames[canonicalName] = (equippedToolNames[canonicalName] or 0) + 1
+						end
 					end
 				end
 			end
 		end
 
-		if character then
-			for i, item in character:GetChildren() do
+		if backpack then
+			-- Count tools in Backpack, but skip any that are the same instance as equipped tools
+			-- This prevents counting the same physical tool twice (race condition)
+			for i, item in backpack:GetChildren() do
 				if item:IsA("Tool") then
 					local isConsumable = isConsumableToolInstance(item)
 					if not isConsumable then
-						table.insert(equipped, getCanonicalToolName(item.Name))
+						-- If this tool instance is also in Character (equipped), skip it
+						-- This handles the race condition where Roblox temporarily moves equipped tools to Backpack
+						if not equippedToolInstances[item] then
+							table.insert(inventory, getCanonicalToolName(item.Name))
+						end
 					end
 				end
 			end
@@ -375,6 +406,10 @@ local function SavePlayerInventory(player)
 
 		inventory = inventoryFiltered
 		equipped = equippedFiltered
+		
+		-- Equipped tools are already excluded from inventory by instance tracking above
+		-- No need for additional duplicate removal - if a tool is equipped, it won't be in inventory
+		
 		consumables = mergeConsumableLists(consumables, inventoryConsumables, equippedConsumables)
 
 		if typeof(_G.getPlayerConsumables) == "function" then
@@ -495,6 +530,21 @@ local function LoadPlayerInventory(player)
 
 	inventory = inventoryFiltered
 	equipped = equippedFiltered
+	
+	-- Remove any tools from inventory that are also equipped (handles old corrupted data)
+	-- Equipped tools should only be in equipped list, not inventory
+	local equippedSet = {}
+	for _, equippedName in ipairs(equipped) do
+		equippedSet[equippedName] = true
+	end
+	
+	local cleanedInventory = {}
+	for _, inventoryName in ipairs(inventory) do
+		if not equippedSet[inventoryName] then
+			table.insert(cleanedInventory, inventoryName)
+		end
+	end
+	inventory = cleanedInventory
 
 	local storedConsumablesCanonical = {}
 	for _, name in ipairs(storedConsumablesRaw) do
@@ -576,33 +626,121 @@ local function LoadPlayerInventory(player)
 
 	local missingWarnings = {}
 
-	-- Load Backpack tools (allow duplicates - these come from DataStore)
-	for i, toolName in inventory do
-		local asset = resolveAsset(assetsFolder, toolName)
-		if asset and asset:IsA("Tool") then
-			local clone = asset:Clone()
-			clone.Parent = backpack
-		else
-			if not missingWarnings[toolName] then
-				warn("[InventoryManager] Tool not found:", toolName)
-				missingWarnings[toolName] = true
+	-- Count how many of each canonical tool name currently exists in player's backpack/character
+	local function countExistingTools(player)
+		local backpackCounts = {}
+		local characterCounts = {}
+		local totalCounts = {}
+		
+		if not player then
+			return backpackCounts, characterCounts, totalCounts
+		end
+		
+		local backpack = player:FindFirstChild("Backpack")
+		if backpack then
+			for _, child in ipairs(backpack:GetChildren()) do
+				if child:IsA("Tool") then
+					local canonicalName = getCanonicalToolName(child.Name)
+					backpackCounts[canonicalName] = (backpackCounts[canonicalName] or 0) + 1
+					totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
+				end
 			end
 		end
+		
+		local character = player.Character
+		if character then
+			for _, child in ipairs(character:GetChildren()) do
+				if child:IsA("Tool") then
+					local canonicalName = getCanonicalToolName(child.Name)
+					characterCounts[canonicalName] = (characterCounts[canonicalName] or 0) + 1
+					totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
+				end
+			end
+		end
+		
+		return backpackCounts, characterCounts, totalCounts
 	end
 
-	-- Load Equipped tools (to Character) - prevent duplicates for equipped items
-	if character and #equipped > 0 then
-		for i, toolName in equipped do
+	-- Count how many of each tool should exist in inventory and equipped
+	local function countRequiredTools(inventoryList, equippedList)
+		local inventoryCounts = {}
+		local equippedCounts = {}
+		local totalCounts = {}
+		
+		-- Count from inventory
+		for _, toolName in ipairs(inventoryList) do
+			local canonicalName = getCanonicalToolName(toolName)
+			inventoryCounts[canonicalName] = (inventoryCounts[canonicalName] or 0) + 1
+			totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
+		end
+		
+		-- Count from equipped
+		for _, toolName in ipairs(equippedList) do
+			local canonicalName = getCanonicalToolName(toolName)
+			equippedCounts[canonicalName] = (equippedCounts[canonicalName] or 0) + 1
+			totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
+		end
+		
+		return inventoryCounts, equippedCounts, totalCounts
+	end
+
+	-- Get current counts of existing tools
+	local existingBackpackCounts, existingCharacterCounts, existingTotalCounts = countExistingTools(player)
+	
+	-- Get required counts from DataStore
+	local requiredInventoryCounts, requiredEquippedCounts, requiredTotalCounts = countRequiredTools(inventory, equipped)
+
+	-- Load Backpack tools - only clone what's missing from inventory
+	for i, toolName in inventory do
+		local canonicalName = getCanonicalToolName(toolName)
+		local existingTotal = existingTotalCounts[canonicalName] or 0
+		local requiredTotal = requiredTotalCounts[canonicalName] or 0
+		
+		-- Only clone if we need more of this tool overall
+		-- (allows multiple copies of same weapon)
+		if existingTotal < requiredTotal then
 			local asset = resolveAsset(assetsFolder, toolName)
 			if asset and asset:IsA("Tool") then
-				if not character:FindFirstChild(asset.Name) then
-					local clone = asset:Clone()
-					clone.Parent = character
-				end
+				local clone = asset:Clone()
+				clone.Parent = backpack
+				-- Update counts to reflect the new tool
+				existingTotalCounts[canonicalName] = existingTotal + 1
+				existingBackpackCounts[canonicalName] = (existingBackpackCounts[canonicalName] or 0) + 1
 			else
 				if not missingWarnings[toolName] then
 					warn("[InventoryManager] Tool not found:", toolName)
 					missingWarnings[toolName] = true
+				end
+			end
+		end
+	end
+
+	-- Load Equipped tools (to Character) - only clone what's missing from equipped
+	if character and #equipped > 0 then
+		for i, toolName in equipped do
+			local canonicalName = getCanonicalToolName(toolName)
+			local existingTotal = existingTotalCounts[canonicalName] or 0
+			local requiredTotal = requiredTotalCounts[canonicalName] or 0
+			local existingCharacter = existingCharacterCounts[canonicalName] or 0
+			local requiredEquipped = requiredEquippedCounts[canonicalName] or 0
+			
+			-- Only clone if:
+			-- 1. We need more of this tool overall, AND
+			-- 2. We don't already have enough equipped
+			-- This prevents duplicating equipped tools if they're already in character
+			if existingTotal < requiredTotal and existingCharacter < requiredEquipped then
+				local asset = resolveAsset(assetsFolder, toolName)
+				if asset and asset:IsA("Tool") then
+					local clone = asset:Clone()
+					clone.Parent = character
+					-- Update counts to reflect the new tool
+					existingTotalCounts[canonicalName] = existingTotal + 1
+					existingCharacterCounts[canonicalName] = existingCharacter + 1
+				else
+					if not missingWarnings[toolName] then
+						warn("[InventoryManager] Tool not found:", toolName)
+						missingWarnings[toolName] = true
+					end
 				end
 			end
 		end
@@ -639,8 +777,20 @@ local function BindInventoryEvents(player)
 		end)
 		character.ChildRemoved:Connect(function(child)
 			if child:IsA("Tool") or child:IsA("Accessory") then
-				-- Only save if player is not dying (to prevent losing equipped weapon on death)
-				if not playerDying[player.UserId] then
+				-- Check if player is dying or dead before saving
+				local shouldSave = true
+				if playerDying[player.UserId] then
+					shouldSave = false
+				else
+					-- Also check if character is dead
+					local humanoid = character:FindFirstChild("Humanoid")
+					if humanoid and humanoid.Health <= 0 then
+						shouldSave = false
+					end
+				end
+				
+				-- Only save if player is not dying/dead (to prevent losing equipped weapon on death)
+				if shouldSave then
 					SavePlayerInventory(player)
 				end
 				if _G.refreshEquipmentBonuses then
@@ -676,20 +826,45 @@ local function OnCharacterAdded(character, player)
 
 		-- Simple death detection - save inventory when player dies
 		local humanoid = character:WaitForChild("Humanoid")
-		humanoid.HealthChanged:Connect(function(health)
+		local deathConnection
+		deathConnection = humanoid.HealthChanged:Connect(function(health)
 			if health <= 0 then
-				-- Mark player as dying to prevent saving unequipped state
+				-- Mark player as dying IMMEDIATELY to prevent any saves during death transition
 				playerDying[player.UserId] = true
 				
-				-- Add small delay to ensure equipped tools are still there
-				task.wait(0.1)
+				-- Capture equipped state BEFORE Roblox moves tools to backpack
+				-- This needs to happen as early as possible
+				local equippedBeforeDeath = {}
+				if character then
+					for i, item in character:GetChildren() do
+						if item:IsA("Tool") then
+							local isConsumable = isConsumableToolInstance(item)
+							if not isConsumable then
+								table.insert(equippedBeforeDeath, getCanonicalToolName(item.Name))
+							end
+						end
+					end
+				end
+				
+				-- Wait a bit for Roblox to move tools to backpack
+				task.wait(0.2)
 				
 				-- Get the current state from DataStore to preserve everything
 				local existingData = MainDataStore.LoadInventory(player.UserId) or {}
 				local inventory = existingData.inventory or {}
 				local equipped = existingData.equipped or {}
 				
-				-- Get current backpack items and merge with existing inventory
+				-- Use equipped state we captured before death, or fall back to DataStore
+				if #equippedBeforeDeath > 0 then
+					equipped = equippedBeforeDeath
+				elseif #equipped == 0 and #existingData.equipped > 0 then
+					-- If we didn't capture anything but DataStore has equipped items, use those
+					equipped = existingData.equipped
+				end
+				
+				-- Get current backpack items (after Roblox moved tools there)
+				-- When player dies, Roblox automatically moves equipped tools to backpack
+				-- So backpack now contains: original inventory + equipped tools
 				local backpack = player:FindFirstChild("Backpack")
 				if backpack then
 					local currentBackpack = {}
@@ -701,27 +876,9 @@ local function OnCharacterAdded(character, player)
 							end
 						end
 					end
-					-- Only update if we have items in backpack (to preserve existing inventory)
-					if #currentBackpack > 0 then
-						inventory = currentBackpack
-					end
-				end
-
-				-- Get current equipped items (should be empty on death, but preserve DataStore equipped)
-				if character then
-					local currentEquipped = {}
-					for i, item in character:GetChildren() do
-						if item:IsA("Tool") then
-							local isConsumable = isConsumableToolInstance(item)
-							if not isConsumable then
-								table.insert(currentEquipped, getCanonicalToolName(item.Name))
-							end
-						end
-					end
-					-- Only update if we have equipped items (to preserve existing equipped)
-					if #currentEquipped > 0 then
-						equipped = currentEquipped
-					end
+					-- Inventory should be what's currently in backpack (includes everything after death)
+					-- This preserves all tool counts correctly
+					inventory = currentBackpack
 				end
 
 				local baseConsumables = (existingData and existingData.consumables) or {}
@@ -744,6 +901,23 @@ local function OnCharacterAdded(character, player)
 					helmet = existingData.helmet
 				end
 
+				-- When player dies, Roblox moves equipped tools to backpack
+				-- The backpack now contains: original inventory + equipped tools
+				-- Remove equipped tools from inventory - they should only be in equipped list
+				local equippedSet = {}
+				for _, equippedName in ipairs(equipped) do
+					equippedSet[equippedName] = true
+				end
+				
+				local cleanedInventory = {}
+				for _, inventoryName in ipairs(inventory) do
+					if not equippedSet[inventoryName] then
+						table.insert(cleanedInventory, inventoryName)
+					end
+				end
+				inventory = cleanedInventory
+
+				-- Save with preserved equipped state
 				MainDataStore.SaveInventory(player.UserId, {
 					inventory = inventory,
 					equipped = equipped,
@@ -751,10 +925,13 @@ local function OnCharacterAdded(character, player)
 					helmet = helmet,
 				})
 				
-				-- Reset dying flag after a delay
-				task.delay(2, function()
+				-- Reset dying flag after a delay to allow respawn to complete
+				task.delay(3, function()
 					playerDying[player.UserId] = false
 				end)
+			elseif health > 0 and playerDying[player.UserId] then
+				-- Player respawned, clear dying flag
+				playerDying[player.UserId] = false
 			end
 		end)
 

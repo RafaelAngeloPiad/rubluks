@@ -14,6 +14,138 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+-- ========================================
+-- MOBILE RESPONSIVE SCALING SYSTEM
+-- ========================================
+local MOBILE_SCALE_CONFIG = {
+	-- Screen width thresholds (in pixels)
+	VERY_SMALL_WIDTH = 375,  -- iPhone SE, small phones
+	SMALL_WIDTH = 414,       -- iPhone 8 Plus, medium phones
+	MEDIUM_WIDTH = 768,      -- Tablets in portrait
+	
+	-- Screen height thresholds (in pixels)
+	VERY_SMALL_HEIGHT = 667, -- Small phones
+	SMALL_HEIGHT = 736,      -- Medium phones
+	MEDIUM_HEIGHT = 1024,    -- Tablets
+	
+	-- Scale factors for different screen sizes
+	VERY_SMALL_SCALE = 0.65, -- Very small phones (e.g., iPhone SE)
+	SMALL_SCALE = 0.75,      -- Small phones
+	MEDIUM_SCALE = 0.85,     -- Medium phones/small tablets
+	NORMAL_SCALE = 1.0,      -- Normal/desktop size
+}
+
+local currentMobileScale = 1.0
+local trackedButtons = {}
+
+local function calculateMobileScale(screenWidth, screenHeight)
+	-- Determine scale based on both width and height
+	local widthScale = MOBILE_SCALE_CONFIG.NORMAL_SCALE
+	local heightScale = MOBILE_SCALE_CONFIG.NORMAL_SCALE
+	
+	-- Check width thresholds
+	if screenWidth <= MOBILE_SCALE_CONFIG.VERY_SMALL_WIDTH then
+		widthScale = MOBILE_SCALE_CONFIG.VERY_SMALL_SCALE
+	elseif screenWidth <= MOBILE_SCALE_CONFIG.SMALL_WIDTH then
+		widthScale = MOBILE_SCALE_CONFIG.SMALL_SCALE
+	elseif screenWidth <= MOBILE_SCALE_CONFIG.MEDIUM_WIDTH then
+		widthScale = MOBILE_SCALE_CONFIG.MEDIUM_SCALE
+	end
+	
+	-- Check height thresholds
+	if screenHeight <= MOBILE_SCALE_CONFIG.VERY_SMALL_HEIGHT then
+		heightScale = MOBILE_SCALE_CONFIG.VERY_SMALL_SCALE
+	elseif screenHeight <= MOBILE_SCALE_CONFIG.SMALL_HEIGHT then
+		heightScale = MOBILE_SCALE_CONFIG.SMALL_SCALE
+	elseif screenHeight <= MOBILE_SCALE_CONFIG.MEDIUM_HEIGHT then
+		heightScale = MOBILE_SCALE_CONFIG.MEDIUM_SCALE
+	end
+	
+	-- Use the smaller of the two scales to ensure buttons fit
+	return math.min(widthScale, heightScale)
+end
+
+local function applyMobileScaleToButton(button)
+	if not button or not button:IsA("GuiObject") then
+		return
+	end
+	
+	-- Store original size if not already stored
+	if not trackedButtons[button] then
+		trackedButtons[button] = {
+			originalSize = button.Size,
+			originalPosition = button.Position,
+		}
+	end
+	
+	local originalData = trackedButtons[button]
+	
+	-- Apply scale to size
+	button.Size = UDim2.new(
+		originalData.originalSize.X.Scale * currentMobileScale,
+		originalData.originalSize.X.Offset * currentMobileScale,
+		originalData.originalSize.Y.Scale * currentMobileScale,
+		originalData.originalSize.Y.Offset * currentMobileScale
+	)
+	
+	-- Also scale text size if it's a text button or has a TextLabel
+	if button:IsA("TextButton") or button:IsA("TextLabel") then
+		local textLabel = button:IsA("TextLabel") and button or button:FindFirstChildOfClass("TextLabel")
+		if textLabel and textLabel.TextScaled == false then
+			-- Only scale if not using TextScaled
+			if not originalData.originalTextSize then
+				originalData.originalTextSize = textLabel.TextSize
+			end
+			textLabel.TextSize = math.floor(originalData.originalTextSize * currentMobileScale)
+		end
+	end
+	
+	-- Scale TextLabel children
+	for _, child in ipairs(button:GetChildren()) do
+		if child:IsA("TextLabel") and child.TextScaled == false then
+			if not originalData["textSize_" .. child.Name] then
+				originalData["textSize_" .. child.Name] = child.TextSize
+			end
+			child.TextSize = math.floor(originalData["textSize_" .. child.Name] * currentMobileScale)
+		end
+	end
+end
+
+local function updateAllButtonScales()
+	for button, _ in pairs(trackedButtons) do
+		if button and button.Parent then
+			applyMobileScaleToButton(button)
+		else
+			-- Clean up destroyed buttons
+			trackedButtons[button] = nil
+		end
+	end
+end
+
+local function onScreenSizeChanged()
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return
+	end
+	
+	local viewportSize = camera.ViewportSize
+	local newScale = calculateMobileScale(viewportSize.X, viewportSize.Y)
+	
+	if newScale ~= currentMobileScale then
+		currentMobileScale = newScale
+		updateAllButtonScales()
+		print("[ButtonManager] Mobile scale updated to:", currentMobileScale, "for screen size:", viewportSize.X, "x", viewportSize.Y)
+	end
+end
+
+local function initializeMobileScaling()
+	-- Initial scale calculation
+	onScreenSizeChanged()
+	
+	-- Monitor screen size changes
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(onScreenSizeChanged)
+end
+
 local player = Players.LocalPlayer
 
 local ConsumableEvent = ReplicatedStorage:WaitForChild("ConsumableEvent")
@@ -754,6 +886,9 @@ local function registerHelmetButton(button)
 end
 
 local function setupConsumableButton(button, slotIndex)
+	-- Track this button for mobile scaling
+	applyMobileScaleToButton(button)
+	
 	registerConsumableButton(slotIndex, button)
 
 	local tooltipResolver = function()
@@ -775,6 +910,9 @@ local function setupConsumableButton(button, slotIndex)
 end
 
 local function setupHelmetButton(button)
+	-- Track this button for mobile scaling
+	applyMobileScaleToButton(button)
+	
 	registerHelmetButton(button)
 
 	local tooltipResolver = function()
@@ -806,6 +944,9 @@ end
 
 -- Setup a regular button that adapts to current class
 local function setupUnifiedButton(button, tag)
+	-- Track this button for mobile scaling
+	applyMobileScaleToButton(button)
+	
 	local tagConfig = UNIFIED_TAGS[tag]
 
 	if not tagConfig then
@@ -978,6 +1119,9 @@ end
 
 -- Setup a hold button that adapts to current class
 local function setupUnifiedHoldButton(button, tag)
+	-- Track this button for mobile scaling
+	applyMobileScaleToButton(button)
+	
 	local tagConfig = UNIFIED_TAGS[tag]
 
 	if not tagConfig then
@@ -1357,6 +1501,9 @@ end
 -- Initialize when script runs (after helper functions are defined)
 initializeButtons()
 ConsumableEvent:FireServer("sync")
+
+-- Initialize mobile responsive scaling
+initializeMobileScaling()
 
 
 

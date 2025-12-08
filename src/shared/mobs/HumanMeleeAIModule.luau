@@ -3,6 +3,12 @@
 
 local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+local BGMusic = SoundService:WaitForChild("BGMusic")
+local BossMusic = SoundService:WaitForChild("BossMusic")
+local VictoryBG = SoundService:WaitForChild("VictoryFanfare")
+local BossDefeatedEvent = ReplicatedStorage:WaitForChild("BossDefeatedEvent")
 
 local HitboxExclusions = require(script.Parent.HitboxExclusions)
 local MobStatsConfigz = require(script.Parent.MobStatsConfigz)
@@ -468,45 +474,6 @@ local function initializeHumanMelee(character, variantName)
 			end
 		end
 	end
-	
-	-- Death handler - integrated from MobDeathHandler
-	humanoid.Died:Connect(function()
-		-- Stop movement sounds if playing
-		if movementSound then
-			movementSound:Stop()
-			movementSound:Destroy()
-			movementSound = nil
-		end
-		
-		-- Play death sound
-		local deathSoundId = MobSoundConfig.getSound("humanMeleeDeath")
-		playSound(deathSoundId, false)
-		
-		-- Disable movement/AI scripts
-		for _, child in ipairs(character:GetChildren()) do
-			if child:IsA("Script") or child:IsA("LocalScript") then
-				child.Disabled = true
-			end
-		end
-		
-		-- Make all parts fall naturally and be collidable
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.Anchored = false
-				part.CanCollide = true -- ensure collision so it doesn't fall through map
-			end
-		end
-		
-		-- Detach limbs
-		breakJoints(character)
-		
-		-- Wait a few seconds then completely remove from map
-		task.wait(3) -- Wait 3 seconds
-		
-		if character and character.Parent then
-			character:Destroy() -- Completely removes the mob from the game
-		end
-	end)
 
 	if playerControlled then
 		return
@@ -617,6 +584,100 @@ local function initializeHumanMelee(character, variantName)
 
 	local function shouldReturnHome(currentPosition)
 		return (currentPosition - spawnPosition).Magnitude > MAX_RADIUS
+	end
+	
+	-- Death Handler
+	if variantName == "Pirate_Boss" then
+		
+		humanoid.Died:Connect(function()
+			-- Stop movement sounds if playing
+			if movementSound then
+				movementSound:Stop()
+				movementSound:Destroy()
+				movementSound = nil
+			end
+
+			-- Play death sound
+			local deathSoundId = MobSoundConfig.getSound("humanMeleeDeath")
+			playSound(deathSoundId, false)
+
+			-- Disable movement/AI scripts
+			for _, child in ipairs(character:GetChildren()) do
+				if child:IsA("Script") or child:IsA("LocalScript") then
+					child.Disabled = true
+				end
+			end
+
+			-- Make all parts fall naturally and be collidable
+			for _, part in ipairs(character:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					part.CanCollide = true -- ensure collision so it doesn't fall through map
+				end
+			end
+
+			-- Detach limbs
+			breakJoints(character)
+			
+			BossMusic:Stop()
+
+			-- Wait a few seconds then completely remove from map
+			task.wait(3) -- Wait 3 seconds
+			
+			VictoryBG:Play()
+			for _, player in pairs(game.Players:GetPlayers()) do
+				BossDefeatedEvent:FireClient(player)
+			end
+			
+			task.wait(8) -- wait 8 seconds para di sabay sa victory sounds
+
+			BGMusic:Play()
+
+			if character and character.Parent then
+				character:Destroy() -- Completely removes the mob from the game
+			end
+		end)
+	
+	else
+		
+		humanoid.Died:Connect(function()
+			-- Stop movement sounds if playing
+			if movementSound then
+				movementSound:Stop()
+				movementSound:Destroy()
+				movementSound = nil
+			end
+
+			-- Play death sound
+			local deathSoundId = MobSoundConfig.getSound("humanMeleeDeath")
+			playSound(deathSoundId, false)
+
+			-- Disable movement/AI scripts
+			for _, child in ipairs(character:GetChildren()) do
+				if child:IsA("Script") or child:IsA("LocalScript") then
+					child.Disabled = true
+				end
+			end
+
+			-- Make all parts fall naturally and be collidable
+			for _, part in ipairs(character:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					part.CanCollide = true -- ensure collision so it doesn't fall through map
+				end
+			end
+
+			-- Detach limbs
+			breakJoints(character)
+
+			-- Wait a few seconds then completely remove from map
+			task.wait(3) -- Wait 3 seconds
+
+			if character and character.Parent then
+				character:Destroy() -- Completely removes the mob from the game
+			end
+		end)
+		
 	end
 
 	task.spawn(function()
