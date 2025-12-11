@@ -109,20 +109,12 @@ end
 local inventorySaveDebounce = {}
 local DEBOUNCE_TIME = 1 -- seconds
 
--- State tracking to prevent saving while loading
-local isInventoryLoading = {}
-
 -- Save: READS World State -> WRITES DataStore
 local function SavePlayerInventory(player)
 	local userId = player.UserId
 	local now = os.clock()
 
-	-- 1. DEBOUNCE & LOADING CHECK
-	if isInventoryLoading[userId] then
-		print("[InventoryManager] Save blocked: Player inventory is loading for", player.Name)
-		return
-	end
-
+	-- 1. DEBOUNCE CHECK
 	if inventorySaveDebounce[userId] and (now - inventorySaveDebounce[userId].lastSave < DEBOUNCE_TIME) then
 		inventorySaveDebounce[userId].pending = true
 		return
@@ -149,7 +141,7 @@ local function SavePlayerInventory(player)
 		local inventory = {}
 		local equipped = {}
 		local consumables = {} -- We allow other systems to handle this via _G usually
-
+		
 		-- Track instances to avoid duplicates if Roblox moves things around
 		local seenInstances = {}
 
@@ -190,7 +182,7 @@ local function SavePlayerInventory(player)
 		if typeof(_G.getPlayerConsumables) == "function" then
 			consumables = _G.getPlayerConsumables(player) or {}
 		end
-
+		
 		local helmet = nil
 		if typeof(_G.getPlayerHelmet) == "function" then
 			helmet = _G.getPlayerHelmet(player)
@@ -237,14 +229,11 @@ end
 
 -- Load: READS DataStore -> WRITES World State
 local function LoadPlayerInventory(player)
-	local userId = player.UserId
-	isInventoryLoading[userId] = true
-
 	-- Safety wait
 	local character = player.Character or player.CharacterAdded:Wait()
 	local backpack = player:WaitForChild("Backpack")
 	local assetsFolder = ReplicatedStorage:WaitForChild("assets")
-
+	
 	-- We wait a bit to ensure Client is ready (optional but safer)
 	task.wait(2) -- Slightly reduced from 12s/4s, user wanted "simple" but reliable
 
@@ -304,17 +293,15 @@ local function LoadPlayerInventory(player)
 	if _G.refreshEquipmentBonuses then
 		_G.refreshEquipmentBonuses(player)
 	end
-
-	isInventoryLoading[userId] = false
 end
 
 local function BindInventoryEvents(player)
 	local backpack = player:WaitForChild("Backpack")
-
+	
 	-- Save on any change (debounced)
 	backpack.ChildAdded:Connect(function(child) if child:IsA("Tool") then SavePlayerInventory(player) end end)
 	backpack.ChildRemoved:Connect(function(child) if child:IsA("Tool") then SavePlayerInventory(player) end end)
-
+	
 	local function bindCharacter(char)
 		char.ChildAdded:Connect(function(child) 
 			if child:IsA("Tool") then 
