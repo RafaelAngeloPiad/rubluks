@@ -296,9 +296,6 @@ local DEBOUNCE_TIME = 1 -- seconds
 -- Track when players are dying to prevent saving unequipped state
 local playerDying = {}
 
--- Lock table to prevent concurrent inventory loads for the same player
-local inventoryLoadLocks = {}
-
 -- Save backpack tool names AND equipped tool names to DataStore, with debounce
 local function SavePlayerInventory(player)
 	local userId = player.UserId
@@ -487,21 +484,11 @@ end
 
 -- Load inventory (tool names) and give corresponding tools from Workspace
 local function LoadPlayerInventory(player)
-	-- Wait for any previous load to finish for this player
-	while inventoryLoadLocks[player.UserId] do
-		task.wait(0.1)
+	-- Wait for character and backpack to be fully loaded
+	local character = player.Character
+	if not character then
+		character = player:WaitForChild("Character")
 	end
-	
-	-- Acquire lock
-	inventoryLoadLocks[player.UserId] = true
-	
-	-- Use pcall to ensure lock is always released
-	local success, err = pcall(function()
-		-- Wait for character and backpack to be fully loaded
-		local character = player.Character
-		if not character then
-			character = player:WaitForChild("Character")
-		end
 	
 	-- Wait for humanoid to ensure character is fully loaded
 	local humanoid = character:WaitForChild("Humanoid")
@@ -514,12 +501,7 @@ local function LoadPlayerInventory(player)
 
 	-- Additional wait to ensure everything is properly loaded.
 	-- Increased further to give even more time for character/other systems to initialise.
-	task.wait(12)
-	
-	-- Ensure player is still in the game after the long wait
-	if not player.Parent then
-		return
-	end
+	task.wait(3)
 
 	local userId = player.UserId
 	local inventoryData = MainDataStore.LoadInventory(userId) or {}
@@ -764,16 +746,8 @@ local function LoadPlayerInventory(player)
 		end
 	end
 
-		if _G.refreshEquipmentBonuses then
-			_G.refreshEquipmentBonuses(player)
-		end
-	end)
-	
-	-- Release lock
-	inventoryLoadLocks[player.UserId] = nil
-	
-	if not success then
-		warn("[InventoryManager] LoadPlayerInventory failed for", player.Name, ":", err)
+	if _G.refreshEquipmentBonuses then
+		_G.refreshEquipmentBonuses(player)
 	end
 
 end

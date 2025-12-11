@@ -289,13 +289,6 @@ local function resolveAsset(assetsFolder, toolName)
 	return nil
 end
 
--- Debounce table for inventory saves per player
-local inventorySaveDebounce = {}
-local DEBOUNCE_TIME = 1 -- seconds
-
--- Track when players are dying to prevent saving unequipped state
-local playerDying = {}
-
 -- Lock table to prevent concurrent inventory loads for the same player
 local inventoryLoadLocks = {}
 
@@ -502,258 +495,223 @@ local function LoadPlayerInventory(player)
 		if not character then
 			character = player:WaitForChild("Character")
 		end
-	
-	-- Wait for humanoid to ensure character is fully loaded
-	local humanoid = character:WaitForChild("Humanoid")
-	
-	-- Wait for backpack
-	local backpack = player:FindFirstChild("Backpack")
-	if not backpack then
-		backpack = player:WaitForChild("Backpack")
-	end
-
-	-- Additional wait to ensure everything is properly loaded.
-	-- Increased further to give even more time for character/other systems to initialise.
-	task.wait(12)
-	
-	-- Ensure player is still in the game after the long wait
-	if not player.Parent then
-		return
-	end
-
-	local userId = player.UserId
-	local inventoryData = MainDataStore.LoadInventory(userId) or {}
-
-	local originalInventory = inventoryData.inventory or {}
-	local originalEquipped = inventoryData.equipped or {}
-	local storedHelmet = inventoryData.helmet
-	local storedConsumablesRaw = inventoryData.consumables or {}
-
-	local originalInventoryCanonical = normaliseEquipmentList(originalInventory)
-	local originalEquippedCanonical = normaliseEquipmentList(originalEquipped)
-
-	-- Strip helmet entries out of the inventory/equipped arrays and determine
-	-- the canonical helmet name (migration path for old saves).
-	local cleanedInventoryCanonical, cleanedEquippedCanonical, resolvedHelmet = stripHelmetFromLists(
-		originalInventoryCanonical,
-		originalEquippedCanonical,
-		storedHelmet
-	)
-
-	local inventory = cloneArray(cleanedInventoryCanonical)
-	local equipped = cloneArray(cleanedEquippedCanonical)
-
-	local inventoryFiltered, inventoryConsumables = partitionConsumables(inventory)
-	local equippedFiltered, equippedConsumables = partitionConsumables(equipped)
-
-	inventory = inventoryFiltered
-	equipped = equippedFiltered
-	
-	-- Remove any tools from inventory that are also equipped (handles old corrupted data)
-	-- Equipped tools should only be in equipped list, not inventory
-	local equippedSet = {}
-	for _, equippedName in ipairs(equipped) do
-		equippedSet[equippedName] = true
-	end
-	
-	local cleanedInventory = {}
-	for _, inventoryName in ipairs(inventory) do
-		if not equippedSet[inventoryName] then
-			table.insert(cleanedInventory, inventoryName)
+		
+		-- Wait for humanoid to ensure character is fully loaded
+		local humanoid = character:WaitForChild("Humanoid")
+		
+		-- Wait for backpack
+		local backpack = player:FindFirstChild("Backpack")
+		if not backpack then
+			backpack = player:WaitForChild("Backpack")
 		end
-	end
-	inventory = cleanedInventory
 
-	local storedConsumablesCanonical = {}
-	for _, name in ipairs(storedConsumablesRaw) do
-		local canonical = getConsumableCanonicalName(name)
-		if canonical and ConsumableEntries[canonical] then
-			table.insert(storedConsumablesCanonical, canonical)
+		-- Additional wait to ensure everything is properly loaded.
+		-- Increased further to give even more time for character/other systems to initialise.
+		task.wait(6)
+
+		local userId = player.UserId
+		local inventoryData = MainDataStore.LoadInventory(userId) or {}
+
+		local originalInventory = inventoryData.inventory or {}
+		local originalEquipped = inventoryData.equipped or {}
+		local storedHelmet = inventoryData.helmet
+		local storedConsumablesRaw = inventoryData.consumables or {}
+
+		local originalInventoryCanonical = normaliseEquipmentList(originalInventory)
+		local originalEquippedCanonical = normaliseEquipmentList(originalEquipped)
+
+		-- Strip helmet entries out of the inventory/equipped arrays and determine
+		-- the canonical helmet name (migration path for old saves).
+		local cleanedInventoryCanonical, cleanedEquippedCanonical, resolvedHelmet = stripHelmetFromLists(
+			originalInventoryCanonical,
+			originalEquippedCanonical,
+			storedHelmet
+		)
+
+		local inventory = cloneArray(cleanedInventoryCanonical)
+		local equipped = cloneArray(cleanedEquippedCanonical)
+
+		local inventoryFiltered, inventoryConsumables = partitionConsumables(inventory)
+		local equippedFiltered, equippedConsumables = partitionConsumables(equipped)
+
+		inventory = inventoryFiltered
+		equipped = equippedFiltered
+		
+		-- Remove any tools from inventory that are also equipped (handles old corrupted data)
+		-- Equipped tools should only be in equipped list, not inventory
+		local equippedSet = {}
+		for _, equippedName in ipairs(equipped) do
+			equippedSet[equippedName] = true
 		end
-	end
+		
+		local cleanedInventory = {}
+		for _, inventoryName in ipairs(inventory) do
+			if not equippedSet[inventoryName] then
+				table.insert(cleanedInventory, inventoryName)
+			end
+		end
+		inventory = cleanedInventory
 
-	local mergedConsumables = mergeConsumableLists(storedConsumablesCanonical, inventoryConsumables, equippedConsumables)
+		local storedConsumablesCanonical = {}
+		for _, name in ipairs(storedConsumablesRaw) do
+			local canonical = getConsumableCanonicalName(name)
+			if canonical and ConsumableEntries[canonical] then
+				table.insert(storedConsumablesCanonical, canonical)
+			end
+		end
 
-	-- Restore helmet from DataStore into the runtime helmet system (if available)
-	if resolvedHelmet and typeof(_G.setPlayerHelmetFromData) == "function" then
-		_G.setPlayerHelmetFromData(player, resolvedHelmet)
-	end
+		local mergedConsumables = mergeConsumableLists(storedConsumablesCanonical, inventoryConsumables, equippedConsumables)
 
-	if typeof(_G.setPlayerConsumablesFromData) == "function" then
-		_G.setPlayerConsumablesFromData(player, mergedConsumables)
-	end
+		-- Restore helmet from DataStore into the runtime helmet system (if available)
+		if resolvedHelmet and typeof(_G.setPlayerHelmetFromData) == "function" then
+			_G.setPlayerHelmetFromData(player, resolvedHelmet)
+		end
 
-	-- If DataStore reports no equipped tools but we have tools in inventory, try to
-	-- "recover" a sensible equipped state. This handles cases where a late save
-	-- (e.g. unequip before leaving / teleport) cleared the equipped array even
-	-- though the player effectively has a primary weapon.
-	if #equipped == 0 and #inventory > 0 then
-		-- Prefer something that was historically equipped (if present in inventory).
-		local recovered = nil
-		if #originalEquippedCanonical > 0 then
-			for _, historicalName in ipairs(originalEquippedCanonical) do
-				for _, invName in ipairs(inventory) do
-					if invName == historicalName then
-						recovered = historicalName
+		if typeof(_G.setPlayerConsumablesFromData) == "function" then
+			_G.setPlayerConsumablesFromData(player, mergedConsumables)
+		end
+
+		-- If DataStore reports no equipped tools but we have tools in inventory, try to
+		-- "recover" a sensible equipped state. This handles cases where a late save
+		-- (e.g. unequip before leaving / teleport) cleared the equipped array even
+		-- though the player effectively has a primary weapon.
+		if #equipped == 0 and #inventory > 0 then
+			-- Prefer something that was historically equipped (if present in inventory).
+			local recovered = nil
+			if #originalEquippedCanonical > 0 then
+				for _, historicalName in ipairs(originalEquippedCanonical) do
+					for _, invName in ipairs(inventory) do
+						if invName == historicalName then
+							recovered = historicalName
+							break
+						end
+					end
+					if recovered then
 						break
 					end
 				end
-				if recovered then
-					break
-				end
+			end
+
+			-- Fallback: just use the first non-consumable tool from inventory.
+			if not recovered then
+				recovered = inventory[1]
+			end
+
+			if recovered then
+				equipped = {recovered}
 			end
 		end
 
-		-- Fallback: just use the first non-consumable tool from inventory.
-		if not recovered then
-			recovered = inventory[1]
+		local shouldResaveInventory = arraysDifferent(inventory, originalInventoryCanonical)
+			or arraysDifferent(equipped, originalEquippedCanonical)
+			or arraysDifferent(mergedConsumables, storedConsumablesCanonical)
+
+		if shouldResaveInventory then
+			local helmet = resolvedHelmet
+			if typeof(_G.getPlayerHelmet) == "function" then
+				helmet = _G.getPlayerHelmet(player) or resolvedHelmet
+			end
+
+			MainDataStore.SaveInventory(userId, {
+				inventory = inventory,
+				equipped = equipped,
+				consumables = mergedConsumables,
+				helmet = helmet,
+			})
+
+			inventorySaveDebounce[userId] = inventorySaveDebounce[userId] or {lastSave = 0, pending = false}
+			inventorySaveDebounce[userId].lastSave = os.clock()
+			inventorySaveDebounce[userId].pending = false
 		end
 
-		if recovered then
-			equipped = {recovered}
-		end
-	end
-
-	local shouldResaveInventory = arraysDifferent(inventory, originalInventoryCanonical)
-		or arraysDifferent(equipped, originalEquippedCanonical)
-		or arraysDifferent(mergedConsumables, storedConsumablesCanonical)
-
-	if shouldResaveInventory then
-		local helmet = resolvedHelmet
-		if typeof(_G.getPlayerHelmet) == "function" then
-			helmet = _G.getPlayerHelmet(player) or resolvedHelmet
+		local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
+		if not assetsFolder then
+			warn("[InventoryManager] Assets folder not found in ReplicatedStorage for", player.Name)
+			return
 		end
 
-		MainDataStore.SaveInventory(userId, {
-			inventory = inventory,
-			equipped = equipped,
-			consumables = mergedConsumables,
-			helmet = helmet,
-		})
+		local missingWarnings = {}
 
-		inventorySaveDebounce[userId] = inventorySaveDebounce[userId] or {lastSave = 0, pending = false}
-		inventorySaveDebounce[userId].lastSave = os.clock()
-		inventorySaveDebounce[userId].pending = false
-	end
-
-	local assetsFolder = ReplicatedStorage:FindFirstChild("assets")
-	if not assetsFolder then
-		warn("[InventoryManager] Assets folder not found in ReplicatedStorage for", player.Name)
-		return
-	end
-
-	local missingWarnings = {}
-
-	-- Count how many of each canonical tool name currently exists in player's backpack/character
-	local function countExistingTools(player)
-		local backpackCounts = {}
-		local characterCounts = {}
-		local totalCounts = {}
-		
-		if not player then
+		-- Count how many of each canonical tool name currently exists in player's backpack/character
+		local function countExistingTools(player)
+			local backpackCounts = {}
+			local characterCounts = {}
+			local totalCounts = {}
+			
+			if not player then
+				return backpackCounts, characterCounts, totalCounts
+			end
+			
+			local backpack = player:FindFirstChild("Backpack")
+			if backpack then
+				for _, child in ipairs(backpack:GetChildren()) do
+					if child:IsA("Tool") then
+						local canonicalName = getCanonicalToolName(child.Name)
+						backpackCounts[canonicalName] = (backpackCounts[canonicalName] or 0) + 1
+						totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
+					end
+				end
+			end
+			
+			local character = player.Character
+			if character then
+				for _, child in ipairs(character:GetChildren()) do
+					if child:IsA("Tool") then
+						local canonicalName = getCanonicalToolName(child.Name)
+						characterCounts[canonicalName] = (characterCounts[canonicalName] or 0) + 1
+						totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
+					end
+				end
+			end
+			
 			return backpackCounts, characterCounts, totalCounts
 		end
-		
-		local backpack = player:FindFirstChild("Backpack")
-		if backpack then
-			for _, child in ipairs(backpack:GetChildren()) do
-				if child:IsA("Tool") then
-					local canonicalName = getCanonicalToolName(child.Name)
-					backpackCounts[canonicalName] = (backpackCounts[canonicalName] or 0) + 1
-					totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
-				end
+
+		-- Count how many of each tool should exist in inventory and equipped
+		local function countRequiredTools(inventoryList, equippedList)
+			local inventoryCounts = {}
+			local equippedCounts = {}
+			local totalCounts = {}
+			
+			-- Count from inventory
+			for _, toolName in ipairs(inventoryList) do
+				local canonicalName = getCanonicalToolName(toolName)
+				inventoryCounts[canonicalName] = (inventoryCounts[canonicalName] or 0) + 1
+				totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
 			end
-		end
-		
-		local character = player.Character
-		if character then
-			for _, child in ipairs(character:GetChildren()) do
-				if child:IsA("Tool") then
-					local canonicalName = getCanonicalToolName(child.Name)
-					characterCounts[canonicalName] = (characterCounts[canonicalName] or 0) + 1
-					totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
-				end
+			
+			-- Count from equipped
+			for _, toolName in ipairs(equippedList) do
+				local canonicalName = getCanonicalToolName(toolName)
+				equippedCounts[canonicalName] = (equippedCounts[canonicalName] or 0) + 1
+				totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
 			end
+			
+			return inventoryCounts, equippedCounts, totalCounts
 		end
-		
-		return backpackCounts, characterCounts, totalCounts
-	end
 
-	-- Count how many of each tool should exist in inventory and equipped
-	local function countRequiredTools(inventoryList, equippedList)
-		local inventoryCounts = {}
-		local equippedCounts = {}
-		local totalCounts = {}
+		-- Get current counts of existing tools
+		local existingBackpackCounts, existingCharacterCounts, existingTotalCounts = countExistingTools(player)
 		
-		-- Count from inventory
-		for _, toolName in ipairs(inventoryList) do
-			local canonicalName = getCanonicalToolName(toolName)
-			inventoryCounts[canonicalName] = (inventoryCounts[canonicalName] or 0) + 1
-			totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
-		end
-		
-		-- Count from equipped
-		for _, toolName in ipairs(equippedList) do
-			local canonicalName = getCanonicalToolName(toolName)
-			equippedCounts[canonicalName] = (equippedCounts[canonicalName] or 0) + 1
-			totalCounts[canonicalName] = (totalCounts[canonicalName] or 0) + 1
-		end
-		
-		return inventoryCounts, equippedCounts, totalCounts
-	end
+		-- Get required counts from DataStore
+		local requiredInventoryCounts, requiredEquippedCounts, requiredTotalCounts = countRequiredTools(inventory, equipped)
 
-	-- Get current counts of existing tools
-	local existingBackpackCounts, existingCharacterCounts, existingTotalCounts = countExistingTools(player)
-	
-	-- Get required counts from DataStore
-	local requiredInventoryCounts, requiredEquippedCounts, requiredTotalCounts = countRequiredTools(inventory, equipped)
-
-	-- Load Backpack tools - only clone what's missing from inventory
-	for i, toolName in inventory do
-		local canonicalName = getCanonicalToolName(toolName)
-		local existingTotal = existingTotalCounts[canonicalName] or 0
-		local requiredTotal = requiredTotalCounts[canonicalName] or 0
-		
-		-- Only clone if we need more of this tool overall
-		-- (allows multiple copies of same weapon)
-		if existingTotal < requiredTotal then
-			local asset = resolveAsset(assetsFolder, toolName)
-			if asset and asset:IsA("Tool") then
-				local clone = asset:Clone()
-				clone.Parent = backpack
-				-- Update counts to reflect the new tool
-				existingTotalCounts[canonicalName] = existingTotal + 1
-				existingBackpackCounts[canonicalName] = (existingBackpackCounts[canonicalName] or 0) + 1
-			else
-				if not missingWarnings[toolName] then
-					warn("[InventoryManager] Tool not found:", toolName)
-					missingWarnings[toolName] = true
-				end
-			end
-		end
-	end
-
-	-- Load Equipped tools (to Character) - only clone what's missing from equipped
-	if character and #equipped > 0 then
-		for i, toolName in equipped do
+		-- Load Backpack tools - only clone what's missing from inventory
+		for i, toolName in inventory do
 			local canonicalName = getCanonicalToolName(toolName)
 			local existingTotal = existingTotalCounts[canonicalName] or 0
 			local requiredTotal = requiredTotalCounts[canonicalName] or 0
-			local existingCharacter = existingCharacterCounts[canonicalName] or 0
-			local requiredEquipped = requiredEquippedCounts[canonicalName] or 0
 			
-			-- Only clone if:
-			-- 1. We need more of this tool overall, AND
-			-- 2. We don't already have enough equipped
-			-- This prevents duplicating equipped tools if they're already in character
-			if existingTotal < requiredTotal and existingCharacter < requiredEquipped then
+			-- Only clone if we need more of this tool overall
+			-- (allows multiple copies of same weapon)
+			if existingTotal < requiredTotal then
 				local asset = resolveAsset(assetsFolder, toolName)
 				if asset and asset:IsA("Tool") then
 					local clone = asset:Clone()
-					clone.Parent = character
+					clone.Parent = backpack
 					-- Update counts to reflect the new tool
 					existingTotalCounts[canonicalName] = existingTotal + 1
-					existingCharacterCounts[canonicalName] = existingCharacter + 1
+					existingBackpackCounts[canonicalName] = (existingBackpackCounts[canonicalName] or 0) + 1
 				else
 					if not missingWarnings[toolName] then
 						warn("[InventoryManager] Tool not found:", toolName)
@@ -762,7 +720,37 @@ local function LoadPlayerInventory(player)
 				end
 			end
 		end
-	end
+
+		-- Load Equipped tools (to Character) - only clone what's missing from equipped
+		if character and #equipped > 0 then
+			for i, toolName in equipped do
+				local canonicalName = getCanonicalToolName(toolName)
+				local existingTotal = existingTotalCounts[canonicalName] or 0
+				local requiredTotal = requiredTotalCounts[canonicalName] or 0
+				local existingCharacter = existingCharacterCounts[canonicalName] or 0
+				local requiredEquipped = requiredEquippedCounts[canonicalName] or 0
+				
+				-- Only clone if:
+				-- 1. We need more of this tool overall, AND
+				-- 2. We don't already have enough equipped
+				-- This prevents duplicating equipped tools if they're already in character
+				if existingTotal < requiredTotal and existingCharacter < requiredEquipped then
+					local asset = resolveAsset(assetsFolder, toolName)
+					if asset and asset:IsA("Tool") then
+						local clone = asset:Clone()
+						clone.Parent = character
+						-- Update counts to reflect the new tool
+						existingTotalCounts[canonicalName] = existingTotal + 1
+						existingCharacterCounts[canonicalName] = existingCharacter + 1
+					else
+						if not missingWarnings[toolName] then
+							warn("[InventoryManager] Tool not found:", toolName)
+							missingWarnings[toolName] = true
+						end
+					end
+				end
+			end
+		end
 
 		if _G.refreshEquipmentBonuses then
 			_G.refreshEquipmentBonuses(player)
@@ -846,6 +834,11 @@ local function OnCharacterAdded(character, player)
 	-- Increased slightly to make sure everything (character, remotes, configs)
 	-- has time to initialise before we touch the DataStore-backed inventory.
 	task.wait(4)
+	
+	-- Ensure the player still has the same character (they didn't die/respawn during the wait)
+	if player.Character ~= character then
+		return
+	end
 
 	LoadPlayerInventory(player)
 	BindInventoryEvents(player)

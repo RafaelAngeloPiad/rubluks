@@ -272,7 +272,9 @@ local function applySunfireWaterRestore(player, effectConfig)
 
 	local sunfire = player:FindFirstChild("sunfireprogress")
 	if not sunfire then
-		return false
+		-- If the system is missing, we return true so the consumable is "used" (removed from inventory)
+		-- but has no effect. This allows players to act as if they consumed it.
+		return true
 	end
 
 	local currentValueObj = sunfire:FindFirstChild("CurrentWaterLevel")
