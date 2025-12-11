@@ -197,6 +197,7 @@ exitButton.Text = "❌ CLOSE"
 exitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 exitButton.TextSize = 14
 exitButton.Font = Enum.Font.GothamBold
+exitButton.ZIndex = 15
 exitButton.Parent = mainFrame
 
 local exitCorner = Instance.new("UICorner")
