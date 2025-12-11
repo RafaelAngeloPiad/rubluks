@@ -109,20 +109,12 @@ end
 local inventorySaveDebounce = {}
 local DEBOUNCE_TIME = 1 -- seconds
 
--- State tracking to prevent saving while loading
-local isInventoryLoading = {}
-
 -- Save: READS World State -> WRITES DataStore
 local function SavePlayerInventory(player)
 	local userId = player.UserId
 	local now = os.clock()
 
-	-- 1. DEBOUNCE & LOADING CHECK
-	if isInventoryLoading[userId] then
-		print("[InventoryManager] Save blocked: Player inventory is loading for", player.Name)
-		return
-	end
-
+	-- 1. DEBOUNCE CHECK
 	if inventorySaveDebounce[userId] and (now - inventorySaveDebounce[userId].lastSave < DEBOUNCE_TIME) then
 		inventorySaveDebounce[userId].pending = true
 		return
@@ -237,9 +229,6 @@ end
 
 -- Load: READS DataStore -> WRITES World State
 local function LoadPlayerInventory(player)
-	local userId = player.UserId
-	isInventoryLoading[userId] = true
-
 	-- Safety wait
 	local character = player.Character or player.CharacterAdded:Wait()
 	local backpack = player:WaitForChild("Backpack")
@@ -304,8 +293,6 @@ local function LoadPlayerInventory(player)
 	if _G.refreshEquipmentBonuses then
 		_G.refreshEquipmentBonuses(player)
 	end
-
-	isInventoryLoading[userId] = false
 end
 
 local function BindInventoryEvents(player)
