@@ -124,15 +124,45 @@ local function SavePlayerInventory(player)
 		-- 2. SAFETY CHECKS (The "Death Stopper")
 		-- If character is missing, detached, or dead, DO NOT SAVE.
 		-- This prevents overwriting good data with empty data during teleport/death.
+		
+		-- CHEAT CODE: If transformer_chat says we are transforming, BELIEVE IT.
+		if player:GetAttribute("IsTransforming") then
+			print("[InventoryManager] Save blocked: Transformation in progress for", player.Name)
+			return
+		end
+
+		-- NEW GUARD: If we are currently loading the inventory (e.g. after respawn), DO NOT SAVE.
+		-- This prevents a race condition where a lagging save from the previous life
+		-- overwrites the DB with an empty inventory before the load completes.
+		if player:GetAttribute("IsLoadingInventory") then
+			print("[InventoryManager] Save blocked: Inventory loading for", player.Name)
+			return
+		end
+
 		local character = player.Character
 		if not character or not character.Parent then
 			print("[InventoryManager] Save blocked: Character missing/detached for", player.Name)
 			return 
 		end
+		
+		-- GHOST SAVE FIX:
+		-- We ONLY save if this specific character has finished loading its inventory.
+		-- This handles the case where a debounce from a previous life fires, sees the new character,
+		-- but that new character hasn't been initialized yet.
+		if not character:GetAttribute("InventoryLoaded") then
+			print("[InventoryManager] Save blocked: Inventory not loaded for character of", player.Name)
+			return
+		end
 
 		local humanoid = character:FindFirstChild("Humanoid")
 		if not humanoid or humanoid.Health <= 0 then
 			print("[InventoryManager] Save blocked: Character dead for", player.Name)
+			return
+		end
+		
+		-- Extra Safety: Check if character is actually in Workspace (detached check)
+		if not character:IsDescendantOf(workspace) then
+			print("[InventoryManager] Save blocked: Character not in workspace for", player.Name)
 			return
 		end
 
@@ -229,6 +259,9 @@ end
 
 -- Load: READS DataStore -> WRITES World State
 local function LoadPlayerInventory(player)
+	-- LOCK SAVE: Signal that we are loading. Blocks any accidental empty saves.
+	player:SetAttribute("IsLoadingInventory", true)
+
 	-- Safety wait
 	local character = player.Character or player.CharacterAdded:Wait()
 	local backpack = player:WaitForChild("Backpack")
@@ -292,6 +325,12 @@ local function LoadPlayerInventory(player)
 	-- Initial Refresh
 	if _G.refreshEquipmentBonuses then
 		_G.refreshEquipmentBonuses(player)
+	end
+	
+	-- UNLOCK SAVE: Loading complete.
+	player:SetAttribute("IsLoadingInventory", nil)
+	if character and character.Parent then
+		character:SetAttribute("InventoryLoaded", true)
 	end
 end
 

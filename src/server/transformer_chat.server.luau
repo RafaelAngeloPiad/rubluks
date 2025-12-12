@@ -80,12 +80,23 @@ local function transformPlayer(player: Player, modelPath: string)
 	-- Check if player wants to transform back to themselves
 	local lowerPath = string.lower(modelPath)
 	if lowerPath == "myself" or lowerPath == "self" or lowerPath == "original" then
+		-- RESPONDER TO INVENTORY MANAGER: Signal start of transformation
+		player:SetAttribute("IsTransforming", true)
+		
 		-- Respawn player to restore original character
 		local currentCharacter = player.Character
 		if currentCharacter then
 			currentCharacter:Destroy()
 		end
 		player:LoadCharacter()
+		
+		-- Signal end of transformation (CharacterAdded will fire, then LoadInventory)
+		-- We clear it slightly after to be safe, or rely on LoadCharacter completing
+		task.delay(1, function()
+			if player and player.Parent then
+				player:SetAttribute("IsTransforming", nil)
+			end
+		end)
 		return
 	end
 
@@ -146,11 +157,22 @@ local function transformPlayer(player: Player, modelPath: string)
 		end
 	end
 
+	-- RESPONDER TO INVENTORY MANAGER: Signal start of transformation
+	player:SetAttribute("IsTransforming", true)
+
 	if currentCharacter then
 		currentCharacter:Destroy()
 	end
 
 	player.Character = cloned
+	
+	-- RESPONDER TO INVENTORY MANAGER: Signal end of transformation
+	-- We wait a moment to ensure the new character is fully accepted by the engine
+	task.delay(1, function()
+		if player and player.Parent then
+			player:SetAttribute("IsTransforming", nil)
+		end
+	end)
 
 	local newHumanoid = cloned:FindFirstChildOfClass("Humanoid")
 	if newHumanoid and cloned.PrimaryPart then
